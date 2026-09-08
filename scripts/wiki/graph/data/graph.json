@@ -2,12 +2,12 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 12,
-    "edges": 54,
+    "nodes": 15,
+    "edges": 67,
     "byType": {
       "index": 3,
-      "journal": 2,
-      "plan": 2,
+      "journal": 4,
+      "plan": 3,
       "topic": 5
     }
   },
@@ -25,6 +25,18 @@
       "size": 12
     },
     {
+      "id": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
+      "label": "CI quality and commit-message gates",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 1889,
+      "degree": 5,
+      "x": 0.669131,
+      "y": 0.743145,
+      "size": 8
+    },
+    {
       "id": "wiki/journal/2026-09-08-design-passport-v1.md",
       "label": "Design Passport v1 implementation and hardening",
       "type": "journal",
@@ -32,8 +44,20 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.5,
-      "y": 0.866025,
+      "x": 0.309017,
+      "y": 0.951057,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-08-live-readiness-stress-test.md",
+      "label": "Live page and frame readiness stress test",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2345,
+      "degree": 5,
+      "x": -0.104528,
+      "y": 0.994522,
       "size": 8
     },
     {
@@ -44,8 +68,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0,
-      "y": 1,
+      "x": -0.5,
+      "y": 0.866025,
       "size": 8
     },
     {
@@ -56,9 +80,21 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.866025,
-      "y": 0.5,
+      "x": 0.913545,
+      "y": 0.406737,
       "size": 12
+    },
+    {
+      "id": "wiki/plans/2026-09-08-design-passport-ci-quality-gates-17bd086b3d.md",
+      "label": "Design Passport CI quality gates",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 811,
+      "degree": 4,
+      "x": -0.809017,
+      "y": 0.587785,
+      "size": 8
     },
     {
       "id": "wiki/plans/2026-09-08-design-passport-release-governance-6f6b19e922.md",
@@ -68,8 +104,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.5,
-      "y": 0.866025,
+      "x": -0.978148,
+      "y": 0.207912,
       "size": 8
     },
     {
@@ -79,9 +115,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 12391,
-      "degree": 7,
-      "x": -0.866025,
-      "y": 0.5,
+      "degree": 8,
+      "x": -0.978148,
+      "y": -0.207912,
       "size": 8
     },
     {
@@ -97,10 +133,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/38"
         }
       ],
-      "bytes": 15314,
-      "degree": 4,
-      "x": -1,
-      "y": 0,
+      "bytes": 15698,
+      "degree": 5,
+      "x": -0.809017,
+      "y": -0.587785,
       "size": 12
     },
     {
@@ -109,10 +145,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2750,
-      "degree": 19,
-      "x": -0.866025,
-      "y": -0.5,
+      "bytes": 3050,
+      "degree": 22,
+      "x": -0.5,
+      "y": -0.866025,
       "size": 8
     },
     {
@@ -121,10 +157,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2209,
-      "degree": 13,
-      "x": -0.5,
-      "y": -0.866025,
+      "bytes": 2918,
+      "degree": 14,
+      "x": -0.104528,
+      "y": -0.994522,
       "size": 8
     },
     {
@@ -133,10 +169,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 3163,
-      "degree": 14,
-      "x": 0,
-      "y": -1,
+      "bytes": 5380,
+      "degree": 18,
+      "x": 0.309017,
+      "y": -0.951057,
       "size": 8
     },
     {
@@ -146,9 +182,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 2143,
-      "degree": 13,
-      "x": 0.5,
-      "y": -0.866025,
+      "degree": 14,
+      "x": 0.669131,
+      "y": -0.743145,
       "size": 8
     },
     {
@@ -158,13 +194,27 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 2217,
-      "degree": 14,
-      "x": 0.866025,
-      "y": -0.5,
+      "degree": 15,
+      "x": 0.913545,
+      "y": -0.406737,
       "size": 8
     }
   ],
   "edges": [
+    {
+      "id": "0e414a96ceaeba99",
+      "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "15474f7784e6e3be",
+      "source": "wiki/journal/2026-09-08-live-readiness-stress-test.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
     {
       "id": "159be79659e8aff6",
       "source": "wiki/journal/2026-09-08-release-governance-and-team-docs.md",
@@ -208,6 +258,13 @@
       "relation": "link"
     },
     {
+      "id": "28107976218808ff",
+      "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "2b45856d757efeaf",
       "source": "wiki/plans/2026-09-08-design-passport-release-governance-6f6b19e922.md",
       "target": "wiki/topics/design-passport-architecture.md",
@@ -243,6 +300,13 @@
       "relation": "topic"
     },
     {
+      "id": "3f69b4baef284f63",
+      "source": "wiki/plans/2026-09-08-design-passport-ci-quality-gates-17bd086b3d.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "42b4fa228072bd51",
       "source": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
       "target": "wiki/topics/design-readiness-standard.md",
@@ -260,6 +324,13 @@
       "id": "4fde3160fb5884f6",
       "source": "wiki/journal/2026-09-08-design-passport-v1.md",
       "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "4ff8083b40ef7b02",
+      "source": "wiki/journal/2026-09-08-live-readiness-stress-test.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -299,6 +370,13 @@
       "relation": "link"
     },
     {
+      "id": "77b15d87d7ac27ab",
+      "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "7896a62ef023a35e",
       "source": "wiki/journal/2026-09-08-design-passport-v1.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -309,6 +387,27 @@
       "id": "79bb1f304dd846fb",
       "source": "wiki/topics/design-passport-architecture.md",
       "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "7ae6b4885650857e",
+      "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
+      "target": "wiki/plans/2026-09-08-design-passport-ci-quality-gates-17bd086b3d.md",
+      "type": "plan",
+      "relation": "plan"
+    },
+    {
+      "id": "872fa68cd056bb56",
+      "source": "wiki/plans/2026-09-08-design-passport-ci-quality-gates-17bd086b3d.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "8bc49726e22a444a",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-08-design-passport-ci-quality-gates-17bd086b3d.md",
       "type": "link",
       "relation": "link"
     },
@@ -332,6 +431,13 @@
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "91f10d2149f38b8c",
+      "source": "wiki/journal/2026-09-08-live-readiness-stress-test.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "924f340d1be4d8bd",
@@ -367,6 +473,13 @@
       "target": "wiki/topics/design-readiness-standard.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "9d44abff663e1908",
+      "source": "wiki/journal/2026-09-08-live-readiness-stress-test.md",
+      "target": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "a18601fe1cea6af0",
@@ -488,6 +601,13 @@
       "relation": "topic"
     },
     {
+      "id": "e02a9b05029235af",
+      "source": "wiki/journal/2026-09-08-live-readiness-stress-test.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "e4bf47d5a78944c4",
       "source": "wiki/plans/INDEX.md",
       "target": "wiki/plans/2026-09-08-design-passport-release-governance-6f6b19e922.md",
@@ -507,6 +627,13 @@
       "target": "wiki/topics/design-readiness-standard.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "eb08cdc4f14e8eb2",
+      "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "eb8648093e9ce5c9",

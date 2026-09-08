@@ -81,6 +81,8 @@ The repository uses the same guarded Git lifecycle as `@verndale/ui-design-libra
 - `.husky/prepare-commit-msg` can prepare a message through `@verndale/ai-commit`.
 - `.husky/commit-msg` enforces the shared commit-message policy.
 - `.husky/pre-push` runs `pnpm verify:push`, which is the complete catalog, schema, wiki, TypeScript, unit-test, and production-build gate.
+- `.github/workflows/commitlint.yml` validates the PR title and every commit in the PR range through the shared `@verndale/ai-commit` configuration.
+- `.github/workflows/quality.yml` runs the complete non-fixing `pnpm verify:ci` gate for pull requests into `main`.
 - `.github/workflows/pr.yml` creates or updates a branch pull request through `@verndale/ai-pr`.
 
 The setup commands have already been applied to the repository. A fresh checkout only needs the normal dependency install, which activates Husky through the `prepare` script:

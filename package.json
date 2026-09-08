@@ -21,8 +21,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "verify": "pnpm catalog:check && pnpm schemas:check && pnpm wiki:check && pnpm typecheck && pnpm test && pnpm build",
-    "verify:push": "pnpm verify",
+    "lint:commit": "commitlint --config commitlint.config.cjs",
+    "lint:commits:last": "pnpm run lint:commit --last",
+    "verify:ci": "pnpm catalog:check && pnpm schemas:check && pnpm wiki:check && pnpm typecheck && pnpm test && pnpm build",
+    "verify": "pnpm run verify:ci",
+    "verify:push": "pnpm run verify:ci",
     "prepare": "husky",
     "commit": "ai-commit run",
     "pr:create": "ai-pr"

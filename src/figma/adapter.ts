@@ -280,6 +280,17 @@ function componentSnapshot(node: SceneNode): NodeSnapshot["component"] {
   };
 }
 
+function variantPropertiesSnapshot(node: SceneNode): NodeSnapshot["variantProperties"] {
+  if (node.type === "INSTANCE") {
+    const properties = Object.entries(node.componentProperties)
+      .filter(([, property]) => property.type === "VARIANT")
+      .map(([name, property]) => [name, String(property.value)] as const);
+    return properties.length > 0 ? Object.fromEntries(properties) : undefined;
+  }
+  if (node.type === "COMPONENT" && node.variantProperties) return { ...node.variantProperties };
+  return undefined;
+}
+
 function structuralSignature(node: SceneNode): string | undefined {
   if (!hasChildren(node)) return undefined;
   return hashValue({
@@ -310,6 +321,7 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
   const detached = "detachedInfo" in node && node.detachedInfo !== null;
   const layout = layoutSnapshot(node);
   const text = textSnapshot(node);
+  const variantProperties = variantPropertiesSnapshot(node);
   const component = componentSnapshot(node);
   const signature = structuralSignature(node);
   const certification = certificationSummary(node);
@@ -341,6 +353,7 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
     boundVariableIds: boundVariableIds(node, fillData, strokeData),
     inferredBindings: inferredBindings(node),
     ...(text ? { text } : {}),
+    ...(variantProperties ? { variantProperties } : {}),
     ...(component ? { component } : {}),
     ...(detached ? { instance: { detached: true } } : {}),
     hasAnnotations: "annotations" in node && node.annotations.some((annotation) => ![

@@ -1,6 +1,7 @@
 import { contrastRatio, isLargeText } from "../contrast";
 import { SOURCES } from "../constants";
 import type { DesignKnowledgeGraph, Finding, NodeSnapshot } from "../contracts";
+import { isWithinInactiveComponent } from "../operations/interaction-state";
 import { createFinding } from "./finding";
 import { INTERACTIVE_COMPONENT_NAME } from "./patterns";
 
@@ -29,10 +30,12 @@ export function evaluateAccessibilityRules(
 ): Finding[] {
   const output: Finding[] = [];
   const textNodes = nodes.filter((node) => node.text);
+  const activeTextNodes = textNodes.filter((node) => !isWithinInactiveComponent(graph, node));
+  const inactiveTextNodeCount = textNodes.length - activeTextNodes.length;
   let resolved = 0;
   let failures = 0;
   let unresolved = 0;
-  for (const node of textNodes) {
+  for (const node of activeTextNodes) {
     const text = node.text;
     if (!text?.textColor || !text.backgroundResolvable) {
       unresolved += 1;
@@ -89,7 +92,7 @@ export function evaluateAccessibilityRules(
     4,
     root,
     root,
-    textNodes.length === 0
+    activeTextNodes.length === 0
       ? "not-applicable"
       : failures === 0 && unresolved === 0
         ? "pass"
@@ -97,12 +100,14 @@ export function evaluateAccessibilityRules(
           ? "fail"
           : "needs-review",
     "WCAG 2.2 AA text contrast",
-    `${resolved} text layers were measured; ${failures} failed and ${unresolved} require manual review.`,
-    { textNodeCount: textNodes.length, resolved, failures, unresolved },
+    `${resolved} active text layers were measured; ${failures} failed, ${unresolved} require manual review, and ${inactiveTextNodeCount} inactive-control layers were exempt.`,
+    { textNodeCount: textNodes.length, activeTextNodeCount: activeTextNodes.length, inactiveTextNodeCount, resolved, failures, unresolved },
     { sourceRefs: [SOURCES.wcagContrast] },
   ));
 
-  const interactive = nodes.filter((node) => INTERACTIVE_COMPONENT_NAME.test(node.name));
+  const interactiveCandidates = nodes.filter((node) => INTERACTIVE_COMPONENT_NAME.test(node.name));
+  const interactive = interactiveCandidates.filter((node) => !isWithinInactiveComponent(graph, node));
+  const inactiveInteractiveCount = interactiveCandidates.length - interactive.length;
   const undersized = interactive.filter((node) => node.width < 24 || node.height < 24);
   const belowPreferred = interactive.filter((node) => node.width < 44 || node.height < 44);
   output.push(createFinding(
@@ -118,7 +123,7 @@ export function evaluateAccessibilityRules(
       : undersized.length === 0
         ? "Resolved interactive targets are at least 24×24."
         : `${undersized.length} resolved targets are smaller than 24×24.`,
-    { interactiveCount: interactive.length, undersizedCount: undersized.length },
+    { interactiveCount: interactive.length, inactiveInteractiveCount, undersizedCount: undersized.length },
     { sourceRefs: [SOURCES.wcagTarget] },
   ));
   output.push(createFinding(
@@ -134,7 +139,7 @@ export function evaluateAccessibilityRules(
       : belowPreferred.length === 0
         ? "Resolved interactive targets are at least 44×44."
         : `${belowPreferred.length} targets are below the preferred 44×44 touch size.`,
-    { interactiveCount: interactive.length, belowPreferredCount: belowPreferred.length },
+    { interactiveCount: interactive.length, inactiveInteractiveCount, belowPreferredCount: belowPreferred.length },
     { sourceRefs: [SOURCES.wcagTarget] },
   ));
   output.push(createFinding(
@@ -148,7 +153,7 @@ export function evaluateAccessibilityRules(
     interactive.length === 0
       ? "No interactive behavior is in scope."
       : "Figma geometry cannot prove keyboard operation, focus order, focus visibility, or ARIA semantics; manual review is required.",
-    { interactiveCount: interactive.length },
+    { interactiveCount: interactive.length, inactiveInteractiveCount },
     { sourceRefs: [SOURCES.wcagTarget] },
   ));
   return output;

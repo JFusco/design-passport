@@ -91,6 +91,7 @@ Local token systems are valid. An enabled library is reported as a fact, never t
 
 - WCAG 2.2 AA contrast for resolvable solid text/background pairs.
 - 4.5:1 normal text; 3:1 large text.
+- Text and targets inside exact inactive component variants (`Disabled=True`, `isEnabled=false`, or `state=disabled`) are excluded; prose and ambiguous visual naming are not.
 - 24×24 enforced for name-resolved interactive targets.
 - 44×44 shown as preferred touch guidance.
 - Focus, keyboard, semantic HTML/ARIA, gradients, imagery, and exceptions remain manual review.

@@ -29,6 +29,10 @@ Missing verified Code Connect evidence caps an otherwise A result at B but does 
 
 Hard blockers include a page or section used at the wrong consumable altitude, a wholly unbound responsive tier, colliding responsive names or widths, no real responsive signal, and wholly literal code-relevant styling.
 
+## Accessibility state handling
+
+WCAG 2.2 AA contrast is measured only for active text. Text inside a component, component set, or instance with an exact inactive variant assignment such as `Disabled=True`, `isEnabled=false`, or `state=disabled` is reported as exempt rather than failed. The normalized snapshot reads structured Figma variant properties for placed instances and falls back to exact variant-name assignments for component definitions. Disabled-looking prose or loosely named ordinary frames do not qualify for the exemption. The same component-state boundary removes inactive controls from target-size and keyboard-behavior counts while preserving every active failure and unresolved review.
+
 ## Naming policy
 
 Canonical names resolve before plain aliases. Contextual aliases such as CTA, Banner, Label, and Stepper always require designer confirmation. Unknown terms remain novel rather than guessed. Components use `<Canonical pattern> / <qualifier>`, lower-camel properties, lowercase full-word values, semantic child names, and breakpoint specimens shaped as `<Artifact> / <Breakpoint> / <Width>`.
