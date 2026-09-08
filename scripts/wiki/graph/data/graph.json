@@ -2,11 +2,11 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 15,
+    "nodes": 16,
     "edges": 67,
     "byType": {
       "index": 3,
-      "journal": 4,
+      "journal": 5,
       "plan": 3,
       "topic": 5
     }
@@ -32,8 +32,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.669131,
-      "y": 0.743145,
+      "x": 0.707107,
+      "y": 0.707107,
       "size": 8
     },
     {
@@ -44,8 +44,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.309017,
-      "y": 0.951057,
+      "x": 0.382683,
+      "y": 0.92388,
       "size": 8
     },
     {
@@ -56,8 +56,33 @@
       "githubRefs": [],
       "bytes": 2345,
       "degree": 5,
-      "x": -0.104528,
-      "y": 0.994522,
+      "x": 0,
+      "y": 1,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-08-pr-4-fix-readiness-inherit-component-set-documentation-for-variants.md",
+      "label": "PR #4: fix(readiness): inherit component-set documentation for variants",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 3,
+          "url": "https://github.com/jfusco/design-passport/issues/3"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "pull-request",
+          "number": 4,
+          "url": "https://github.com/jfusco/design-passport/pull/4"
+        }
+      ],
+      "bytes": 584,
+      "degree": 0,
+      "x": -0.382683,
+      "y": 0.92388,
       "size": 8
     },
     {
@@ -68,8 +93,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": -0.5,
-      "y": 0.866025,
+      "x": -0.707107,
+      "y": 0.707107,
       "size": 8
     },
     {
@@ -80,8 +105,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.913545,
-      "y": 0.406737,
+      "x": 0.92388,
+      "y": 0.382683,
       "size": 12
     },
     {
@@ -92,8 +117,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.809017,
-      "y": 0.587785,
+      "x": -0.92388,
+      "y": 0.382683,
       "size": 8
     },
     {
@@ -104,8 +129,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.978148,
-      "y": 0.207912,
+      "x": -1,
+      "y": 0,
       "size": 8
     },
     {
@@ -116,8 +141,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.978148,
-      "y": -0.207912,
+      "x": -0.92388,
+      "y": -0.382683,
       "size": 8
     },
     {
@@ -135,8 +160,8 @@
       ],
       "bytes": 15698,
       "degree": 5,
-      "x": -0.809017,
-      "y": -0.587785,
+      "x": -0.707107,
+      "y": -0.707107,
       "size": 12
     },
     {
@@ -147,8 +172,8 @@
       "githubRefs": [],
       "bytes": 3050,
       "degree": 22,
-      "x": -0.5,
-      "y": -0.866025,
+      "x": -0.382683,
+      "y": -0.92388,
       "size": 8
     },
     {
@@ -159,8 +184,8 @@
       "githubRefs": [],
       "bytes": 2918,
       "degree": 14,
-      "x": -0.104528,
-      "y": -0.994522,
+      "x": 0,
+      "y": -1,
       "size": 8
     },
     {
@@ -171,8 +196,8 @@
       "githubRefs": [],
       "bytes": 5380,
       "degree": 18,
-      "x": 0.309017,
-      "y": -0.951057,
+      "x": 0.382683,
+      "y": -0.92388,
       "size": 8
     },
     {
@@ -183,8 +208,8 @@
       "githubRefs": [],
       "bytes": 2143,
       "degree": 14,
-      "x": 0.669131,
-      "y": -0.743145,
+      "x": 0.707107,
+      "y": -0.707107,
       "size": 8
     },
     {
@@ -195,8 +220,8 @@
       "githubRefs": [],
       "bytes": 2217,
       "degree": 15,
-      "x": 0.913545,
-      "y": -0.406737,
+      "x": 0.92388,
+      "y": -0.382683,
       "size": 8
     }
   ],
