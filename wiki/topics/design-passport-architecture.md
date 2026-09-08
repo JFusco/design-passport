@@ -25,7 +25,9 @@ The production build is an inlined React document plus an ES2020 plugin bundle. 
 
 ## Release governance
 
-The repository pins `@verndale/ai-commit@2.7.0` and `@verndale/ai-pr@1.3.5`. Husky owns the active Git hook path. The pre-commit hook preserves the advisory context-wiki lifecycle, commit messages pass the shared Verndale policy, and pre-push runs the complete `pnpm verify` contract through `pnpm verify:push`. The generated PR workflow uses Node 24.14.0 and pnpm 10.33.0, matching local development instead of introducing a second toolchain.
+The repository pins `@verndale/ai-commit@2.7.0` and `@verndale/ai-pr@1.3.5`. Husky owns the active Git hook path. The pre-commit hook preserves the advisory context-wiki lifecycle, commit messages pass the shared Verndale policy, and pre-push runs the complete `pnpm verify:ci` contract through `pnpm verify:push`.
+
+GitHub independently repeats both gates. `commitlint.yml` validates the PR title and every commit between the PR base and head. `quality.yml` runs the complete non-fixing verifier for pull requests into `main`. The PR automation excludes `bot/wiki-*` branches so wiki reconciliation owns its own review flow. All workflows use Node 24.14.0 and pnpm 10.33.0, matching local development instead of introducing a second toolchain.
 
 Secrets remain outside source control. `.env.example` documents local options, `.env` is ignored, and GitHub Actions receives its pull-request token through `PR_BOT_TOKEN`.
 
