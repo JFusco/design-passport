@@ -276,6 +276,7 @@ export interface NodeSnapshot {
     backgroundColor?: { r: number; g: number; b: number; a: number };
     backgroundResolvable: boolean;
   };
+  variantProperties?: Record<string, string>;
   component?: {
     kind: "component" | "component-set";
     key?: string;

@@ -30,8 +30,20 @@ Figma Desktop was exercised against `UI Design Library` (`gXT4bIDrkgva2uSzY763oG
 
 The live selected component finished B/ready with token application at 88.9. Current-page and all-source scans correctly remained non-ready because the broader targets contain unresolved defects; the plugin did not average them away.
 
+## Page and frame cleanup stress test, 2026-09-08
+
+The Button — Light page was used as a destructive-boundary-safe stress fixture. The selected `Main components / Button — Light` frame began at D/68.9 with 262 findings. “Fix all available” applied 197 low-risk and guarded operations in two undo groups, and a designer-confirmed semantic typography token bound another 25 repeated values. Raw binding coverage moved from 435/515 (84.5%) to 460/515 (89.3%).
+
+Six remaining contrast failures all belonged to exact `Disabled=True` button variants. WCAG 2.2 excludes inactive user-interface components from minimum text contrast, so this exposed a rules-engine false positive rather than a design defect. After the rule was corrected, the frame rescanned at B/82.6, ready, and received a Design Passport certificate annotation and relaunch action.
+
+The current-page run independently evaluated three source frames. “Fix all available” applied 421 operations in two undo groups and reduced findings from 527 to 88. The page first moved from C/77.0 to C/79.9, exposing the Documentation frame as the only remaining cap at 188/225 bindings (83.6%). The designer then created `semantic/type/documentation/eyebrow/font-weight` in the existing Semantic Dimensions collection and bound its 11 exact uses. The final page report was B/81.8, ready, with zero blockers and all three frames independently ready: Documentation B/89.9 at 199/225 bindings (88.4%), Main components B/81.8 at 460/515 (89.3%), and Interaction states B/89.9 at 583/638 (91.4%). This validates that page readiness follows the limiting source frame rather than an average.
+
+Certification wrote matching ruleset, catalog, timestamp, and snapshot-hash annotations plus shared certification metadata to all three source frames. A final selected-frame regression remained B/81.8 and ready, with no drift loop.
+
+No pages or content were deleted or moved, structural conversions were not auto-approved, and plugin-owned mutations did not produce a file-drift notice storm. The passing JSON report was exported as `UI-Design-Library.ai-readiness.final.json`.
+
 ## Automated verification
 
-The release suite contains 19 Vitest files and 95 tests. It covers catalog resolution, grading boundaries, schemas and hostile input, session/drift state, mutation planning and rollback constraints, token compatibility, UI operations, cancellation feedback, inline waiver validation, Code Connect feedback, and URL parsing without `globalThis.URL`. Performance fixtures exercise 10,000- and 50,000-node graphs.
+The release suite contains 21 Vitest files and 105 tests. It covers catalog resolution, grading boundaries, schemas and hostile input, session/drift state, mutation planning and rollback constraints, token compatibility, UI operations, cancellation feedback, inline waiver validation, Code Connect feedback, URL parsing without `globalThis.URL`, and exact inactive-component state handling for both definitions and placed instances. Performance fixtures exercise 10,000- and 50,000-node graphs.
 
-The release gate is `pnpm verify`, followed by `git diff --check` and the context-wiki integrity checks.
+The release gate is `pnpm verify:ci`, followed by `git diff --check`; wiki integrity is included in that command.
