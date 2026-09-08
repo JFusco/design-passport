@@ -2,10 +2,13 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 3,
-    "edges": 3,
+    "nodes": 12,
+    "edges": 54,
     "byType": {
-      "index": 3
+      "index": 3,
+      "journal": 2,
+      "plan": 2,
+      "topic": 5
     }
   },
   "nodes": [
@@ -22,6 +25,30 @@
       "size": 12
     },
     {
+      "id": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "label": "Design Passport v1 implementation and hardening",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2011,
+      "degree": 11,
+      "x": 0.5,
+      "y": 0.866025,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-08-release-governance-and-team-docs.md",
+      "label": "Release governance and team-documentation consistency",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 1989,
+      "degree": 5,
+      "x": 0,
+      "y": 1,
+      "size": 8
+    },
+    {
       "id": "wiki/MECHANICS.md",
       "label": "Wiki mechanics",
       "type": "index",
@@ -29,30 +56,226 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
+      "x": 0.866025,
+      "y": 0.5,
+      "size": 12
+    },
+    {
+      "id": "wiki/plans/2026-09-08-design-passport-release-governance-6f6b19e922.md",
+      "label": "Design Passport release governance",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 993,
+      "degree": 4,
       "x": -0.5,
       "y": 0.866025,
-      "size": 12
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "label": "Figma AI Ready Plugin",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 12391,
+      "degree": 7,
+      "x": -0.866025,
+      "y": 0.5,
+      "size": 8
     },
     {
       "id": "wiki/plans/INDEX.md",
       "label": "Plan ledger",
       "type": "index",
       "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 38,
+          "url": "https://github.com/jfusco/design-passport/issues/38"
+        }
+      ],
+      "bytes": 15314,
+      "degree": 4,
+      "x": -1,
+      "y": 0,
+      "size": 12
+    },
+    {
+      "id": "wiki/topics/design-passport-architecture.md",
+      "label": "Design Passport architecture",
+      "type": "topic",
+      "aliases": [],
       "githubRefs": [],
-      "bytes": 314,
-      "degree": 2,
+      "bytes": 2750,
+      "degree": 19,
+      "x": -0.866025,
+      "y": -0.5,
+      "size": 8
+    },
+    {
+      "id": "wiki/topics/design-readiness-standard.md",
+      "label": "Design readiness standard",
+      "type": "topic",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2209,
+      "degree": 13,
       "x": -0.5,
       "y": -0.866025,
-      "size": 12
+      "size": 8
+    },
+    {
+      "id": "wiki/topics/figma-runtime-qa.md",
+      "label": "Figma runtime and release QA",
+      "type": "topic",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 3163,
+      "degree": 14,
+      "x": 0,
+      "y": -1,
+      "size": 8
+    },
+    {
+      "id": "wiki/topics/mutation-certification-safety.md",
+      "label": "Mutation and certification safety",
+      "type": "topic",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2143,
+      "degree": 13,
+      "x": 0.5,
+      "y": -0.866025,
+      "size": 8
+    },
+    {
+      "id": "wiki/topics/whole-file-design-knowledge.md",
+      "label": "Whole-file design knowledge",
+      "type": "topic",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2217,
+      "degree": 14,
+      "x": 0.866025,
+      "y": -0.5,
+      "size": 8
     }
   ],
   "edges": [
+    {
+      "id": "159be79659e8aff6",
+      "source": "wiki/journal/2026-09-08-release-governance-and-team-docs.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "163dda0dfc703b1e",
+      "source": "wiki/plans/2026-09-08-design-passport-release-governance-6f6b19e922.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "16e08e3bd93759b8",
+      "source": "wiki/topics/whole-file-design-knowledge.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "25bcf1bc1b341da7",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "26a821850bdc3415",
+      "source": "wiki/topics/figma-runtime-qa.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "272ef91f8e484468",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "2b45856d757efeaf",
+      "source": "wiki/plans/2026-09-08-design-passport-release-governance-6f6b19e922.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "2b58ef0fc2738327",
+      "source": "wiki/journal/2026-09-08-release-governance-and-team-docs.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "2dd31b33da8ac48b",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
     {
       "id": "355b085344694472",
       "source": "wiki/INDEX.md",
       "target": "wiki/MECHANICS.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "35a64b0fe7d02bfd",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "42b4fa228072bd51",
+      "source": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "4652ec7de18c0e70",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "4fde3160fb5884f6",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "51283f8bbff88d07",
+      "source": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "5c4257a596390565",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "6054eb89bc06ebe2",
@@ -62,9 +285,261 @@
       "relation": "link"
     },
     {
+      "id": "641b6572d27eafef",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "7688e3da699b11a9",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "7896a62ef023a35e",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "79bb1f304dd846fb",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "8ecd8097478bd20f",
+      "source": "wiki/topics/mutation-certification-safety.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "902706bcddecffc4",
+      "source": "wiki/topics/mutation-certification-safety.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "917a4a69e671a34a",
+      "source": "wiki/journal/2026-09-08-release-governance-and-team-docs.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "924f340d1be4d8bd",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "93a8a782d23eb316",
+      "source": "wiki/topics/whole-file-design-knowledge.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "956d05ecdf6af755",
+      "source": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "97ce6df7e90c0d5f",
+      "source": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "9a1c6ccdbc228fdc",
+      "source": "wiki/topics/whole-file-design-knowledge.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "a18601fe1cea6af0",
+      "source": "wiki/topics/design-readiness-standard.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "a53086a64ef6aa7a",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "a5c2a1f245340549",
+      "source": "wiki/topics/mutation-certification-safety.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "a7cf4410c12efa38",
+      "source": "wiki/journal/2026-09-08-release-governance-and-team-docs.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "a8a389d9b6fc49df",
+      "source": "wiki/topics/whole-file-design-knowledge.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "af9d34d6275d64fb",
+      "source": "wiki/topics/figma-runtime-qa.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "b16b9b26ef4c5234",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "b538f4392fd0b512",
+      "source": "wiki/topics/design-readiness-standard.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "b56ec3bf44536886",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "bcde06bc16744a7f",
+      "source": "wiki/journal/2026-09-08-release-governance-and-team-docs.md",
+      "target": "wiki/plans/2026-09-08-design-passport-release-governance-6f6b19e922.md",
+      "type": "plan",
+      "relation": "plan"
+    },
+    {
+      "id": "be8f94e3811c9ef7",
+      "source": "wiki/topics/design-readiness-standard.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "c1c97b58b2e77483",
+      "source": "wiki/topics/design-readiness-standard.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "c4f463ba63916bbc",
+      "source": "wiki/topics/design-readiness-standard.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "c9c9d5f2b3d0aa13",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "cd7bc69f52271b81",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "d12dece06a937db7",
+      "source": "wiki/journal/2026-09-08-design-passport-v1.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "d63994ba2b1c80ed",
+      "source": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "e4bf47d5a78944c4",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-08-design-passport-release-governance-6f6b19e922.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "e56d58329e2a8982",
       "source": "wiki/MECHANICS.md",
       "target": "wiki/plans/INDEX.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "e6ffc210f7fe11a3",
+      "source": "wiki/topics/mutation-certification-safety.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "eb8648093e9ce5c9",
+      "source": "wiki/topics/whole-file-design-knowledge.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "f60dd861e053e651",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "f82e946ab269ad60",
+      "source": "wiki/topics/figma-runtime-qa.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "fd37b7c5b67ebcce",
+      "source": "wiki/topics/mutation-certification-safety.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "fe4d1e456b15fec8",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "link",
       "relation": "link"
     }

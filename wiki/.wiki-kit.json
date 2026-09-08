@@ -1,6 +1,9 @@
 {
   "version": 2,
   "files": {
+    ".github/workflows/wiki-check.yml": "a8461baee5f5aecd9a1fe6cfaf8224b04b59a0cc94f13c80eb71e668d76de7d8",
+    ".github/workflows/wiki-issue-sync.yml": "307ccf4f977a25f0cf2b7e2b399f8bc92af38f9c544a55fd4b5840f8a06112c3",
+    ".github/workflows/wiki-sync.yml": "b3b4c0048d04b938b1f640977b6179ad4f253b46077a4e44c1d989d46b489d9c",
     "scripts/wiki/apply-plan-audit.cjs": "f4f34911d47e0c2b60d66d4a24c66445a968ca327ffeaa4364d0e8fad09b5024",
     "scripts/wiki/archive-plan.cjs": "fd1e5e4c896998c4586f972e8c4ebc9243c6ba185439083495382092b132f5a2",
     "scripts/wiki/audit-plan-candidates.cjs": "d62c847163a8006e5e4df998435f5332785df92844889d79fb285b7a1f6a9b3b",

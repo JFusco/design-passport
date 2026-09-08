@@ -15,6 +15,7 @@ import { applyChangePlan, createSemanticTokenAndBind, setCertification } from ".
 import { buildKnowledgeSummary } from "./knowledge-summary";
 import { parseUiMessage } from "./message-validation";
 import type { PluginToUiMessage, UiToPluginMessage } from "./messages";
+import { pluginMessageForError, ScanCancelledError } from "./scan-errors";
 import { CommandGate, KnowledgeSessionState, MutationChangeGuard } from "./session-state";
 
 figma.skipInvisibleInstanceChildren = true;
@@ -147,7 +148,7 @@ async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> 
       graphProfileHash = hashValue(profile);
       const accepted = knowledgeState.completeBuild(token, graph.complete);
       if (!accepted) {
-        if (graph.cancelled) throw new Error("Scan cancelled before whole-file knowledge was complete");
+        if (graph.cancelled) throw new ScanCancelledError();
         throw new Error("The design changed while whole-file knowledge was being built; run the audit again");
       }
     } catch (error) {
@@ -296,8 +297,11 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       const result = importCodeConnectJson(message.raw, current);
       graph = replaceCodeConnectEvidence(current, result.evidence, profile);
       graphProfileHash = hashValue(profile);
-      post({ type: "code-connect-result", accepted: result.evidence.length, rejected: result.rejected });
       await analyzeCurrentGraph(activeScope, report?.target.rootIds);
+      // Keep the import outcome as the final user-facing message. analyzeCurrentGraph
+      // posts a fresh report first, which would otherwise replace this confirmation
+      // with the generic "Audit complete" notice.
+      post({ type: "code-connect-result", accepted: result.evidence.length, rejected: result.rejected });
     } else if (message.type === "waive" || message.type === "clear-waiver") {
       const current = assertCurrentReport("managing waivers");
       if (!current.report.findings.some((finding) => finding.id === message.findingId)) throw new Error("The finding is stale; rescan before managing its waiver");
@@ -381,7 +385,7 @@ figma.ui.onmessage = async (rawMessage: unknown) => {
     release = commandGate.enter(message.type);
     await handleMessage(message);
   } catch (error) {
-    post({ type: "error", message: errorMessage(error) });
+    post(pluginMessageForError(error));
   } finally {
     release?.();
   }

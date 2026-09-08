@@ -19,19 +19,39 @@ export interface CodeConnectImportResult {
   rejected: Array<{ index: number; reason: string }>;
 }
 
-function parseFigmaNodeUrl(value: string): { fileKey?: string; nodeId?: string } {
-  let url: URL;
+function decodeUrlPart(value: string): string | undefined {
   try {
-    url = new URL(value);
+    return decodeURIComponent(value.replace(/\+/g, " "));
   } catch {
-    return {};
+    return undefined;
   }
-  if (url.protocol !== "https:" || !/(^|\.)figma\.com$/i.test(url.hostname)) return {};
-  const segments = url.pathname.split("/").filter(Boolean);
+}
+
+function firstQueryValue(query: string, expectedKey: string): string | undefined {
+  for (const entry of query.split("&")) {
+    const separator = entry.indexOf("=");
+    const rawKey = separator < 0 ? entry : entry.slice(0, separator);
+    if (decodeUrlPart(rawKey) !== expectedKey) continue;
+    return decodeUrlPart(separator < 0 ? "" : entry.slice(separator + 1));
+  }
+  return undefined;
+}
+
+function parseFigmaNodeUrl(value: string): { fileKey?: string; nodeId?: string } {
+  // The Figma plugin main-thread sandbox does not consistently expose the URL
+  // constructor. Parse this deliberately narrow contract without browser globals.
+  const match = /^https:\/\/([^/?#]+)(\/[^?#]*)?(?:\?([^#]*))?(?:#.*)?$/i.exec(value);
+  if (!match) return {};
+  const hostname = match[1];
+  if (!hostname || !/(^|\.)figma\.com$/i.test(hostname)) return {};
+
+  const decodedSegments = (match[2] ?? "").split("/").filter(Boolean).map(decodeUrlPart);
+  if (decodedSegments.some((segment) => segment === undefined)) return {};
+  const segments = decodedSegments as string[];
   const kindIndex = segments.findIndex((segment) => ["design", "file", "proto"].includes(segment));
   if (kindIndex < 0 || !segments[kindIndex + 1]) return {};
   const fileKey = segments[kindIndex + 2] === "branch" ? segments[kindIndex + 3] : segments[kindIndex + 1];
-  const rawNodeId = url.searchParams.get("node-id") ?? undefined;
+  const rawNodeId = firstQueryValue(match[3] ?? "", "node-id");
   const nodeId = rawNodeId?.replace(/^([0-9]+)-([0-9]+)$/, "$1:$2");
   return { ...(fileKey ? { fileKey } : {}), ...(nodeId ? { nodeId } : {}) };
 }

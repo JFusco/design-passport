@@ -18,3 +18,8 @@ export interface TokenWizardState {
   nodeIds: string[];
   rawValue: JsonValue;
 }
+
+export interface WaiverDraft {
+  findingId: string;
+  reason: string;
+}

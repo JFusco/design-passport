@@ -64,4 +64,5 @@ export type PluginToUiMessage =
   | { type: "certified"; count: number }
   | { type: "code-connect-result"; accepted: number; rejected: Array<{ index: number; reason: string }> }
   | { type: "export-result"; format: "json" | "markdown"; filename: string; content: string }
+  | { type: "scan-cancelled" }
   | { type: "error"; message: string };

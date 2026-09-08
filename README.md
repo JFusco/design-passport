@@ -73,6 +73,31 @@ pnpm catalog:check
 pnpm schemas:check
 ```
 
+## Commit, push, and pull-request workflow
+
+The repository uses the same guarded Git lifecycle as `@verndale/ui-design-library`:
+
+- `.husky/pre-commit` runs the advisory context-wiki lifecycle without hiding an earlier blocking hook failure.
+- `.husky/prepare-commit-msg` can prepare a message through `@verndale/ai-commit`.
+- `.husky/commit-msg` enforces the shared commit-message policy.
+- `.husky/pre-push` runs `pnpm verify:push`, which is the complete catalog, schema, wiki, TypeScript, unit-test, and production-build gate.
+- `.github/workflows/pr.yml` creates or updates a branch pull request through `@verndale/ai-pr`.
+
+The setup commands have already been applied to the repository. A fresh checkout only needs the normal dependency install, which activates Husky through the `prepare` script:
+
+```bash
+pnpm install --frozen-lockfile
+```
+
+Use the governed helpers when you want an assisted commit or pull request:
+
+```bash
+pnpm commit
+pnpm pr:create
+```
+
+Copy `.env.example` to `.env` only for local credentials or optional model settings. `.env` is ignored and must never be committed. The pull-request workflow expects the repository secret `PR_BOT_TOKEN`; optional AI-generated PR summaries additionally use the variables and secret documented in `.env.example`.
+
 ## File profile
 
 First run asks the designer to confirm:
