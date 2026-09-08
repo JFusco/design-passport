@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verndale.com/schemas/figma-ai-ready/change-plan.schema.json",
+  "title": "ChangePlan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "findingIds", "risk", "operations", "expectedPostconditions", "rollbackBoundary"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "findingIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "risk": { "type": "string", "enum": ["low", "guarded", "structural"] },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["kind", "nodeId"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["rename-node", "confirm-pattern", "set-annotation", "normalize-export-name", "bind-variable", "apply-inferred-auto-layout", "reconnect-instance", "convert-to-component", "group-variants", "set-certification"] },
+          "nodeId": { "type": "string", "minLength": 1 },
+          "value": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/jsonValue" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "expectedPostconditions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "rollbackBoundary": { "type": "string", "enum": ["risk-group", "operation"] }
+  }
+}

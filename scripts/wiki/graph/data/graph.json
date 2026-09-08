@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "wikiRoot": "wiki",
+  "counts": {
+    "nodes": 3,
+    "edges": 3,
+    "byType": {
+      "index": 3
+    }
+  },
+  "nodes": [
+    {
+      "id": "wiki/INDEX.md",
+      "label": "Context wiki",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 1361,
+      "degree": 2,
+      "x": 1,
+      "y": 0,
+      "size": 12
+    },
+    {
+      "id": "wiki/MECHANICS.md",
+      "label": "Wiki mechanics",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2907,
+      "degree": 2,
+      "x": -0.5,
+      "y": 0.866025,
+      "size": 12
+    },
+    {
+      "id": "wiki/plans/INDEX.md",
+      "label": "Plan ledger",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 314,
+      "degree": 2,
+      "x": -0.5,
+      "y": -0.866025,
+      "size": 12
+    }
+  ],
+  "edges": [
+    {
+      "id": "355b085344694472",
+      "source": "wiki/INDEX.md",
+      "target": "wiki/MECHANICS.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "6054eb89bc06ebe2",
+      "source": "wiki/INDEX.md",
+      "target": "wiki/plans/INDEX.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "e56d58329e2a8982",
+      "source": "wiki/MECHANICS.md",
+      "target": "wiki/plans/INDEX.md",
+      "type": "link",
+      "relation": "link"
+    }
+  ]
+}

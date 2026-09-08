@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verndale.com/schemas/figma-ai-ready/readiness-report.schema.json",
+  "title": "ReadinessReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "rulesetVersion", "catalogVersion", "catalogDigest", "profileHash", "target", "axes", "frames", "grade", "ready", "blockers", "findings", "appliedChanges", "generatedAt", "snapshotHash"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "rulesetVersion": { "type": "string", "minLength": 1 },
+    "catalogVersion": { "type": "string", "minLength": 1 },
+    "catalogDigest": { "type": "string", "pattern": "^sha256:" },
+    "profileHash": { "type": "string", "minLength": 1 },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "rootIds", "knowledgeSnapshotHash", "knowledgeComplete"],
+      "properties": {
+        "scope": { "type": "string", "enum": ["selection", "page", "file"] },
+        "rootIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "knowledgeSnapshotHash": { "type": "string", "minLength": 1 },
+        "knowledgeComplete": { "type": "boolean" }
+      }
+    },
+    "axes": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "$ref": "#/$defs/axisScore" } },
+    "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/frameResult" } },
+    "grade": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/grade" },
+    "ready": { "type": "boolean" },
+    "blockers": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "findings": { "type": "array", "items": { "$ref": "https://verndale.com/schemas/figma-ai-ready/finding.schema.json" } },
+    "appliedChanges": { "type": "array", "items": { "$ref": "https://verndale.com/schemas/figma-ai-ready/change-plan.schema.json" } },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "snapshotHash": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "axisScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["axis", "score", "passedWeight", "applicableWeight", "multiplier", "statusCounts"],
+      "properties": {
+        "axis": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/axis" },
+        "score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "passedWeight": { "type": "number", "minimum": 0 },
+        "applicableWeight": { "type": "number", "minimum": 0 },
+        "multiplier": { "type": "integer", "enum": [1, 2] },
+        "statusCounts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pass", "fail", "needs-review", "waived", "not-applicable"],
+          "properties": {
+            "pass": { "type": "integer", "minimum": 0 },
+            "fail": { "type": "integer", "minimum": 0 },
+            "needs-review": { "type": "integer", "minimum": 0 },
+            "waived": { "type": "integer", "minimum": 0 },
+            "not-applicable": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "frameResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootId", "rootName", "grade", "ready", "blockerIds", "axisScores"],
+      "properties": {
+        "rootId": { "type": "string", "minLength": 1 },
+        "rootName": { "type": "string", "minLength": 1 },
+        "grade": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/grade" },
+        "ready": { "type": "boolean" },
+        "blockerIds": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "axisScores": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "$ref": "#/$defs/axisScore" } }
+      }
+    }
+  }
+}

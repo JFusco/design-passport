@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verndale.com/schemas/figma-ai-ready/readiness-profile.schema.json",
+  "title": "ReadinessProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profileId", "artifactKind", "pageRoles", "breakpoints", "tokenSourceCollectionKeys", "namingPolicy"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "profileId": { "const": "verndale-web-v1" },
+    "artifactKind": { "type": "string", "enum": ["product", "library"] },
+    "pageRoles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["foundations", "components", "screens"],
+      "properties": {
+        "foundations": { "$ref": "#/$defs/pageRole" },
+        "components": { "$ref": "#/$defs/pageRole" },
+        "screens": { "$ref": "#/$defs/pageRole" }
+      }
+    },
+    "breakpoints": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "width"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "width": { "type": "number", "exclusiveMinimum": 0 },
+          "variableModeName": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "tokenSourceCollectionKeys": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "namingPolicy": { "const": "code-aligned-strict" }
+  },
+  "$defs": {
+    "pageRole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pageIds", "externalLibraryKeys"],
+      "properties": {
+        "pageIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "externalLibraryKeys": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    }
+  }
+}

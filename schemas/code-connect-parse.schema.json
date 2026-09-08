@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verndale.com/schemas/figma-ai-ready/code-connect-parse.schema.json",
+  "title": "Code Connect parse output",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["docs"],
+  "properties": {
+    "docs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["figmaNode", "source", "template", "language", "label"],
+        "properties": {
+          "figmaNode": { "type": "string", "minLength": 1, "maxLength": 2048 },
+          "component": { "type": "string", "maxLength": 500 },
+          "variant": { "type": "object" },
+          "source": { "type": "string", "maxLength": 2048 },
+          "sourceLocation": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "line": { "type": "integer", "minimum": 1 }
+            }
+          },
+          "template": { "type": "string", "maxLength": 1000000 },
+          "templateData": {},
+          "language": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "label": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      }
+    }
+  }
+}

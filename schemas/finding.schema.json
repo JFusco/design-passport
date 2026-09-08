@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verndale.com/schemas/figma-ai-ready/finding.schema.json",
+  "title": "Finding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "ruleId", "axis", "severity", "rootId", "nodeId", "nodePath", "status", "title", "message", "evidence", "sourceRefs", "fixability", "confidence"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "ruleId": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "axis": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/axis" },
+    "severity": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/severity" },
+    "rootId": { "type": "string", "minLength": 1 },
+    "nodeId": { "type": "string", "minLength": 1 },
+    "nodePath": { "type": "string", "minLength": 1 },
+    "status": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/findingStatus" },
+    "title": { "type": "string", "minLength": 1 },
+    "message": { "type": "string", "minLength": 1 },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "measured"],
+      "properties": {
+        "summary": { "type": "string", "minLength": 1 },
+        "measured": { "type": "object", "additionalProperties": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/jsonValue" } },
+        "inference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["statement", "confidence"],
+          "properties": {
+            "statement": { "type": "string", "minLength": 1 },
+            "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    },
+    "sourceRefs": { "type": "array", "items": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/sourceRef" } },
+    "patternResolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "normalizedInput", "kind", "requiresConfirmation", "catalogVersion"],
+      "properties": {
+        "input": { "type": "string" },
+        "normalizedInput": { "type": "string" },
+        "kind": { "type": "string", "enum": ["canonical", "alias", "contextual", "novel", "none"] },
+        "canonicalName": { "type": "string" },
+        "qualifier": { "type": "string" },
+        "candidates": { "type": "array", "items": { "type": "string" } },
+        "requiresConfirmation": { "type": "boolean" },
+        "catalogVersion": { "type": "string", "minLength": 1 }
+      }
+    },
+    "fixability": { "type": "string", "enum": ["automatic", "guarded", "manual"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "hardBlocker": { "type": "boolean" },
+    "scoreImpact": { "type": "boolean" },
+    "suggestedValue": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/jsonValue" },
+    "waiver": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/waiver" }
+  }
+}

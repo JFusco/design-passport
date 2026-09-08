@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json",
+  "$defs": {
+    "axis": {
+      "type": "string",
+      "enum": [
+        "token-foundation",
+        "token-application",
+        "layer-naming",
+        "structure-auto-layout",
+        "component-hygiene",
+        "responsive-completeness",
+        "accessibility",
+        "pipeline-readiness"
+      ]
+    },
+    "findingStatus": {
+      "type": "string",
+      "enum": ["pass", "fail", "needs-review", "waived", "not-applicable"]
+    },
+    "severity": {
+      "type": "integer",
+      "enum": [1, 2, 4]
+    },
+    "jsonValue": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } },
+        { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }
+      ]
+    },
+    "sourceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "label"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["figma", "wcag", "ui-design-brain", "medium", "plugin"] },
+        "label": { "type": "string", "minLength": 1 },
+        "url": { "type": "string" }
+      }
+    },
+    "waiver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason", "createdAt", "createdBy"],
+      "properties": {
+        "reason": { "type": "string", "minLength": 1 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string", "minLength": 1 },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "grade": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "letter"],
+      "properties": {
+        "score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "letter": { "type": "string", "enum": ["A", "B", "C", "D", "F"] },
+        "uncappedScore": { "type": "number", "minimum": 0, "maximum": 100 },
+        "capReason": { "type": "string" }
+      }
+    }
+  }
+}
