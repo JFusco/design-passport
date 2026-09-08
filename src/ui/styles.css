@@ -334,10 +334,10 @@ dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .checklist ul { margin: 3px 0 0; padding-left: 17px; display: grid; gap: 4px; line-height: 1.35; }
 .finding-actions, .candidate-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .candidate-actions > span { width: 100%; color: var(--muted-ink); font-size: 10px; }
-.token-wizard { padding: 12px; display: grid; gap: 10px; color: var(--ink); background: var(--guided-surface); border: 1px solid var(--guided-border); border-left: 3px solid var(--brand); border-radius: 10px; }
-.token-wizard label, fieldset > label { display: grid; gap: 4px; color: var(--muted-ink); font-size: 10px; }
-.token-wizard select, .token-wizard input { min-height: 38px; padding-left: 11px; }
-.token-wizard > div { display: flex; gap: 6px; }
+.token-wizard, .waiver-editor { padding: 12px; display: grid; gap: 10px; color: var(--ink); background: var(--guided-surface); border: 1px solid var(--guided-border); border-left: 3px solid var(--brand); border-radius: 10px; }
+.token-wizard label, .waiver-editor label, fieldset > label { display: grid; gap: 4px; color: var(--muted-ink); font-size: 10px; }
+.token-wizard select, .token-wizard input, .waiver-editor input { min-height: 38px; padding-left: 11px; }
+.token-wizard > div, .waiver-editor > div { display: flex; gap: 6px; }
 
 .plan-card { padding: 13px; }
 .fix-all-card { padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: color-mix(in srgb, var(--brand) 12%, var(--card)); border: 1px solid color-mix(in srgb, var(--brand) 55%, var(--border)); border-radius: 12px; }

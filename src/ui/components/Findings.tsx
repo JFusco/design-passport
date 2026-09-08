@@ -4,7 +4,8 @@ import type { Axis, BindableField, Finding, JsonValue } from "../../core/contrac
 import type { VariableCollectionOption } from "../../figma/adapter";
 import { statusClass } from "../operations/presentation";
 import { defaultTokenCollectionId } from "../operations/token-wizard";
-import type { TokenWizardState } from "../types";
+import { isWaiverReasonValid } from "../operations/waivers";
+import type { TokenWizardState, WaiverDraft } from "../types";
 
 export interface FindingsProps {
   findings: Finding[];
@@ -13,13 +14,15 @@ export interface FindingsProps {
   expanded: string | undefined;
   collections: VariableCollectionOption[];
   tokenWizard: TokenWizardState | undefined;
+  waiverDraft: WaiverDraft | undefined;
   disabled: boolean;
   canMutateDocument: boolean;
   onTogglePassing: (value: boolean) => void;
   onAxisFilter: (value: Axis | "all") => void;
   onExpand: (id: string) => void;
   onNavigate: (nodeId: string) => void;
-  onWaive: (finding: Finding) => void;
+  onWaiverDraft: (value?: WaiverDraft) => void;
+  onWaive: () => void;
   onClearWaiver: (findingId: string) => void;
   onConfirmPattern: (findingId: string, canonicalName: string) => void;
   onTokenWizard: (value?: TokenWizardState) => void;
@@ -56,8 +59,15 @@ export function Findings(props: FindingsProps) {
                 {checklist.length > 0 && <div className="checklist"><strong>UI Design Brain checklist (advisory)</strong><ul>{checklist.map((item) => <li key={item}>{item}</li>)}</ul></div>}
                 {finding.ruleId === "token.application.repeated-literal" && <TokenWizard disabled={props.disabled || !props.canMutateDocument} finding={finding} collections={props.collections} state={props.tokenWizard} onChange={props.onTokenWizard} onCreate={props.onCreateToken} />}
                 <div className="finding-actions">
-                  {finding.status === "waived" ? <button className="button subtle" disabled={props.disabled} onClick={() => props.onClearWaiver(finding.id)}>Remove waiver</button> : finding.status !== "pass" && finding.status !== "not-applicable" ? <button className="button subtle" disabled={props.disabled} onClick={() => props.onWaive(finding)}>Waive with deduction</button> : null}
+                  {finding.status === "waived" ? <button className="button subtle" disabled={props.disabled} onClick={() => props.onClearWaiver(finding.id)}>Remove waiver</button> : finding.status !== "pass" && finding.status !== "not-applicable" && props.waiverDraft?.findingId !== finding.id ? <button className="button subtle" disabled={props.disabled} onClick={() => props.onWaiverDraft({ findingId: finding.id, reason: "" })}>Waive with deduction</button> : null}
                 </div>
+                {props.waiverDraft?.findingId === finding.id && (
+                  <div className="waiver-editor">
+                    <label>Waiver reason<input autoFocus value={props.waiverDraft.reason} placeholder="Explain why this exception is accepted" onChange={(event) => props.onWaiverDraft({ ...props.waiverDraft!, reason: event.target.value })} /></label>
+                    <small>The finding remains a score deduction and the reason is stored locally.</small>
+                    <div><button className="button primary" disabled={props.disabled || !isWaiverReasonValid(props.waiverDraft.reason)} onClick={props.onWaive}>Apply waiver</button><button className="button subtle" onClick={() => props.onWaiverDraft(undefined)}>Cancel</button></div>
+                  </div>
+                )}
               </div>
             )}
           </article>

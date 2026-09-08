@@ -14,13 +14,14 @@
     "catalog:check": "node scripts/sync-catalog.mjs --check",
     "schemas:generate": "node scripts/generate-schema-validators.mjs",
     "schemas:check": "node scripts/generate-schema-validators.mjs --check",
+    "wiki:check": "node scripts/wiki/check.cjs",
     "build:ui": "vite build",
     "build:plugin": "esbuild src/plugin/main.ts --bundle --outfile=dist/code.js --format=iife --target=es2020 --platform=browser --log-level=warning",
     "build": "pnpm catalog:sync && pnpm schemas:generate && pnpm build:ui && pnpm build:plugin",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "verify": "pnpm catalog:check && pnpm schemas:check && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm catalog:check && pnpm schemas:check && pnpm wiki:check && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
     "ajv": "8.17.1",

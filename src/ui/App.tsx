@@ -17,8 +17,9 @@ import { Findings } from "./components/Findings";
 import { Overview } from "./components/Overview";
 import { ProfileEditor } from "./components/ProfileEditor";
 import { findingsForReview } from "./operations/findings";
+import { codeConnectImportFeedback } from "./operations/notices";
 import { cloneProfile } from "./operations/presentation";
-import type { BootstrapEnvelope, Tab, TokenWizardState } from "./types";
+import type { BootstrapEnvelope, Tab, TokenWizardState, WaiverDraft } from "./types";
 
 function send(message: UiToPluginMessage): void {
   parent.postMessage({ pluginMessage: message }, "*");
@@ -53,6 +54,7 @@ export function App() {
   const [undoAcknowledged, setUndoAcknowledged] = useState(false);
   const [codeConnectRaw, setCodeConnectRaw] = useState("");
   const [tokenWizard, setTokenWizard] = useState<TokenWizardState>();
+  const [waiverDraft, setWaiverDraft] = useState<WaiverDraft>();
 
   useEffect(() => {
     let initialized = false;
@@ -103,13 +105,25 @@ export function App() {
       } else if (message.type === "certified") {
         setNotice(`Certified ${message.count} source frame${message.count === 1 ? "" : "s"}.`);
       } else if (message.type === "code-connect-result") {
-        setNotice(`Accepted ${message.accepted} Code Connect entries; rejected ${message.rejected.length}.`);
+        const feedback = codeConnectImportFeedback(message.accepted, message.rejected);
+        if (feedback.tone === "error") {
+          setError(feedback.message);
+          setNotice(undefined);
+        } else {
+          setNotice(feedback.message);
+          setError(undefined);
+        }
         setCodeConnectRaw("");
       } else if (message.type === "export-result") {
         download(message.filename, message.content, message.format === "json" ? "application/json" : "text/markdown");
+      } else if (message.type === "scan-cancelled") {
+        setError(undefined);
+        setProgress(undefined);
+        setNotice("Audit cancelled. No document changes were applied.");
       } else if (message.type === "error") {
         setError(message.message);
         setProgress(undefined);
+        setNotice(undefined);
       }
     };
     window.addEventListener("message", handler);
@@ -199,15 +213,18 @@ export function App() {
           expanded={expanded}
           collections={collections.filter((collection) => !collection.remote && profile.tokenSourceCollectionKeys.includes(collection.key))}
           tokenWizard={tokenWizard}
+          waiverDraft={waiverDraft}
           disabled={stale}
           canMutateDocument={bootstrap.data.canMutateDocument}
           onTogglePassing={setShowPassing}
           onAxisFilter={setAxisFilter}
           onExpand={(id) => setExpanded(expanded === id ? undefined : id)}
           onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
-          onWaive={(finding) => {
-            const reason = window.prompt("Why is this finding waived? The deduction remains in the score.");
-            if (reason?.trim()) send({ type: "waive", findingId: finding.id, reason: reason.trim() });
+          onWaiverDraft={setWaiverDraft}
+          onWaive={() => {
+            if (!waiverDraft?.reason.trim()) return;
+            send({ type: "waive", findingId: waiverDraft.findingId, reason: waiverDraft.reason.trim() });
+            setWaiverDraft(undefined);
           }}
           onClearWaiver={(findingId) => send({ type: "clear-waiver", findingId })}
           onConfirmPattern={(findingId, canonicalName) => send({ type: "confirm-pattern", findingId, canonicalName })}
