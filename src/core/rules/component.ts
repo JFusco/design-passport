@@ -1,6 +1,21 @@
 import type { DesignKnowledgeGraph, Finding, NodeSnapshot } from "../contracts";
 import { createFinding } from "./finding";
 
+function hasDocumentation(node: NodeSnapshot): boolean {
+  return (node.component?.descriptionLength ?? 0) > 0
+    || (node.component?.documentationLinkCount ?? 0) > 0;
+}
+
+function inheritsComponentSetDocumentation(node: NodeSnapshot, nodesById: ReadonlyMap<string, NodeSnapshot>): boolean {
+  if (node.component?.kind !== "component" || !node.parentId) return false;
+  const parent = nodesById.get(node.parentId);
+  return parent?.component?.kind === "component-set" && hasDocumentation(parent);
+}
+
+function isDocumentedComponent(node: NodeSnapshot, nodesById: ReadonlyMap<string, NodeSnapshot>): boolean {
+  return hasDocumentation(node) || inheritsComponentSetDocumentation(node, nodesById);
+}
+
 export function evaluateComponentRules(
   graph: DesignKnowledgeGraph,
   root: NodeSnapshot,
@@ -23,10 +38,8 @@ export function evaluateComponentRules(
     { instanceCount: instances.length, detachedCount: detached.length },
   ));
   const components = nodes.filter((node) => node.component);
-  const undocumented = components.filter((node) => (
-    (node.component?.descriptionLength ?? 0) === 0
-    && (node.component?.documentationLinkCount ?? 0) === 0
-  ));
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const undocumented = components.filter((node) => !isDocumentedComponent(node, nodesById));
   output.push(createFinding(
     "component.documentation",
     "component-hygiene",
