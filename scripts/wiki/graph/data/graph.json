@@ -2,12 +2,12 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 16,
-    "edges": 67,
+    "nodes": 18,
+    "edges": 72,
     "byType": {
       "index": 3,
-      "journal": 5,
-      "plan": 3,
+      "journal": 6,
+      "plan": 4,
       "topic": 5
     }
   },
@@ -32,8 +32,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.707107,
-      "y": 0.707107,
+      "x": 0.766044,
+      "y": 0.642788,
       "size": 8
     },
     {
@@ -44,8 +44,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.382683,
-      "y": 0.92388,
+      "x": 0.5,
+      "y": 0.866025,
       "size": 8
     },
     {
@@ -54,10 +54,10 @@
       "type": "journal",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2345,
+      "bytes": 9332,
       "degree": 5,
-      "x": 0,
-      "y": 1,
+      "x": 0.173648,
+      "y": 0.984808,
       "size": 8
     },
     {
@@ -81,8 +81,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": -0.382683,
-      "y": 0.92388,
+      "x": -0.173648,
+      "y": 0.984808,
       "size": 8
     },
     {
@@ -93,8 +93,27 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": -0.707107,
-      "y": 0.707107,
+      "x": -0.5,
+      "y": 0.866025,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-09-variant-level-readiness-visibility.md",
+      "label": "Variant-level readiness visibility",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 7,
+          "url": "https://github.com/jfusco/design-passport/issues/7"
+        }
+      ],
+      "bytes": 2579,
+      "degree": 3,
+      "x": -0.766044,
+      "y": 0.642788,
       "size": 8
     },
     {
@@ -105,8 +124,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.92388,
-      "y": 0.382683,
+      "x": 0.939693,
+      "y": 0.34202,
       "size": 12
     },
     {
@@ -117,8 +136,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.92388,
-      "y": 0.382683,
+      "x": -0.939693,
+      "y": 0.34202,
       "size": 8
     },
     {
@@ -141,8 +160,20 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.92388,
-      "y": -0.382683,
+      "x": -0.939693,
+      "y": -0.34202,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-09-variant-level-readiness-visibility-479be6bc3d.md",
+      "label": "Variant-level readiness visibility",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 978,
+      "degree": 3,
+      "x": -0.766044,
+      "y": -0.642788,
       "size": 8
     },
     {
@@ -158,10 +189,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/38"
         }
       ],
-      "bytes": 15698,
-      "degree": 5,
-      "x": -0.707107,
-      "y": -0.707107,
+      "bytes": 16043,
+      "degree": 6,
+      "x": -0.5,
+      "y": -0.866025,
       "size": 12
     },
     {
@@ -172,8 +203,8 @@
       "githubRefs": [],
       "bytes": 3050,
       "degree": 22,
-      "x": -0.382683,
-      "y": -0.92388,
+      "x": -0.173648,
+      "y": -0.984808,
       "size": 8
     },
     {
@@ -182,10 +213,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2918,
-      "degree": 14,
-      "x": 0,
-      "y": -1,
+      "bytes": 5546,
+      "degree": 16,
+      "x": 0.173648,
+      "y": -0.984808,
       "size": 8
     },
     {
@@ -196,8 +227,8 @@
       "githubRefs": [],
       "bytes": 5380,
       "degree": 18,
-      "x": 0.382683,
-      "y": -0.92388,
+      "x": 0.5,
+      "y": -0.866025,
       "size": 8
     },
     {
@@ -206,10 +237,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2143,
-      "degree": 14,
-      "x": 0.707107,
-      "y": -0.707107,
+      "bytes": 4368,
+      "degree": 15,
+      "x": 0.766044,
+      "y": -0.642788,
       "size": 8
     },
     {
@@ -220,8 +251,8 @@
       "githubRefs": [],
       "bytes": 2217,
       "degree": 15,
-      "x": 0.92388,
-      "y": -0.382683,
+      "x": 0.939693,
+      "y": -0.34202,
       "size": 8
     }
   ],
@@ -365,6 +396,13 @@
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "5af8331571935bd7",
+      "source": "wiki/journal/2026-09-09-variant-level-readiness-visibility.md",
+      "target": "wiki/plans/2026-09-09-variant-level-readiness-visibility-479be6bc3d.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "5c4257a596390565",
@@ -542,6 +580,13 @@
       "relation": "link"
     },
     {
+      "id": "a90c870959fcf5f5",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-09-variant-level-readiness-visibility-479be6bc3d.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "af9d34d6275d64fb",
       "source": "wiki/topics/figma-runtime-qa.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
@@ -552,6 +597,13 @@
       "id": "b16b9b26ef4c5234",
       "source": "wiki/topics/design-passport-architecture.md",
       "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "b30ff12c895972d2",
+      "source": "wiki/journal/2026-09-09-variant-level-readiness-visibility.md",
+      "target": "wiki/topics/design-readiness-standard.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -605,11 +657,25 @@
       "relation": "topic"
     },
     {
+      "id": "cb16ab08a9740963",
+      "source": "wiki/plans/2026-09-09-variant-level-readiness-visibility-479be6bc3d.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "cd7bc69f52271b81",
       "source": "wiki/topics/design-passport-architecture.md",
       "target": "wiki/topics/figma-runtime-qa.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "d095ed63f61b92f1",
+      "source": "wiki/journal/2026-09-09-variant-level-readiness-visibility.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "d12dece06a937db7",

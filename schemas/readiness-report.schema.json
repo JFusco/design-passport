@@ -60,14 +60,32 @@
     "frameResult": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["rootId", "rootName", "grade", "ready", "blockerIds", "axisScores"],
+      "required": ["rootId", "rootName", "rootType", "pageId", "pageName", "grade", "ready", "blockerIds", "axisScores"],
       "properties": {
         "rootId": { "type": "string", "minLength": 1 },
         "rootName": { "type": "string", "minLength": 1 },
+        "rootType": { "type": "string", "minLength": 1 },
+        "pageId": { "type": "string", "minLength": 1 },
+        "pageName": { "type": "string", "minLength": 1 },
         "grade": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/grade" },
         "ready": { "type": "boolean" },
         "blockerIds": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-        "axisScores": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "$ref": "#/$defs/axisScore" } }
+        "axisScores": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "$ref": "#/$defs/axisScore" } },
+        "variantCoverage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["variantId", "variantName", "variantProperties", "nodeCount", "findingIds"],
+            "properties": {
+              "variantId": { "type": "string", "minLength": 1 },
+              "variantName": { "type": "string", "minLength": 1 },
+              "variantProperties": { "type": "object", "additionalProperties": { "type": "string" } },
+              "nodeCount": { "type": "integer", "minimum": 1 },
+              "findingIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+            }
+          }
+        }
       }
     }
   }

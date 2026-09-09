@@ -1,11 +1,12 @@
 import { CATALOG_VERSION, resolvePattern } from "../catalog";
 import { RULESET_VERSION } from "../constants";
-import type { DesignKnowledgeGraph, Finding, NodeSnapshot } from "../contracts";
+import type { DesignKnowledgeGraph, Finding, NodeSnapshot, ReadinessProfile } from "../contracts";
 import { createFinding } from "./finding";
 import { DEFAULT_LAYER_NAME } from "./patterns";
 
 export function evaluatePipelineRules(
   graph: DesignKnowledgeGraph,
+  profile: ReadinessProfile,
   root: NodeSnapshot,
   nodes: NodeSnapshot[],
 ): Finding[] {
@@ -110,20 +111,23 @@ export function evaluatePipelineRules(
   );
   const unconnected = [...coreComponents.values()].filter((node) => !connected.has(node.id));
   const unconnectedNode = graph.nodes[unconnected[0]?.id ?? ""] ?? root;
+  const codeConnectRequired = profile.requireCodeConnect === true;
   output.push(createFinding(
     "pipeline.code-connect",
     "pipeline-readiness",
     2,
     root,
     unconnectedNode,
-    coreComponents.size === 0 ? "not-applicable" : unconnected.length === 0 ? "pass" : "fail",
+    !codeConnectRequired || coreComponents.size === 0 ? "not-applicable" : unconnected.length === 0 ? "pass" : "fail",
     "Verified Code Connect evidence",
-    coreComponents.size === 0
+    !codeConnectRequired
+      ? "Code Connect is not required by this file profile."
+      : coreComponents.size === 0
       ? "No in-scope core components are defined or referenced in this target."
       : unconnected.length === 0
         ? "Every in-scope core component has verified Code Connect parse evidence."
         : `${unconnected.length} of ${coreComponents.size} core components lack verified Code Connect evidence; the grade is capped at B.`,
-    { coreComponentCount: coreComponents.size, unconnectedCount: unconnected.length },
+    { required: codeConnectRequired, coreComponentCount: coreComponents.size, unconnectedCount: unconnected.length },
   ));
 
   const certification = root.certification;

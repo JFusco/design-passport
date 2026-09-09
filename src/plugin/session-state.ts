@@ -88,16 +88,19 @@ function isLocalMetadataOnly(change: DocumentChangeSignal): boolean {
 export class MutationChangeGuard {
   private expectedNodeIds = new Set<string>();
   private expiresAt = 0;
+  private ignoreAllLocal = false;
 
-  arm(nodeIds: readonly string[], now = Date.now(), lifetimeMs = 5_000): void {
+  arm(nodeIds: readonly string[], now = Date.now(), lifetimeMs = 120_000, ignoreAllLocal = false): void {
     this.expectedNodeIds = new Set(nodeIds);
     this.expiresAt = now + lifetimeMs;
+    this.ignoreAllLocal = ignoreAllLocal;
   }
 
   hasUnexpectedChange(changes: readonly DocumentChangeSignal[], now = Date.now()): boolean {
     if (now > this.expiresAt) this.clear();
     return changes.some((change) => {
       if (change.origin === "REMOTE") return true;
+      if (this.ignoreAllLocal) return false;
       if (isLocalMetadataOnly(change)) return false;
       return !this.expectedNodeIds.has(change.id);
     });
@@ -106,5 +109,6 @@ export class MutationChangeGuard {
   clear(): void {
     this.expectedNodeIds.clear();
     this.expiresAt = 0;
+    this.ignoreAllLocal = false;
   }
 }

@@ -44,6 +44,22 @@ describe("plugin session safety", () => {
     expect(guard.hasUnexpectedChange([{ id: "child", origin: "LOCAL" }], 6_001)).toBe(true);
   });
 
+  it("keeps large mutation echoes guarded for a full post-mutation rescan", () => {
+    const guard = new MutationChangeGuard();
+    guard.arm(["frame"], 1_000);
+    expect(guard.hasUnexpectedChange([{ id: "frame", origin: "LOCAL" }], 120_999)).toBe(false);
+    expect(guard.hasUnexpectedChange([{ id: "frame", origin: "LOCAL" }], 121_001)).toBe(true);
+  });
+
+  it("ignores transient local clone events only when explicitly armed for structural validation", () => {
+    const guard = new MutationChangeGuard();
+    guard.arm(["frame"], 1_000, 120_000, true);
+    expect(guard.hasUnexpectedChange([{ id: "temporary-clone", origin: "LOCAL", type: "CREATE" }], 2_000)).toBe(false);
+    expect(guard.hasUnexpectedChange([{ id: "frame", origin: "REMOTE" }], 2_000)).toBe(true);
+    guard.clear();
+    expect(guard.hasUnexpectedChange([{ id: "temporary-clone", origin: "LOCAL", type: "CREATE" }], 2_000)).toBe(true);
+  });
+
   it("does not treat delayed local plugin metadata as design drift", () => {
     const guard = new MutationChangeGuard();
     guard.arm(["frame"], 1_000, 5_000);

@@ -42,7 +42,7 @@ export function operationForFinding(item: Finding): ChangeOperation | undefined 
 
 export function riskForOperation(operation: ChangeOperation): ChangePlan["risk"] {
   if (["rename-node", "confirm-pattern", "set-annotation", "normalize-export-name", "set-certification"].includes(operation.kind)) return "low";
-  if (["bind-variable", "apply-inferred-auto-layout", "reconnect-instance"].includes(operation.kind)) return "guarded";
+  if (["bind-variable", "reconnect-instance"].includes(operation.kind)) return "guarded";
   return "structural";
 }
 

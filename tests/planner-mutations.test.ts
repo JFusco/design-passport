@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildChangePlans } from "../src/core/planner";
-import { assessGeometryChange } from "../src/figma/mutations";
+import { applyAutoLayoutProperties, assessGeometryChange } from "../src/figma/mutations";
 import { syntheticFinding } from "./fixtures";
 
 describe("mutation planning and geometry safety", () => {
@@ -13,7 +13,7 @@ describe("mutation planning and geometry safety", () => {
     const first = buildChangePlans(findings);
     const second = buildChangePlans(findings);
     expect(first).toEqual(second);
-    expect(first.map((plan) => plan.risk)).toEqual(["low", "guarded"]);
+    expect(first.map((plan) => plan.risk)).toEqual(["low", "guarded", "structural"]);
     expect(first.flatMap((plan) => plan.operations.map((operation) => operation.kind))).toEqual(["rename-node", "bind-variable", "apply-inferred-auto-layout"]);
   });
 
@@ -29,5 +29,44 @@ describe("mutation planning and geometry safety", () => {
     expect(assessGeometryChange(before, overlap, { width: 100, height: 100 }, 20).introducedOverlap).toBe(true);
     const clipping = [{ x: -0.6, y: 0, width: 20, height: 20 }, before[1]!];
     expect(assessGeometryChange(before, clipping, { width: 100, height: 100 }, 0.5).introducedClipping).toBe(true);
+  });
+
+  it("preserves valid node defaults when Figma omits newer inferred layout fields", () => {
+    const node = {
+      layoutMode: "NONE",
+      primaryAxisSizingMode: "FIXED",
+      counterAxisSizingMode: "FIXED",
+      primaryAxisAlignItems: "MIN",
+      counterAxisAlignItems: "MIN",
+      paddingTop: 0,
+      paddingRight: 0,
+      paddingBottom: 0,
+      paddingLeft: 0,
+      itemSpacing: 0,
+      layoutWrap: "NO_WRAP",
+      counterAxisSpacing: 0,
+      itemReverseZIndex: false,
+      strokesIncludedInLayout: false,
+    } as unknown as FrameNode;
+    const inferred = {
+      layoutMode: "HORIZONTAL",
+      primaryAxisSizingMode: "AUTO",
+      counterAxisSizingMode: "AUTO",
+      primaryAxisAlignItems: "MIN",
+      counterAxisAlignItems: "CENTER",
+      paddingTop: 8,
+      paddingRight: 8,
+      paddingBottom: 8,
+      paddingLeft: 8,
+      itemSpacing: 4,
+    } as unknown as InferredAutoLayoutResult;
+
+    applyAutoLayoutProperties(node, inferred);
+
+    expect(node.layoutMode).toBe("HORIZONTAL");
+    expect(node.layoutWrap).toBe("NO_WRAP");
+    expect(node.counterAxisSpacing).toBe(0);
+    expect(node.itemReverseZIndex).toBe(false);
+    expect(node.strokesIncludedInLayout).toBe(false);
   });
 });

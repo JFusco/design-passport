@@ -32,9 +32,20 @@ export function reportToMarkdown(report: ReadinessReport): string {
     "",
     "## Source frames",
     "",
-    "| Frame | Grade | Ready | Blockers |",
-    "| --- | ---: | :---: | ---: |",
-    ...report.frames.map((frame) => `| ${inline(frame.rootName)} | ${frame.grade.letter} (${frame.grade.score.toFixed(1)}) | ${frame.ready ? "Yes" : "No"} | ${frame.blockerIds.length} |`),
+    "| Page | Module / component | Type | Grade | Ready | Blockers |",
+    "| --- | --- | --- | ---: | :---: | ---: |",
+    ...report.frames.map((frame) => `| ${inline(frame.pageName)} | ${inline(frame.rootName)} | ${inline(frame.rootType)} | ${frame.grade.letter} (${frame.grade.score.toFixed(1)}) | ${frame.ready ? "Yes" : "No"} | ${frame.blockerIds.length} |`),
+    "",
+    "## Component-set variant coverage",
+    "",
+    "Component-set grades are aggregate. Listed child variants and their descendants were scanned, but were not independently graded.",
+    "",
+    "| Component set | Variant | Properties | Nodes checked | Attributed findings |",
+    "| --- | --- | --- | ---: | ---: |",
+    ...report.frames.flatMap((frame) => (frame.variantCoverage ?? []).map((variant) => {
+      const properties = Object.entries(variant.variantProperties).map(([key, value]) => `${key}: ${value}`).join(" · ") || "None";
+      return `| ${inline(frame.rootName)} | ${inline(variant.variantName)} | ${inline(properties)} | ${variant.nodeCount} | ${variant.findingIds.length} |`;
+    })),
     "",
     "## Blockers",
     "",

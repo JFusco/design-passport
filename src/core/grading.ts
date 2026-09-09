@@ -72,9 +72,6 @@ export function gradeFromAxes(scores: AxisScore[], missingCodeConnect: boolean):
 export function capGradeForTokenCoverage(grade: Grade, coverage: number | undefined): Grade {
   if (coverage === undefined || !Number.isFinite(coverage) || coverage < 0 || coverage > 100) return grade;
   const uncappedScore = grade.uncappedScore ?? grade.score;
-  if (coverage < 85 && grade.score >= 80) {
-    return { score: 79.9, letter: "C", uncappedScore, capReason: "Token binding coverage below 85% caps readiness at C." };
-  }
   if (coverage < 95 && grade.score >= 90) {
     return { score: 89.9, letter: "B", uncappedScore, capReason: "Token binding coverage below 95% caps readiness at B." };
   }

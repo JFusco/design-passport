@@ -1,6 +1,6 @@
 import { AXIS_LABELS } from "../../core/constants";
 import { getPatternChecklist } from "../../core/catalog";
-import type { Axis, BindableField, Finding, JsonValue } from "../../core/contracts";
+import type { Axis, BindableField, Finding, FrameResult, JsonValue } from "../../core/contracts";
 import type { VariableCollectionOption } from "../../figma/adapter";
 import { statusClass } from "../operations/presentation";
 import { defaultTokenCollectionId } from "../operations/token-wizard";
@@ -9,8 +9,12 @@ import type { TokenWizardState, WaiverDraft } from "../types";
 
 export interface FindingsProps {
   findings: Finding[];
+  frames: FrameResult[];
   showPassing: boolean;
   axisFilter: Axis | "all";
+  pageFilter: string;
+  rootFilter: string;
+  variantFilter: string;
   expanded: string | undefined;
   collections: VariableCollectionOption[];
   tokenWizard: TokenWizardState | undefined;
@@ -19,6 +23,9 @@ export interface FindingsProps {
   canMutateDocument: boolean;
   onTogglePassing: (value: boolean) => void;
   onAxisFilter: (value: Axis | "all") => void;
+  onPageFilter: (pageId: string) => void;
+  onRootFilter: (rootId: string) => void;
+  onVariantFilter: (variantId: string) => void;
   onExpand: (id: string) => void;
   onNavigate: (nodeId: string) => void;
   onWaiverDraft: (value?: WaiverDraft) => void;
@@ -30,9 +37,27 @@ export interface FindingsProps {
 }
 
 export function Findings(props: FindingsProps) {
+  const pages = [...new Map(props.frames.map((frame) => [frame.pageId, frame.pageName])).entries()]
+    .sort((left, right) => left[1].localeCompare(right[1]));
+  const roots = props.frames
+    .filter((frame) => props.pageFilter === "all" || frame.pageId === props.pageFilter)
+    .sort((left, right) => left.rootName.localeCompare(right.rootName));
+  const variants = props.frames.find((frame) => frame.rootId === props.rootFilter)?.variantCoverage ?? [];
   return (
     <section className="panel stack">
-      <div className="filters">
+      <div className="filters finding-filters">
+        <select value={props.pageFilter} onChange={(event) => props.onPageFilter(event.target.value)} aria-label="Filter by page">
+          <option value="all">All pages</option>
+          {pages.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+        </select>
+        <select value={props.rootFilter} onChange={(event) => props.onRootFilter(event.target.value)} aria-label="Filter by module or component">
+          <option value="all">All modules</option>
+          {roots.map((frame) => <option key={frame.rootId} value={frame.rootId}>{frame.rootName} · {frame.grade.letter} {frame.grade.score.toFixed(1)}</option>)}
+        </select>
+        <select value={props.variantFilter} disabled={variants.length === 0} onChange={(event) => props.onVariantFilter(event.target.value)} aria-label="Filter by component variant">
+          <option value="all">All variants</option>
+          {variants.map((variant) => <option key={variant.variantId} value={variant.variantId}>{variant.variantName}</option>)}
+        </select>
         <select value={props.axisFilter} onChange={(event) => props.onAxisFilter(event.target.value as Axis | "all")} aria-label="Filter by axis">
           <option value="all">All axes</option>
           {Object.entries(AXIS_LABELS).map(([axis, label]) => <option key={axis} value={axis}>{label}</option>)}
