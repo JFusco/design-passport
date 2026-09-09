@@ -2,7 +2,7 @@
 topics: [mutation-certification-safety, figma-runtime-qa]
 plans: [2026-09-09-clean-up-certification-annotations-eab120d954.md]
 issue: "https://github.com/JFusco/design-passport/issues/12"
-issues: ["https://github.com/JFusco/design-passport/issues/7", "https://github.com/JFusco/design-passport/issues/12"]
+issues: ["https://github.com/JFusco/design-passport/issues/12", "https://github.com/JFusco/design-passport/issues/7", "https://github.com/jfusco/design-passport/issues/12"]
 ---
 
 # Certification annotation cleanup
