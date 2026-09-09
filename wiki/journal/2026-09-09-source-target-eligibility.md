@@ -1,6 +1,8 @@
 ---
 topics: [whole-file-design-knowledge]
 plans: [2026-09-09-source-target-eligibility-fix-a627a4fe69.md]
+issue: "https://github.com/jfusco/design-passport/issues/6"
+issues: ["https://github.com/jfusco/design-passport/issues/6"]
 ---
 
 # Source-target eligibility
