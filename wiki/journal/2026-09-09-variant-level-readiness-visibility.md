@@ -1,6 +1,8 @@
 ---
 topics: [design-readiness-standard, mutation-certification-safety]
 plans: [2026-09-09-variant-level-readiness-visibility-479be6bc3d.md]
+issue: "https://github.com/jfusco/design-passport/issues/7"
+issues: ["https://github.com/jfusco/design-passport/issues/7"]
 ---
 
 # Variant-level readiness visibility
