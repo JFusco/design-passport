@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { VariableCollectionOption } from "../src/figma/adapter";
 import { findingsForReview } from "../src/ui/operations/findings";
+import { reportBreakdown } from "../src/ui/operations/breakdown";
 import { cloneProfile, gradeClass, relativeTime, statusClass } from "../src/ui/operations/presentation";
+import { buildReadinessReport } from "../src/core/report";
 import { defaultTokenCollectionId } from "../src/ui/operations/token-wizard";
-import { profile, syntheticFinding } from "./fixtures";
+import { healthyGraph, profile, syntheticFinding } from "./fixtures";
 
 function collection(id: string, name: string): VariableCollectionOption {
   return { id, key: `${id}:key`, name, remote: false, modeNames: ["Default"], variableCount: 1 };
@@ -42,5 +44,17 @@ describe("UI operations", () => {
     expect(relativeTime("2026-09-08T11:59:50.000Z", now)).toBe("just now");
     expect(relativeTime("2026-09-08T11:30:00.000Z", now)).toBe("30m ago");
     expect(relativeTime("2026-09-08T10:00:00.000Z", now)).toBe("2h ago");
+  });
+
+  it("groups report issues by page and independently graded module", () => {
+    const p = profile();
+    const graph = healthyGraph(p);
+    const report = buildReadinessReport({ graph, profile: p, scope: "file", targetRootIds: ["root:desktop", "root:mobile"] });
+    const pages = reportBreakdown(report);
+    expect(pages).toHaveLength(1);
+    expect(pages[0]).toMatchObject({ pageId: "page:1", pageName: "Screens" });
+    expect(pages[0]?.modules.map((module) => module.rootId).sort()).toEqual(["root:desktop", "root:mobile"]);
+    expect(pages[0]?.actionableCount).toBeGreaterThan(0);
+    expect(pages[0]?.modules[0]?.weakestAxes).toHaveLength(3);
   });
 });

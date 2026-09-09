@@ -1,11 +1,18 @@
 import type { Finding, NodeSnapshot } from "../contracts";
 import { createFinding } from "./finding";
 
+const GEOMETRY_NODE_TYPES = new Set(["BOOLEAN_OPERATION", "ELLIPSE", "LINE", "POLYGON", "RECTANGLE", "STAR", "VECTOR"]);
+
+function isMeasurableLayoutContainer(node: NodeSnapshot, nodesById: ReadonlyMap<string, NodeSnapshot>): boolean {
+  if (node.childIds.length < 2 || !["FRAME", "COMPONENT"].includes(node.type)) return false;
+  const children = node.childIds.map((id) => nodesById.get(id)).filter((child): child is NodeSnapshot => Boolean(child));
+  return children.length > 0 && !children.every((child) => GEOMETRY_NODE_TYPES.has(child.type));
+}
+
 export function evaluateStructureRules(root: NodeSnapshot, nodes: NodeSnapshot[]): Finding[] {
   const output: Finding[] = [];
-  const containers = nodes.filter((node) => (
-    node.childIds.length >= 2 && ["FRAME", "COMPONENT", "COMPONENT_SET"].includes(node.type)
-  ));
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const containers = nodes.filter((node) => isMeasurableLayoutContainer(node, nodesById));
   const withoutAutoLayout = containers.filter((node) => node.layout?.mode === "NONE");
   const coverage = containers.length === 0
     ? 100

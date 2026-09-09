@@ -11,7 +11,7 @@ import { evaluateRules } from "../core/rules";
 import { hashValue, stableStringify } from "../core/stable";
 import { applyWaivers, sanitizeWaiverStore, type WaiverStore } from "../core/waivers";
 import { FigmaAdapter, type BootstrapData, type VariableCollectionOption } from "../figma/adapter";
-import { applyChangePlan, createSemanticTokenAndBind, setCertification } from "../figma/mutations";
+import { applyChangePlan, createSemanticTokenAndBind, setCertification, setVariantCoverageAnnotation } from "../figma/mutations";
 import { buildKnowledgeSummary } from "./knowledge-summary";
 import { parseUiMessage } from "./message-validation";
 import type { PluginToUiMessage, UiToPluginMessage } from "./messages";
@@ -58,9 +58,9 @@ async function saveWaivers(waivers: WaiverStore): Promise<void> {
   await figma.clientStorage.setAsync(await waiverKey(), waivers);
 }
 
-async function runDocumentMutation<T>(expectedNodeIds: readonly string[], mutation: () => Promise<T>): Promise<T> {
+async function runDocumentMutation<T>(expectedNodeIds: readonly string[], mutation: () => Promise<T>, includesTransientNodes = false): Promise<T> {
   assertDocumentMutationAllowed();
-  mutationChangeGuard.arm(documentMutationIds(expectedNodeIds));
+  mutationChangeGuard.arm(documentMutationIds(expectedNodeIds), Date.now(), 120_000, includesTransientNodes);
   suppressDirty = true;
   try {
     const result = await mutation();
@@ -151,6 +151,9 @@ async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> 
         if (graph.cancelled) throw new ScanCancelledError();
         throw new Error("The design changed while whole-file knowledge was being built; run the audit again");
       }
+      // A successful whole-file rebuild is the synchronization boundary for
+      // delayed documentchange echoes from the mutation that triggered it.
+      mutationChangeGuard.clear();
     } catch (error) {
       if (knowledgeState.buildActive) knowledgeState.abandonBuild(token);
       throw error;
@@ -241,24 +244,62 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       const selectedPlans = message.planIds.map((planId) => plans.find((candidate) => candidate.id === planId));
       if (selectedPlans.some((plan) => !plan)) throw new Error("At least one cleanup plan is stale; rescan before applying all fixes");
       const approvedPlans = selectedPlans as ChangePlan[];
-      if (approvedPlans.some((plan) => plan.risk === "structural")) throw new Error("Fix all never includes structural plans; confirm each structural change individually");
+      const structuralBatch = approvedPlans.every((plan) => plan.risk === "structural");
+      if (!structuralBatch && approvedPlans.some((plan) => plan.risk === "structural")) {
+        throw new Error("Structural plans cannot be mixed with safe or guarded cleanup");
+      }
       let appliedOperationCount = 0;
+      let failedPlanCount = 0;
+      const failedPlanMessages: string[] = [];
       try {
-        for (const plan of approvedPlans) {
-          const result = await runDocumentMutation(plan.operations.map((operation) => operation.nodeId), () => applyChangePlan(plan, { undoOnlyAcknowledged: message.undoOnlyAcknowledged }));
-          appliedChanges.push(plan);
-          appliedOperationCount += result.appliedOperationCount;
+        let sharedCheckpointCreated = false;
+        if (structuralBatch) {
+          try {
+            await figma.saveVersionHistoryAsync(`Before ${PRODUCT_NAME} structural cleanup`, `${approvedPlans.length} isolated structural plans`);
+            sharedCheckpointCreated = true;
+          } catch (error) {
+            if (!message.undoOnlyAcknowledged) throw new Error(`Version-history checkpoint failed. Structural work requires undo-only acknowledgement. ${String(error)}`);
+          }
         }
-        post({ type: "mutation-result", message: `Applied ${appliedOperationCount} safe or guarded operations in ${approvedPlans.length} undo group${approvedPlans.length === 1 ? "" : "s"}. Rescanning the complete file…` });
+        const batchNodeIds = approvedPlans.flatMap((plan) => plan.operations.map((operation) => operation.nodeId));
+        for (const plan of approvedPlans) {
+          try {
+            const result = await runDocumentMutation(batchNodeIds, () => applyChangePlan(plan, {
+              undoOnlyAcknowledged: message.undoOnlyAcknowledged,
+              structuralCheckpointSatisfied: structuralBatch && (sharedCheckpointCreated || message.undoOnlyAcknowledged),
+            }), structuralBatch);
+            appliedChanges.push(plan);
+            appliedOperationCount += result.appliedOperationCount;
+          } catch (error) {
+            if (!structuralBatch) throw error;
+            failedPlanCount += 1;
+            if (failedPlanMessages.length < 3) failedPlanMessages.push(errorMessage(error));
+          }
+        }
+        const failureSummary = failedPlanCount > 0
+          ? ` ${failedPlanCount} unsafe plan${failedPlanCount === 1 ? " was" : "s were"} rolled back${failedPlanMessages.length > 0 ? ` (${failedPlanMessages.join("; ")})` : ""}.`
+          : "";
+        post({ type: "mutation-result", message: structuralBatch
+          ? `Applied ${appliedOperationCount} validated structural operation${appliedOperationCount === 1 ? "" : "s"} in isolated undo groups.${failureSummary} Rescanning the complete file…`
+          : `Applied ${appliedOperationCount} safe or guarded operations in ${approvedPlans.length} undo group${approvedPlans.length === 1 ? "" : "s"}. Rescanning the complete file…` });
       } catch (error) {
         post({ type: "knowledge-stale" });
         throw new Error(`Fix all stopped after ${appliedOperationCount} completed operations. ${errorMessage(error)}`);
       }
       await runScan(activeScope, true);
-    } else if (message.type === "certify") {
+    } else if (message.type === "certify" || message.type === "certify-components") {
       assertDocumentMutationAllowed();
       const current = assertCurrentReport("certification");
-      if (!current.report.ready) throw new Error("Certification requires grade B or better with no blockers or unresolved critical reviews");
+      const componentCertification = message.type === "certify-components";
+      const certificationFrames = componentCertification
+        ? current.report.frames.filter((frame) => frame.rootType === "COMPONENT" || frame.rootType === "COMPONENT_SET")
+        : current.report.frames;
+      if (componentCertification) {
+        if (certificationFrames.length === 0) throw new Error("This audit does not contain component roots to certify");
+        if (certificationFrames.some((frame) => !frame.ready)) throw new Error("Every component root must be grade B or better with no blockers or unresolved critical reviews");
+      } else if (!current.report.ready) {
+        throw new Error("Certification requires grade B or better with no blockers or unresolved critical reviews");
+      }
       const summaryBase = {
         schemaVersion: 1 as const,
         grade: current.report.grade.letter,
@@ -269,18 +310,31 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         snapshotHash: current.report.snapshotHash,
         knowledgeSnapshotHash: current.graph.snapshotHash,
       };
-      mutationChangeGuard.arm(documentMutationIds(current.report.frames.map((frame) => frame.rootId)));
+      const certificationNodeIds = certificationFrames.flatMap((frame) => [
+        frame.rootId,
+        ...(componentCertification ? (frame.variantCoverage ?? []).map((variant) => variant.variantId) : []),
+      ]);
+      mutationChangeGuard.arm(documentMutationIds(certificationNodeIds));
       suppressDirty = true;
       let count = 0;
       figma.commitUndo();
       try {
-        for (const frame of current.report.frames) {
+        for (const frame of certificationFrames) {
           const node = await figma.getNodeByIdAsync(frame.rootId);
           if (!node || node.type === "DOCUMENT" || node.type === "PAGE") throw new Error(`Source frame ${frame.rootId} no longer exists`);
-          setCertification(node, { ...summaryBase, grade: frame.grade.letter, score: frame.grade.score });
+          const summary = { ...summaryBase, grade: frame.grade.letter, score: frame.grade.score };
+          const variants = componentCertification ? frame.variantCoverage ?? [] : [];
+          setCertification(node, summary, variants.length);
+          for (const variant of variants) {
+            const variantNode = await figma.getNodeByIdAsync(variant.variantId);
+            if (!variantNode || variantNode.type === "DOCUMENT" || variantNode.type === "PAGE") {
+              throw new Error(`Variant ${variant.variantId} no longer exists`);
+            }
+            setVariantCoverageAnnotation(variantNode, frame.rootName, summary);
+          }
           count += 1;
         }
-        if (count !== current.report.frames.length) throw new Error("Every source frame must be certified in the same undo group");
+        if (count !== certificationFrames.length) throw new Error(`Every ${componentCertification ? "component" : "source frame"} must be certified in the same undo group`);
         figma.commitUndo();
         await new Promise((resolve) => setTimeout(resolve, 0));
       } catch (error) {
@@ -291,7 +345,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       } finally {
         suppressDirty = false;
       }
-      post({ type: "certified", count });
+      post({ type: "certified", count, target: componentCertification ? "components" : "source frames" });
     } else if (message.type === "import-code-connect") {
       const current = await ensureKnowledge(false);
       const result = importCodeConnectJson(message.raw, current);

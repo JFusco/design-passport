@@ -38,6 +38,7 @@ export type UiToPluginMessage =
   | { type: "apply-plan"; planId: string; undoOnlyAcknowledged: boolean }
   | { type: "apply-all"; planIds: string[]; undoOnlyAcknowledged: boolean }
   | { type: "certify" }
+  | { type: "certify-components" }
   | { type: "import-code-connect"; raw: string }
   | { type: "export"; format: "json" | "markdown" }
   | { type: "waive"; findingId: string; reason: string }
@@ -61,7 +62,7 @@ export type PluginToUiMessage =
   | { type: "selection"; count: number }
   | { type: "profile-saved"; profile: ReadinessProfile }
   | { type: "mutation-result"; message: string }
-  | { type: "certified"; count: number }
+  | { type: "certified"; count: number; target: "source frames" | "components" }
   | { type: "code-connect-result"; accepted: number; rejected: Array<{ index: number; reason: string }> }
   | { type: "export-result"; format: "json" | "markdown"; filename: string; content: string }
   | { type: "scan-cancelled" }

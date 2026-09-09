@@ -36,6 +36,7 @@ export interface ReadinessProfile {
   breakpoints: Array<{ name: string; width: number; variableModeName?: string }>;
   tokenSourceCollectionKeys: string[];
   namingPolicy: "code-aligned-strict";
+  requireCodeConnect?: boolean;
 }
 
 export interface PatternResolution {
@@ -143,13 +144,25 @@ export interface Grade {
   capReason?: string;
 }
 
+export interface VariantCoverage {
+  variantId: string;
+  variantName: string;
+  variantProperties: Record<string, string>;
+  nodeCount: number;
+  findingIds: string[];
+}
+
 export interface FrameResult {
   rootId: string;
   rootName: string;
+  rootType: string;
+  pageId: string;
+  pageName: string;
   grade: Grade;
   ready: boolean;
   blockerIds: string[];
   axisScores: AxisScore[];
+  variantCoverage?: VariantCoverage[];
 }
 
 export interface ReadinessReport {

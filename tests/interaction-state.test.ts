@@ -16,6 +16,8 @@ describe("component interaction state", () => {
     ]);
     expect(hasInactiveVariantState("Variant=Primary, Disabled=True")).toBe(true);
     expect(hasInactiveVariantState("state=disabled, size=small")).toBe(true);
+    expect(hasInactiveVariantState("state=Disabled off")).toBe(true);
+    expect(hasInactiveVariantState("status=Unavailable-item")).toBe(true);
     expect(hasInactiveVariantState("isEnabled=false")).toBe(true);
     expect(hasInactiveVariantState("Disabled button guidance")).toBe(false);
     expect(hasInactiveVariantState("Disabled=False, State=Default")).toBe(false);

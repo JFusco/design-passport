@@ -40,7 +40,7 @@ export function evaluateRules(
       ...evaluateComponentRules(graph, root, nodes),
       ...evaluateResponsiveRules(graph, profile, root),
       ...evaluateAccessibilityRules(graph, root, nodes),
-      ...evaluatePipelineRules(graph, root, nodes),
+      ...evaluatePipelineRules(graph, profile, root, nodes),
     );
   }
   return findings.sort(findingOrder);

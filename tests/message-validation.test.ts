@@ -3,6 +3,11 @@ import { parseUiMessage } from "../src/plugin/message-validation";
 import { profile } from "./fixtures";
 
 describe("UI message validation", () => {
+  it("accepts source-frame and component certification requests", () => {
+    expect(parseUiMessage({ type: "certify" })).toEqual({ type: "certify" });
+    expect(parseUiMessage({ type: "certify-components" })).toEqual({ type: "certify-components" });
+  });
+
   it("accepts a bounded, distinct apply-all request", () => {
     expect(parseUiMessage({ type: "apply-all", planIds: ["low", "guarded"], undoOnlyAcknowledged: false })).toEqual({
       type: "apply-all",

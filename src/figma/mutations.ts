@@ -4,6 +4,7 @@ import {
   LEGACY_CERTIFICATION_ANNOTATION_PREFIX,
   PRODUCT_NAME,
   SHARED_PLUGIN_DATA_NAMESPACE,
+  VARIANT_COVERAGE_ANNOTATION_PREFIX,
 } from "../core/constants";
 import type { BindableField, CertificationSummary, ChangeOperation, ChangePlan, JsonValue } from "../core/contracts";
 import { assertContract } from "../core/schema";
@@ -19,6 +20,7 @@ export type { Bounds } from "./operations/geometry";
 
 export interface ApplyPlanOptions {
   undoOnlyAcknowledged: boolean;
+  structuralCheckpointSatisfied?: boolean;
 }
 
 export interface ApplyPlanResult {
@@ -45,7 +47,7 @@ function bounds(node: SceneNode): Bounds {
   return { x: node.x, y: node.y, width: node.width, height: node.height };
 }
 
-function applyAutoLayoutProperties(node: FrameNode | ComponentNode | ComponentSetNode, inferred: InferredAutoLayoutResult): void {
+export function applyAutoLayoutProperties(node: FrameNode | ComponentNode | ComponentSetNode, inferred: InferredAutoLayoutResult): void {
   if (inferred.layoutMode === "NONE" || inferred.layoutMode === "GRID") throw new Error("Only inferred horizontal or vertical Auto Layout is supported");
   node.layoutMode = inferred.layoutMode;
   node.primaryAxisSizingMode = inferred.primaryAxisSizingMode;
@@ -57,24 +59,34 @@ function applyAutoLayoutProperties(node: FrameNode | ComponentNode | ComponentSe
   node.paddingBottom = inferred.paddingBottom;
   node.paddingLeft = inferred.paddingLeft;
   node.itemSpacing = inferred.itemSpacing;
-  node.layoutWrap = inferred.layoutWrap;
-  node.counterAxisSpacing = inferred.counterAxisSpacing;
-  node.itemReverseZIndex = inferred.itemReverseZIndex;
-  node.strokesIncludedInLayout = inferred.strokesIncludedInLayout;
+  // Figma can return partial inferred-auto-layout payloads for nodes created
+  // before newer layout properties were introduced. Assigning an absent value
+  // is rejected by the Plugin API, so preserve the node's valid defaults.
+  if (inferred.layoutWrap !== undefined) node.layoutWrap = inferred.layoutWrap;
+  if (inferred.counterAxisSpacing !== undefined) node.counterAxisSpacing = inferred.counterAxisSpacing;
+  if (inferred.itemReverseZIndex !== undefined) node.itemReverseZIndex = inferred.itemReverseZIndex;
+  if (inferred.strokesIncludedInLayout !== undefined) node.strokesIncludedInLayout = inferred.strokesIncludedInLayout;
 }
 
 function isAutoLayoutNode(node: SceneNode): node is FrameNode | ComponentNode | ComponentSetNode {
   return node.type === "FRAME" || node.type === "COMPONENT" || node.type === "COMPONENT_SET";
 }
 
-async function applyInferredAutoLayout(node: SceneNode, tolerance: number): Promise<void> {
+async function validateInferredAutoLayout(node: SceneNode, tolerance: number): Promise<void> {
   if (!isAutoLayoutNode(node) || !hasChildren(node)) throw new Error("Inferred Auto Layout requires a frame or component container");
   const inferred = node.inferredAutoLayout;
   if (!inferred) throw new Error("Figma no longer provides inferred Auto Layout for this node");
-  const before = node.children.map(bounds);
+  const beforeValidation = node.children.map(bounds);
   const clone = node.clone();
   clone.name = `[temporary validation] ${node.name}`;
-  clone.visible = false;
+  // Hidden nodes do not always participate in Figma's layout engine, which can
+  // make a destructive conversion appear geometry-safe. Keep the validation
+  // clone renderable but fully transparent and off-canvas so layout is computed.
+  figma.currentPage.appendChild(clone);
+  clone.x = 1_000_000;
+  clone.y = 1_000_000;
+  clone.opacity = 0;
+  clone.locked = true;
   try {
     const cloneBefore = clone.children.map(bounds);
     const cloneOrder = clone.children.map((child) => child.id);
@@ -88,10 +100,26 @@ async function applyInferredAutoLayout(node: SceneNode, tolerance: number): Prom
   } finally {
     clone.remove();
   }
+  const beforeApply = node.children.map(bounds);
+  const validationSideEffect = assessGeometryChange(beforeValidation, beforeApply, node, tolerance);
+  if (!validationSideEffect.valid) {
+    throw new Error(`Auto Layout validation changed the source geometry for ${node.name} (${node.id}); maximum delta ${validationSideEffect.maximumDelta}px`);
+  }
+}
+
+async function applyInferredAutoLayout(node: SceneNode, tolerance: number, prevalidated = false): Promise<void> {
+  if (!isAutoLayoutNode(node) || !hasChildren(node)) throw new Error("Inferred Auto Layout requires a frame or component container");
+  if (!prevalidated) await validateInferredAutoLayout(node, tolerance);
+  const inferred = node.inferredAutoLayout;
+  if (!inferred) throw new Error("Figma no longer provides inferred Auto Layout for this node");
+  const beforeApply = node.children.map(bounds);
   applyAutoLayoutProperties(node, inferred);
   const after = node.children.map(bounds);
-  if (!assessGeometryChange(before, after, node, tolerance).valid) {
-    throw new Error("Applied Auto Layout failed its postcondition");
+  const assessment = assessGeometryChange(beforeApply, after, node, tolerance);
+  if (!assessment.valid) {
+    throw new Error(
+      `Applied Auto Layout failed its postcondition for ${node.name} (${node.id}); maximum delta ${assessment.maximumDelta}px, introduced overlap ${assessment.introducedOverlap}, introduced clipping ${assessment.introducedClipping}`,
+    );
   }
 }
 
@@ -99,7 +127,17 @@ function asBindable(node: SceneNode): SceneNode & MinimalFillsMixin & MinimalStr
   return node as SceneNode & MinimalFillsMixin & MinimalStrokesMixin;
 }
 
+async function loadTextFonts(node: SceneNode): Promise<void> {
+  if (node.type !== "TEXT") return;
+  const fonts = new Map<string, FontName>();
+  for (const segment of node.getStyledTextSegments(["fontName"])) {
+    fonts.set(`${segment.fontName.family}\u0000${segment.fontName.style}`, segment.fontName);
+  }
+  await Promise.all([...fonts.values()].map((font) => figma.loadFontAsync(font)));
+}
+
 async function bindVariable(node: SceneNode, field: BindableField, variable: Variable): Promise<void> {
+  await loadTextFonts(node);
   const bindable = asBindable(node);
   if (field === "fills" || field === "strokes") {
     if (!(field in bindable)) throw new Error(`${node.type} does not support ${field}`);
@@ -152,7 +190,14 @@ function boundVariableIdsForField(node: SceneNode, field: BindableField): Set<st
   return output;
 }
 
-async function applyOperation(operation: ChangeOperation): Promise<void> {
+async function preflightOperation(operation: ChangeOperation): Promise<void> {
+  if (operation.kind !== "apply-inferred-auto-layout") return;
+  const base = await figma.getNodeByIdAsync(operation.nodeId);
+  if (!isSceneNode(base)) throw new Error(`Node ${operation.nodeId} no longer exists`);
+  await validateInferredAutoLayout(base, operation.value.tolerance);
+}
+
+async function applyOperation(operation: ChangeOperation, prevalidatedNodeIds: ReadonlySet<string>): Promise<void> {
   const base = await figma.getNodeByIdAsync(operation.nodeId);
   if (!isSceneNode(base)) throw new Error(`Node ${operation.nodeId} no longer exists`);
   if (operation.kind === "rename-node") {
@@ -171,7 +216,7 @@ async function applyOperation(operation: ChangeOperation): Promise<void> {
     if (!variable) throw new Error("The selected variable no longer exists");
     await bindVariable(base, operation.value.field, variable);
   } else if (operation.kind === "apply-inferred-auto-layout") {
-    await applyInferredAutoLayout(base, operation.value.tolerance);
+    await applyInferredAutoLayout(base, operation.value.tolerance, prevalidatedNodeIds.has(operation.nodeId));
   } else if (operation.kind === "reconnect-instance") {
     throw new Error("Detached-instance reconnection requires an exact supported source and is not enabled in this build");
   } else if (operation.kind === "convert-to-component") {
@@ -213,8 +258,13 @@ async function verifyOperation(operation: ChangeOperation): Promise<boolean> {
 export async function applyChangePlan(plan: ChangePlan, options: ApplyPlanOptions): Promise<ApplyPlanResult> {
   assertContract("change-plan", plan);
   const structural = plan.operations.some(requiresStructuralCheckpoint);
+  const prevalidatedNodeIds = new Set<string>();
+  for (const operation of plan.operations) {
+    await preflightOperation(operation);
+    if (operation.kind === "apply-inferred-auto-layout") prevalidatedNodeIds.add(operation.nodeId);
+  }
   let checkpointCreated = false;
-  if (structural) {
+  if (structural && !options.structuralCheckpointSatisfied) {
     try {
       await figma.saveVersionHistoryAsync(`Before ${PRODUCT_NAME} cleanup`, `Cleanup plan ${plan.id}`);
       checkpointCreated = true;
@@ -226,7 +276,7 @@ export async function applyChangePlan(plan: ChangePlan, options: ApplyPlanOption
   const previousMarker = figma.root.getPluginData(TRANSACTION_MARKER_KEY);
   figma.root.setPluginData(TRANSACTION_MARKER_KEY, `${plan.id}:${Date.now()}`);
   try {
-    for (const operation of plan.operations) await applyOperation(operation);
+    for (const operation of plan.operations) await applyOperation(operation, prevalidatedNodeIds);
     for (const operation of plan.operations) {
       if (!(await verifyOperation(operation))) throw new Error(`Postcondition failed for ${operation.kind} on ${operation.nodeId}`);
     }
@@ -242,7 +292,7 @@ export async function applyChangePlan(plan: ChangePlan, options: ApplyPlanOption
   }
 }
 
-export function setCertification(node: SceneNode, summary: CertificationSummary): void {
+export function setCertification(node: SceneNode, summary: CertificationSummary, coveredVariantCount = 0): void {
   if (!["A", "B", "C", "D", "F"].includes(summary.grade) || !Number.isFinite(summary.score) || summary.score < 0 || summary.score > 100
     || !Number.isFinite(Date.parse(summary.certifiedAt)) || !summary.rulesetVersion || !summary.catalogVersion || !summary.snapshotHash || !summary.knowledgeSnapshotHash) {
     throw new Error("Certification summary is invalid");
@@ -250,12 +300,34 @@ export function setCertification(node: SceneNode, summary: CertificationSummary)
   node.setSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY, JSON.stringify(summary));
   node.setRelaunchData({ "review-certification": `Review ${summary.grade} certification from ${summary.certifiedAt}` });
   if ("annotations" in node) {
-    const annotation = `${CERTIFICATION_ANNOTATION_PREFIX} Grade ${summary.grade} (${summary.score.toFixed(1)}), ruleset ${summary.rulesetVersion}, catalog ${summary.catalogVersion}, ${summary.certifiedAt}, snapshot ${summary.snapshotHash}`;
-    node.annotations = [...preservedAnnotations(node.annotations, [
+    const coverage = coveredVariantCount > 0 ? `, covers ${coveredVariantCount} variants` : "";
+    const annotation = `${CERTIFICATION_ANNOTATION_PREFIX} Grade ${summary.grade} (${summary.score.toFixed(1)})${coverage}, ruleset ${summary.rulesetVersion}, catalog ${summary.catalogVersion}, ${summary.certifiedAt}, snapshot ${summary.snapshotHash}`;
+    const existing = preservedAnnotations(node.annotations, [
       CERTIFICATION_ANNOTATION_PREFIX,
       LEGACY_CERTIFICATION_ANNOTATION_PREFIX,
-    ]), { label: annotation }];
+    ]);
+    node.annotations = [
+      ...existing,
+      ...(existing.some((item) => annotationText(item) === "AI source frame") ? [] : [{ label: "AI source frame" }]),
+      { label: annotation },
+    ];
   }
+}
+
+export function setVariantCoverageAnnotation(
+  node: SceneNode,
+  parentName: string,
+  summary: CertificationSummary,
+): void {
+  if (node.type !== "COMPONENT" || node.parent?.type !== "COMPONENT_SET") {
+    throw new Error("Variant coverage can only be recorded on a component inside a component set");
+  }
+  if (!("annotations" in node)) return;
+  const existing = preservedAnnotations(node.annotations, [VARIANT_COVERAGE_ANNOTATION_PREFIX]);
+  node.annotations = [
+    ...existing,
+    { label: `${VARIANT_COVERAGE_ANNOTATION_PREFIX} “${parentName}” aggregate ${summary.grade} (${summary.score.toFixed(1)}); this variant is not independently graded.` },
+  ];
 }
 
 export async function createSemanticTokenAndBind(input: {

@@ -13,6 +13,7 @@ describe("rule engine and report", () => {
     expect(report.ready).toBe(true);
     expect(report.grade.letter).toMatch(/[AB]/);
     expect(report.target).toMatchObject({ knowledgeComplete: true, rootIds: ["root:desktop"] });
+    expect(report.frames[0]).toMatchObject({ pageId: "page:1", pageName: "Screens", rootType: "FRAME" });
     expect(report.axes).toHaveLength(8);
   });
 
@@ -65,6 +66,22 @@ describe("rule engine and report", () => {
     expect(report.findings.find((finding) => finding.ruleId === "pipeline.file-knowledge")).toMatchObject({ status: "fail", hardBlocker: true });
   });
 
+  it("treats 95% complete token metadata as B-ready foundation evidence", () => {
+    const p = profile();
+    const graph = healthyGraph(p);
+    const source = graph.variables[0]!;
+    graph.variables = Array.from({ length: 20 }, (_, index) => {
+      const candidate = { ...source, id: `var:${index}`, key: `var:${index}:key` };
+      if (index !== 19) return candidate;
+      const { webSyntax: _webSyntax, ...withoutWebSyntax } = candidate;
+      return withoutWebSyntax;
+    });
+    expect(evaluateRules(graph, p, ["root:desktop"]).find((finding) => finding.ruleId === "token.foundation.metadata")).toMatchObject({
+      status: "pass",
+      evidence: { measured: { metadataCoverage: 95 } },
+    });
+  });
+
   it("detects a wholly literal target as a hard blocker", () => {
     const p = profile();
     const graph = healthyGraph(p);
@@ -102,6 +119,51 @@ describe("rule engine and report", () => {
     expect(report.grade.score).toBe(Math.min(...report.frames.map((frame) => frame.grade.score)));
   });
 
+  it("records every direct component-set variant and attributes descendant findings", () => {
+    const p = profile();
+    const graph = healthyGraph(p);
+    graph.nodes["root:desktop"] = node({
+      ...graph.nodes["root:desktop"],
+      id: "root:desktop",
+      type: "COMPONENT_SET",
+      childIds: ["variant:default", "variant:disabled"],
+      component: { kind: "component-set", descriptionLength: 20, documentationLinkCount: 0, propertyDefinitions: [] },
+    });
+    graph.nodes["variant:default"] = node({
+      id: "variant:default",
+      rootId: "root:desktop",
+      parentId: "root:desktop",
+      path: "Screens / Button / state=Default",
+      name: "state=Default",
+      type: "COMPONENT",
+      childIds: ["text:1"],
+      variantProperties: { state: "Default" },
+      component: { kind: "component", descriptionLength: 0, documentationLinkCount: 0, propertyDefinitions: [] },
+    });
+    graph.nodes["variant:disabled"] = node({
+      id: "variant:disabled",
+      rootId: "root:desktop",
+      parentId: "root:desktop",
+      path: "Screens / Button / state=Disabled",
+      name: "state=Disabled",
+      type: "COMPONENT",
+      childIds: ["button:1"],
+      variantProperties: { state: "Disabled" },
+      component: { kind: "component", descriptionLength: 0, documentationLinkCount: 0, propertyDefinitions: [] },
+    });
+    graph.nodes["text:1"]!.parentId = "variant:default";
+    graph.nodes["text:1"]!.name = "Frame 42";
+    graph.nodes["button:1"]!.parentId = "variant:disabled";
+    const report = buildReadinessReport({ graph, profile: p, scope: "selection", targetRootIds: ["root:desktop"] });
+    expect(report.frames[0]?.variantCoverage).toEqual([
+      expect.objectContaining({ variantId: "variant:default", variantProperties: { state: "Default" }, nodeCount: 2 }),
+      expect.objectContaining({ variantId: "variant:disabled", variantProperties: { state: "Disabled" }, nodeCount: 2 }),
+    ]);
+    const defaultCoverage = report.frames[0]?.variantCoverage?.[0];
+    expect(defaultCoverage?.findingIds.some((id) => report.findings.find((finding) => finding.id === id)?.nodeId === "text:1")).toBe(true);
+    expect(validateContract("readiness-report", report)).toEqual({ valid: true, errors: [] });
+  });
+
   it("detects a certificate made against an older whole-file snapshot", () => {
     const p = profile();
     const graph = healthyGraph(p);
@@ -129,5 +191,91 @@ describe("rule engine and report", () => {
       confirmedPattern: { canonicalName: "Label", sourceName: "Label", catalogVersion: "1.17.0" },
     });
     expect(evaluateRules(graph, p, ["root:desktop"]).find((item) => item.ruleId === "naming.pattern-contextual")).toMatchObject({ status: "pass", patternResolution: { canonicalName: "Label", requiresConfirmation: false } });
+  });
+
+  it("accepts state as a semantic component property while rejecting numbered defaults", () => {
+    const p = profile();
+    const graph = healthyGraph(p);
+    graph.nodes["root:desktop"]!.component = {
+      kind: "component-set",
+      descriptionLength: 20,
+      documentationLinkCount: 0,
+      propertyDefinitions: [
+        { name: "state", type: "VARIANT", values: ["empty", "filled"] },
+        { name: "State 1", type: "VARIANT", values: ["empty", "filled"] },
+      ],
+    };
+    const propertyFindings = evaluateRules(graph, p, ["root:desktop"])
+      .filter((finding) => finding.ruleId === "naming.component-property");
+    expect(propertyFindings.find((finding) => finding.evidence.measured.propertyName === "state")?.status).toBe("pass");
+    expect(propertyFindings.find((finding) => finding.evidence.measured.propertyName === "State 1")?.status).toBe("fail");
+  });
+
+  it("accepts common variant property names and readable human-facing values", () => {
+    const p = profile();
+    const graph = healthyGraph(p);
+    graph.nodes["root:desktop"]!.component = {
+      kind: "component-set",
+      descriptionLength: 20,
+      documentationLinkCount: 0,
+      propertyDefinitions: [
+        { name: "variant", type: "VARIANT", values: ["Neutral", "Critical"] },
+        { name: "position", type: "VARIANT", values: ["Top start", "Bottom end"] },
+      ],
+    };
+    const findings = evaluateRules(graph, p, ["root:desktop"]);
+    expect(findings.filter((finding) => finding.ruleId === "naming.component-property").map((finding) => finding.status)).toEqual(["pass", "pass"]);
+    expect(findings.filter((finding) => finding.ruleId === "naming.component-value").map((finding) => finding.status)).toEqual(["pass", "pass"]);
+  });
+
+  it("keeps unresolved transparent-surface contrast visible without treating it as a failure", () => {
+    const p = profile();
+    const graph = healthyGraph(p);
+    const { backgroundColor: _backgroundColor, ...textWithoutBackground } = graph.nodes["text:1"]!.text!;
+    graph.nodes["text:1"]!.text = {
+      ...textWithoutBackground,
+      backgroundResolvable: false,
+    };
+    const contrast = evaluateRules(graph, p, ["root:desktop"])
+      .find((finding) => finding.ruleId === "accessibility.text-contrast");
+    expect(contrast).toMatchObject({ status: "needs-review", scoreImpact: false });
+    expect(buildReadinessReport({ graph, profile: p, scope: "selection", targetRootIds: ["root:desktop"] }).ready).toBe(true);
+  });
+
+  it("does not require Auto Layout for geometry-only icon wrappers", () => {
+    const p = profile();
+    const graph = healthyGraph(p);
+    graph.nodes["icon:wrapper"] = node({
+      id: "icon:wrapper",
+      rootId: "root:desktop",
+      pageId: "page:1",
+      parentId: "root:desktop",
+      name: "Search icon",
+      type: "FRAME",
+      childIds: ["icon:lens", "icon:handle"],
+      layout: { mode: "NONE", inferredAvailable: false },
+    });
+    graph.nodes["icon:lens"] = node({ id: "icon:lens", rootId: "root:desktop", pageId: "page:1", parentId: "icon:wrapper", name: "Search lens", type: "VECTOR" });
+    graph.nodes["icon:handle"] = node({ id: "icon:handle", rootId: "root:desktop", pageId: "page:1", parentId: "icon:wrapper", name: "Search handle", type: "VECTOR" });
+    graph.nodes["root:desktop"]!.childIds.push("icon:wrapper");
+    const finding = evaluateRules(graph, p, ["root:desktop"])
+      .find((candidate) => candidate.ruleId === "structure.auto-layout-coverage");
+    expect(finding?.status).toBe("pass");
+    expect(finding?.evidence.measured.withoutAutoLayoutCount).toBe(0);
+  });
+
+  it("treats Code Connect as opt-in profile evidence", () => {
+    const optionalProfile = profile({ requireCodeConnect: false });
+    const optionalFinding = evaluateRules(healthyGraph(optionalProfile), optionalProfile, ["root:desktop"])
+      .find((finding) => finding.ruleId === "pipeline.code-connect");
+    expect(optionalFinding).toMatchObject({ status: "not-applicable", evidence: { measured: { required: false } } });
+
+    const requiredProfile = profile({ requireCodeConnect: true });
+    const requiredGraph = healthyGraph(requiredProfile);
+    requiredGraph.nodes["button:1"]!.component = { kind: "component", descriptionLength: 20, documentationLinkCount: 0, propertyDefinitions: [] };
+    requiredGraph.componentIds = ["button:1"];
+    const requiredFinding = evaluateRules(requiredGraph, requiredProfile, ["root:desktop"])
+      .find((finding) => finding.ruleId === "pipeline.code-connect");
+    expect(requiredFinding).toMatchObject({ status: "fail", evidence: { measured: { required: true } } });
   });
 });

@@ -26,7 +26,7 @@ describe("deterministic grading", () => {
     expect(scores[0]).toMatchObject({ passedWeight: 0, applicableWeight: 2, score: 0 });
   });
 
-  it("shows progress below the 85% B and 95% A token-coverage thresholds", () => {
+  it("shows progress below the 80% B target and 95% A threshold", () => {
     const progress = axisScores([
       syntheticFinding({ id: "started", ruleId: "token.application.started", axis: "token-application", severity: 1, status: "pass" }),
       syntheticFinding({ id: "substantial", ruleId: "token.application.substantial", axis: "token-application", severity: 1, status: "fail" }),
@@ -53,9 +53,9 @@ describe("deterministic grading", () => {
     expect(a?.score).toBe(100);
   });
 
-  it("caps overall readiness when token coverage misses B or A thresholds", () => {
+  it("lets weighted scoring decide B readiness while preserving the A token cap", () => {
     const grade = { score: 96, letter: "A" as const };
-    expect(capGradeForTokenCoverage(grade, 84.9)).toMatchObject({ score: 79.9, letter: "C" });
+    expect(capGradeForTokenCoverage({ score: 84, letter: "B" }, 44)).toEqual({ score: 84, letter: "B" });
     expect(capGradeForTokenCoverage(grade, 94.9)).toMatchObject({ score: 89.9, letter: "B" });
     expect(capGradeForTokenCoverage(grade, 95)).toEqual(grade);
   });

@@ -1,6 +1,7 @@
 import { CATALOG_DIGEST, CATALOG_VERSION } from "./catalog";
 import { RULESET_VERSION } from "./constants";
-import { AXES, type ChangePlan, type DesignKnowledgeGraph, type Finding, type FrameResult, type ReadinessProfile, type ReadinessReport, type ScanScope } from "./contracts";
+import { AXES, type ChangePlan, type DesignKnowledgeGraph, type Finding, type FrameResult, type ReadinessProfile, type ReadinessReport, type ScanScope, type VariantCoverage } from "./contracts";
+import { collectDescendants } from "./operations/graph";
 import { axisScores, capGradeForTokenCoverage, gradeFromAxes, isAtLeastB, worstAxisScores } from "./grading";
 import { evaluateRules } from "./rules";
 import { assertContract } from "./schema";
@@ -25,13 +26,37 @@ function blockers(findings: Finding[]): Finding[] {
 }
 
 function unresolvedCritical(findings: Finding[]): boolean {
-  return findings.some((item) => item.status === "needs-review" && item.severity === 4);
+  return findings.some((item) => item.scoreImpact !== false && item.status === "needs-review" && item.severity === 4);
 }
 
 function tokenCoverage(findings: Finding[]): number | undefined {
   const finding = findings.find((item) => item.ruleId === "token.application.minimum");
   const coverage = finding?.evidence.measured.coverage;
   return typeof coverage === "number" ? coverage : undefined;
+}
+
+function variantCoverage(
+  graph: DesignKnowledgeGraph,
+  rootId: string,
+  findings: Finding[],
+): VariantCoverage[] {
+  const root = graph.nodes[rootId];
+  if (root?.type !== "COMPONENT_SET") return [];
+  return root.childIds.flatMap((variantId) => {
+    const variant = graph.nodes[variantId];
+    if (!variant || variant.type !== "COMPONENT" || variant.parentId !== rootId) return [];
+    const nodes = collectDescendants(graph, variantId);
+    const nodeIds = new Set(nodes.map((node) => node.id));
+    return [{
+      variantId,
+      variantName: variant.name,
+      variantProperties: variant.variantProperties ?? {},
+      nodeCount: nodes.length,
+      findingIds: findings
+        .filter((finding) => finding.rootId === rootId && nodeIds.has(finding.nodeId))
+        .map((finding) => finding.id),
+    }];
+  });
 }
 
 export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
@@ -62,13 +87,19 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
       tokenCoverage(frameFindings),
     );
     const frameBlockers = blockers(frameFindings);
+    const page = input.graph.pages.find((candidate) => candidate.id === root.pageId);
+    if (!page) throw new Error(`Target root ${rootId} references unknown page ${root.pageId}`);
     return {
       rootId,
       rootName: root.name,
+      rootType: root.type,
+      pageId: page.id,
+      pageName: page.name,
       grade,
       ready: isAtLeastB(grade) && frameBlockers.length === 0 && !unresolvedCritical(frameFindings) && knowledgeComplete,
       blockerIds: frameBlockers.map((item) => item.id),
       axisScores: scores,
+      variantCoverage: variantCoverage(input.graph, rootId, frameFindings),
     };
   });
   const worstFrame = [...frames].sort((left, right) => left.grade.score - right.grade.score || left.rootId.localeCompare(right.rootId))[0];

@@ -14,6 +14,7 @@ import { BrandMark } from "./BrandMark";
 import { Cleanup } from "./components/Cleanup";
 import { ContextPanel } from "./components/ContextPanel";
 import { Findings } from "./components/Findings";
+import { Modules } from "./components/Modules";
 import { Overview } from "./components/Overview";
 import { ProfileEditor } from "./components/ProfileEditor";
 import { findingsForReview } from "./operations/findings";
@@ -50,6 +51,8 @@ export function App() {
   const [stale, setStale] = useState(true);
   const [showPassing, setShowPassing] = useState(false);
   const [axisFilter, setAxisFilter] = useState<Axis | "all">("all");
+  const [pageFilter, setPageFilter] = useState("all");
+  const [rootFilter, setRootFilter] = useState("all");
   const [expanded, setExpanded] = useState<string>();
   const [undoAcknowledged, setUndoAcknowledged] = useState(false);
   const [codeConnectRaw, setCodeConnectRaw] = useState("");
@@ -103,7 +106,7 @@ export function App() {
       } else if (message.type === "mutation-result") {
         setNotice(message.message);
       } else if (message.type === "certified") {
-        setNotice(`Certified ${message.count} source frame${message.count === 1 ? "" : "s"}.`);
+        setNotice(`Certified ${message.count} ${message.target}.`);
       } else if (message.type === "code-connect-result") {
         const feedback = codeConnectImportFeedback(message.accepted, message.rejected);
         if (feedback.tone === "error") {
@@ -139,8 +142,13 @@ export function App() {
   }, []);
 
   const visibleFindings = useMemo(
-    () => findingsForReview(report?.findings ?? [], { showPassing, axis: axisFilter }),
-    [report, showPassing, axisFilter],
+    () => {
+      const frames = new Map((report?.frames ?? []).map((frame) => [frame.rootId, frame]));
+      return findingsForReview(report?.findings ?? [], { showPassing, axis: axisFilter })
+        .filter((finding) => pageFilter === "all" || frames.get(finding.rootId)?.pageId === pageFilter)
+        .filter((finding) => rootFilter === "all" || finding.rootId === rootFilter);
+    },
+    [report, showPassing, axisFilter, pageFilter, rootFilter],
   );
 
   const scan = (scope: ScanScope, refreshKnowledge = false) => {
@@ -176,7 +184,7 @@ export function App() {
       {notice && <div className="banner success"><span>{notice}</span><button className="icon-button" onClick={() => setNotice(undefined)} aria-label="Dismiss notice">×</button></div>}
 
       <nav className="tabs" aria-label="Plugin sections">
-        {(["overview", "findings", "cleanup", "context", "profile"] as Tab[]).map((tab) => (
+        {(["overview", "modules", "findings", "cleanup", "context", "profile"] as Tab[]).map((tab) => (
           <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>
             {tab[0]?.toUpperCase()}{tab.slice(1)}
             {tab === "findings" && report ? <span className="count">{report.findings.filter((item) => item.status !== "pass" && item.status !== "not-applicable").length}</span> : null}
@@ -202,14 +210,18 @@ export function App() {
           scanning={Boolean(progress && progress.phase !== "complete")}
           onScan={scan}
           onCertify={() => send({ type: "certify" })}
+          onCertifyComponents={() => send({ type: "certify-components" })}
           onExport={(format) => send({ type: "export", format })}
         />
       )}
       {activeTab === "findings" && (
         <Findings
           findings={visibleFindings}
+          frames={report?.frames ?? []}
           showPassing={showPassing}
           axisFilter={axisFilter}
+          pageFilter={pageFilter}
+          rootFilter={rootFilter}
           expanded={expanded}
           collections={collections.filter((collection) => !collection.remote && profile.tokenSourceCollectionKeys.includes(collection.key))}
           tokenWizard={tokenWizard}
@@ -218,6 +230,8 @@ export function App() {
           canMutateDocument={bootstrap.data.canMutateDocument}
           onTogglePassing={setShowPassing}
           onAxisFilter={setAxisFilter}
+          onPageFilter={(pageId) => { setPageFilter(pageId); setRootFilter("all"); }}
+          onRootFilter={setRootFilter}
           onExpand={(id) => setExpanded(expanded === id ? undefined : id)}
           onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
           onWaiverDraft={setWaiverDraft}
@@ -240,6 +254,18 @@ export function App() {
               rawValue: tokenWizard.rawValue,
             });
             setTokenWizard(undefined);
+          }}
+        />
+      )}
+      {activeTab === "modules" && (
+        <Modules
+          report={report}
+          onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
+          onViewFindings={(rootId) => {
+            const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
+            setPageFilter(frame?.pageId ?? "all");
+            setRootFilter(rootId);
+            setActiveTab("findings");
           }}
         />
       )}

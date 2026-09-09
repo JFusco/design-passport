@@ -154,8 +154,9 @@ export function evaluateNamingRules(
       ));
       if (property.type !== "VARIANT") continue;
       const badValues = property.values.filter((value) => (
-        value !== value.toLocaleLowerCase("en-US")
-        || /[_\s]/.test(value)
+        value !== value.trim().replace(/\s+/g, " ")
+        || /_/.test(value)
+        || !/^[A-Za-z0-9]+(?:[ -][A-Za-z0-9]+)*$/.test(value)
         || ABBREVIATED_COMPONENT_VALUE.test(value)
       ));
       output.push(createFinding(
@@ -167,7 +168,7 @@ export function evaluateNamingRules(
         badValues.length === 0 ? "pass" : "fail",
         "Component property values",
         badValues.length === 0
-          ? `Values for “${propertyName}” use lowercase full words.`
+          ? `Values for “${propertyName}” use readable full words.`
           : `Normalize nonconforming values for “${propertyName}”: ${badValues.join(", ")}.`,
         { propertyName, badValues },
         { discriminator: propertyName },

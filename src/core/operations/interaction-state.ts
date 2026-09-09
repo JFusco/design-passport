@@ -43,7 +43,7 @@ export function hasInactiveVariantState(input: VariantPropertyInput): boolean {
   if (enabled && (FALSE_VALUES.has(enabled) || INACTIVE_VALUES.has(enabled))) return true;
 
   const state = properties.get("state") ?? properties.get("status");
-  return Boolean(state && INACTIVE_VALUES.has(state));
+  return Boolean(state && (INACTIVE_VALUES.has(state) || /^(?:disabled|inactive|unavailable)(?:\b|[-_])/.test(state)));
 }
 
 export function isWithinInactiveComponent(

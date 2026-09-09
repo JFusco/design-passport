@@ -102,7 +102,12 @@ export function evaluateAccessibilityRules(
     "WCAG 2.2 AA text contrast",
     `${resolved} active text layers were measured; ${failures} failed, ${unresolved} require manual review, and ${inactiveTextNodeCount} inactive-control layers were exempt.`,
     { textNodeCount: textNodes.length, activeTextNodeCount: activeTextNodes.length, inactiveTextNodeCount, resolved, failures, unresolved },
-    { sourceRefs: [SOURCES.wcagContrast] },
+    {
+      sourceRefs: [SOURCES.wcagContrast],
+      // Unknown consumer backgrounds remain visible as review items, but are
+      // not evidence of a WCAG failure and therefore must not lower the grade.
+      scoreImpact: failures > 0 || unresolved === 0,
+    },
   ));
 
   const interactiveCandidates = nodes.filter((node) => INTERACTIVE_COMPONENT_NAME.test(node.name));

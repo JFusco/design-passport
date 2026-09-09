@@ -58,22 +58,24 @@ export function evaluateTokenRules(
 
   const fullEvidence = variables.filter((variable) => variable.evidenceLevel === "full");
   const richCount = fullEvidence.filter((variable) => variable.scopes.length > 0 && variable.modeNames.length > 0 && Boolean(variable.webSyntax)).length;
+  const metadataCoverage = fullEvidence.length === 0 ? 0 : (richCount / fullEvidence.length) * 100;
   output.push(createFinding(
     "token.foundation.metadata",
     "token-foundation",
     1,
     root,
     root,
-    variables.length === 0 ? "not-applicable" : fullEvidence.length === 0 ? "needs-review" : richCount === fullEvidence.length ? "pass" : "fail",
+    variables.length === 0 ? "not-applicable" : fullEvidence.length === 0 ? "needs-review" : metadataCoverage >= 95 ? "pass" : "fail",
     "Variable scopes, modes, and code syntax",
     variables.length === 0
       ? "Variable metadata is not applicable without an approved source."
       : fullEvidence.length === 0
         ? "The approved library exposes summary-only metadata; inspect scopes, modes, and web syntax in its source file."
-        : `${richCount} of ${fullEvidence.length} fully inspectable variables expose scopes, modes, and web code syntax.`,
+        : `${richCount} of ${fullEvidence.length} fully inspectable variables (${metadataCoverage.toFixed(1)}%) expose scopes, modes, and web code syntax; 95% is required.`,
     {
       completeMetadataCount: richCount,
       fullEvidenceCount: fullEvidence.length,
+      metadataCoverage,
       summaryEvidenceCount: variables.length - fullEvidence.length,
       variableCount: variables.length,
     },
@@ -142,10 +144,10 @@ export function evaluateTokenRules(
     4,
     root,
     root,
-    coverage.coverage >= 85 ? "pass" : "fail",
-    "Token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable code-relevant fields (${coverage.coverage.toFixed(1)}%) are variable-bound; 85% is required for grade B.`,
-    { ...coverage, threshold: 85 },
+    coverage.coverage >= 80 ? "pass" : "fail",
+    "Broad token binding coverage",
+    `${coverage.bound} of ${coverage.eligible} measurable code-relevant fields (${coverage.coverage.toFixed(1)}%) are variable-bound; 80% is the grade-B target.`,
+    { ...coverage, threshold: 80 },
   ));
   output.push(createFinding(
     "token.application.excellent",

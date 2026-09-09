@@ -213,7 +213,7 @@ function layoutSnapshot(node: SceneNode): NodeSnapshot["layout"] {
   };
 }
 
-function resolveTextBackground(node: TextNode): { color?: { r: number; g: number; b: number; a: number }; resolvable: boolean } {
+export function resolveTextBackground(node: TextNode): { color?: { r: number; g: number; b: number; a: number }; resolvable: boolean } {
   let parent = node.parent;
   while (parent && parent.type !== "PAGE" && parent.type !== "DOCUMENT") {
     if (isSceneNode(parent) && "fills" in parent) {
@@ -224,9 +224,18 @@ function resolveTextBackground(node: TextNode): { color?: { r: number; g: number
         return { color: { r: paint.color.r, g: paint.color.g, b: paint.color.b, a: (paint.opacity ?? 1) * ("opacity" in parent ? parent.opacity : 1) }, resolvable: true };
       }
     }
+    // A component-set canvas is an authoring surface, not a guaranteed runtime
+    // backdrop. Once a text node reaches a transparent component/instance
+    // boundary, anything outside that boundary belongs to the consumer.
+    if (parent.type === "COMPONENT" || parent.type === "COMPONENT_SET" || parent.type === "INSTANCE") {
+      return { resolvable: false };
+    }
     parent = parent.parent;
   }
-  return { color: { r: 1, g: 1, b: 1, a: 1 }, resolvable: true };
+  // A transparent component may be placed on any consumer surface. Treat that
+  // background as unresolved instead of inventing a white canvas and reporting
+  // a false contrast failure for dark-surface variants.
+  return { resolvable: false };
 }
 
 function textSnapshot(node: SceneNode): NodeSnapshot["text"] {
@@ -374,6 +383,10 @@ async function variableCandidates(
   cancelled: () => boolean,
   approvedCollectionKeys: ReadonlySet<string>,
 ): Promise<VariableCandidate[]> {
+  const isSemanticVariable = (name: string, collectionName: string): boolean => (
+    /^semantic(?:\s|$)/i.test(collectionName.trim())
+    || /(?:^|\/)(?:semantic|text|surface|background|border|action|button|input|content|space|radius|type)(?:\/|$)/i.test(name)
+  );
   const localCollections = new Map((await figma.variables.getLocalVariableCollectionsAsync()).map((collection) => [collection.id, collection]));
   const localVariables = await figma.variables.getLocalVariablesAsync();
   const output: VariableCandidate[] = localVariables.map((variable) => {
@@ -388,7 +401,7 @@ async function variableCandidates(
       type: variable.resolvedType,
       remote: variable.remote,
       evidenceLevel: "full",
-      semantic: /(?:^|\/)(?:semantic|text|surface|background|border|action|button|input|content|space|radius|type)(?:\/|$)/i.test(variable.name),
+      semantic: isSemanticVariable(variable.name, collection?.name ?? "Unknown local collection"),
       aliased: Object.values(variable.valuesByMode).some((value) => typeof value === "object" && value !== null && "type" in value && value.type === "VARIABLE_ALIAS"),
       scopes: [...variable.scopes],
       modeNames: collection?.modes.map((mode) => mode.name) ?? [],
@@ -419,7 +432,7 @@ async function variableCandidates(
       type: variable.resolvedType,
       remote: variable.remote,
       evidenceLevel: "full",
-      semantic: /(?:^|\/)(?:semantic|text|surface|background|border|action|button|input|content|space|radius|type)(?:\/|$)/i.test(variable.name),
+      semantic: isSemanticVariable(variable.name, collection?.name ?? "Enabled library collection"),
       aliased: Object.values(variable.valuesByMode).some((value) => typeof value === "object" && value !== null && "type" in value && value.type === "VARIABLE_ALIAS"),
       scopes: [...variable.scopes],
       modeNames: collection?.modes.map((mode) => mode.name) ?? [],
@@ -444,7 +457,7 @@ async function variableCandidates(
         type: variable.resolvedType,
         remote: true,
         evidenceLevel: "summary" as const,
-        semantic: /(?:^|\/)(?:semantic|text|surface|background|border|action|button|input|content|space|radius|type)(?:\/|$)/i.test(variable.name),
+        semantic: isSemanticVariable(variable.name, option.name),
         scopes: [],
         modeNames: option.modeNames,
       })));
