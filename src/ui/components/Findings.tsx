@@ -14,6 +14,7 @@ export interface FindingsProps {
   axisFilter: Axis | "all";
   pageFilter: string;
   rootFilter: string;
+  variantFilter: string;
   expanded: string | undefined;
   collections: VariableCollectionOption[];
   tokenWizard: TokenWizardState | undefined;
@@ -24,6 +25,7 @@ export interface FindingsProps {
   onAxisFilter: (value: Axis | "all") => void;
   onPageFilter: (pageId: string) => void;
   onRootFilter: (rootId: string) => void;
+  onVariantFilter: (variantId: string) => void;
   onExpand: (id: string) => void;
   onNavigate: (nodeId: string) => void;
   onWaiverDraft: (value?: WaiverDraft) => void;
@@ -40,6 +42,7 @@ export function Findings(props: FindingsProps) {
   const roots = props.frames
     .filter((frame) => props.pageFilter === "all" || frame.pageId === props.pageFilter)
     .sort((left, right) => left.rootName.localeCompare(right.rootName));
+  const variants = props.frames.find((frame) => frame.rootId === props.rootFilter)?.variantCoverage ?? [];
   return (
     <section className="panel stack">
       <div className="filters finding-filters">
@@ -50,6 +53,10 @@ export function Findings(props: FindingsProps) {
         <select value={props.rootFilter} onChange={(event) => props.onRootFilter(event.target.value)} aria-label="Filter by module or component">
           <option value="all">All modules</option>
           {roots.map((frame) => <option key={frame.rootId} value={frame.rootId}>{frame.rootName} · {frame.grade.letter} {frame.grade.score.toFixed(1)}</option>)}
+        </select>
+        <select value={props.variantFilter} disabled={variants.length === 0} onChange={(event) => props.onVariantFilter(event.target.value)} aria-label="Filter by component variant">
+          <option value="all">All variants</option>
+          {variants.map((variant) => <option key={variant.variantId} value={variant.variantId}>{variant.variantName}</option>)}
         </select>
         <select value={props.axisFilter} onChange={(event) => props.onAxisFilter(event.target.value as Axis | "all")} aria-label="Filter by axis">
           <option value="all">All axes</option>

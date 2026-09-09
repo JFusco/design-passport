@@ -11,6 +11,8 @@ A React 19 and Tailwind CSS 4 implementation stress test of Badge, Toast, and Da
 
 Design Passport now records direct variant coverage in every component-set frame result. Each entry includes the variant identity, structured properties, number of checked nodes, and IDs of findings attributed to that variant subtree. The Modules view and Markdown export explain that the parent grade is aggregate. Component-set certification adds the covered variant count to the parent certificate and adds a truthful coverage-only annotation to each direct variant without copying certification metadata.
 
+Selecting a variant in the Modules breakdown now opens the Findings view with page, component root, and variant filters applied. The variant filter uses the report's explicit finding IDs instead of inferring ownership from display paths.
+
 ## Rationale
 
 Repeating the parent B grade on child variants would falsely imply independent scoring. Leaving children completely unlabeled made real traversal invisible. Coverage annotations and report evidence preserve one canonical component-set grade while showing exactly which variants and states participated.

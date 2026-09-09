@@ -7,6 +7,7 @@ export function Modules(props: {
   report: ReadinessReport | undefined;
   onNavigate: (nodeId: string) => void;
   onViewFindings: (rootId: string) => void;
+  onViewVariantFindings: (rootId: string, variantId: string) => void;
 }) {
   if (!props.report) return <section className="panel"><div className="empty-state"><h2>No module results yet</h2><p>Run a page or full-file audit to see page → module → issue attribution.</p></div></section>;
   const pages = reportBreakdown(props.report);
@@ -28,7 +29,7 @@ export function Modules(props: {
                     <p>Each child and its descendants were scanned. Child variants are covered, not independently graded.</p>
                     <div className="variant-list">
                       {module.variants.map((variant) => (
-                        <button key={variant.variantId} onClick={() => props.onNavigate(variant.variantId)}>
+                        <button key={variant.variantId} onClick={() => props.onViewVariantFindings(module.rootId, variant.variantId)}>
                           <span><strong>{variant.variantName}</strong><small>{Object.entries(variant.variantProperties).map(([key, value]) => `${key}: ${value}`).join(" · ") || "No variant properties"}</small></span>
                           <span>{variant.nodeCount} nodes · {variant.actionableCount} issues</span>
                         </button>

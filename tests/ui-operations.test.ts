@@ -57,4 +57,27 @@ describe("UI operations", () => {
     expect(pages[0]?.actionableCount).toBeGreaterThan(0);
     expect(pages[0]?.modules[0]?.weakestAxes).toHaveLength(3);
   });
+
+  it("keeps variant finding ids available for exact UI filtering", () => {
+    const p = profile();
+    const graph = healthyGraph(p);
+    graph.nodes["root:desktop"]!.type = "COMPONENT_SET";
+    graph.nodes["root:desktop"]!.childIds = ["variant:1"];
+    graph.nodes["variant:1"] = {
+      ...graph.nodes["button:1"]!,
+      id: "variant:1",
+      rootId: "root:desktop",
+      parentId: "root:desktop",
+      path: "Screens / Button / state=Default",
+      name: "state=Default",
+      type: "COMPONENT",
+      childIds: ["button:1"],
+      variantProperties: { state: "Default" },
+    };
+    graph.nodes["button:1"]!.parentId = "variant:1";
+    const report = buildReadinessReport({ graph, profile: p, scope: "selection", targetRootIds: ["root:desktop"] });
+    const variant = reportBreakdown(report)[0]?.modules[0]?.variants[0];
+    expect(variant?.variantId).toBe("variant:1");
+    expect(variant?.findingIds.every((id) => report.findings.some((finding) => finding.id === id))).toBe(true);
+  });
 });

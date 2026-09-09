@@ -53,6 +53,7 @@ export function App() {
   const [axisFilter, setAxisFilter] = useState<Axis | "all">("all");
   const [pageFilter, setPageFilter] = useState("all");
   const [rootFilter, setRootFilter] = useState("all");
+  const [variantFilter, setVariantFilter] = useState("all");
   const [expanded, setExpanded] = useState<string>();
   const [undoAcknowledged, setUndoAcknowledged] = useState(false);
   const [codeConnectRaw, setCodeConnectRaw] = useState("");
@@ -146,9 +147,14 @@ export function App() {
       const frames = new Map((report?.frames ?? []).map((frame) => [frame.rootId, frame]));
       return findingsForReview(report?.findings ?? [], { showPassing, axis: axisFilter })
         .filter((finding) => pageFilter === "all" || frames.get(finding.rootId)?.pageId === pageFilter)
-        .filter((finding) => rootFilter === "all" || finding.rootId === rootFilter);
+        .filter((finding) => rootFilter === "all" || finding.rootId === rootFilter)
+        .filter((finding) => {
+          if (variantFilter === "all") return true;
+          const coverage = frames.get(finding.rootId)?.variantCoverage?.find((variant) => variant.variantId === variantFilter);
+          return coverage?.findingIds.includes(finding.id) ?? false;
+        });
     },
-    [report, showPassing, axisFilter, pageFilter, rootFilter],
+    [report, showPassing, axisFilter, pageFilter, rootFilter, variantFilter],
   );
 
   const scan = (scope: ScanScope, refreshKnowledge = false) => {
@@ -222,6 +228,7 @@ export function App() {
           axisFilter={axisFilter}
           pageFilter={pageFilter}
           rootFilter={rootFilter}
+          variantFilter={variantFilter}
           expanded={expanded}
           collections={collections.filter((collection) => !collection.remote && profile.tokenSourceCollectionKeys.includes(collection.key))}
           tokenWizard={tokenWizard}
@@ -230,8 +237,9 @@ export function App() {
           canMutateDocument={bootstrap.data.canMutateDocument}
           onTogglePassing={setShowPassing}
           onAxisFilter={setAxisFilter}
-          onPageFilter={(pageId) => { setPageFilter(pageId); setRootFilter("all"); }}
-          onRootFilter={setRootFilter}
+          onPageFilter={(pageId) => { setPageFilter(pageId); setRootFilter("all"); setVariantFilter("all"); }}
+          onRootFilter={(rootId) => { setRootFilter(rootId); setVariantFilter("all"); }}
+          onVariantFilter={setVariantFilter}
           onExpand={(id) => setExpanded(expanded === id ? undefined : id)}
           onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
           onWaiverDraft={setWaiverDraft}
@@ -265,6 +273,14 @@ export function App() {
             const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
             setPageFilter(frame?.pageId ?? "all");
             setRootFilter(rootId);
+            setVariantFilter("all");
+            setActiveTab("findings");
+          }}
+          onViewVariantFindings={(rootId, variantId) => {
+            const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
+            setPageFilter(frame?.pageId ?? "all");
+            setRootFilter(rootId);
+            setVariantFilter(variantId);
             setActiveTab("findings");
           }}
         />
