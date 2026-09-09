@@ -127,6 +127,8 @@ export function finalizeKnowledgeGraph(graph: Omit<DesignKnowledgeGraph, "respon
       component: node.component,
       instance: node.instance,
       hasAnnotations: node.hasAnnotations,
+      sourceMarked: node.sourceMarked,
+      devStatus: node.devStatus,
       devResourceCount: node.devResourceCount,
       exportSettings: node.exportSettings,
       contentSignature: node.contentSignature,

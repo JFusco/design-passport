@@ -68,6 +68,7 @@ export function sourceFrameIds(
   profile: ReadinessProfile,
 ): string[] {
   const screenPages = new Set(profile.pageRoles.screens.pageIds);
+  const foundationPages = new Set(profile.pageRoles.foundations.pageIds);
   const libraryPages = new Set([
     ...profile.pageRoles.components.pageIds,
     ...(profile.artifactKind === "library" ? profile.pageRoles.foundations.pageIds : []),
@@ -80,7 +81,21 @@ export function sourceFrameIds(
       if (!libraryPages.has(node.pageId)) return false;
       if (node.type === "COMPONENT_SET") return true;
       if (node.type === "COMPONENT") return parent?.type !== "COMPONENT_SET";
-      return topLevel && node.type === "FRAME";
+      if (!topLevel || node.type !== "FRAME") return false;
+      if (foundationPages.has(node.pageId)) return true;
+      if (node.certification) return true;
+      const parentIsPublishedScaffolding = parent?.type === "SECTION"
+        && /^Published source(?:\s*\/|$)/i.test(parent.name.trim());
+      if (parentIsPublishedScaffolding) return false;
+      if (node.sourceMarked) return true;
+      if (node.devResourceCount > 0) return true;
+      const readyForDev = node.devStatus === "READY_FOR_DEV"
+        || node.devStatus === "COMPLETED"
+        || parent?.devStatus === "READY_FOR_DEV"
+        || parent?.devStatus === "COMPLETED";
+      if (readyForDev) return true;
+      return parent?.type === "SECTION"
+        && /^(?:✅\s*)?Ready for Dev(?:\s*\/|$)/i.test(parent.name.trim());
     })
     .map((node) => node.id)
     .sort();

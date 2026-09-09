@@ -11,7 +11,7 @@ import type {
   ScanScope,
   VariableCandidate,
 } from "../core/contracts";
-import { CERTIFICATION_ANNOTATION_PREFIX, LEGACY_CERTIFICATION_ANNOTATION_PREFIX } from "../core/constants";
+import { AI_SOURCE_FRAME_ANNOTATION, CERTIFICATION_ANNOTATION_PREFIX, LEGACY_CERTIFICATION_ANNOTATION_PREFIX } from "../core/constants";
 import { finalizeKnowledgeGraph } from "../core/knowledge";
 import { populateGraphMetrics, sourceFrameIds, targetRootIds } from "../core/operations/graph";
 import { assertProfileSemantics } from "../core/profile";
@@ -320,6 +320,16 @@ function confirmedPattern(node: SceneNode): NodeSnapshot["confirmedPattern"] {
   return parsePatternConfirmation(node.getSharedPluginData("verndaleAiReady", "pattern-resolution-v1"));
 }
 
+function devStatusSnapshot(node: SceneNode): NodeSnapshot["devStatus"] {
+  try {
+    if (!("devStatus" in node)) return undefined;
+    return node.devStatus?.type;
+  } catch {
+    // Some Figma runtimes expose the field in typings but not through the active API bridge.
+    return undefined;
+  }
+}
+
 function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: string): NodeSnapshot {
   const fillData = paintSnapshots(node, "fills");
   const strokeData = paintSnapshots(node, "strokes");
@@ -335,6 +345,8 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
   const signature = structuralSignature(node);
   const certification = certificationSummary(node);
   const patternConfirmation = confirmedPattern(node);
+  const annotationTexts = "annotations" in node ? node.annotations.map(annotationText) : [];
+  const devStatus = devStatusSnapshot(node);
   return {
     id: node.id,
     rootId,
@@ -365,10 +377,12 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
     ...(variantProperties ? { variantProperties } : {}),
     ...(component ? { component } : {}),
     ...(detached ? { instance: { detached: true } } : {}),
-    hasAnnotations: "annotations" in node && node.annotations.some((annotation) => ![
+    hasAnnotations: annotationTexts.some((annotation) => ![
       CERTIFICATION_ANNOTATION_PREFIX,
       LEGACY_CERTIFICATION_ANNOTATION_PREFIX,
-    ].some((prefix) => annotationText(annotation).startsWith(prefix))),
+    ].some((prefix) => annotation.startsWith(prefix))),
+    ...(annotationTexts.includes(AI_SOURCE_FRAME_ANNOTATION) ? { sourceMarked: true } : {}),
+    ...(devStatus ? { devStatus } : {}),
     devResourceCount: 0,
     exportSettings: "exportSettings" in node ? node.exportSettings.map((setting) => ({ format: setting.format, suffix: "suffix" in setting ? setting.suffix : "" })) : [],
     ...(signature ? { structuralSignature: signature } : {}),

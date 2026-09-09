@@ -1,3 +1,4 @@
+import { AI_SOURCE_FRAME_ANNOTATION } from "../constants";
 import type { BindableField, ChangeOperation, ChangePlan, Finding } from "../contracts";
 import { stableStringify } from "../stable";
 
@@ -35,7 +36,7 @@ export function operationForFinding(item: Finding): ChangeOperation | undefined 
     return { kind: "apply-inferred-auto-layout", nodeId: item.nodeId, value: { tolerance: 0.5 } };
   }
   if (item.ruleId === "pipeline.annotation" && item.fixability === "automatic") {
-    return { kind: "set-annotation", nodeId: item.nodeId, value: { label: "AI source frame" } };
+    return { kind: "set-annotation", nodeId: item.nodeId, value: { label: AI_SOURCE_FRAME_ANNOTATION } };
   }
   return undefined;
 }

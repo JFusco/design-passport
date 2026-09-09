@@ -2,12 +2,12 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 18,
-    "edges": 72,
+    "nodes": 20,
+    "edges": 76,
     "byType": {
       "index": 3,
-      "journal": 6,
-      "plan": 4,
+      "journal": 7,
+      "plan": 5,
       "topic": 5
     }
   },
@@ -32,8 +32,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.766044,
-      "y": 0.642788,
+      "x": 0.809017,
+      "y": 0.587785,
       "size": 8
     },
     {
@@ -44,8 +44,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.5,
-      "y": 0.866025,
+      "x": 0.587785,
+      "y": 0.809017,
       "size": 8
     },
     {
@@ -56,8 +56,8 @@
       "githubRefs": [],
       "bytes": 9332,
       "degree": 5,
-      "x": 0.173648,
-      "y": 0.984808,
+      "x": 0.309017,
+      "y": 0.951057,
       "size": 8
     },
     {
@@ -81,8 +81,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": -0.173648,
-      "y": 0.984808,
+      "x": 0,
+      "y": 1,
       "size": 8
     },
     {
@@ -93,8 +93,27 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": -0.5,
-      "y": 0.866025,
+      "x": -0.309017,
+      "y": 0.951057,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-09-source-target-eligibility.md",
+      "label": "Source-target eligibility",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 6,
+          "url": "https://github.com/jfusco/design-passport/issues/6"
+        }
+      ],
+      "bytes": 1450,
+      "degree": 2,
+      "x": -0.587785,
+      "y": 0.809017,
       "size": 8
     },
     {
@@ -112,8 +131,8 @@
       ],
       "bytes": 2579,
       "degree": 3,
-      "x": -0.766044,
-      "y": 0.642788,
+      "x": -0.809017,
+      "y": 0.587785,
       "size": 8
     },
     {
@@ -124,8 +143,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.939693,
-      "y": 0.34202,
+      "x": 0.951057,
+      "y": 0.309017,
       "size": 12
     },
     {
@@ -136,8 +155,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.939693,
-      "y": 0.34202,
+      "x": -0.951057,
+      "y": 0.309017,
       "size": 8
     },
     {
@@ -160,8 +179,20 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.939693,
-      "y": -0.34202,
+      "x": -0.951057,
+      "y": -0.309017,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-09-source-target-eligibility-fix-a627a4fe69.md",
+      "label": "Source-target eligibility fix",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 1058,
+      "degree": 3,
+      "x": -0.809017,
+      "y": -0.587785,
       "size": 8
     },
     {
@@ -172,8 +203,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.766044,
-      "y": -0.642788,
+      "x": -0.587785,
+      "y": -0.809017,
       "size": 8
     },
     {
@@ -189,10 +220,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/38"
         }
       ],
-      "bytes": 16043,
-      "degree": 6,
-      "x": -0.5,
-      "y": -0.866025,
+      "bytes": 16379,
+      "degree": 7,
+      "x": -0.309017,
+      "y": -0.951057,
       "size": 12
     },
     {
@@ -203,8 +234,8 @@
       "githubRefs": [],
       "bytes": 3050,
       "degree": 22,
-      "x": -0.173648,
-      "y": -0.984808,
+      "x": 0,
+      "y": -1,
       "size": 8
     },
     {
@@ -215,8 +246,8 @@
       "githubRefs": [],
       "bytes": 5546,
       "degree": 16,
-      "x": 0.173648,
-      "y": -0.984808,
+      "x": 0.309017,
+      "y": -0.951057,
       "size": 8
     },
     {
@@ -227,8 +258,8 @@
       "githubRefs": [],
       "bytes": 5380,
       "degree": 18,
-      "x": 0.5,
-      "y": -0.866025,
+      "x": 0.587785,
+      "y": -0.809017,
       "size": 8
     },
     {
@@ -239,8 +270,8 @@
       "githubRefs": [],
       "bytes": 4368,
       "degree": 15,
-      "x": 0.766044,
-      "y": -0.642788,
+      "x": 0.809017,
+      "y": -0.587785,
       "size": 8
     },
     {
@@ -249,10 +280,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2217,
-      "degree": 15,
-      "x": 0.939693,
-      "y": -0.34202,
+      "bytes": 2953,
+      "degree": 17,
+      "x": 0.951057,
+      "y": -0.309017,
       "size": 8
     }
   ],
@@ -263,6 +294,13 @@
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "12f2e21e84a42afc",
+      "source": "wiki/journal/2026-09-09-source-target-eligibility.md",
+      "target": "wiki/plans/2026-09-09-source-target-eligibility-fix-a627a4fe69.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "15474f7784e6e3be",
@@ -394,6 +432,13 @@
       "id": "51283f8bbff88d07",
       "source": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
       "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "550696b3df58ac52",
+      "source": "wiki/journal/2026-09-09-source-target-eligibility.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -671,6 +716,13 @@
       "relation": "link"
     },
     {
+      "id": "d02eabf75a6cf87d",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-09-source-target-eligibility-fix-a627a4fe69.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "d095ed63f61b92f1",
       "source": "wiki/journal/2026-09-09-variant-level-readiness-visibility.md",
       "target": "wiki/topics/mutation-certification-safety.md",
@@ -737,6 +789,13 @@
       "id": "f60dd861e053e651",
       "source": "wiki/topics/design-passport-architecture.md",
       "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "f62b57b52894faa4",
+      "source": "wiki/plans/2026-09-09-source-target-eligibility-fix-a627a4fe69.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "topic",
       "relation": "topic"
     },
