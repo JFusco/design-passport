@@ -62,7 +62,7 @@ export type PluginToUiMessage =
   | { type: "selection"; count: number }
   | { type: "profile-saved"; profile: ReadinessProfile }
   | { type: "mutation-result"; message: string }
-  | { type: "certified"; count: number; target: "source frames" | "components" }
+  | { type: "certified"; count: number; target: "source frames" | "components"; removedVariantAnnotations: number }
   | { type: "code-connect-result"; accepted: number; rejected: Array<{ index: number; reason: string }> }
   | { type: "export-result"; format: "json" | "markdown"; filename: string; content: string }
   | { type: "scan-cancelled" }

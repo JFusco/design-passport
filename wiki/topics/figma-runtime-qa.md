@@ -44,6 +44,14 @@ No pages or content were deleted or moved, structural conversions were not auto-
 
 ## Automated verification
 
-The release suite contains 21 Vitest files and 105 tests. It covers catalog resolution, grading boundaries, schemas and hostile input, session/drift state, mutation planning and rollback constraints, token compatibility, UI operations, cancellation feedback, inline waiver validation, Code Connect feedback, URL parsing without `globalThis.URL`, and exact inactive-component state handling for both definitions and placed instances. Performance fixtures exercise 10,000- and 50,000-node graphs.
+The release suite contains 23 Vitest files and 129 tests. It covers catalog resolution, grading boundaries, schemas and hostile input, session/drift state, mutation planning and rollback constraints, token compatibility, UI operations, annotation migration and idempotency, cancellation feedback, inline waiver validation, Code Connect feedback, URL parsing without `globalThis.URL`, and exact inactive-component state handling for both definitions and placed instances. Performance fixtures exercise 10,000- and 50,000-node graphs.
 
 The release gate is `pnpm verify:ci`, followed by `git diff --check`; wiki integrity is included in that command.
+
+## Component annotation cleanup, 2026-09-09
+
+The development plugin was rebuilt and exercised across all 36 pages of `UI Design Library` (`gXT4bIDrkgva2uSzY763oG`). The fresh graph contained 4,896 nodes, 205 components, 305 instances, 275 responsive families, and 172 repeated structures. Component certification processed 32 eligible A/B roots and removed 173 legacy child coverage annotations. A new full-file context build followed by immediate re-certification removed zero more, confirming idempotency and no mutation-driven drift loop.
+
+Button Light, Button Dark, Toast, Datepicker, and In-page navigation were each selected from the live Modules breakdown. Every sampled set showed only `AI source frame` plus one concise parent certificate, with zero `[Design Passport] Covered by` notes. The report retained structured variant counts and descendant finding totals, and selecting a Button Dark variant opened Findings with the exact page, module, and variant filters.
+
+Toast initially exposed a token-evidence false negative: its published `Code/Tailwind/shadow-overlay` effect style was being scored as unbound effect subfields. The adapter now treats a published effect style as machine-readable evidence for its visible effect fields while continuing to require explicit variable bindings for unstyled effects. Toast then re-audited at B/89.9 with token application at 88.9, without changing the design.

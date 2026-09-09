@@ -41,6 +41,8 @@ Mark intended source frames with a normal source annotation. Add named export as
 - Verify `Fix all` never performs unconfirmed component conversion or contextual alias resolution.
 - Rescan after cleanup; verify report export uses only post-cleanup evidence.
 - Certify a B/A source; inspect annotation, relaunch action, and compact shared data.
+- Certify a component set with legacy child coverage notes; confirm one concise root note remains, unrelated child annotations survive, the removal count is reported, and a repeat certification removes zero.
+- Expand the certified set in Modules; confirm direct variants and descendant finding counts remain visible and selecting a variant applies the exact Findings filter.
 - Change code-relevant geometry/style/content; rebuild context and confirm the old certificate is stale.
 
 ## Performance checks

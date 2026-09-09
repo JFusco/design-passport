@@ -11,7 +11,7 @@ import { evaluateRules } from "../core/rules";
 import { hashValue, stableStringify } from "../core/stable";
 import { applyWaivers, sanitizeWaiverStore, type WaiverStore } from "../core/waivers";
 import { FigmaAdapter, type BootstrapData, type VariableCollectionOption } from "../figma/adapter";
-import { applyChangePlan, createSemanticTokenAndBind, setCertification, setVariantCoverageAnnotation } from "../figma/mutations";
+import { applyChangePlan, clearVariantCoverageAnnotations, createSemanticTokenAndBind, setCertification } from "../figma/mutations";
 import { buildKnowledgeSummary } from "./knowledge-summary";
 import { parseUiMessage } from "./message-validation";
 import type { PluginToUiMessage, UiToPluginMessage } from "./messages";
@@ -317,6 +317,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       mutationChangeGuard.arm(documentMutationIds(certificationNodeIds));
       suppressDirty = true;
       let count = 0;
+      let removedVariantAnnotations = 0;
       figma.commitUndo();
       try {
         for (const frame of certificationFrames) {
@@ -330,7 +331,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
             if (!variantNode || variantNode.type === "DOCUMENT" || variantNode.type === "PAGE") {
               throw new Error(`Variant ${variant.variantId} no longer exists`);
             }
-            setVariantCoverageAnnotation(variantNode, frame.rootName, summary);
+            removedVariantAnnotations += clearVariantCoverageAnnotations(variantNode);
           }
           count += 1;
         }
@@ -345,7 +346,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       } finally {
         suppressDirty = false;
       }
-      post({ type: "certified", count, target: componentCertification ? "components" : "source frames" });
+      post({ type: "certified", count, target: componentCertification ? "components" : "source frames", removedVariantAnnotations });
     } else if (message.type === "import-code-connect") {
       const current = await ensureKnowledge(false);
       const result = importCodeConnectJson(message.raw, current);

@@ -25,8 +25,8 @@ export function Modules(props: {
                 <div className="module-diagnostics"><small>Weakest: {module.weakestAxes.map((axis) => AXIS_LABELS[axis]).join(" · ")}</small>{module.topRules.length > 0 && <small>Top rules: {module.topRules.map((rule) => `${rule.ruleId} (${rule.count})`).join(" · ")}</small>}</div>
                 {module.variants.length > 0 && (
                   <details className="variant-breakdown">
-                    <summary>{module.variants.length} variants covered by this aggregate grade</summary>
-                    <p>Each child and its descendants were scanned. Child variants are covered, not independently graded.</p>
+                    <summary>{module.variants.length} variants included in this component-set grade</summary>
+                    <p>Every listed variant and its descendants were scanned. The score belongs to the component set as a whole; select a variant to filter its findings.</p>
                     <div className="variant-list">
                       {module.variants.map((variant) => (
                         <button key={variant.variantId} onClick={() => props.onViewVariantFindings(module.rootId, variant.variantId)}>

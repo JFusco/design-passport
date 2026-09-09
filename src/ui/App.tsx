@@ -19,7 +19,7 @@ import { Overview } from "./components/Overview";
 import { ProfileEditor } from "./components/ProfileEditor";
 import { findingsForReview } from "./operations/findings";
 import { codeConnectImportFeedback } from "./operations/notices";
-import { cloneProfile } from "./operations/presentation";
+import { certificationNotice, cloneProfile } from "./operations/presentation";
 import type { BootstrapEnvelope, Tab, TokenWizardState, WaiverDraft } from "./types";
 
 function send(message: UiToPluginMessage): void {
@@ -107,7 +107,7 @@ export function App() {
       } else if (message.type === "mutation-result") {
         setNotice(message.message);
       } else if (message.type === "certified") {
-        setNotice(`Certified ${message.count} ${message.target}.`);
+        setNotice(certificationNotice(message.count, message.target, message.removedVariantAnnotations));
       } else if (message.type === "code-connect-result") {
         const feedback = codeConnectImportFeedback(message.accepted, message.rejected);
         if (feedback.tone === "error") {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveTextBackground } from "../src/figma/adapter";
+import { effectSnapshots, resolveTextBackground } from "../src/figma/adapter";
 
 const white = { type: "SOLID", visible: true, opacity: 1, color: { r: 1, g: 1, b: 1 } };
 const black = { type: "SOLID", visible: true, opacity: 1, color: { r: 0, g: 0, b: 0 } };
@@ -21,6 +21,49 @@ describe("text background resolution", () => {
     expect(resolveTextBackground(text)).toEqual({
       color: { r: 0, g: 0, b: 0, a: 1 },
       resolvable: true,
+    });
+  });
+});
+
+describe("effect token evidence", () => {
+  it("counts every visible effect subfield controlled by a published style as bound", () => {
+    const node = {
+      effectStyleId: "S:shadow-overlay",
+      effects: [{
+        type: "DROP_SHADOW",
+        visible: true,
+        color: { r: 0, g: 0, b: 0, a: 0.25 },
+        radius: 16,
+        spread: 2,
+        offset: { x: 0, y: 4 },
+      }],
+    } as unknown as SceneNode;
+
+    expect(effectSnapshots(node)[0]).toMatchObject({
+      eligibleFieldCount: 5,
+      boundFieldCount: 5,
+      boundVariableIds: [],
+    });
+  });
+
+  it("still counts only explicit variable bindings for unstyled effects", () => {
+    const node = {
+      effectStyleId: "",
+      effects: [{
+        type: "DROP_SHADOW",
+        visible: true,
+        color: { r: 0, g: 0, b: 0, a: 0.25 },
+        radius: 16,
+        spread: 2,
+        offset: { x: 0, y: 4 },
+        boundVariables: { radius: { type: "VARIABLE_ALIAS", id: "radius:1" } },
+      }],
+    } as unknown as SceneNode;
+
+    expect(effectSnapshots(node)[0]).toMatchObject({
+      eligibleFieldCount: 5,
+      boundFieldCount: 1,
+      boundVariableIds: ["radius:1"],
     });
   });
 });

@@ -301,8 +301,8 @@ export function setCertification(node: SceneNode, summary: CertificationSummary,
   node.setSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY, JSON.stringify(summary));
   node.setRelaunchData({ "review-certification": `Review ${summary.grade} certification from ${summary.certifiedAt}` });
   if ("annotations" in node) {
-    const coverage = coveredVariantCount > 0 ? `, covers ${coveredVariantCount} variants` : "";
-    const annotation = `${CERTIFICATION_ANNOTATION_PREFIX} Grade ${summary.grade} (${summary.score.toFixed(1)})${coverage}, ruleset ${summary.rulesetVersion}, catalog ${summary.catalogVersion}, ${summary.certifiedAt}, snapshot ${summary.snapshotHash}`;
+    const coverage = coveredVariantCount > 0 ? ` · ${coveredVariantCount} variants scanned as one component set.` : ".";
+    const annotation = `${CERTIFICATION_ANNOTATION_PREFIX} Grade ${summary.grade} (${summary.score.toFixed(1)})${coverage}`;
     const existing = preservedAnnotations(node.annotations, [
       CERTIFICATION_ANNOTATION_PREFIX,
       LEGACY_CERTIFICATION_ANNOTATION_PREFIX,
@@ -315,20 +315,14 @@ export function setCertification(node: SceneNode, summary: CertificationSummary,
   }
 }
 
-export function setVariantCoverageAnnotation(
-  node: SceneNode,
-  parentName: string,
-  summary: CertificationSummary,
-): void {
+export function clearVariantCoverageAnnotations(node: SceneNode): number {
   if (node.type !== "COMPONENT" || node.parent?.type !== "COMPONENT_SET") {
-    throw new Error("Variant coverage can only be recorded on a component inside a component set");
+    throw new Error("Variant coverage annotations can only be cleared from a component inside a component set");
   }
-  if (!("annotations" in node)) return;
-  const existing = preservedAnnotations(node.annotations, [VARIANT_COVERAGE_ANNOTATION_PREFIX]);
-  node.annotations = [
-    ...existing,
-    { label: `${VARIANT_COVERAGE_ANNOTATION_PREFIX} “${parentName}” aggregate ${summary.grade} (${summary.score.toFixed(1)}); this variant is not independently graded.` },
-  ];
+  if (!("annotations" in node)) return 0;
+  const removedCount = node.annotations.filter((annotation) => annotationText(annotation).startsWith(VARIANT_COVERAGE_ANNOTATION_PREFIX)).length;
+  if (removedCount > 0) node.annotations = preservedAnnotations(node.annotations, [VARIANT_COVERAGE_ANNOTATION_PREFIX]);
+  return removedCount;
 }
 
 export async function createSemanticTokenAndBind(input: {

@@ -79,3 +79,5 @@ A graph is fresh only when it is complete and no older than 15 minutes. Any docu
 - no unresolved severity-4 reviews.
 
 Certificate metadata stores the graph hash, report hash, ruleset version, catalog version, and timestamp. A later scan compares existing certificates with the rebuilt graph and reports stale metadata.
+
+Component sets are certified only at the root. Their concise canvas annotation includes the aggregate grade and direct-variant count; variant coverage and descendant findings remain report data. Re-certification removes only child annotations with the exact legacy Design Passport coverage prefix, preserves unrelated annotations, and returns the deletion count to the UI. Published effect styles count as machine-readable token evidence for their visible effect fields; unstyled effects still require explicit variable bindings.
