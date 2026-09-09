@@ -1,6 +1,8 @@
 ---
 topics: [design-readiness-standard, figma-runtime-qa, mutation-certification-safety, whole-file-design-knowledge]
 plans: [2026-09-08-figma-ai-ready-plugin-b69ce15884.md]
+issue: "https://github.com/jfusco/design-passport/issues/7"
+issues: ["https://github.com/jfusco/design-passport/issues/7"]
 ---
 
 # Live page and frame readiness stress test

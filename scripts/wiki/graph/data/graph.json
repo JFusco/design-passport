@@ -53,8 +53,15 @@
       "label": "Live page and frame readiness stress test",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 9332,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 7,
+          "url": "https://github.com/jfusco/design-passport/issues/7"
+        }
+      ],
+      "bytes": 9455,
       "degree": 5,
       "x": 0.173648,
       "y": 0.984808,
@@ -110,7 +117,7 @@
           "url": "https://github.com/jfusco/design-passport/issues/7"
         }
       ],
-      "bytes": 2579,
+      "bytes": 2702,
       "degree": 3,
       "x": -0.766044,
       "y": 0.642788,
