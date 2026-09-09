@@ -2,12 +2,12 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 20,
-    "edges": 76,
+    "nodes": 22,
+    "edges": 82,
     "byType": {
       "index": 3,
-      "journal": 7,
-      "plan": 5,
+      "journal": 8,
+      "plan": 6,
       "topic": 5
     }
   },
@@ -32,8 +32,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.809017,
-      "y": 0.587785,
+      "x": 0.841254,
+      "y": 0.540641,
       "size": 8
     },
     {
@@ -44,8 +44,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.587785,
-      "y": 0.809017,
+      "x": 0.654861,
+      "y": 0.75575,
       "size": 8
     },
     {
@@ -63,8 +63,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.309017,
-      "y": 0.951057,
+      "x": 0.415415,
+      "y": 0.909632,
       "size": 8
     },
     {
@@ -88,8 +88,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0,
-      "y": 1,
+      "x": 0.142315,
+      "y": 0.989821,
       "size": 8
     },
     {
@@ -100,8 +100,33 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": -0.309017,
-      "y": 0.951057,
+      "x": -0.142315,
+      "y": 0.989821,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-09-certification-annotation-cleanup.md",
+      "label": "Certification annotation cleanup",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 7,
+          "url": "https://github.com/jfusco/design-passport/issues/7"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 12,
+          "url": "https://github.com/jfusco/design-passport/issues/12"
+        }
+      ],
+      "bytes": 2463,
+      "degree": 3,
+      "x": -0.415415,
+      "y": 0.909632,
       "size": 8
     },
     {
@@ -119,8 +144,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": -0.587785,
-      "y": 0.809017,
+      "x": -0.654861,
+      "y": 0.75575,
       "size": 8
     },
     {
@@ -138,8 +163,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": -0.809017,
-      "y": 0.587785,
+      "x": -0.841254,
+      "y": 0.540641,
       "size": 8
     },
     {
@@ -150,8 +175,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.951057,
-      "y": 0.309017,
+      "x": 0.959493,
+      "y": 0.281733,
       "size": 12
     },
     {
@@ -162,8 +187,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.951057,
-      "y": 0.309017,
+      "x": -0.959493,
+      "y": 0.281733,
       "size": 8
     },
     {
@@ -186,8 +211,27 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.951057,
-      "y": -0.309017,
+      "x": -0.959493,
+      "y": -0.281733,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-09-clean-up-certification-annotations-eab120d954.md",
+      "label": "Clean Up Certification Annotations",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 7,
+          "url": "https://github.com/jfusco/design-passport/issues/7"
+        }
+      ],
+      "bytes": 2183,
+      "degree": 4,
+      "x": -0.841254,
+      "y": -0.540641,
       "size": 8
     },
     {
@@ -198,8 +242,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.809017,
-      "y": -0.587785,
+      "x": -0.654861,
+      "y": -0.75575,
       "size": 8
     },
     {
@@ -210,8 +254,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.587785,
-      "y": -0.809017,
+      "x": -0.415415,
+      "y": -0.909632,
       "size": 8
     },
     {
@@ -227,10 +271,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/38"
         }
       ],
-      "bytes": 16379,
-      "degree": 7,
-      "x": -0.309017,
-      "y": -0.951057,
+      "bytes": 16760,
+      "degree": 8,
+      "x": -0.142315,
+      "y": -0.989821,
       "size": 12
     },
     {
@@ -241,8 +285,8 @@
       "githubRefs": [],
       "bytes": 3050,
       "degree": 22,
-      "x": 0,
-      "y": -1,
+      "x": 0.142315,
+      "y": -0.989821,
       "size": 8
     },
     {
@@ -253,8 +297,8 @@
       "githubRefs": [],
       "bytes": 5546,
       "degree": 16,
-      "x": 0.309017,
-      "y": -0.951057,
+      "x": 0.415415,
+      "y": -0.909632,
       "size": 8
     },
     {
@@ -263,10 +307,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 5380,
-      "degree": 18,
-      "x": 0.587785,
-      "y": -0.809017,
+      "bytes": 6834,
+      "degree": 20,
+      "x": 0.654861,
+      "y": -0.75575,
       "size": 8
     },
     {
@@ -275,10 +319,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 4368,
-      "degree": 15,
-      "x": 0.809017,
-      "y": -0.587785,
+      "bytes": 4773,
+      "degree": 17,
+      "x": 0.841254,
+      "y": -0.540641,
       "size": 8
     },
     {
@@ -289,8 +333,8 @@
       "githubRefs": [],
       "bytes": 2953,
       "degree": 17,
-      "x": 0.951057,
-      "y": -0.309017,
+      "x": 0.959493,
+      "y": -0.281733,
       "size": 8
     }
   ],
@@ -387,6 +431,13 @@
       "relation": "topic"
     },
     {
+      "id": "340904184518ce47",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-09-clean-up-certification-annotations-eab120d954.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "355b085344694472",
       "source": "wiki/INDEX.md",
       "target": "wiki/MECHANICS.md",
@@ -443,6 +494,13 @@
       "relation": "topic"
     },
     {
+      "id": "52d9234dfdfa4df0",
+      "source": "wiki/plans/2026-09-09-clean-up-certification-annotations-eab120d954.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "550696b3df58ac52",
       "source": "wiki/journal/2026-09-09-source-target-eligibility.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
@@ -483,6 +541,13 @@
       "target": "wiki/topics/figma-runtime-qa.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "76f31288dbbcc025",
+      "source": "wiki/plans/2026-09-09-clean-up-certification-annotations-eab120d954.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "77b15d87d7ac27ab",
@@ -539,6 +604,13 @@
       "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "914cf94b53c5e0d1",
+      "source": "wiki/journal/2026-09-09-certification-annotation-cleanup.md",
+      "target": "wiki/plans/2026-09-09-clean-up-certification-annotations-eab120d954.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "917a4a69e671a34a",
@@ -814,6 +886,13 @@
       "relation": "topic"
     },
     {
+      "id": "f99c80559a7406b6",
+      "source": "wiki/journal/2026-09-09-certification-annotation-cleanup.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "fd37b7c5b67ebcce",
       "source": "wiki/topics/mutation-certification-safety.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -826,6 +905,13 @@
       "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "fe4f75c16ad39366",
+      "source": "wiki/journal/2026-09-09-certification-annotation-cleanup.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
     }
   ]
 }

@@ -38,7 +38,7 @@ export function reportToMarkdown(report: ReadinessReport): string {
     "",
     "## Component-set variant coverage",
     "",
-    "Component-set grades are aggregate. Listed child variants and their descendants were scanned, but were not independently graded.",
+    "Every listed variant and its descendants were scanned. The score belongs to the component set as a whole; the table attributes findings without assigning separate variant scores.",
     "",
     "| Component set | Variant | Properties | Nodes checked | Attributed findings |",
     "| --- | --- | --- | ---: | ---: |",

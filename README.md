@@ -22,7 +22,7 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 - Clone-first inferred Auto Layout validation with child-order, overlap, clipping, and 0.5 px geometry postconditions.
 - Semantic token-creation wizard for values repeated at least three times.
 - Compact shared profile/certification data in the `verndaleAiReady` namespace.
-- Certificate annotations and relaunch actions on passing source frames.
+- Concise parent-only certificate annotations and relaunch actions on passing source frames and reusable components.
 - JSON Schema-validated profiles, findings, change plans, reports, and Code Connect parser input.
 - Complete JSON and escaped Markdown report exports.
 - No backend, telemetry, OAuth, URL fetching, or network access.
@@ -111,6 +111,12 @@ First run asks the designer to confirm:
 - Breakpoint names and widths (default 1440 / 768 / 375).
 
 Only this profile, compact certificate summaries, and explicit contextual-pattern confirmations are stored as shared plugin data. Full nodes, findings, text, Code Connect source paths, and imported templates are not persisted there. Text content is represented in the in-memory graph by length and a deterministic fingerprint, not raw characters.
+
+## Component-set certification
+
+A component set is scanned as one reusable source root: every direct variant and its descendants contribute evidence, but the resulting grade belongs to the set as a whole. The certified set receives one canvas note such as `[Design Passport] Grade B (88.0) · 2 variants scanned as one component set.` Direct variants do not receive Design Passport annotations.
+
+Re-certification removes legacy child notes whose text begins with the exact `[Design Passport] Covered by` prefix, preserves designer-authored annotations, and reports how many notes were removed. Variant properties, descendant finding attribution, per-variant filtering, and Markdown evidence remain available in the report. A repeat certification is idempotent and should report zero additional removals.
 
 ## Safety boundaries
 

@@ -78,6 +78,7 @@ describe("contracts and hostile input handling", () => {
     report.findings[0]!.title = "<script>|break [click](javascript:alert(1))";
     const markdown = reportToMarkdown(report);
     expect(markdown).toContain("&lt;script&gt;\\|break");
+    expect(markdown).toContain("The score belongs to the component set as a whole");
     expect(markdown).not.toContain("<script>");
     expect(markdown).not.toContain("[click](javascript:");
   });

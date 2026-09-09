@@ -95,8 +95,9 @@ function paintSnapshots(node: SceneNode, field: "fills" | "strokes"): PaintSnaps
   });
 }
 
-function effectSnapshots(node: SceneNode): EffectSnapshot[] {
+export function effectSnapshots(node: SceneNode): EffectSnapshot[] {
   if (!("effects" in node) || !Array.isArray(node.effects)) return [];
+  const styleBacked = "effectStyleId" in node && node.effectStyleId.length > 0;
   return node.effects.map((effect) => {
     const fields: string[] = [];
     if ("color" in effect) fields.push("color");
@@ -104,7 +105,9 @@ function effectSnapshots(node: SceneNode): EffectSnapshot[] {
     if ("spread" in effect && effect.spread !== undefined) fields.push("spread");
     if ("offset" in effect) fields.push("offsetX", "offsetY");
     const bindings = effect.boundVariables as Record<string, VariableAlias | undefined> | undefined;
-    const boundFields = fields.filter((field) => Boolean(bindings?.[field]?.id));
+    // A published effect style is machine-readable token evidence for every
+    // subfield it controls, even when those values are not variable-bound.
+    const boundFields = styleBacked ? fields : fields.filter((field) => Boolean(bindings?.[field]?.id));
     const boundVariableIds = [...new Set(boundFields.flatMap((field) => {
       const id = bindings?.[field]?.id;
       return id ? [id] : [];

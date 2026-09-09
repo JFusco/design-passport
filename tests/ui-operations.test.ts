@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { VariableCollectionOption } from "../src/figma/adapter";
 import { findingsForReview } from "../src/ui/operations/findings";
 import { reportBreakdown } from "../src/ui/operations/breakdown";
-import { cloneProfile, gradeClass, relativeTime, statusClass } from "../src/ui/operations/presentation";
+import { certificationNotice, cloneProfile, gradeClass, relativeTime, statusClass } from "../src/ui/operations/presentation";
 import { buildReadinessReport } from "../src/core/report";
 import { defaultTokenCollectionId } from "../src/ui/operations/token-wizard";
 import { healthyGraph, profile, syntheticFinding } from "./fixtures";
@@ -40,6 +40,9 @@ describe("UI operations", () => {
     expect(source.breakpoints[0]!.width).toBe(1440);
     expect(gradeClass("B")).toBe("grade grade-b");
     expect(statusClass("needs-review")).toBe("status status-needs-review");
+    expect(certificationNotice(2, "source frames", 0)).toBe("Certified 2 source frames.");
+    expect(certificationNotice(3, "components", 1)).toBe("Certified 3 components. Removed 1 legacy variant annotation.");
+    expect(certificationNotice(3, "components", 0)).toBe("Certified 3 components. Removed 0 legacy variant annotations.");
     const now = Date.parse("2026-09-08T12:00:00.000Z");
     expect(relativeTime("2026-09-08T11:59:50.000Z", now)).toBe("just now");
     expect(relativeTime("2026-09-08T11:30:00.000Z", now)).toBe("30m ago");
