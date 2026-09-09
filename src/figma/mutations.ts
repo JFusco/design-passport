@@ -1,4 +1,5 @@
 import {
+  AI_SOURCE_FRAME_ANNOTATION,
   CERTIFICATION_ANNOTATION_PREFIX,
   CERTIFICATION_DATA_KEY,
   LEGACY_CERTIFICATION_ANNOTATION_PREFIX,
@@ -308,7 +309,7 @@ export function setCertification(node: SceneNode, summary: CertificationSummary,
     ]);
     node.annotations = [
       ...existing,
-      ...(existing.some((item) => annotationText(item) === "AI source frame") ? [] : [{ label: "AI source frame" }]),
+      ...(existing.some((item) => annotationText(item) === AI_SOURCE_FRAME_ANNOTATION) ? [] : [{ label: AI_SOURCE_FRAME_ANNOTATION }]),
       { label: annotation },
     ];
   }

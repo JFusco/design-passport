@@ -14,6 +14,8 @@ This prevents a locally clean frame from hiding inconsistent component definitio
 
 The normalized graph records all loaded pages, semantic page roles, node relationships, components and instances, approved variable collections and bindings, responsive families, repeated structural signatures, designated source frames, compact annotations/dev-resource evidence, and verified Code Connect evidence. Raw layer text is represented by length and fingerprint; Code Connect templates and source paths are discarded.
 
+Library source targeting is intentionally conservative. Component sets and standalone components remain addressable roots. Foundations retain their top-level frames. A frame on a component page qualifies only when it carries an existing Design Passport certificate, an explicit `AI source frame` marker, a development resource, or measured Ready for Dev evidence on itself or its containing section. The section-name fallback exists for runtimes that expose Dev Status in their type surface but reject the getter. Frames inside `Published source / …` sections are treated as canvas scaffolding unless they carry an actual certificate, so a stale source marker created by an earlier scan cannot keep helper labels in the grading set.
+
 Pages load sequentially under Figma's `dynamic-page` model with visible progress and cancellation. Invisible instance children are skipped by default. Traversal yields periodically so large files remain interactive.
 
 ## Freshness and drift

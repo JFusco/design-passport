@@ -1,5 +1,5 @@
 import { CATALOG_VERSION, resolvePattern } from "../catalog";
-import { RULESET_VERSION } from "../constants";
+import { AI_SOURCE_FRAME_ANNOTATION, RULESET_VERSION } from "../constants";
 import type { DesignKnowledgeGraph, Finding, NodeSnapshot, ReadinessProfile } from "../contracts";
 import { createFinding } from "./finding";
 import { DEFAULT_LAYER_NAME } from "./patterns";
@@ -58,7 +58,7 @@ export function evaluatePipelineRules(
     root.hasAnnotations
       ? {}
       : consumable
-        ? { fixability: "automatic", suggestedValue: { label: "AI source frame" } }
+        ? { fixability: "automatic", suggestedValue: { label: AI_SOURCE_FRAME_ANNOTATION } }
         : { fixability: "manual" },
   ));
   output.push(createFinding(

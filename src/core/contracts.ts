@@ -310,6 +310,8 @@ export interface NodeSnapshot {
   contentSignature?: string;
   certification?: CertificationSummary;
   confirmedPattern?: { canonicalName: string; sourceName: string; catalogVersion: string };
+  sourceMarked?: boolean;
+  devStatus?: "READY_FOR_DEV" | "COMPLETED";
 }
 
 export interface PageSnapshot {
