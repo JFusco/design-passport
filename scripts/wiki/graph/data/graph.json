@@ -2,11 +2,11 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 22,
-    "edges": 82,
+    "nodes": 23,
+    "edges": 86,
     "byType": {
       "index": 3,
-      "journal": 8,
+      "journal": 9,
       "plan": 6,
       "topic": 5
     }
@@ -32,8 +32,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.841254,
-      "y": 0.540641,
+      "x": 0.854419,
+      "y": 0.519584,
       "size": 8
     },
     {
@@ -44,8 +44,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.654861,
-      "y": 0.75575,
+      "x": 0.682553,
+      "y": 0.730836,
       "size": 8
     },
     {
@@ -63,8 +63,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.415415,
-      "y": 0.909632,
+      "x": 0.460065,
+      "y": 0.887885,
       "size": 8
     },
     {
@@ -88,8 +88,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.142315,
-      "y": 0.989821,
+      "x": 0.203456,
+      "y": 0.979084,
       "size": 8
     },
     {
@@ -100,8 +100,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": -0.142315,
-      "y": 0.989821,
+      "x": -0.068242,
+      "y": 0.997669,
       "size": 8
     },
     {
@@ -125,8 +125,8 @@
       ],
       "bytes": 2518,
       "degree": 3,
-      "x": -0.415415,
-      "y": 0.909632,
+      "x": -0.33488,
+      "y": 0.942261,
       "size": 8
     },
     {
@@ -144,8 +144,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": -0.654861,
-      "y": 0.75575,
+      "x": -0.57668,
+      "y": 0.81697,
       "size": 8
     },
     {
@@ -163,8 +163,20 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": -0.841254,
-      "y": 0.540641,
+      "x": -0.775711,
+      "y": 0.631088,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-10-organization-published-plugin.md",
+      "label": "Organization-published plugin documentation",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2328,
+      "degree": 4,
+      "x": -0.917211,
+      "y": 0.398401,
       "size": 8
     },
     {
@@ -175,8 +187,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.959493,
-      "y": 0.281733,
+      "x": 0.962917,
+      "y": 0.269797,
       "size": 12
     },
     {
@@ -187,8 +199,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.959493,
-      "y": 0.281733,
+      "x": -0.990686,
+      "y": 0.136167,
       "size": 8
     },
     {
@@ -199,8 +211,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -1,
-      "y": 0,
+      "x": -0.990686,
+      "y": -0.136167,
       "size": 8
     },
     {
@@ -211,8 +223,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.959493,
-      "y": -0.281733,
+      "x": -0.917211,
+      "y": -0.398401,
       "size": 8
     },
     {
@@ -230,8 +242,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.841254,
-      "y": -0.540641,
+      "x": -0.775711,
+      "y": -0.631088,
       "size": 8
     },
     {
@@ -242,8 +254,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.654861,
-      "y": -0.75575,
+      "x": -0.57668,
+      "y": -0.81697,
       "size": 8
     },
     {
@@ -254,8 +266,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.415415,
-      "y": -0.909632,
+      "x": -0.33488,
+      "y": -0.942261,
       "size": 8
     },
     {
@@ -273,8 +285,8 @@
       ],
       "bytes": 16760,
       "degree": 8,
-      "x": -0.142315,
-      "y": -0.989821,
+      "x": -0.068242,
+      "y": -0.997669,
       "size": 12
     },
     {
@@ -284,9 +296,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 3050,
-      "degree": 22,
-      "x": 0.142315,
-      "y": -0.989821,
+      "degree": 24,
+      "x": 0.203456,
+      "y": -0.979084,
       "size": 8
     },
     {
@@ -297,8 +309,8 @@
       "githubRefs": [],
       "bytes": 5546,
       "degree": 16,
-      "x": 0.415415,
-      "y": -0.909632,
+      "x": 0.460065,
+      "y": -0.887885,
       "size": 8
     },
     {
@@ -308,9 +320,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 6834,
-      "degree": 20,
-      "x": 0.654861,
-      "y": -0.75575,
+      "degree": 22,
+      "x": 0.682553,
+      "y": -0.730836,
       "size": 8
     },
     {
@@ -321,8 +333,8 @@
       "githubRefs": [],
       "bytes": 4773,
       "degree": 17,
-      "x": 0.841254,
-      "y": -0.540641,
+      "x": 0.854419,
+      "y": -0.519584,
       "size": 8
     },
     {
@@ -333,8 +345,8 @@
       "githubRefs": [],
       "bytes": 2953,
       "degree": 17,
-      "x": 0.959493,
-      "y": -0.281733,
+      "x": 0.962917,
+      "y": -0.269797,
       "size": 8
     }
   ],
@@ -473,6 +485,13 @@
       "relation": "topic"
     },
     {
+      "id": "4cf2545c90cfac8c",
+      "source": "wiki/journal/2026-09-10-organization-published-plugin.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "4fde3160fb5884f6",
       "source": "wiki/journal/2026-09-08-design-passport-v1.md",
       "target": "wiki/topics/design-readiness-standard.md",
@@ -532,6 +551,13 @@
       "id": "641b6572d27eafef",
       "source": "wiki/plans/INDEX.md",
       "target": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "6ee2c4000f20ef08",
+      "source": "wiki/journal/2026-09-10-organization-published-plugin.md",
+      "target": "wiki/topics/design-passport-architecture.md",
       "type": "link",
       "relation": "link"
     },
@@ -672,6 +698,13 @@
       "id": "a18601fe1cea6af0",
       "source": "wiki/topics/design-readiness-standard.md",
       "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "a4ee4623d9e26c47",
+      "source": "wiki/journal/2026-09-10-organization-published-plugin.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -891,6 +924,13 @@
       "target": "wiki/topics/mutation-certification-safety.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "fd1b100e108e2ce0",
+      "source": "wiki/journal/2026-09-10-organization-published-plugin.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "fd37b7c5b67ebcce",

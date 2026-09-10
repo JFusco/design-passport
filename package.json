@@ -2,7 +2,7 @@
   "name": "figma-ai-ready",
   "version": "0.1.0",
   "private": true,
-  "description": "Private Figma plugin for deterministic AI-readiness audits, repair planning, and certification.",
+  "description": "Organization-published private Figma plugin for deterministic AI-readiness audits, repair planning, and certification.",
   "license": "UNLICENSED",
   "type": "module",
   "packageManager": "pnpm@10.33.0",

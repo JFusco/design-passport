@@ -1,6 +1,6 @@
 # Design Passport
 
-An internal/private Figma Design plugin that builds whole-file design knowledge, audits source frames for MCP/API consumption, previews safe cleanup, and certifies only deterministic grade-B-or-better results.
+An organization-published private Figma Design plugin that builds whole-file design knowledge, audits source frames for MCP/API consumption, previews safe cleanup, and certifies only deterministic grade-B-or-better results.
 
 The target and context scopes are deliberately separate:
 
@@ -37,7 +37,20 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 
 UI Design Brain accessibility prose is intentionally advisory. It never overrides WCAG applicability or conformance.
 
-## Develop
+## Use Design Passport
+
+Design Passport is published to the Verndale organization. Organization members use the published plugin; they do **not** import this repository's manifest.
+
+1. Open the Figma Design or Dev Mode file to review.
+2. Open **Resources → Plugins** (or Quick Actions) and run **Design Passport**.
+3. On first use in a file, confirm the profile: artifact kind, page roles, approved token collections, and breakpoint names and widths.
+4. Choose an audit scope, wait for the complete file-wide knowledge build, then review Overview and Findings.
+5. Apply only reviewed cleanup, let the rescan complete, and certify only when Overview reports **ready**.
+6. Export JSON for machine consumers or Markdown for people; do not distribute a stale or incomplete report.
+
+Use the in-product guidance and [manual rollout QA](docs/manual-qa.md) for detailed operating and recovery steps. The published plugin is private to the Verndale organization; people outside it need an organization administrator to grant the appropriate Figma access before it can appear in Resources.
+
+## Develop locally
 
 Requirements: Node 24.14.0 and pnpm 10.33.0.
 
@@ -51,14 +64,16 @@ Build output:
 - `dist/code.js` — Figma plugin sandbox bundle.
 - `dist/index.html` — fully inlined React UI.
 
-To run locally in Figma Desktop:
+To test an unreleased local build in Figma Desktop:
 
 1. Run `pnpm build`.
 2. Open **Plugins → Development → Import plugin from manifest…**.
 3. Choose `manifest.json`.
-4. For organization deployment, replace the development manifest ID with the private plugin ID assigned by Figma before publishing.
+4. Run the development copy from **Plugins → Development**.
 
-The Code Connect importer requires `figma.fileKey`, which Figma exposes only to eligible private plugins. It remains disabled when a development environment does not provide the private file key.
+The committed manifest uses the organization-published plugin ID. Do not change that ID for ordinary development or user installation; only a release owner should change it when Figma assigns a replacement published-plugin record.
+
+The Code Connect importer requires `figma.fileKey`, which Figma exposes only to eligible private-plugin contexts. It can remain disabled in a local development copy even though it is available in the organization-published plugin.
 
 ## Deterministic generated inputs
 

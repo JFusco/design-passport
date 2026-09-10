@@ -22,7 +22,8 @@ Mark intended source frames with a normal source annotation. Add named export as
 
 ## Manual verification checklist
 
-- Import `manifest.json` in Figma Desktop and confirm light/dark UI.
+- Run the organization-published **Design Passport** from Figma Resources and confirm light/dark UI in both Design and Dev Mode.
+- Separately, import `manifest.json` only when smoke-testing an unreleased local build; confirm it launches from **Plugins → Development**.
 - Confirm profile page roles are suggestions until saved and no page is moved or renamed.
 - Scan one selection and verify all pages load before analysis.
 - Cancel during a large page; confirm the partial graph cannot certify.
