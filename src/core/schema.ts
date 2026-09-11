@@ -1,20 +1,49 @@
 import {
   validateChangePlan,
   validateCodeConnectParse,
+  validateDesignReferencePack,
   validateFinding,
+  validateKnowledgeCandidate,
+  validateKnowledgeDecision,
+  validateMultiFileReviewReport,
+  validateProjectStyleGuideBinding,
   validateReadinessProfile,
   validateReadinessReport,
+  validateReviewLearningEnvelope,
+  validateReviewSource,
+  validateTeamKnowledgePack,
   type GeneratedValidator,
 } from "../generated/schema-validators.js";
 
-export type ContractName = "change-plan" | "code-connect-parse" | "finding" | "readiness-profile" | "readiness-report";
+export type ContractName =
+  | "change-plan"
+  | "code-connect-parse"
+  | "design-reference-pack"
+  | "finding"
+  | "knowledge-candidate"
+  | "knowledge-decision"
+  | "multi-file-review-report"
+  | "project-style-guide-binding"
+  | "readiness-profile"
+  | "readiness-report"
+  | "review-learning-envelope"
+  | "review-source"
+  | "team-knowledge-pack";
 
 const validators: Record<ContractName, GeneratedValidator> = {
   "change-plan": validateChangePlan,
   "code-connect-parse": validateCodeConnectParse,
+  "design-reference-pack": validateDesignReferencePack,
   finding: validateFinding,
+  "knowledge-candidate": validateKnowledgeCandidate,
+  "knowledge-decision": validateKnowledgeDecision,
+  "multi-file-review-report": validateMultiFileReviewReport,
+  "project-style-guide-binding": validateProjectStyleGuideBinding,
   "readiness-profile": validateReadinessProfile,
   "readiness-report": validateReadinessReport,
+  "review-learning-envelope": validateReviewLearningEnvelope,
+  "review-source": validateReviewSource,
+  "team-knowledge-pack": validateTeamKnowledgePack,
 };
 
 export interface ContractValidationResult {

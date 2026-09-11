@@ -1,6 +1,7 @@
 import type { JsonValue, ReadinessProfile } from "../core/contracts";
 import { isBindableField } from "../core/operations/planning";
 import { validateContract } from "../core/schema";
+import { utf8ByteLength } from "../core/stable";
 import type { UiToPluginMessage } from "./messages";
 
 function record(value: unknown): Record<string, unknown> | undefined {
@@ -33,7 +34,8 @@ function jsonValue(value: unknown, depth = 0, ancestors = new Set<object>()): va
 export function parseUiMessage(value: unknown): UiToPluginMessage {
   const message = record(value);
   if (!message || typeof message.type !== "string") throw new Error("Plugin message must be an object with a type");
-  if (message.type === "initialize" || message.type === "cancel-scan" || message.type === "certify" || message.type === "certify-components") return { type: message.type };
+  if (message.type === "initialize" || message.type === "cancel-scan" || message.type === "certify" || message.type === "certify-components"
+    || message.type === "remove-project-style-guide" || message.type === "clear-session-references" || message.type === "preview-contribution") return { type: message.type };
   if (message.type === "save-profile") return { type: message.type, profile: profile(message.profile) };
   if (message.type === "scan") {
     const request = record(message.request);
@@ -56,6 +58,13 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
     if (typeof message.raw !== "string" || message.raw.length > 2_000_000) throw new Error("Code Connect JSON must be a string no larger than 2 MB");
     return { type: message.type, raw: message.raw };
   }
+  if (message.type === "import-project-style-guide" || message.type === "add-session-reference") {
+    if (typeof message.raw !== "string" || utf8ByteLength(message.raw) > 90_000) {
+      throw new Error("Reference pack JSON must be a string no larger than 90 KB");
+    }
+    return { type: message.type, raw: message.raw };
+  }
+  if (message.type === "export-contribution") return { type: message.type, digest: text(message.digest, "digest", 40) };
   if (message.type === "export") {
     if (message.format !== "json" && message.format !== "markdown") throw new Error("export format is invalid");
     return { type: message.type, format: message.format };

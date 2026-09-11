@@ -18,6 +18,11 @@ flowchart LR
   F -->|full rebuild| K
   G --> E[JSON + Markdown reports]
   G --> X[Certificate]
+  S[Project style-guide pack] -->|private file binding| A1[Advisory evaluator]
+  O[Session reference packs] --> A1
+  K --> A1
+  A1 --> U[Source-qualified guidance]
+  G --> L[Explicit sanitized contribution preview]
 ```
 
 ## Subsystems
@@ -55,6 +60,18 @@ The graph is reusable by a future REST/CLI adapter because no Figma runtime obje
 `src/core/rules.ts` accepts only a graph, a profile, and target IDs. It returns deterministic `Finding` records with measured evidence, node paths, source references, confidence, fixability, and optional pattern resolution.
 
 Node-linked punch-list entries that explain an aggregate failure can set `scoreImpact: false`; this prevents one underlying defect from being deducted twice while preserving navigation and repair detail.
+
+### Advisory boundary
+
+`src/core/knowledge-loop.ts` evaluates project, one-off reference, and shared knowledge only after the deterministic report has been built. None of those inputs enter `evaluateRules`, `buildReadinessReport`, certification, or mutation planning. Given an unchanged graph, profile, catalog, and ruleset, every legacy finding, score, blocker, grade, readiness field, and certificate remains unchanged regardless of advisory packs.
+
+One `DesignReferencePackV1` may be bound to a target Figma file as its project style guide. The binding contains an opaque project scope, target-file fingerprint, pack version/digest, and sanitized facts. References stay in memory for the current plugin session.
+
+### Local companion
+
+`src/companion/main.ts` builds to `dist/companion.mjs`. It is the only networked part of the design. It validates exact Figma URLs, keeps `FIGMA_TOKEN` local, ingests each source into an isolated graph, produces sanitized packs, imports explicitly exported learning envelopes, groups exact observation keys, generates candidate wording, and serves the maintainer interface only on `127.0.0.1` behind a per-process capability token.
+
+Repository-owned `knowledge/` stores sanitized observations, current drafts, append-only decisions, project packs, and shared releases. A decision is bound to the exact candidate digest, so editing a candidate invalidates an earlier approval automatically.
 
 ### Grading and report builder
 

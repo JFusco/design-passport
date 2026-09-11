@@ -2,13 +2,13 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 23,
-    "edges": 86,
+    "nodes": 26,
+    "edges": 103,
     "byType": {
       "index": 3,
-      "journal": 9,
-      "plan": 6,
-      "topic": 5
+      "journal": 10,
+      "plan": 7,
+      "topic": 6
     }
   },
   "nodes": [
@@ -32,8 +32,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.854419,
-      "y": 0.519584,
+      "x": 0.885456,
+      "y": 0.464723,
       "size": 8
     },
     {
@@ -44,8 +44,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.682553,
-      "y": 0.730836,
+      "x": 0.748511,
+      "y": 0.663123,
       "size": 8
     },
     {
@@ -63,8 +63,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.460065,
-      "y": 0.887885,
+      "x": 0.568065,
+      "y": 0.822984,
       "size": 8
     },
     {
@@ -88,8 +88,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.203456,
-      "y": 0.979084,
+      "x": 0.354605,
+      "y": 0.935016,
       "size": 8
     },
     {
@@ -100,8 +100,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": -0.068242,
-      "y": 0.997669,
+      "x": 0.120537,
+      "y": 0.992709,
       "size": 8
     },
     {
@@ -125,8 +125,8 @@
       ],
       "bytes": 2518,
       "degree": 3,
-      "x": -0.33488,
-      "y": 0.942261,
+      "x": -0.120537,
+      "y": 0.992709,
       "size": 8
     },
     {
@@ -144,8 +144,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": -0.57668,
-      "y": 0.81697,
+      "x": -0.354605,
+      "y": 0.935016,
       "size": 8
     },
     {
@@ -163,8 +163,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": -0.775711,
-      "y": 0.631088,
+      "x": -0.568065,
+      "y": 0.822984,
       "size": 8
     },
     {
@@ -175,8 +175,20 @@
       "githubRefs": [],
       "bytes": 2328,
       "degree": 4,
-      "x": -0.917211,
-      "y": 0.398401,
+      "x": -0.748511,
+      "y": 0.663123,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-10-project-scoped-knowledge-loop.md",
+      "label": "Project-scoped knowledge loop and live Figma validation",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 3438,
+      "degree": 6,
+      "x": -0.885456,
+      "y": 0.464723,
       "size": 8
     },
     {
@@ -187,8 +199,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.962917,
-      "y": 0.269797,
+      "x": 0.970942,
+      "y": 0.239316,
       "size": 12
     },
     {
@@ -199,8 +211,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.990686,
-      "y": 0.136167,
+      "x": -0.970942,
+      "y": 0.239316,
       "size": 8
     },
     {
@@ -211,8 +223,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.990686,
-      "y": -0.136167,
+      "x": -1,
+      "y": 0,
       "size": 8
     },
     {
@@ -223,8 +235,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.917211,
-      "y": -0.398401,
+      "x": -0.970942,
+      "y": -0.239316,
       "size": 8
     },
     {
@@ -242,8 +254,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.775711,
-      "y": -0.631088,
+      "x": -0.885456,
+      "y": -0.464723,
       "size": 8
     },
     {
@@ -254,8 +266,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.57668,
-      "y": -0.81697,
+      "x": -0.748511,
+      "y": -0.663123,
       "size": 8
     },
     {
@@ -266,8 +278,20 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.33488,
-      "y": -0.942261,
+      "x": -0.568065,
+      "y": -0.822984,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-11-shared-design-passport-knowledge-loop-a55aa1a3eb.md",
+      "label": "Shared Design Passport Knowledge Loop",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 1230,
+      "degree": 3,
+      "x": -0.354605,
+      "y": -0.935016,
       "size": 8
     },
     {
@@ -283,10 +307,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/38"
         }
       ],
-      "bytes": 16760,
-      "degree": 8,
-      "x": -0.068242,
-      "y": -0.997669,
+      "bytes": 17215,
+      "degree": 9,
+      "x": -0.120537,
+      "y": -0.992709,
       "size": 12
     },
     {
@@ -295,10 +319,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 3050,
-      "degree": 24,
-      "x": 0.203456,
-      "y": -0.979084,
+      "bytes": 3433,
+      "degree": 29,
+      "x": 0.120537,
+      "y": -0.992709,
       "size": 8
     },
     {
@@ -309,8 +333,8 @@
       "githubRefs": [],
       "bytes": 5546,
       "degree": 16,
-      "x": 0.460065,
-      "y": -0.887885,
+      "x": 0.354605,
+      "y": -0.935016,
       "size": 8
     },
     {
@@ -319,10 +343,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 6834,
-      "degree": 22,
-      "x": 0.682553,
-      "y": -0.730836,
+      "bytes": 8966,
+      "degree": 27,
+      "x": 0.568065,
+      "y": -0.822984,
       "size": 8
     },
     {
@@ -333,8 +357,20 @@
       "githubRefs": [],
       "bytes": 4773,
       "degree": 17,
-      "x": 0.854419,
-      "y": -0.519584,
+      "x": 0.748511,
+      "y": -0.663123,
+      "size": 8
+    },
+    {
+      "id": "wiki/topics/project-scoped-knowledge-loop.md",
+      "label": "Project-scoped knowledge loop",
+      "type": "topic",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2812,
+      "degree": 12,
+      "x": 0.885456,
+      "y": -0.464723,
       "size": 8
     },
     {
@@ -344,9 +380,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 2953,
-      "degree": 17,
-      "x": 0.962917,
-      "y": -0.269797,
+      "degree": 19,
+      "x": 0.970942,
+      "y": -0.239316,
       "size": 8
     }
   ],
@@ -415,8 +451,22 @@
       "relation": "link"
     },
     {
+      "id": "27e7e5ecc798e9c7",
+      "source": "wiki/topics/project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "28107976218808ff",
       "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "2a9b5e58d2d85b14",
+      "source": "wiki/topics/project-scoped-knowledge-loop.md",
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "link",
       "relation": "link"
@@ -443,11 +493,25 @@
       "relation": "topic"
     },
     {
+      "id": "2ffcf328a04bfcae",
+      "source": "wiki/journal/2026-09-10-project-scoped-knowledge-loop.md",
+      "target": "wiki/plans/2026-09-11-shared-design-passport-knowledge-loop-a55aa1a3eb.md",
+      "type": "plan",
+      "relation": "plan"
+    },
+    {
       "id": "340904184518ce47",
       "source": "wiki/plans/INDEX.md",
       "target": "wiki/plans/2026-09-09-clean-up-certification-annotations-eab120d954.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "355573979dad7dc2",
+      "source": "wiki/topics/project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "355b085344694472",
@@ -488,6 +552,13 @@
       "id": "4cf2545c90cfac8c",
       "source": "wiki/journal/2026-09-10-organization-published-plugin.md",
       "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "4eb1fc5fe71e304b",
+      "source": "wiki/topics/figma-runtime-qa.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -555,11 +626,32 @@
       "relation": "link"
     },
     {
+      "id": "6622743cf7f59f45",
+      "source": "wiki/journal/2026-09-10-project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "6ec6491e49d33649",
+      "source": "wiki/topics/project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "6ee2c4000f20ef08",
       "source": "wiki/journal/2026-09-10-organization-published-plugin.md",
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "729d5bfcd2aeae63",
+      "source": "wiki/journal/2026-09-10-project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "7688e3da699b11a9",
@@ -602,6 +694,13 @@
       "target": "wiki/plans/2026-09-08-design-passport-ci-quality-gates-17bd086b3d.md",
       "type": "plan",
       "relation": "plan"
+    },
+    {
+      "id": "7c266c255a898b3d",
+      "source": "wiki/journal/2026-09-10-project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "872fa68cd056bb56",
@@ -674,6 +773,13 @@
       "relation": "topic"
     },
     {
+      "id": "9766a24ce8c55c4e",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-11-shared-design-passport-knowledge-loop-a55aa1a3eb.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "97ce6df7e90c0d5f",
       "source": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
       "target": "wiki/topics/mutation-certification-safety.md",
@@ -688,11 +794,25 @@
       "relation": "link"
     },
     {
+      "id": "9c424a2da4de3af5",
+      "source": "wiki/plans/2026-09-11-shared-design-passport-knowledge-loop-a55aa1a3eb.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "9d44abff663e1908",
       "source": "wiki/journal/2026-09-08-live-readiness-stress-test.md",
       "target": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
       "type": "plan",
       "relation": "plan"
+    },
+    {
+      "id": "9fe35a52d25e506c",
+      "source": "wiki/topics/project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "a18601fe1cea6af0",
@@ -707,6 +827,13 @@
       "target": "wiki/topics/figma-runtime-qa.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "a51ba160e4406a9f",
+      "source": "wiki/journal/2026-09-10-project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "a53086a64ef6aa7a",
@@ -793,11 +920,32 @@
       "relation": "link"
     },
     {
+      "id": "bf99b8082cefedf4",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "c051915a6d7b3984",
+      "source": "wiki/journal/2026-09-10-project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "c1c97b58b2e77483",
       "source": "wiki/topics/design-readiness-standard.md",
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "c44c09241a055bc6",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "c4f463ba63916bbc",
@@ -847,6 +995,13 @@
       "target": "wiki/topics/mutation-certification-safety.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "d3559bd8fc30defc",
+      "source": "wiki/topics/project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "d63994ba2b1c80ed",

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { VariableCollectionOption } from "../src/figma/adapter";
 import { findingsForReview } from "../src/ui/operations/findings";
 import { reportBreakdown } from "../src/ui/operations/breakdown";
-import { certificationNotice, cloneProfile, gradeClass, relativeTime, statusClass } from "../src/ui/operations/presentation";
+import { certificationNotice, cloneProfile, formatDateTime, friendlyReference, gradeClass, humanizeIdentifier, relativeTime, statusClass } from "../src/ui/operations/presentation";
 import { buildReadinessReport } from "../src/core/report";
 import { defaultTokenCollectionId } from "../src/ui/operations/token-wizard";
 import { healthyGraph, profile, syntheticFinding } from "./fixtures";
@@ -47,6 +47,9 @@ describe("UI operations", () => {
     expect(relativeTime("2026-09-08T11:59:50.000Z", now)).toBe("just now");
     expect(relativeTime("2026-09-08T11:30:00.000Z", now)).toBe("30m ago");
     expect(relativeTime("2026-09-08T10:00:00.000Z", now)).toBe("2h ago");
+    expect(friendlyReference("h53:10c7d66fa486b1")).toBe("10C7-D66F");
+    expect(humanizeIdentifier("project:ui-library-v1")).toBe("UI Library V1");
+    expect(formatDateTime("not-a-date")).toBe("Date unavailable");
   });
 
   it("groups report issues by page and independently graded module", () => {

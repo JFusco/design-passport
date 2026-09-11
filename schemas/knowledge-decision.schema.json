@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verndale.com/schemas/figma-ai-ready/knowledge-decision.schema.json",
+  "title": "KnowledgeDecisionV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "decisionId", "candidateId", "candidateDigest", "action", "scope", "rationale", "decidedAt", "digest"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "decisionId": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/opaqueId" },
+    "candidateId": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/opaqueId" },
+    "candidateDigest": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/digest" },
+    "action": { "type": "string", "enum": ["approve", "reject", "defer"] },
+    "scope": { "type": "string", "enum": ["project", "shared"] },
+    "rationale": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "decidedAt": { "type": "string", "format": "date-time" },
+    "digest": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/digest" }
+  }
+}

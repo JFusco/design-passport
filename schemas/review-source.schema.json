@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verndale.com/schemas/figma-ai-ready/review-source.schema.json",
+  "title": "ReviewSourceV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sourceId", "projectScope", "role", "contentDigest", "completeness"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "sourceId": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/opaqueId" },
+    "projectScope": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/opaqueId" },
+    "role": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/reviewSourceRole" },
+    "contentDigest": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/digest" },
+    "completeness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["complete", "availableDomains", "warnings"],
+      "properties": {
+        "complete": { "type": "boolean" },
+        "availableDomains": { "type": "array", "maxItems": 6, "uniqueItems": true, "items": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/referenceDomain" } },
+        "warnings": { "type": "array", "maxItems": 50, "items": { "type": "string", "minLength": 1, "maxLength": 500 } }
+      }
+    }
+  }
+}

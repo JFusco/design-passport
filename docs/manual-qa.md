@@ -46,6 +46,26 @@ Mark intended source frames with a normal source annotation. Add named export as
 - Expand the certified set in Modules; confirm direct variants and descendant finding counts remain visible and selecting a variant applies the exact Findings filter.
 - Change code-relevant geometry/style/content; rebuild context and confirm the old certificate is stale.
 
+## Project guidance and knowledge-loop scenarios
+
+- With no project pack, run an audit and verify standard Passport findings continue while Context says no style guide is connected.
+- Import a valid `style-guide` pack in Design Mode; verify version and digest in Context and results, then restart the plugin and confirm the binding remains available to the file.
+- Open a different Figma file and confirm the previous file's project guidance is never reused.
+- Duplicate a bound file and verify the inherited fingerprint is rejected.
+- In Dev Mode, confirm the pack is readable and its advisories render, but import, replace, and remove controls are unavailable.
+- Attempt wrong-role, malformed, unsafe, digest-invalid, and >90 KB replacements; verify the prior valid binding remains active.
+- Add a `reference` pack, verify its suggestions are labeled inspiration and do not survive a plugin restart.
+- In an unsaved file with no stable key, verify a `style-guide` pack can be used for the session but cannot be connected permanently.
+- Deep-compare exported report and certification fields before and after loading zero, one, and multiple advisory packs.
+- Verify each applicable guidance card navigates to its target layer and is visually distinct from Passport findings.
+- Preview a learning contribution; verify the designer sees normalized dates, short references, observation counts, and excluded-data categories without raw JSON. Cancel and confirm no file is exported.
+- Inspect the exported machine-readable envelope during maintainer QA and verify it contains none of the excluded fields.
+- Preview again, export, import it through the companion twice, and verify the second import adds zero unique contributions.
+- Open Knowledge Review, edit generated wording, and verify the digest changes and an earlier approval no longer compiles.
+- Exercise Approve, Reject, and Defer; verify only a current explicit approval enters a pack.
+- Approve project-only guidance and verify it never enters the shared release. Explicitly approve a client-neutral candidate as shared and verify it enters the pinned team pack only after the repository build/review flow.
+- Combine one, two, and 100 duplicate/unique envelopes; verify the interface reports only neutral `unique contributions`, supporting evidence, and contradictory evidence—never confidence, eligibility, ranking, `observed`, `corroborated`, or `conflicted` state.
+
 ## Performance checks
 
 Automated fixtures exercise pure indexing at 10,000 and 50,000 nodes. In Figma, repeat with realistic instances and variables while confirming:
