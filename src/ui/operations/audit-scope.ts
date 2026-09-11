@@ -26,7 +26,9 @@ export type ScanLifecycleEvent =
   | "progress"
   | "scan-result"
   | "error"
-  | "scan-cancelled";
+  | "scan-cancelled"
+  | "profile-saved"
+  | "profile-invalidated";
 
 function plural(value: number, singular: string, pluralForm = `${singular}s`): string {
   return value === 1 ? singular : pluralForm;
@@ -72,7 +74,7 @@ export function auditProgressPresentation(
 
 export function scanInFlightAfter(current: boolean, event: ScanLifecycleEvent): boolean {
   if (event === "local-scan" || event === "audit-started" || event === "progress") return true;
-  if (event === "scan-result" || event === "error" || event === "scan-cancelled") return false;
+  if (event === "scan-result" || event === "error" || event === "scan-cancelled" || event === "profile-saved" || event === "profile-invalidated") return false;
   return current;
 }
 

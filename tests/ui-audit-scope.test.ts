@@ -76,6 +76,8 @@ describe("scoped audit UI presentation", () => {
     expect(scanInFlightAfter(true, "scan-result")).toBe(false);
     expect(scanInFlightAfter(true, "error")).toBe(false);
     expect(scanInFlightAfter(true, "scan-cancelled")).toBe(false);
+    expect(scanInFlightAfter(true, "profile-saved")).toBe(false);
+    expect(scanInFlightAfter(true, "profile-invalidated")).toBe(false);
   });
 
   it("offers cancellation only while file context preparation is interruptible", () => {

@@ -8,7 +8,6 @@ The plugin never equates “selected” with “known.” A target may be one se
 flowchart LR
   A[Figma pages] -->|sequential load| B[Adapter]
   V[Local + enabled-library variables] --> B
-  C[Optional Code Connect parse JSON] -->|validate; discard templates| B
   B --> K[Whole-file Design Knowledge Graph]
   K --> R[Pure rule engine]
   P[Readiness profile] --> R
@@ -50,7 +49,6 @@ flowchart LR
 - responsive specimen families;
 - repeated structural groups;
 - designated source-frame IDs;
-- verified Code Connect evidence without templates or source paths;
 - a deterministic snapshot hash over code-relevant design facts.
 
 The graph is reusable by a future REST/CLI adapter because no Figma runtime objects enter the pure rule engine.
@@ -60,6 +58,12 @@ The graph is reusable by a future REST/CLI adapter because no Figma runtime obje
 `src/core/rules.ts` accepts only a graph, a profile, and target IDs. It returns deterministic `Finding` records with measured evidence, node paths, source references, confidence, fixability, and optional pattern resolution.
 
 Node-linked punch-list entries that explain an aggregate failure can set `scoreImpact: false`; this prevents one underlying defect from being deducted twice while preserving navigation and repair detail.
+
+### Profile state boundary
+
+The sandbox owns the profile used for an audit. On a conventional file with no stored setup, the adapter creates a deterministic in-memory profile from page names, component-section boundaries, local Semantic collections, and standard breakpoints; a valid inference can be audited immediately and does not write shared plugin data. Scan requests contain only scope and knowledge-refresh intent, so an editable UI draft can never alter or persist audit input.
+
+The secondary Audit setup surface keeps committed and draft values separately, validates the draft against current page IDs, and gates profile-dependent actions only when a manual draft is unresolved or safe inference is impossible. The adapter reconciles deleted page mappings during bootstrap and immediately before profile-dependent work; a typed invalidation response opens recovery with the repaired draft and requires explicit confirmation.
 
 ### Advisory boundary
 
@@ -83,7 +87,7 @@ Repository-owned `knowledge/` stores sanitized observations, current drafts, app
 
 ### React UI
 
-`src/ui` provides profile setup, scan scope, progress/cancellation, grade and blocker summaries, filtered findings, pattern confirmation, cleanup review, context inventory, Code Connect import, token creation, certification, and report export. React text rendering is used throughout; no untrusted HTML is injected.
+`src/ui` centers scan scope, progress/cancellation, grade and blocker summaries, filtered findings, pattern confirmation, cleanup review, context inventory, token creation, certification, and report export. Audit setup is hidden from the primary navigation and is shown as a recovery/advanced surface only when automatic classification needs help. React text rendering is used throughout; no untrusted HTML is injected.
 
 ## Context freshness
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CommandGate, KnowledgeSessionState, MutationChangeGuard } from "../src/plugin/session-state";
+import { CommandGate, KnowledgeSessionState, MutationChangeGuard, requiresTransientMutationGuard } from "../src/plugin/session-state";
 
 describe("plugin session safety", () => {
   it("accepts only a complete knowledge build with no intervening change", () => {
@@ -68,6 +68,12 @@ describe("plugin session safety", () => {
     expect(guard.hasUnexpectedChange([{ id: "frame", origin: "REMOTE" }], 2_000)).toBe(true);
     guard.clear();
     expect(guard.hasUnexpectedChange([{ id: "temporary-clone", origin: "LOCAL", type: "CREATE" }], 2_000)).toBe(true);
+  });
+
+  it("arms the transient-node guard for every structural plan, including a single-plan apply", () => {
+    expect(requiresTransientMutationGuard("low")).toBe(false);
+    expect(requiresTransientMutationGuard("guarded")).toBe(false);
+    expect(requiresTransientMutationGuard("structural")).toBe(true);
   });
 
   it("does not treat delayed local plugin metadata as design drift", () => {

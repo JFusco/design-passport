@@ -1,6 +1,5 @@
 import { CATALOG_DIGEST, CATALOG_VERSION } from "../core/catalog";
 import { PRODUCT_NAME } from "../core/constants";
-import { importCodeConnectJson } from "../core/code-connect";
 import { RULESET_VERSION } from "../core/constants";
 import type {
   ChangePlan,
@@ -11,7 +10,7 @@ import type {
   ReviewLearningEnvelopeV1,
   ScanScope,
 } from "../core/contracts";
-import { isKnowledgeFresh, replaceCodeConnectEvidence } from "../core/knowledge";
+import { isKnowledgeFresh } from "../core/knowledge";
 import {
   buildKnowledgeInsights,
   buildLearningEnvelope,
@@ -35,7 +34,7 @@ import { parseUiMessage } from "./message-validation";
 import type { PluginToUiMessage, UiToPluginMessage } from "./messages";
 import { resolveAuditTarget, runCapturedAuditAttempt, scanFailureMessages } from "./scan-lifecycle";
 import { ScanCancelledError } from "./scan-errors";
-import { CommandGate, KnowledgeSessionState, MutationChangeGuard } from "./session-state";
+import { CommandGate, KnowledgeSessionState, MutationChangeGuard, requiresTransientMutationGuard } from "./session-state";
 
 figma.skipInvisibleInstanceChildren = true;
 
@@ -61,7 +60,7 @@ let sessionReferencePacks: DesignReferencePackV1[] = [];
 let sessionStyleGuidePack: DesignReferencePackV1 | undefined;
 let pendingContribution: ReviewLearningEnvelopeV1 | undefined;
 
-const PLUGIN_VERSION = "0.1.0";
+const PLUGIN_VERSION = "0.1.1";
 const TEAM_KNOWLEDGE_PACK = teamKnowledgePackJson as TeamKnowledgePackV1;
 assertTeamKnowledgePack(TEAM_KNOWLEDGE_PACK);
 const KNOWLEDGE_VERSION = TEAM_KNOWLEDGE_PACK.knowledgeVersion;
@@ -151,8 +150,25 @@ function assertInitialized(): void {
 
 function assertDocumentMutationAllowed(): void {
   if (figma.editorType !== "figma") {
-    throw new Error("Document cleanup and certification are available in Figma Design mode; Dev Mode supports audit, navigation, Code Connect evidence, and report export");
+    throw new Error("Document cleanup and certification are available in Figma Design mode; Dev Mode supports audit, navigation, guidance, and report export");
   }
+}
+
+function invalidateProfileIfNeeded(): boolean {
+  const state = adapter.reconcileProfile(profile, bootstrap.profileConfigured);
+  if (state.profileConfigured) return false;
+  profile = state.profile;
+  bootstrap = { ...bootstrap, ...state };
+  graph = undefined;
+  report = undefined;
+  plans = [];
+  appliedChanges = [];
+  graphProfileHash = undefined;
+  pendingContribution = undefined;
+  activeTarget = undefined;
+  knowledgeState.markDirty();
+  post({ type: "profile-invalidated", data: bootstrap });
+  return true;
 }
 
 function markKnowledgeDirty(): void {
@@ -208,7 +224,7 @@ async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> 
     assertScanNotCancelled();
     const token = knowledgeState.beginBuild();
     try {
-      const result = await adapter.buildKnowledge(profile, (progress) => post({ type: "progress", progress }), graph?.codeConnect ?? []);
+      const result = await adapter.buildKnowledge(profile, (progress) => post({ type: "progress", progress }));
       graph = result.graph;
       collections = result.collections;
       graphProfileHash = hashValue(profile);
@@ -269,13 +285,11 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
 async function runScan(
   target: CapturedAuditTarget,
   refreshKnowledge: boolean,
-  prepare?: () => Promise<void>,
 ): Promise<void> {
   await runCapturedAuditAttempt(target, {
     begin: () => adapter.beginScan(),
     post,
     execute: async (capturedTarget) => {
-      if (prepare) await prepare();
       assertScanNotCancelled();
       const current = await ensureKnowledge(refreshKnowledge);
       const rootIds = adapter.targetRootIds(capturedTarget, current);
@@ -291,16 +305,6 @@ async function runScan(
 async function rescanActiveTarget(refreshKnowledge: boolean): Promise<void> {
   if (!activeTarget) throw new Error("Run an audit before rescanning after changes");
   await runScan(activeTarget, refreshKnowledge);
-}
-
-async function runScanWithProfile(target: CapturedAuditTarget, nextProfile: ReadinessProfile, refreshKnowledge: boolean): Promise<void> {
-  if (graphProfileHash !== hashValue(nextProfile)) knowledgeState.markDirty();
-  profile = nextProfile;
-  await runScan(
-    target,
-    refreshKnowledge,
-    figma.editorType === "figma" ? () => adapter.saveProfile(profile) : undefined,
-  );
 }
 
 async function initialize(): Promise<void> {
@@ -340,35 +344,45 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       assertDocumentMutationAllowed();
       await adapter.saveProfile(message.profile);
       profile = message.profile;
-      bootstrap = { ...bootstrap, profile, profileConfigured: true };
+      bootstrap = { ...bootstrap, ...adapter.reconcileProfile(profile, true) };
+      graph = undefined;
+      report = undefined;
+      plans = [];
+      appliedChanges = [];
+      graphProfileHash = undefined;
+      pendingContribution = undefined;
+      activeTarget = undefined;
       knowledgeState.markDirty();
-      post({ type: "profile-saved", profile });
+      post({ type: "profile-saved", data: bootstrap });
     } else if (message.type === "scan") {
+      if (invalidateProfileIfNeeded()) return;
       const target = resolveAuditTarget(
         { kind: "capture", scope: message.request.scope },
         activeTarget,
         (scope) => adapter.captureAuditTarget(scope),
       );
-      await runScanWithProfile(
-        target,
-        message.request.profile,
-        message.request.refreshKnowledge,
-      );
+      await runScan(target, message.request.refreshKnowledge);
     } else if (message.type === "refresh-audit") {
+      if (invalidateProfileIfNeeded()) return;
       const target = resolveAuditTarget(
         { kind: "refresh" },
         activeTarget,
         (scope) => adapter.captureAuditTarget(scope),
       );
-      await runScanWithProfile(target, message.profile, true);
+      await runScan(target, true);
     } else if (message.type === "navigate") {
       await adapter.navigate(message.nodeId);
     } else if (message.type === "apply-plan") {
+      if (invalidateProfileIfNeeded()) return;
       assertCurrentReport("applying cleanup");
       const plan = plans.find((candidate) => candidate.id === message.planId);
       if (!plan) throw new Error("The cleanup plan is stale; rescan before applying changes");
       try {
-        const result = await runDocumentMutation(plan.operations.map((operation) => operation.nodeId), () => applyChangePlan(plan, { undoOnlyAcknowledged: message.undoOnlyAcknowledged }));
+        const result = await runDocumentMutation(
+          plan.operations.map((operation) => operation.nodeId),
+          () => applyChangePlan(plan, { undoOnlyAcknowledged: message.undoOnlyAcknowledged }),
+          requiresTransientMutationGuard(plan.risk),
+        );
         appliedChanges.push(plan);
         post({ type: "mutation-result", message: `Applied ${result.appliedOperationCount} operations${result.checkpointCreated ? " after a version-history checkpoint" : ""}. Rescanning the complete file…` });
       } catch (error) {
@@ -377,6 +391,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       }
       await rescanActiveTarget(true);
     } else if (message.type === "apply-all") {
+      if (invalidateProfileIfNeeded()) return;
       assertCurrentReport("applying all cleanup");
       const selectedPlans = message.planIds.map((planId) => plans.find((candidate) => candidate.id === planId));
       if (selectedPlans.some((plan) => !plan)) throw new Error("At least one cleanup plan is stale; rescan before applying all fixes");
@@ -425,6 +440,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       }
       await rescanActiveTarget(true);
     } else if (message.type === "certify" || message.type === "certify-components") {
+      if (invalidateProfileIfNeeded()) return;
       assertDocumentMutationAllowed();
       const current = assertCurrentReport("certification");
       const componentCertification = message.type === "certify-components";
@@ -484,28 +500,6 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         suppressDirty = false;
       }
       post({ type: "certified", count, target: componentCertification ? "components" : "source frames", removedVariantAnnotations });
-    } else if (message.type === "import-code-connect") {
-      const target = activeTarget ?? adapter.captureAuditTarget(activeScope);
-      const result = await runCapturedAuditAttempt(target, {
-        begin: () => adapter.beginScan(),
-        post,
-        execute: async (capturedTarget) => {
-          const current = await ensureKnowledge(false);
-          const importResult = importCodeConnectJson(message.raw, current);
-          graph = replaceCodeConnectEvidence(current, importResult.evidence, profile);
-          graphProfileHash = hashValue(profile);
-          await analyzeCurrentGraph(capturedTarget.scope, adapter.targetRootIds(capturedTarget, graph), true);
-          return importResult;
-        },
-        commit: (capturedTarget) => {
-          activeScope = capturedTarget.scope;
-          activeTarget = capturedTarget;
-        },
-      });
-      // Keep the import outcome as the final user-facing message. analyzeCurrentGraph
-      // posts a fresh report first, which would otherwise replace this confirmation
-      // with the generic "Audit complete" notice.
-      post({ type: "code-connect-result", accepted: result.evidence.length, rejected: result.rejected });
     } else if (message.type === "import-project-style-guide") {
       const binding = adapter.importProjectStyleGuide(message.raw);
       sessionStyleGuidePack = undefined;
@@ -538,6 +532,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       if (graph && report) await analyzeCurrentGraph(activeScope, report.target.rootIds);
       post({ type: "session-reference-result", count: 0, projectStyleGuide: bootstrap.projectStyleGuide });
     } else if (message.type === "preview-contribution") {
+      if (invalidateProfileIfNeeded()) return;
       const current = assertCurrentReport("previewing a learning contribution");
       const projectScope = activeProjectStyleGuidePack()?.source.projectScope
         ?? (figma.fileKey ? `project:${targetFileFingerprint(figma.fileKey).slice(4)}` : "project:session-unbound");
@@ -549,6 +544,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       });
       post({ type: "contribution-preview", envelope: pendingContribution, content: `${JSON.stringify(pendingContribution, null, 2)}\n` });
     } else if (message.type === "export-contribution") {
+      if (invalidateProfileIfNeeded()) return;
       const current = assertCurrentReport("exporting a learning contribution");
       if (!pendingContribution || pendingContribution.digest !== message.digest) throw new Error("The contribution preview is stale; preview it again before export");
       if (current.report.rulesetVersion !== pendingContribution.producer.rulesetVersion) throw new Error("The contribution preview is stale; preview it again before export");
@@ -560,6 +556,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         content: `${JSON.stringify(pendingContribution, null, 2)}\n`,
       });
     } else if (message.type === "waive" || message.type === "clear-waiver") {
+      if (invalidateProfileIfNeeded()) return;
       const current = assertCurrentReport("managing waivers");
       if (!current.report.findings.some((finding) => finding.id === message.findingId)) throw new Error("The finding is stale; rescan before managing its waiver");
       const waivers = await loadWaivers();
@@ -573,6 +570,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       await saveWaivers(waivers);
       await analyzeCurrentGraph(activeScope, current.report.target.rootIds);
     } else if (message.type === "confirm-pattern") {
+      if (invalidateProfileIfNeeded()) return;
       const current = assertCurrentReport("resolving a contextual alias");
       const finding = current.report.findings.find((candidate) => candidate.id === message.findingId);
       if (!finding || finding.ruleId !== "naming.pattern-contextual" || !finding.patternResolution?.candidates?.includes(message.canonicalName)) {
@@ -599,6 +597,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       post({ type: "mutation-result", message: `Renamed the contextual alias to ${name}. Rescanning the complete file…` });
       await rescanActiveTarget(true);
     } else if (message.type === "create-token") {
+      if (invalidateProfileIfNeeded()) return;
       const current = assertCurrentReport("creating a token");
       const sourceFinding = current.report.findings.find((candidate) => {
         const suggested = candidate.suggestedValue as { field?: unknown; nodeIds?: unknown; rawValue?: unknown } | undefined;
@@ -621,6 +620,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       post({ type: "mutation-result", message: `Created one semantic token and bound ${result.boundCount} repeated uses. Rescanning the complete file…` });
       await rescanActiveTarget(true);
     } else if (message.type === "export") {
+      if (invalidateProfileIfNeeded()) return;
       const current = assertCurrentReport("exporting a report");
       const content = message.format === "json" ? `${JSON.stringify(current.report, null, 2)}\n` : reportToMarkdown(current.report);
       const extension = message.format === "json" ? "json" : "md";

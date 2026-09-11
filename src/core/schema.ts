@@ -1,6 +1,5 @@
 import {
   validateChangePlan,
-  validateCodeConnectParse,
   validateDesignReferencePack,
   validateFinding,
   validateKnowledgeCandidate,
@@ -17,7 +16,6 @@ import {
 
 export type ContractName =
   | "change-plan"
-  | "code-connect-parse"
   | "design-reference-pack"
   | "finding"
   | "knowledge-candidate"
@@ -32,7 +30,6 @@ export type ContractName =
 
 const validators: Record<ContractName, GeneratedValidator> = {
   "change-plan": validateChangePlan,
-  "code-connect-parse": validateCodeConnectParse,
   "design-reference-pack": validateDesignReferencePack,
   finding: validateFinding,
   "knowledge-candidate": validateKnowledgeCandidate,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { sourceFrameIds } from "../src/core/operations/graph";
 import { inferProfileFromPages } from "../src/core/profile-inference";
+import { profileSemanticErrors, reconcileProfilePages } from "../src/core/profile";
 import { canReadComponentPropertyDefinitions } from "../src/figma/operations/component";
 import { node, profile } from "./fixtures";
 
@@ -24,6 +25,51 @@ describe("profile and component operations", () => {
     expect(result.artifactKind).toBe("product");
     expect(result.pageRoles.screens.pageIds).toEqual(["screens"]);
     expect(Object.values(result.pageRoles).flatMap((role) => role.pageIds)).not.toContain("notes");
+  });
+
+  it("maps component pages inside a deterministic section and skips navigation pages", () => {
+    const result = inferProfileFromPages([
+      { id: "cover", name: "👀 Cover" },
+      { id: "catalog", name: "📚 Component Catalog" },
+      { id: "marker", name: "❖ Components" },
+      { id: "button", name: "Button — Light" },
+      { id: "card", name: "Card" },
+      { id: "divider", name: "---" },
+      { id: "archive", name: "💀 Archive" },
+    ]);
+    expect(result.artifactKind).toBe("library");
+    expect(result.pageRoles.components.pageIds).toEqual(["button", "card"]);
+    expect(Object.values(result.pageRoles).flatMap((role) => role.pageIds)).not.toEqual(expect.arrayContaining(["cover", "catalog", "marker", "archive"]));
+  });
+
+  it("suggests local Semantic collections but never enabled-library collections", () => {
+    const result = inferProfileFromPages(
+      [{ id: "components", name: "Main Component Library" }],
+      [
+        { key: "semantic-colors", name: "Semantic Colors" },
+        { key: "semantic-remote", name: "Semantic Remote", remote: true },
+        { key: "primitives", name: "Primitives" },
+      ],
+    );
+    expect(result.tokenSourceCollectionKeys).toEqual(["semantic-colors"]);
+  });
+
+  it("strips deleted page mappings and requires the reconciled product profile to be confirmed", () => {
+    const configured = profile({
+      pageRoles: {
+        foundations: { pageIds: ["foundation", "deleted"], externalLibraryKeys: ["foundation:key"] },
+        components: { pageIds: ["components"], externalLibraryKeys: ["components:key"] },
+        screens: { pageIds: ["deleted"], externalLibraryKeys: [] },
+      },
+    });
+    const result = reconcileProfilePages(configured, new Set(["foundation", "components"]));
+    expect(result.removedPageIds).toEqual(["deleted"]);
+    expect(result.profile.pageRoles).toEqual({
+      foundations: { pageIds: ["foundation"], externalLibraryKeys: ["foundation:key"] },
+      components: { pageIds: ["components"], externalLibraryKeys: ["components:key"] },
+      screens: { pageIds: [], externalLibraryKeys: [] },
+    });
+    expect(profileSemanticErrors(result.profile, new Set(["foundation", "components"]))).toContain("A product profile requires at least one local Screens page");
   });
 
   it("never reads property definitions from a component variant", () => {

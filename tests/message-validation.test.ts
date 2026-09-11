@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { parseUiMessage } from "../src/plugin/message-validation";
-import { profile } from "./fixtures";
 
 describe("UI message validation", () => {
   it("accepts source-frame and component certification requests", () => {
@@ -25,11 +24,13 @@ describe("UI message validation", () => {
     expect(() => parseUiMessage(message)).toThrow();
   });
 
-  it("requires a schema-valid profile for scans", () => {
-    expect(parseUiMessage({ type: "scan", request: { scope: "selection", profile: profile(), refreshKnowledge: true } })).toMatchObject({ type: "scan" });
-    expect(parseUiMessage({ type: "refresh-audit", profile: profile() })).toMatchObject({ type: "refresh-audit" });
-    expect(() => parseUiMessage({ type: "scan", request: { scope: "selection", profile: {}, refreshKnowledge: true } })).toThrow("profile is invalid");
-    expect(() => parseUiMessage({ type: "refresh-audit", profile: {} })).toThrow("profile is invalid");
+  it("accepts only scan scope and knowledge-refresh intent", () => {
+    expect(parseUiMessage({ type: "scan", request: { scope: "selection", refreshKnowledge: true } })).toEqual({
+      type: "scan",
+      request: { scope: "selection", refreshKnowledge: true },
+    });
+    expect(parseUiMessage({ type: "refresh-audit" })).toEqual({ type: "refresh-audit" });
+    expect(() => parseUiMessage({ type: "scan", request: { scope: "selection", profile: {}, refreshKnowledge: true } })).toThrow("scan request is invalid");
   });
 
   it("rejects malformed or unsafe token creation payloads", () => {

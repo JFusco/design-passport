@@ -32,7 +32,6 @@ describe("rule engine and report", () => {
       "naming.source-unique",
       "pipeline.annotation",
       "pipeline.certification-freshness",
-      "pipeline.code-connect",
       "pipeline.consumable-root",
       "pipeline.dev-resource",
       "pipeline.export-names",
@@ -264,18 +263,4 @@ describe("rule engine and report", () => {
     expect(finding?.evidence.measured.withoutAutoLayoutCount).toBe(0);
   });
 
-  it("treats Code Connect as opt-in profile evidence", () => {
-    const optionalProfile = profile({ requireCodeConnect: false });
-    const optionalFinding = evaluateRules(healthyGraph(optionalProfile), optionalProfile, ["root:desktop"])
-      .find((finding) => finding.ruleId === "pipeline.code-connect");
-    expect(optionalFinding).toMatchObject({ status: "not-applicable", evidence: { measured: { required: false } } });
-
-    const requiredProfile = profile({ requireCodeConnect: true });
-    const requiredGraph = healthyGraph(requiredProfile);
-    requiredGraph.nodes["button:1"]!.component = { kind: "component", descriptionLength: 20, documentationLinkCount: 0, propertyDefinitions: [] };
-    requiredGraph.componentIds = ["button:1"];
-    const requiredFinding = evaluateRules(requiredGraph, requiredProfile, ["root:desktop"])
-      .find((finding) => finding.ruleId === "pipeline.code-connect");
-    expect(requiredFinding).toMatchObject({ status: "fail", evidence: { measured: { required: true } } });
-  });
 });

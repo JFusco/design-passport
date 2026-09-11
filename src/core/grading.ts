@@ -55,7 +55,7 @@ export function letterForScore(score: number): GradeLetter {
   return "F";
 }
 
-export function gradeFromAxes(scores: AxisScore[], missingCodeConnect: boolean): Grade {
+export function gradeFromAxes(scores: AxisScore[]): Grade {
   const axisNames = new Set(scores.map((axis) => axis.axis));
   if (scores.length !== AXES.length || axisNames.size !== AXES.length || AXES.some((axis) => !axisNames.has(axis))
     || scores.some((axis) => !Number.isFinite(axis.score) || axis.score < 0 || axis.score > 100 || axis.multiplier !== AXIS_MULTIPLIERS[axis.axis])) {
@@ -63,9 +63,6 @@ export function gradeFromAxes(scores: AxisScore[], missingCodeConnect: boolean):
   }
   const denominator = scores.reduce((sum, axis) => sum + axis.multiplier, 0);
   const uncappedScore = Math.round((scores.reduce((sum, axis) => sum + axis.score * axis.multiplier, 0) / denominator) * 10) / 10;
-  if (missingCodeConnect && uncappedScore >= 90) {
-    return { score: 89.9, letter: "B", uncappedScore, capReason: "Missing verified Code Connect evidence caps readiness at B." };
-  }
   return { score: uncappedScore, letter: letterForScore(uncappedScore) };
 }
 

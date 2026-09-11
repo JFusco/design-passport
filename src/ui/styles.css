@@ -143,7 +143,7 @@ button:disabled { cursor: not-allowed; opacity: .46; }
   top: 0;
   z-index: 3;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 3px;
   padding: 6px 9px;
   background: var(--header);
@@ -256,6 +256,26 @@ button:disabled { cursor: not-allowed; opacity: .46; }
   white-space: nowrap;
   border: 0;
 }
+.profile-form .banner ul { margin: 5px 0 0; padding-left: 17px; }
+.profile-status, .profile-suggestion { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.profile-status > div { display: grid; gap: 2px; }
+.profile-status small { max-width: 360px; color: var(--muted-ink); font-size: 10px; font-weight: 400; line-height: 1.4; }
+.profile-status > span { color: var(--muted-ink); font-family: "Fragment Mono", ui-monospace, monospace; font-size: 9px; text-align: right; }
+.profile-suggestion { align-items: flex-start; border-left: 3px solid var(--brand); }
+.profile-suggestion > div { min-width: 0; }
+.profile-suggestion strong { font-size: 11px; }
+.profile-suggestion p { margin: 3px 0 0; color: var(--muted-ink); font-size: 10px; line-height: 1.45; }
+.profile-suggestion .button { flex: 0 0 auto; }
+.profile-kind-help { margin-top: -5px; }
+.advanced-setup { border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.advanced-setup > summary { padding: 11px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
+.advanced-setup > summary::-webkit-details-marker { display: none; }
+.advanced-setup > summary > span:first-child { display: grid; gap: 2px; }
+.advanced-setup > summary small { color: var(--muted-ink); font-size: 9px; font-weight: 400; }
+.advanced-setup > summary > span:last-child { color: var(--muted-ink); font-family: "Fragment Mono", ui-monospace, monospace; font-size: 9px; text-transform: uppercase; }
+.advanced-setup > .stack { padding: 0 11px 11px; border-top: 1px solid var(--border); }
+.footer-link { margin-left: auto; padding: 0; color: var(--muted-ink); background: transparent; border: 0; font: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.footer-link:hover { color: var(--ink); }
 
 .binding-card, .guidance-card, .contribution-preview {
   display: grid;

@@ -16,7 +16,6 @@ for (const file of files) {
 
 const exports = {
   validateChangePlan: "https://verndale.com/schemas/figma-ai-ready/change-plan.schema.json",
-  validateCodeConnectParse: "https://verndale.com/schemas/figma-ai-ready/code-connect-parse.schema.json",
   validateDesignReferencePack: "https://verndale.com/schemas/figma-ai-ready/design-reference-pack.schema.json",
   validateFinding: "https://verndale.com/schemas/figma-ai-ready/finding.schema.json",
   validateKnowledgeCandidate: "https://verndale.com/schemas/figma-ai-ready/knowledge-candidate.schema.json",

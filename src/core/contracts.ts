@@ -36,7 +36,6 @@ export interface ReadinessProfile {
   breakpoints: Array<{ name: string; width: number; variableModeName?: string }>;
   tokenSourceCollectionKeys: string[];
   namingPolicy: "code-aligned-strict";
-  requireCodeConnect?: boolean;
 }
 
 export interface PatternResolution {
@@ -333,14 +332,6 @@ export interface ResponsiveFamily {
   bindingParity: boolean;
 }
 
-export interface CodeConnectEvidence {
-  nodeId: string;
-  label: string;
-  language: string;
-  sourceFingerprint: string;
-  verifiedForFile: boolean;
-}
-
 export interface DesignKnowledgeGraph {
   schemaVersion: 1;
   fileName: string;
@@ -358,13 +349,11 @@ export interface DesignKnowledgeGraph {
   instanceIds: string[];
   repeatedStructureGroups: Array<{ signature: string; nodeIds: string[] }>;
   sourceFrameIds: string[];
-  codeConnect: CodeConnectEvidence[];
   snapshotHash: string;
 }
 
 export interface ScanRequest {
   scope: ScanScope;
-  profile: ReadinessProfile;
   refreshKnowledge: boolean;
 }
 
