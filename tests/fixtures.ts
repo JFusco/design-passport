@@ -174,7 +174,6 @@ export function healthyGraph(inputProfile = profile()): DesignKnowledgeGraph {
     componentIds: [],
     instanceIds: [],
     sourceFrameIds: [root.id, tablet.id, mobile.id],
-    codeConnect: [],
   }, inputProfile);
 }
 

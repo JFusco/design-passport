@@ -8,7 +8,6 @@ type ValidationError = {
 export type GeneratedValidator = ((value: unknown) => boolean) & { errors?: ValidationError[] | null };
 
 export const validateChangePlan: GeneratedValidator;
-export const validateCodeConnectParse: GeneratedValidator;
 export const validateDesignReferencePack: GeneratedValidator;
 export const validateFinding: GeneratedValidator;
 export const validateKnowledgeCandidate: GeneratedValidator;

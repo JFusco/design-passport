@@ -70,9 +70,9 @@ describe("deterministic grading", () => {
     expect(score?.score).toBe(75);
   });
 
-  it("caps an otherwise A report at B when Code Connect is missing", () => {
+  it("returns the weighted grade without an integration-specific cap", () => {
     const scores = AXES.map((axis) => ({ axis, score: 100, passedWeight: 1, applicableWeight: 1, multiplier: (["token-application", "layer-naming", "pipeline-readiness"] as string[]).includes(axis) ? 2 as const : 1 as const, statusCounts: { pass: 1, fail: 0, "needs-review": 0, waived: 0, "not-applicable": 0 } }));
-    expect(gradeFromAxes(scores, true)).toEqual({ score: 89.9, letter: "B", uncappedScore: 100, capReason: "Missing verified Code Connect evidence caps readiness at B." });
+    expect(gradeFromAxes(scores)).toEqual({ score: 100, letter: "A" });
   });
 
   it("uses each source frame's worst axis rather than averaging it away", () => {

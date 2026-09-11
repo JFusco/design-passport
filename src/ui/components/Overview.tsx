@@ -11,6 +11,7 @@ export interface OverviewProps {
   stale: boolean;
   canMutateDocument: boolean;
   scanning: boolean;
+  actionsBlocked: boolean;
   onScan: (scope: ScanScope, refresh?: boolean) => void;
   onCertify: () => void;
   onCertifyComponents: () => void;
@@ -30,9 +31,9 @@ export function Overview(props: OverviewProps) {
       <div className="scope-card">
         <div><span className="section-label">Audit target</span><p>Select components or modules in Figma for a focused scan, scan the current page, or grade every source target. Every scope uses the same whole-file knowledge.</p></div>
         <div className="scope-actions">
-          <button className="button primary" disabled={props.scanning || props.selectionCount === 0} onClick={() => props.onScan("selection")}>Selected components ({props.selectionCount})</button>
-          <button className="button" disabled={props.scanning} onClick={() => props.onScan("page")}>Current page</button>
-          <button className="button" disabled={props.scanning} onClick={() => props.onScan("file")}>Source frames</button>
+          <button className="button primary" disabled={props.actionsBlocked || props.scanning || props.selectionCount === 0} onClick={() => props.onScan("selection")}>Selected components ({props.selectionCount})</button>
+          <button className="button" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan("page")}>Current page</button>
+          <button className="button" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan("file")}>Source frames</button>
         </div>
       </div>
       {!props.report ? (
@@ -55,13 +56,13 @@ export function Overview(props: OverviewProps) {
           </div>
           <div className="footer-actions">
             {props.stale
-              ? <button className="button primary" disabled={props.scanning} onClick={() => props.onScan(props.report?.target.scope ?? "selection", true)}>Refresh audit to certify</button>
+              ? <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan(props.report?.target.scope ?? "selection", true)}>Refresh audit to certify</button>
               : <>
-                <button className="button primary" disabled={!props.canMutateDocument || !componentsReady} onClick={props.onCertifyComponents}>Certify components ({componentFrames.length})</button>
-                <button className="button" disabled={!props.canMutateDocument || !props.report.ready} onClick={props.onCertify}>Certify source frames</button>
+                <button className="button primary" disabled={props.actionsBlocked || !props.canMutateDocument || !componentsReady} onClick={props.onCertifyComponents}>Certify components ({componentFrames.length})</button>
+                <button className="button" disabled={props.actionsBlocked || !props.canMutateDocument || !props.report.ready} onClick={props.onCertify}>Certify source frames</button>
               </>}
-            <button className="button" disabled={props.stale} onClick={() => props.onExport("json")}>Export JSON</button>
-            <button className="button" disabled={props.stale} onClick={() => props.onExport("markdown")}>Export Markdown</button>
+            <button className="button" disabled={props.actionsBlocked || props.stale} onClick={() => props.onExport("json")}>Export JSON</button>
+            <button className="button" disabled={props.actionsBlocked || props.stale} onClick={() => props.onExport("markdown")}>Export Markdown</button>
           </div>
         </>
       )}

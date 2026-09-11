@@ -1,4 +1,4 @@
-import { CATALOG_VERSION, resolvePattern } from "../catalog";
+import { CATALOG_VERSION } from "../catalog";
 import { AI_SOURCE_FRAME_ANNOTATION, RULESET_VERSION } from "../constants";
 import type { DesignKnowledgeGraph, Finding, NodeSnapshot, ReadinessProfile } from "../contracts";
 import { createFinding } from "./finding";
@@ -88,46 +88,6 @@ export function evaluatePipelineRules(
       ? "Exported assets use non-default names."
       : `${badExports.length} exported assets need stable semantic names.`,
     { exportedCount: exported.length, invalidNameCount: badExports.length },
-  ));
-
-  const coreComponents = new Map<string, { id: string; name: string }>();
-  for (const node of nodes) {
-    if (node.component && !["novel", "contextual", "none"].includes(resolvePattern(node.name).kind)) {
-      coreComponents.set(node.id, { id: node.id, name: node.name });
-    }
-    if (
-      node.instance?.mainComponentId
-      && node.instance.mainComponentName
-      && !["novel", "contextual", "none"].includes(resolvePattern(node.instance.mainComponentName).kind)
-    ) {
-      coreComponents.set(node.instance.mainComponentId, {
-        id: node.instance.mainComponentId,
-        name: node.instance.mainComponentName,
-      });
-    }
-  }
-  const connected = new Set(
-    graph.codeConnect.filter((item) => item.verifiedForFile).map((item) => item.nodeId),
-  );
-  const unconnected = [...coreComponents.values()].filter((node) => !connected.has(node.id));
-  const unconnectedNode = graph.nodes[unconnected[0]?.id ?? ""] ?? root;
-  const codeConnectRequired = profile.requireCodeConnect === true;
-  output.push(createFinding(
-    "pipeline.code-connect",
-    "pipeline-readiness",
-    2,
-    root,
-    unconnectedNode,
-    !codeConnectRequired || coreComponents.size === 0 ? "not-applicable" : unconnected.length === 0 ? "pass" : "fail",
-    "Verified Code Connect evidence",
-    !codeConnectRequired
-      ? "Code Connect is not required by this file profile."
-      : coreComponents.size === 0
-      ? "No in-scope core components are defined or referenced in this target."
-      : unconnected.length === 0
-        ? "Every in-scope core component has verified Code Connect parse evidence."
-        : `${unconnected.length} of ${coreComponents.size} core components lack verified Code Connect evidence; the grade is capped at B.`,
-    { required: codeConnectRequired, coreComponentCount: coreComponents.size, unconnectedCount: unconnected.length },
   ));
 
   const certification = root.certification;

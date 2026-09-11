@@ -5,9 +5,7 @@ import { friendlyReference, humanizeIdentifier, relativeTime } from "../operatio
 
 export interface ContextPanelProps {
   knowledge: KnowledgeSummary | undefined;
-  codeConnectRaw: string;
-  onCodeConnectRaw: (value: string) => void;
-  onImport: () => void;
+  actionsBlocked: boolean;
   onRefresh: () => void;
   projectStyleGuide: ProjectStyleGuideStatus;
   referencePackRaw: string;
@@ -34,7 +32,7 @@ export function ContextPanel(props: ContextPanelProps) {
 
   return (
     <section className="panel stack">
-      <div className="section-heading"><div><span className="section-label">Whole-file design knowledge</span><h2>{props.knowledge?.complete ? "Complete" : "Not built"}</h2></div><button className="button" onClick={props.onRefresh}>Rebuild context</button></div>
+      <div className="section-heading"><div><span className="section-label">Whole-file design knowledge</span><h2>{props.knowledge?.complete ? "Complete" : "Not built"}</h2></div><button className="button" disabled={props.actionsBlocked} onClick={props.onRefresh}>Rebuild context</button></div>
       {props.knowledge && <>
         <div className="context-grid">
           <Metric label="Pages loaded" value={`${props.knowledge.loadedPageCount} / ${props.knowledge.pageCount}`} />
@@ -91,10 +89,6 @@ export function ContextPanel(props: ContextPanelProps) {
       {props.sessionReferenceCount > 0 ? <button className="button subtle" onClick={props.onClearSessionReferences}>Clear session references</button> : null}
       {!props.canMutateDocument ? <p className="fine-print">Dev Mode can read and apply a connected style guide, but cannot import, replace, or remove it.</p> : null}
       {!props.fileKeyAvailable ? <p className="fine-print">This file has not been saved yet, so a style guide can be used for this session but cannot be connected permanently.</p> : null}
-      <div className="divider" />
-      <div><span className="section-label">Optional Code Connect evidence</span><h2>Add Code Connect evidence</h2><p className="fine-print">Choose the parse file created by the Code Connect command. Design Passport validates it and never executes or renders template content.</p></div>
-      <JsonFilePicker id="code-connect-file" label="Choose Code Connect file" help="JSON files up to 2 MB are supported." value={props.codeConnectRaw} maximumBytes={2_000_000} onLoad={props.onCodeConnectRaw} />
-      <button className="button" disabled={!props.codeConnectRaw.trim()} onClick={props.onImport}>Validate and add evidence</button>
     </section>
   );
 }

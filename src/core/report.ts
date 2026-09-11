@@ -17,10 +17,6 @@ export interface BuildReportInput {
   now?: Date;
 }
 
-function missingCodeConnect(findings: Finding[]): boolean {
-  return findings.some((item) => item.ruleId === "pipeline.code-connect" && item.status !== "pass" && item.status !== "not-applicable");
-}
-
 function blockers(findings: Finding[]): Finding[] {
   return findings.filter((item) => item.hardBlocker && item.status !== "pass" && item.status !== "not-applicable");
 }
@@ -83,7 +79,7 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
     const frameFindings = findings.filter((item) => item.rootId === rootId);
     const scores = axisScores(frameFindings);
     const grade = capGradeForTokenCoverage(
-      gradeFromAxes(scores, missingCodeConnect(frameFindings)),
+      gradeFromAxes(scores),
       tokenCoverage(frameFindings),
     );
     const frameBlockers = blockers(frameFindings);

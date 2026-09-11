@@ -21,8 +21,8 @@ import { Modules } from "./components/Modules";
 import { Overview } from "./components/Overview";
 import { ProfileEditor } from "./components/ProfileEditor";
 import { findingsForReview } from "./operations/findings";
-import { codeConnectImportFeedback } from "./operations/notices";
 import { certificationNotice, cloneProfile } from "./operations/presentation";
+import { discardProfileDraft, profileDraftState } from "./operations/profile-state";
 import type { BootstrapEnvelope, Tab, TokenWizardState, WaiverDraft } from "./types";
 
 function send(message: UiToPluginMessage): void {
@@ -41,6 +41,7 @@ function download(filename: string, content: string, type: string): void {
 
 export function App() {
   const [bootstrap, setBootstrap] = useState<BootstrapEnvelope>();
+  const [committedProfile, setCommittedProfile] = useState<ReadinessProfile>();
   const [profile, setProfile] = useState<ReadinessProfile>();
   const [report, setReport] = useState<ReadinessReport>();
   const [plans, setPlans] = useState<ChangePlan[]>([]);
@@ -59,7 +60,6 @@ export function App() {
   const [variantFilter, setVariantFilter] = useState("all");
   const [expanded, setExpanded] = useState<string>();
   const [undoAcknowledged, setUndoAcknowledged] = useState(false);
-  const [codeConnectRaw, setCodeConnectRaw] = useState("");
   const [tokenWizard, setTokenWizard] = useState<TokenWizardState>();
   const [waiverDraft, setWaiverDraft] = useState<WaiverDraft>();
   const [insights, setInsights] = useState<KnowledgeInsight[]>([]);
@@ -80,6 +80,7 @@ export function App() {
           catalogVersion: message.catalogVersion,
           catalogDigest: message.catalogDigest,
         });
+        setCommittedProfile(cloneProfile(message.data.profile));
         setProfile(cloneProfile(message.data.profile));
         setCollections(message.data.collections);
         setSelectionCount(message.data.selectionCount);
@@ -107,28 +108,34 @@ export function App() {
       } else if (message.type === "selection") {
         setSelectionCount(message.count);
       } else if (message.type === "profile-saved") {
-        setProfile(cloneProfile(message.profile));
+        setBootstrap((current) => current ? { ...current, data: message.data } : current);
+        setCommittedProfile(cloneProfile(message.data.profile));
+        setProfile(cloneProfile(message.data.profile));
         setReport(undefined);
         setPlans([]);
         setKnowledge(undefined);
         setStale(true);
         setError(undefined);
-        setNotice("Profile saved. The next audit will rebuild whole-file knowledge.");
+        setNotice("Audit setup saved. The next audit will rebuild whole-file knowledge.");
         setActiveTab("overview");
+      } else if (message.type === "profile-invalidated") {
+        setBootstrap((current) => current ? { ...current, data: message.data } : current);
+        setCommittedProfile(cloneProfile(message.data.profile));
+        setProfile(cloneProfile(message.data.profile));
+        setReport(undefined);
+        setPlans([]);
+        setKnowledge(undefined);
+        setInsights([]);
+        setContribution(undefined);
+        setProgress(undefined);
+        setStale(true);
+        setError(undefined);
+        setNotice(undefined);
+        setActiveTab("profile");
       } else if (message.type === "mutation-result") {
         setNotice(message.message);
       } else if (message.type === "certified") {
         setNotice(certificationNotice(message.count, message.target, message.removedVariantAnnotations));
-      } else if (message.type === "code-connect-result") {
-        const feedback = codeConnectImportFeedback(message.accepted, message.rejected);
-        if (feedback.tone === "error") {
-          setError(feedback.message);
-          setNotice(undefined);
-        } else {
-          setNotice(feedback.message);
-          setError(undefined);
-        }
-        setCodeConnectRaw("");
       } else if (message.type === "project-style-guide-result") {
         setBootstrap((current) => current ? { ...current, data: { ...current.data, projectStyleGuide: message.status } } : current);
         setReferencePackRaw("");
@@ -183,14 +190,35 @@ export function App() {
     [report, showPassing, axisFilter, pageFilter, rootFilter, variantFilter],
   );
 
+  const draftState = useMemo(
+    () => profile && committedProfile && bootstrap
+      ? profileDraftState({
+        committed: committedProfile,
+        draft: profile,
+        configured: bootstrap.data.profileConfigured,
+        profileIssues: bootstrap.data.profileIssues,
+        pageIds: bootstrap.data.pages.map((page) => page.id),
+      })
+      : { dirty: false, semanticErrors: [], issues: [], blocked: true },
+    [profile, committedProfile, bootstrap],
+  );
+  const profileGateMessage = draftState.semanticErrors.length > 0
+    ? "Audit setup needs attention. Fix the listed items before auditing or applying fixes."
+    : draftState.dirty
+      ? "Advanced audit setup has unsaved changes. Save or discard them before auditing or applying fixes."
+      : "Design Passport could not classify this file safely. Confirm the recommended audit setup to continue.";
+
   const scan = (scope: ScanScope, refreshKnowledge = false) => {
-    if (!profile) return;
+    if (!profile || draftState.blocked) {
+      setActiveTab("profile");
+      return;
+    }
     setError(undefined);
     setNotice(undefined);
-    send({ type: "scan", request: { scope, profile, refreshKnowledge } });
+    send({ type: "scan", request: { scope, refreshKnowledge } });
   };
 
-  if (!bootstrap || !profile) {
+  if (!bootstrap || !profile || !committedProfile) {
     return <main className="loading"><span className="spinner" />Loading {PRODUCT_NAME}…</main>;
   }
 
@@ -207,16 +235,14 @@ export function App() {
         <div className="catalog-lock" title={bootstrap.catalogDigest}>Catalog {bootstrap.catalogVersion}</div>
       </header>
 
-      {!bootstrap.data.profileConfigured && (
-        <div className="banner warning">Confirm the file profile before the first audit. Suggested page roles are not persisted until they are saved in Design mode.</div>
-      )}
+      {draftState.blocked && <div className="banner warning"><span>{profileGateMessage}</span><button className="button subtle" onClick={() => setActiveTab("profile")}>Fix audit setup</button></div>}
       {!bootstrap.data.canMutateDocument && <div className="banner info">Dev Mode is audit-only. Switch to Design mode to save the profile, clean up findings, or certify frames.</div>}
       {stale && report && !error && (!progress || progress.phase === "complete") && <div className="banner warning">The design changed after this scan. Certification is disabled until whole-file knowledge is refreshed.</div>}
       {error && <div className="banner error"><span>{error}</span><button className="icon-button" onClick={() => setError(undefined)} aria-label="Dismiss error">×</button></div>}
       {notice && <div className="banner success"><span>{notice}</span><button className="icon-button" onClick={() => setNotice(undefined)} aria-label="Dismiss notice">×</button></div>}
 
       <nav className="tabs" aria-label="Plugin sections">
-        {(["overview", "modules", "findings", "guidance", "cleanup", "context", "profile"] as Tab[]).map((tab) => (
+        {(["overview", "modules", "findings", "guidance", "cleanup", "context"] as Tab[]).map((tab) => (
           <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>
             {tab[0]?.toUpperCase()}{tab.slice(1)}
             {tab === "findings" && report ? <span className="count">{report.findings.filter((item) => item.status !== "pass" && item.status !== "not-applicable").length}</span> : null}
@@ -240,6 +266,7 @@ export function App() {
           stale={stale}
           canMutateDocument={bootstrap.data.canMutateDocument}
           scanning={Boolean(progress && progress.phase !== "complete")}
+          actionsBlocked={draftState.blocked}
           onScan={scan}
           onCertify={() => send({ type: "certify" })}
           onCertifyComponents={() => send({ type: "certify-components" })}
@@ -259,7 +286,7 @@ export function App() {
           collections={collections.filter((collection) => !collection.remote && profile.tokenSourceCollectionKeys.includes(collection.key))}
           tokenWizard={tokenWizard}
           waiverDraft={waiverDraft}
-          disabled={stale}
+          disabled={stale || draftState.blocked}
           canMutateDocument={bootstrap.data.canMutateDocument}
           onTogglePassing={setShowPassing}
           onAxisFilter={setAxisFilter}
@@ -314,7 +341,7 @@ export function App() {
       {activeTab === "guidance" && (
         <Guidance
           insights={insights}
-          hasReport={Boolean(report) && !stale}
+          hasReport={Boolean(report) && !stale && !draftState.blocked}
           contribution={contribution}
           projectStyleGuide={bootstrap.data.projectStyleGuide}
           onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
@@ -325,7 +352,7 @@ export function App() {
       )}
       {activeTab === "cleanup" && (
         <Cleanup
-          disabled={stale || !bootstrap.data.canMutateDocument}
+          disabled={stale || draftState.blocked || !bootstrap.data.canMutateDocument}
           plans={plans}
           findings={report?.findings ?? []}
           undoAcknowledged={undoAcknowledged}
@@ -337,9 +364,7 @@ export function App() {
       {activeTab === "context" && (
         <ContextPanel
           knowledge={knowledge}
-          codeConnectRaw={codeConnectRaw}
-          onCodeConnectRaw={setCodeConnectRaw}
-          onImport={() => send({ type: "import-code-connect", raw: codeConnectRaw })}
+          actionsBlocked={draftState.blocked}
           onRefresh={() => scan(report?.target.scope ?? "selection", true)}
           projectStyleGuide={bootstrap.data.projectStyleGuide}
           referencePackRaw={referencePackRaw}
@@ -357,15 +382,27 @@ export function App() {
         <ProfileEditor
           canPersist={bootstrap.data.canMutateDocument}
           profile={profile}
+          suggestion={bootstrap.data.profileSuggestion}
           pages={bootstrap.data.pages}
           collections={collections}
+          configured={bootstrap.data.profileConfigured}
+          dirty={draftState.dirty}
+          issues={draftState.issues}
+          semanticErrors={draftState.semanticErrors}
           onChange={(next) => {
             setProfile(next);
-            setStale(true);
+            setContribution(undefined);
             setNotice(undefined);
             setError(undefined);
           }}
           onSave={() => send({ type: "save-profile", profile })}
+          onAcceptSuggestion={() => send({ type: "save-profile", profile: bootstrap.data.profileSuggestion })}
+          onDiscard={() => {
+            setProfile(discardProfileDraft(committedProfile, bootstrap.data.profileSuggestion, bootstrap.data.profileConfigured));
+            setContribution(undefined);
+            setNotice(undefined);
+            setError(undefined);
+          }}
         />
       )}
 
@@ -373,6 +410,7 @@ export function App() {
         <span>Ruleset {bootstrap.rulesetVersion}</span>
         <span>·</span>
         <span>{bootstrap.data.fileName}</span>
+        <button className="footer-link" onClick={() => setActiveTab("profile")}>Audit setup</button>
       </footer>
     </main>
   );

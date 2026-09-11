@@ -2,7 +2,7 @@
 
 ## Build the golden Figma fixture
 
-Create one private test file with these pages and confirm them in the plugin profile:
+Create one private test file with these conventional pages. Design Passport should classify them automatically:
 
 1. **Foundations**
    - Local primitive and semantic color/number variables.
@@ -22,9 +22,19 @@ Mark intended source frames with a normal source annotation. Add named export as
 
 ## Manual verification checklist
 
+The primary designer journey is **choose a target → audit → review Findings → apply previewed cleanup → automatic rescan → resolve only the remaining human decisions in Figma → re-audit → certify when ready**. Audit setup is not a routine step in this journey.
+
 - Run the organization-published **Design Passport** from Figma Resources and confirm light/dark UI in both Design and Dev Mode.
 - Separately, import `manifest.json` only when smoke-testing an unreleased local build; confirm it launches from **Plugins → Development**.
-- Confirm profile page roles are suggestions until saved and no page is moved or renamed.
+- On first run with conventional page names, verify there is no Profile tab or setup gate and a Current page audit can start immediately. Confirm automatic classification does not move or rename a page.
+- Open the secondary **Audit setup** link and verify the status is Ready, manual choices are collapsed under Advanced, and Product/Library terminology is absent from the normal audit journey.
+- With an existing report, make one valid unsaved advanced setup edit and verify scans, context rebuild, cleanup, certification, learning contribution, and exports remain disabled while the prior report stays readable.
+- Make the draft semantically invalid by switching to Product without a Screens page; verify the error appears inline, Save is disabled, and no global runtime error appears.
+- Discard a configured draft and verify the committed settings and prior report remain available. In a file automatic classification cannot resolve, verify Audit setup opens with one recommended action when the suggestion is valid and otherwise explains the exact manual decision required.
+- Try duplicate page roles, duplicate breakpoint names or widths, blank/whitespace names, and invalid widths; verify each problem is explained inline.
+- Delete a mapped page, then attempt an audit; verify the mapping is removed, Audit setup opens with a typed recovery explanation, and explicit confirmation is required before the audit can run.
+- Add, remove, or rename pages after a successful audit and verify topology changes invalidate or rebuild whole-file knowledge without persisting a draft.
+- Load stored profiles created by version 0.1.0 with both values of its removed optional integration flag; verify unrelated page roles, token collections, and breakpoints survive and the new shape is persisted only after Save.
 - Scan one selection and verify all pages load before analysis.
 - Cancel during a large page; confirm the partial graph cannot certify.
 - Inspect Context inventory for page roles, canonical/novel patterns, component use counts, responsive families, token collections, and repeated structures.
@@ -32,8 +42,6 @@ Mark intended source frames with a normal source annotation. Add named export as
 - Confirm default-name percentages against a manual count.
 - Confirm B at 85% token coverage and A at 95%.
 - Confirm each hard blocker prevents readiness.
-- Import valid, wrong-file, malformed, oversized, and hostile Code Connect parse JSON.
-- Confirm no template or source path appears in the UI/report.
 - Preview and apply low-risk cleanup; verify one undo group and idempotent rescan.
 - Apply inferred Auto Layout that stays within 0.5 px; verify success and clone cleanup.
 - Try a 0.51 px geometry change or introduced overlap/clipping; verify rollback.
@@ -45,6 +53,17 @@ Mark intended source frames with a normal source annotation. Add named export as
 - Certify a component set with legacy child coverage notes; confirm one concise root note remains, unrelated child annotations survive, the removal count is reported, and a repeat certification removes zero.
 - Expand the certified set in Modules; confirm direct variants and descendant finding counts remain visible and selecting a variant applies the exact Findings filter.
 - Change code-relevant geometry/style/content; rebuild context and confirm the old certificate is stale.
+
+## Disposable end-to-end stress fixture
+
+- Create a temporary page containing one top-level frame with missing source annotation, literal style values, a whitespace-damaged name, a Figma-default layer name, a spacer layer, clipping, and aligned absolute-positioned children that Figma can infer as Auto Layout.
+- Run Current page without opening Audit setup. Verify whole-file indexing completes and the findings include automatic, guarded, structural, and manual categories with node links.
+- Apply safe and guarded cleanup. Verify each risk group is a separate undo group, the whole file rescans once, the automatic name/annotation findings clear, and the score improves.
+- Apply inferred Auto Layout. Verify clone validation and a version-history checkpoint occur before the source changes, delayed temporary-clone events do not invalidate the rescan, and any newly measurable token fields appear as a follow-up guarded plan.
+- Apply that follow-up and verify Cleanup reports no previewable plan while manual findings remain in Findings.
+- Resolve the manual spacer and default-name findings directly in Figma. Verify the old report becomes stale, export/certification are disabled, and a new audit clears those findings.
+- If the fixture reaches B/ready, certify twice and verify exactly one grade annotation, one source marker, and current ruleset/catalog/snapshot metadata remain.
+- Delete the temporary page and verify the original page count and a normal current-page audit are restored. Never publish the development plugin during this test.
 
 ## Project guidance and knowledge-loop scenarios
 
