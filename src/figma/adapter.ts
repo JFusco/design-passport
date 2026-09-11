@@ -6,6 +6,7 @@ import type {
   NodeSnapshot,
   PageSnapshot,
   PaintSnapshot,
+  ProjectStyleGuideBindingV1,
   ReadinessProfile,
   ScanProgress,
   ScanScope,
@@ -17,6 +18,11 @@ import { populateGraphMetrics, sourceFrameIds, targetRootIds } from "../core/ope
 import { assertProfileSemantics } from "../core/profile";
 import { inferProfileFromPages } from "../core/profile-inference";
 import { hashValue } from "../core/stable";
+import {
+  buildProjectStyleGuideBinding,
+  parseProjectStyleGuideBinding,
+  parseReferencePack,
+} from "../core/knowledge-loop";
 import { canReadComponentPropertyDefinitions } from "./operations/component";
 import { annotationText } from "./operations/annotations";
 import { listVariableCollectionOptions, type VariableCollectionOption } from "./operations/collections";
@@ -39,7 +45,22 @@ export interface BootstrapData {
   profile: ReadinessProfile;
   profileConfigured: boolean;
   selectionCount: number;
+  projectStyleGuide: ProjectStyleGuideStatus;
 }
+
+export type ProjectStyleGuideStatus =
+  | { state: "none"; persistent: boolean }
+  | {
+    state: "active";
+    persistent: boolean;
+    packVersion: string;
+    digest: string;
+    projectScope: string;
+    sourceId: string;
+  }
+  | { state: "invalid"; persistent: boolean; error: string };
+
+const PROJECT_STYLE_GUIDE_KEY = "project-style-guide-binding-v1";
 
 export interface KnowledgeBuildResult {
   graph: DesignKnowledgeGraph;
@@ -518,7 +539,55 @@ export class FigmaAdapter {
       profile,
       profileConfigured,
       selectionCount: figma.currentPage.selection.length,
+      projectStyleGuide: this.getProjectStyleGuideStatus(),
     };
+  }
+
+  getProjectStyleGuideBinding(): ProjectStyleGuideBindingV1 | undefined {
+    const stored = figma.root.getPluginData(PROJECT_STYLE_GUIDE_KEY);
+    if (!stored) return undefined;
+    if (!figma.fileKey) throw new Error("A stable Figma file key is unavailable; the stored project style guide cannot be applied");
+    return parseProjectStyleGuideBinding(stored, figma.fileKey);
+  }
+
+  getProjectStyleGuideStatus(): ProjectStyleGuideStatus {
+    const stored = figma.root.getPluginData(PROJECT_STYLE_GUIDE_KEY);
+    if (!stored) return { state: "none", persistent: Boolean(figma.fileKey) };
+    try {
+      const binding = this.getProjectStyleGuideBinding();
+      if (!binding) return { state: "none", persistent: Boolean(figma.fileKey) };
+      return {
+        state: "active",
+        persistent: true,
+        packVersion: binding.pack.packVersion,
+        digest: binding.pack.digest,
+        projectScope: binding.projectScope,
+        sourceId: binding.pack.source.sourceId,
+      };
+    } catch (error) {
+      return {
+        state: "invalid",
+        persistent: Boolean(figma.fileKey),
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  importProjectStyleGuide(raw: string): ProjectStyleGuideBindingV1 {
+    if (figma.editorType !== "figma") throw new Error("Switch to Design mode to import or replace a project style guide");
+    if (!figma.fileKey) throw new Error("A stable Figma file key is required to bind project guidance. This pack can only be used as a session reference");
+    const pack = parseReferencePack(raw, "style-guide");
+    const binding = buildProjectStyleGuideBinding(pack, figma.fileKey);
+    // Validate the complete replacement before touching the existing valid value.
+    const serialized = JSON.stringify(binding);
+    parseProjectStyleGuideBinding(serialized, figma.fileKey);
+    figma.root.setPluginData(PROJECT_STYLE_GUIDE_KEY, serialized);
+    return binding;
+  }
+
+  removeProjectStyleGuide(): void {
+    if (figma.editorType !== "figma") throw new Error("Switch to Design mode to remove a project style guide");
+    figma.root.setPluginData(PROJECT_STYLE_GUIDE_KEY, "");
   }
 
   async saveProfile(profile: ReadinessProfile): Promise<void> {

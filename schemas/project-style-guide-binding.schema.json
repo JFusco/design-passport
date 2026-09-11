@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verndale.com/schemas/figma-ai-ready/project-style-guide-binding.schema.json",
+  "title": "ProjectStyleGuideBindingV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "targetFileFingerprint", "projectScope", "pack", "boundAt", "digest"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "targetFileFingerprint": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/digest" },
+    "projectScope": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/opaqueId" },
+    "pack": { "$ref": "https://verndale.com/schemas/figma-ai-ready/design-reference-pack.schema.json" },
+    "boundAt": { "type": "string", "format": "date-time" },
+    "digest": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/digest" }
+  }
+}

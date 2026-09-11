@@ -2,15 +2,33 @@ import { CATALOG_DIGEST, CATALOG_VERSION } from "../core/catalog";
 import { PRODUCT_NAME } from "../core/constants";
 import { importCodeConnectJson } from "../core/code-connect";
 import { RULESET_VERSION } from "../core/constants";
-import type { ChangePlan, DesignKnowledgeGraph, ReadinessProfile, ReadinessReport, ScanScope } from "../core/contracts";
+import type {
+  ChangePlan,
+  DesignKnowledgeGraph,
+  DesignReferencePackV1,
+  ReadinessProfile,
+  ReadinessReport,
+  ReviewLearningEnvelopeV1,
+  ScanScope,
+} from "../core/contracts";
 import { isKnowledgeFresh, replaceCodeConnectEvidence } from "../core/knowledge";
+import {
+  buildKnowledgeInsights,
+  buildLearningEnvelope,
+  assertTeamKnowledgePack,
+  parseReferencePack,
+  targetFileFingerprint,
+  validateSessionPackUse,
+} from "../core/knowledge-loop";
+import type { TeamKnowledgePackV1 } from "../core/contracts";
+import teamKnowledgePackJson from "../generated/team-knowledge.pack.json";
 import { reportToMarkdown } from "../core/markdown";
 import { buildChangePlans } from "../core/planner";
 import { buildReadinessReport } from "../core/report";
 import { evaluateRules } from "../core/rules";
 import { hashValue, stableStringify } from "../core/stable";
 import { applyWaivers, sanitizeWaiverStore, type WaiverStore } from "../core/waivers";
-import { FigmaAdapter, type BootstrapData, type VariableCollectionOption } from "../figma/adapter";
+import { FigmaAdapter, type BootstrapData, type ProjectStyleGuideStatus, type VariableCollectionOption } from "../figma/adapter";
 import { applyChangePlan, clearVariantCoverageAnnotations, createSemanticTokenAndBind, setCertification } from "../figma/mutations";
 import { buildKnowledgeSummary } from "./knowledge-summary";
 import { parseUiMessage } from "./message-validation";
@@ -37,6 +55,14 @@ const knowledgeState = new KnowledgeSessionState();
 const commandGate = new CommandGate();
 const mutationChangeGuard = new MutationChangeGuard();
 let documentChangeWatching = false;
+let sessionReferencePacks: DesignReferencePackV1[] = [];
+let sessionStyleGuidePack: DesignReferencePackV1 | undefined;
+let pendingContribution: ReviewLearningEnvelopeV1 | undefined;
+
+const PLUGIN_VERSION = "0.1.0";
+const TEAM_KNOWLEDGE_PACK = teamKnowledgePackJson as TeamKnowledgePackV1;
+assertTeamKnowledgePack(TEAM_KNOWLEDGE_PACK);
+const KNOWLEDGE_VERSION = TEAM_KNOWLEDGE_PACK.knowledgeVersion;
 
 function post(message: PluginToUiMessage): void {
   figma.ui.postMessage(message);
@@ -44,6 +70,35 @@ function post(message: PluginToUiMessage): void {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function storedProjectStyleGuideBinding() {
+  if (adapter.getProjectStyleGuideStatus().state !== "active") return undefined;
+  try {
+    return adapter.getProjectStyleGuideBinding();
+  } catch {
+    // A duplicated file can retain private root data whose target fingerprint no
+    // longer matches. Treat that binding as unavailable so the deterministic
+    // Passport audit still runs; the Context UI exposes the invalid status.
+    return undefined;
+  }
+}
+
+function activeProjectStyleGuidePack(): DesignReferencePackV1 | undefined {
+  return storedProjectStyleGuideBinding()?.pack ?? sessionStyleGuidePack;
+}
+
+function currentProjectStyleGuideStatus(): ProjectStyleGuideStatus {
+  const storedStatus = adapter.getProjectStyleGuideStatus();
+  if (storedStatus.state !== "none" || !sessionStyleGuidePack) return storedStatus;
+  return {
+    state: "active",
+    persistent: false,
+    packVersion: sessionStyleGuidePack.packVersion,
+    digest: sessionStyleGuidePack.digest,
+    projectScope: sessionStyleGuidePack.source.projectScope,
+    sourceId: sessionStyleGuidePack.source.sourceId,
+  };
 }
 
 async function waiverKey(): Promise<string> {
@@ -174,7 +229,26 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds?: string[]): Prom
   const findings = applyWaivers(rawFindings, await loadWaivers());
   report = buildReadinessReport({ graph, profile, scope, targetRootIds: rootIds, appliedChanges, findings });
   plans = buildChangePlans(findings);
-  post({ type: "scan-result", report, plans, knowledge: buildKnowledgeSummary(graph), collections });
+  const projectPack = activeProjectStyleGuidePack();
+  const insights = buildKnowledgeInsights({
+    graph,
+    targetRootIds: rootIds,
+    ...(projectPack ? { projectPack } : {}),
+    referencePacks: sessionReferencePacks,
+    teamPack: TEAM_KNOWLEDGE_PACK,
+  });
+  bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
+  pendingContribution = undefined;
+  post({
+    type: "scan-result",
+    report,
+    plans,
+    knowledge: buildKnowledgeSummary(graph),
+    collections,
+    insights,
+    projectStyleGuide: bootstrap.projectStyleGuide,
+    sessionReferenceCount: sessionReferencePacks.length,
+  });
 }
 
 async function runScan(scope: ScanScope, refreshKnowledge: boolean): Promise<void> {
@@ -193,6 +267,9 @@ async function initialize(): Promise<void> {
     graphProfileHash = undefined;
     knowledgeState.markDirty();
   }
+  sessionReferencePacks = [];
+  sessionStyleGuidePack = undefined;
+  pendingContribution = undefined;
   bootstrap = await adapter.getBootstrap();
   profile = bootstrap.profile;
   collections = bootstrap.collections;
@@ -357,6 +434,59 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       // posts a fresh report first, which would otherwise replace this confirmation
       // with the generic "Audit complete" notice.
       post({ type: "code-connect-result", accepted: result.evidence.length, rejected: result.rejected });
+    } else if (message.type === "import-project-style-guide") {
+      const binding = adapter.importProjectStyleGuide(message.raw);
+      sessionStyleGuidePack = undefined;
+      bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
+      if (graph && report) await analyzeCurrentGraph(activeScope, report.target.rootIds);
+      post({ type: "project-style-guide-result", action: "imported", binding, status: bootstrap.projectStyleGuide });
+    } else if (message.type === "remove-project-style-guide") {
+      adapter.removeProjectStyleGuide();
+      bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
+      if (graph && report) await analyzeCurrentGraph(activeScope, report.target.rootIds);
+      post({ type: "project-style-guide-result", action: "removed", status: bootstrap.projectStyleGuide });
+    } else if (message.type === "add-session-reference") {
+      const pack = parseReferencePack(message.raw);
+      const role = validateSessionPackUse(pack, Boolean(figma.fileKey));
+      if (role === "style-guide") {
+        sessionStyleGuidePack = pack;
+      } else {
+        const existing = sessionReferencePacks.findIndex((candidate) => candidate.source.sourceId === pack.source.sourceId);
+        if (existing >= 0) sessionReferencePacks.splice(existing, 1, pack);
+        else sessionReferencePacks.push(pack);
+        sessionReferencePacks.sort((left, right) => left.source.sourceId.localeCompare(right.source.sourceId));
+      }
+      bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
+      if (graph && report) await analyzeCurrentGraph(activeScope, report.target.rootIds);
+      post({ type: "session-reference-result", count: sessionReferencePacks.length + (sessionStyleGuidePack ? 1 : 0), projectStyleGuide: bootstrap.projectStyleGuide });
+    } else if (message.type === "clear-session-references") {
+      sessionReferencePacks = [];
+      sessionStyleGuidePack = undefined;
+      bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
+      if (graph && report) await analyzeCurrentGraph(activeScope, report.target.rootIds);
+      post({ type: "session-reference-result", count: 0, projectStyleGuide: bootstrap.projectStyleGuide });
+    } else if (message.type === "preview-contribution") {
+      const current = assertCurrentReport("previewing a learning contribution");
+      const projectScope = activeProjectStyleGuidePack()?.source.projectScope
+        ?? (figma.fileKey ? `project:${targetFileFingerprint(figma.fileKey).slice(4)}` : "project:session-unbound");
+      pendingContribution = buildLearningEnvelope({
+        projectScope,
+        report: current.report,
+        pluginVersion: PLUGIN_VERSION,
+        knowledgeVersion: KNOWLEDGE_VERSION,
+      });
+      post({ type: "contribution-preview", envelope: pendingContribution, content: `${JSON.stringify(pendingContribution, null, 2)}\n` });
+    } else if (message.type === "export-contribution") {
+      const current = assertCurrentReport("exporting a learning contribution");
+      if (!pendingContribution || pendingContribution.digest !== message.digest) throw new Error("The contribution preview is stale; preview it again before export");
+      if (current.report.rulesetVersion !== pendingContribution.producer.rulesetVersion) throw new Error("The contribution preview is stale; preview it again before export");
+      const safeName = figma.root.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "figma-file";
+      post({
+        type: "export-result",
+        format: "json",
+        filename: `${safeName}.design-passport-learning.json`,
+        content: `${JSON.stringify(pendingContribution, null, 2)}\n`,
+      });
     } else if (message.type === "waive" || message.type === "clear-waiver") {
       const current = assertCurrentReport("managing waivers");
       if (!current.report.findings.some((finding) => finding.id === message.findingId)) throw new Error("The finding is stale; rescan before managing its waiver");

@@ -1,5 +1,5 @@
 ---
-topics: [design-passport-architecture, whole-file-design-knowledge, mutation-certification-safety]
+topics: [design-passport-architecture, whole-file-design-knowledge, mutation-certification-safety, project-scoped-knowledge-loop]
 ---
 
 # Figma runtime and release QA
@@ -44,7 +44,7 @@ No pages or content were deleted or moved, structural conversions were not auto-
 
 ## Automated verification
 
-The release suite contains 23 Vitest files and 129 tests. It covers catalog resolution, grading boundaries, schemas and hostile input, session/drift state, mutation planning and rollback constraints, token compatibility, UI operations, annotation migration and idempotency, cancellation feedback, inline waiver validation, Code Connect feedback, URL parsing without `globalThis.URL`, and exact inactive-component state handling for both definitions and placed instances. Performance fixtures exercise 10,000- and 50,000-node graphs.
+The release suite contains 27 Vitest files and 157 tests. It covers catalog resolution, grading boundaries, schemas and hostile input, session/drift state, mutation planning and rollback constraints, token compatibility, UI operations, annotation migration and idempotency, cancellation feedback, inline waiver validation, Code Connect feedback, project guidance, contribution sanitization, human-gated publication, knowledge-domain preservation, exact Figma URL validation, UTF-8 byte limits, copied-file protection, and exact inactive-component state handling for both definitions and placed instances. Performance fixtures exercise 10,000- and 50,000-node graphs.
 
 The release gate is `pnpm verify:ci`, followed by `git diff --check`; wiki integrity is included in that command.
 
@@ -55,3 +55,13 @@ The development plugin was rebuilt and exercised across all 36 pages of `UI Desi
 Button Light, Button Dark, Toast, Datepicker, and In-page navigation were each selected from the live Modules breakdown. Every sampled set showed only `AI source frame` plus one concise parent certificate, with zero `[Design Passport] Covered by` notes. The report retained structured variant counts and descendant finding totals, and selecting a Button Dark variant opened Findings with the exact page, module, and variant filters.
 
 Toast initially exposed a token-evidence false negative: its published `Code/Tailwind/shadow-overlay` effect style was being scored as unbound effect subfields. The adapter now treats a published effect style as machine-readable evidence for its visible effect fields while continuing to require explicit variable bindings for unstyled effects. Toast then re-audited at B/89.9 with token application at 88.9, without changing the design.
+
+## Project knowledge-loop verification, 2026-09-10
+
+The development plugin and local companion were exercised against `UI Design Library` (`gXT4bIDrkgva2uSzY763oG`) and the separately authored `UI Design Library Style Guide` (`vHNBRj4l821qXqH7XIATR2`). The style guide retained the library's cover treatment, documented foundations without moving the canonical source foundations, exposed 103 documentation variables, 13 text styles, one effect style, 10 structured Passport guidance markers, four breakpoint markers, and three linked remote component instances.
+
+The connected style-guide pack persisted across plugin restarts, remained readable in Dev Mode, rejected an invalid replacement without changing the valid binding, and did not appear when the plugin opened in the separate style-guide file. A one-off reference was accepted through the file picker and cleared on restart. The designer contribution preview showed a normalized local date, a short reference, 10 actionable sanitized observations, and privacy exclusions without displaying raw JSON.
+
+The latest plugin build loaded all 36 pages and 4,896 nodes. A full-source regression intentionally graded all 32 source targets, while the exact original Button selection independently reproduced B/89.9 and ready with project guidance loaded. The companion ingested the target plus style guide in both source orders, returned the same stable multi-file digest, preserved the target grade, and remained non-certifying.
+
+Knowledge Review deduplicated a repeated import to zero new contributions, generated 10 focused drafts, and exercised project-only approval, shared approval, rejection, deferral, and edit-after-approval invalidation. Only the current shared approval entered the team pack; editing invalidated the earlier project approval. The redesigned local screen uses a compact queue, one focused draft, friendly statuses/dates/references, explicit scope, evidence counts, and no raw identifiers.

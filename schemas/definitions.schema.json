@@ -54,6 +54,24 @@
         "expiresAt": { "type": "string", "format": "date-time" }
       }
     },
+    "digest": {
+      "type": "string",
+      "pattern": "^h53:[0-9a-f]{14}$"
+    },
+    "opaqueId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "reviewSourceRole": {
+      "type": "string",
+      "enum": ["target", "style-guide", "reference"]
+    },
+    "referenceDomain": {
+      "type": "string",
+      "enum": ["tokens", "components", "naming", "layout", "breakpoints", "accessibility"]
+    },
     "grade": {
       "type": "object",
       "additionalProperties": false,

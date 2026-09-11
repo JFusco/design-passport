@@ -1,17 +1,18 @@
 ---
-topics: [design-readiness-standard, whole-file-design-knowledge, mutation-certification-safety, figma-runtime-qa]
+topics: [design-readiness-standard, whole-file-design-knowledge, mutation-certification-safety, figma-runtime-qa, project-scoped-knowledge-loop]
 ---
 
 # Design Passport architecture
 
 ## Decision
 
-Design Passport is a private Figma plugin with four explicit boundaries:
+Design Passport is a private Figma plugin with five explicit boundaries:
 
 1. The Figma adapter reads and mutates the live document.
 2. The normalized whole-file graph is the adapter-independent knowledge contract.
 3. The pure rule engine and mutation planner produce deterministic findings, grades, and typed operations.
 4. The React UI presents state and sends validated commands; it does not contain grading or mutation policy.
+5. Project, reference, and shared knowledge is evaluated only after the deterministic report; the networked local companion remains outside the plugin runtime.
 
 The `ReadinessProfile`, `Finding`, `ChangePlan`, and `ReadinessReport` contracts are JSON Schema validated. This makes the graph and report reusable by a future REST or CI adapter without moving Figma runtime objects into the rule engine.
 
@@ -38,5 +39,6 @@ Secrets remain outside source control. `.env.example` documents local options, `
 - Catalog and schema drift fail the verification command.
 - Invalid commit messages and failed push verification stop their respective Git operations.
 - There is no backend, telemetry, OAuth, webhook, or live `latest` lookup in version one.
+- Project style guides remain file-bound and advisory; learning cannot publish without an exact-digest human decision.
 
-See [the readiness standard](./design-readiness-standard.md), [whole-file knowledge](./whole-file-design-knowledge.md), [mutation and certification safety](./mutation-certification-safety.md), and [runtime QA](./figma-runtime-qa.md).
+See [the readiness standard](./design-readiness-standard.md), [whole-file knowledge](./whole-file-design-knowledge.md), [mutation and certification safety](./mutation-certification-safety.md), [the project-scoped knowledge loop](./project-scoped-knowledge-loop.md), and [runtime QA](./figma-runtime-qa.md).

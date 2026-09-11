@@ -3,8 +3,10 @@ import { PRODUCT_NAME } from "../core/constants";
 import type {
   Axis,
   ChangePlan,
+  KnowledgeInsight,
   ReadinessProfile,
   ReadinessReport,
+  ReviewLearningEnvelopeV1,
   ScanProgress,
   ScanScope,
 } from "../core/contracts";
@@ -14,6 +16,7 @@ import { BrandMark } from "./BrandMark";
 import { Cleanup } from "./components/Cleanup";
 import { ContextPanel } from "./components/ContextPanel";
 import { Findings } from "./components/Findings";
+import { Guidance } from "./components/Guidance";
 import { Modules } from "./components/Modules";
 import { Overview } from "./components/Overview";
 import { ProfileEditor } from "./components/ProfileEditor";
@@ -59,6 +62,10 @@ export function App() {
   const [codeConnectRaw, setCodeConnectRaw] = useState("");
   const [tokenWizard, setTokenWizard] = useState<TokenWizardState>();
   const [waiverDraft, setWaiverDraft] = useState<WaiverDraft>();
+  const [insights, setInsights] = useState<KnowledgeInsight[]>([]);
+  const [referencePackRaw, setReferencePackRaw] = useState("");
+  const [sessionReferenceCount, setSessionReferenceCount] = useState(0);
+  const [contribution, setContribution] = useState<{ envelope: ReviewLearningEnvelopeV1; content: string }>();
 
   useEffect(() => {
     let initialized = false;
@@ -87,6 +94,10 @@ export function App() {
         setPlans(message.plans);
         setKnowledge(message.knowledge);
         setCollections(message.collections);
+        setInsights(message.insights);
+        setSessionReferenceCount(message.sessionReferenceCount);
+        setBootstrap((current) => current ? { ...current, data: { ...current.data, projectStyleGuide: message.projectStyleGuide } } : current);
+        setContribution(undefined);
         setProgress(undefined);
         setStale(false);
         setError(undefined);
@@ -118,6 +129,21 @@ export function App() {
           setError(undefined);
         }
         setCodeConnectRaw("");
+      } else if (message.type === "project-style-guide-result") {
+        setBootstrap((current) => current ? { ...current, data: { ...current.data, projectStyleGuide: message.status } } : current);
+        setReferencePackRaw("");
+        setNotice(message.action === "imported" ? "Project style guide connected to this Figma file." : "Project style guide removed from this Figma file.");
+        setError(undefined);
+      } else if (message.type === "session-reference-result") {
+        setSessionReferenceCount(message.count);
+        setBootstrap((current) => current ? { ...current, data: { ...current.data, projectStyleGuide: message.projectStyleGuide } } : current);
+        setReferencePackRaw("");
+        setNotice(message.count > 0 ? `${message.count} session reference${message.count === 1 ? "" : "s"} active.` : "Session references cleared.");
+        setError(undefined);
+      } else if (message.type === "contribution-preview") {
+        setContribution({ envelope: message.envelope, content: message.content });
+        setNotice(undefined);
+        setError(undefined);
       } else if (message.type === "export-result") {
         download(message.filename, message.content, message.format === "json" ? "application/json" : "text/markdown");
       } else if (message.type === "scan-cancelled") {
@@ -190,7 +216,7 @@ export function App() {
       {notice && <div className="banner success"><span>{notice}</span><button className="icon-button" onClick={() => setNotice(undefined)} aria-label="Dismiss notice">×</button></div>}
 
       <nav className="tabs" aria-label="Plugin sections">
-        {(["overview", "modules", "findings", "cleanup", "context", "profile"] as Tab[]).map((tab) => (
+        {(["overview", "modules", "findings", "guidance", "cleanup", "context", "profile"] as Tab[]).map((tab) => (
           <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>
             {tab[0]?.toUpperCase()}{tab.slice(1)}
             {tab === "findings" && report ? <span className="count">{report.findings.filter((item) => item.status !== "pass" && item.status !== "not-applicable").length}</span> : null}
@@ -285,6 +311,18 @@ export function App() {
           }}
         />
       )}
+      {activeTab === "guidance" && (
+        <Guidance
+          insights={insights}
+          hasReport={Boolean(report) && !stale}
+          contribution={contribution}
+          projectStyleGuide={bootstrap.data.projectStyleGuide}
+          onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
+          onPreviewContribution={() => send({ type: "preview-contribution" })}
+          onExportContribution={(digest) => send({ type: "export-contribution", digest })}
+          onCancelContribution={() => setContribution(undefined)}
+        />
+      )}
       {activeTab === "cleanup" && (
         <Cleanup
           disabled={stale || !bootstrap.data.canMutateDocument}
@@ -303,6 +341,16 @@ export function App() {
           onCodeConnectRaw={setCodeConnectRaw}
           onImport={() => send({ type: "import-code-connect", raw: codeConnectRaw })}
           onRefresh={() => scan(report?.target.scope ?? "selection", true)}
+          projectStyleGuide={bootstrap.data.projectStyleGuide}
+          referencePackRaw={referencePackRaw}
+          onReferencePackRaw={setReferencePackRaw}
+          onImportProjectStyleGuide={() => send({ type: "import-project-style-guide", raw: referencePackRaw })}
+          onRemoveProjectStyleGuide={() => send({ type: "remove-project-style-guide" })}
+          onAddSessionReference={() => send({ type: "add-session-reference", raw: referencePackRaw })}
+          onClearSessionReferences={() => send({ type: "clear-session-references" })}
+          sessionReferenceCount={sessionReferenceCount}
+          canMutateDocument={bootstrap.data.canMutateDocument}
+          fileKeyAvailable={bootstrap.data.fileKeyAvailable}
         />
       )}
       {activeTab === "profile" && (

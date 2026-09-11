@@ -2,9 +2,12 @@ import type { BootstrapData, VariableCollectionOption } from "../figma/adapter";
 import type {
   BindableField,
   ChangePlan,
+  KnowledgeInsight,
+  ProjectStyleGuideBindingV1,
   JsonValue,
   ReadinessProfile,
   ReadinessReport,
+  ReviewLearningEnvelopeV1,
   ScanProgress,
   ScanRequest,
 } from "../core/contracts";
@@ -40,6 +43,12 @@ export type UiToPluginMessage =
   | { type: "certify" }
   | { type: "certify-components" }
   | { type: "import-code-connect"; raw: string }
+  | { type: "import-project-style-guide"; raw: string }
+  | { type: "remove-project-style-guide" }
+  | { type: "add-session-reference"; raw: string }
+  | { type: "clear-session-references" }
+  | { type: "preview-contribution" }
+  | { type: "export-contribution"; digest: string }
   | { type: "export"; format: "json" | "markdown" }
   | { type: "waive"; findingId: string; reason: string }
   | { type: "clear-waiver"; findingId: string }
@@ -57,13 +66,25 @@ export type PluginToUiMessage =
   | { type: "bootstrap"; data: BootstrapData; rulesetVersion: string; catalogVersion: string; catalogDigest: string }
   | { type: "collections-result"; collections: VariableCollectionOption[] }
   | { type: "progress"; progress: ScanProgress }
-  | { type: "scan-result"; report: ReadinessReport; plans: ChangePlan[]; knowledge: KnowledgeSummary; collections: VariableCollectionOption[] }
+  | {
+    type: "scan-result";
+    report: ReadinessReport;
+    plans: ChangePlan[];
+    knowledge: KnowledgeSummary;
+    collections: VariableCollectionOption[];
+    insights: KnowledgeInsight[];
+    projectStyleGuide: BootstrapData["projectStyleGuide"];
+    sessionReferenceCount: number;
+  }
   | { type: "knowledge-stale" }
   | { type: "selection"; count: number }
   | { type: "profile-saved"; profile: ReadinessProfile }
   | { type: "mutation-result"; message: string }
   | { type: "certified"; count: number; target: "source frames" | "components"; removedVariantAnnotations: number }
   | { type: "code-connect-result"; accepted: number; rejected: Array<{ index: number; reason: string }> }
+  | { type: "project-style-guide-result"; action: "imported" | "removed"; binding?: ProjectStyleGuideBindingV1; status: BootstrapData["projectStyleGuide"] }
+  | { type: "session-reference-result"; count: number; projectStyleGuide: BootstrapData["projectStyleGuide"] }
+  | { type: "contribution-preview"; envelope: ReviewLearningEnvelopeV1; content: string }
   | { type: "export-result"; format: "json" | "markdown"; filename: string; content: string }
   | { type: "scan-cancelled" }
   | { type: "error"; message: string };

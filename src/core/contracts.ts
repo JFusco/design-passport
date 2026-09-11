@@ -375,3 +375,159 @@ export interface ScanProgress {
   pageName?: string;
   message: string;
 }
+
+export type ReviewSourceRoleV1 = "target" | "style-guide" | "reference";
+export type ReferenceDomainV1 = "tokens" | "components" | "naming" | "layout" | "breakpoints" | "accessibility";
+export type KnowledgeOriginV1 = "project" | "reference" | "shared";
+
+export interface ReviewSourceV1 {
+  schemaVersion: 1;
+  sourceId: string;
+  projectScope: string;
+  role: ReviewSourceRoleV1;
+  contentDigest: string;
+  completeness: {
+    complete: boolean;
+    availableDomains: ReferenceDomainV1[];
+    warnings: string[];
+  };
+}
+
+export type ReferenceMatcherV1 =
+  | { kind: "informational" }
+  | {
+    kind: "numeric-node-field";
+    field: "itemSpacing" | "paddingTop" | "paddingRight" | "paddingBottom" | "paddingLeft" | "cornerRadius" | "frameWidth";
+    allowedValues: number[];
+  }
+  | { kind: "node-name"; nodeTypes: string[]; allowedValues: string[] };
+
+export interface ReferenceFactV1 {
+  factId: string;
+  domain: ReferenceDomainV1;
+  label: string;
+  guidance: string;
+  matcher: ReferenceMatcherV1;
+  provenance: "figma-derived" | "approved-project" | "shared";
+  candidateDigest?: string;
+}
+
+export interface DesignReferencePackV1 {
+  schemaVersion: 1;
+  packVersion: string;
+  source: ReviewSourceV1;
+  facts: ReferenceFactV1[];
+  generatedAt: string;
+  digest: string;
+}
+
+export interface ProjectStyleGuideBindingV1 {
+  schemaVersion: 1;
+  targetFileFingerprint: string;
+  projectScope: string;
+  pack: DesignReferencePackV1;
+  boundAt: string;
+  digest: string;
+}
+
+export interface KnowledgeInsight {
+  id: string;
+  origin: KnowledgeOriginV1;
+  sourceId: string;
+  domain: ReferenceDomainV1;
+  title: string;
+  message: string;
+  factId: string;
+  targetNodeId?: string;
+}
+
+export type LearningObservationKindV1 =
+  | "naming-decision"
+  | "repeated-finding"
+  | "waiver-applied"
+  | "accepted-fix"
+  | "rescan-outcome";
+
+export interface LearningObservationV1 {
+  observationKey: string;
+  kind: LearningObservationKindV1;
+  context: string;
+  direction: "support" | "contradict";
+  ruleId?: string;
+  canonicalLabel?: string;
+  count: number;
+}
+
+export interface ReviewLearningEnvelopeV1 {
+  schemaVersion: 1;
+  projectScope: string;
+  producer: {
+    pluginVersion: string;
+    rulesetVersion: string;
+    catalogVersion: string;
+    knowledgeVersion: string;
+  };
+  reportDigest: string;
+  observations: LearningObservationV1[];
+  generatedAt: string;
+  digest: string;
+}
+
+export interface KnowledgeCandidateV1 {
+  schemaVersion: 1;
+  candidateId: string;
+  groupKey: string;
+  observationKey: string;
+  context: string;
+  sourceRoles: ReviewSourceRoleV1[];
+  projectScope: string;
+  wording: string;
+  proposedScope: "project" | "shared";
+  exceptions: string[];
+  evidenceEnvelopeDigests: string[];
+  supportCount: number;
+  contradictCount: number;
+  generatedAt: string;
+  digest: string;
+}
+
+export interface KnowledgeDecisionV1 {
+  schemaVersion: 1;
+  decisionId: string;
+  candidateId: string;
+  candidateDigest: string;
+  action: "approve" | "reject" | "defer";
+  scope: "project" | "shared";
+  rationale: string;
+  decidedAt: string;
+  digest: string;
+}
+
+export interface TeamKnowledgePackV1 {
+  schemaVersion: 1;
+  knowledgeVersion: string;
+  entries: Array<{
+    candidateId: string;
+    candidateDigest: string;
+    decisionId: string;
+    domain: ReferenceDomainV1;
+    wording: string;
+    contexts: string[];
+  }>;
+  generatedAt: string;
+  digest: string;
+}
+
+export interface MultiFileReviewReportV1 {
+  schemaVersion: 1;
+  projectScope: string;
+  targets: Array<{ source: ReviewSourceV1; report: ReadinessReport }>;
+  references: Array<{ sourceId: string; packDigest: string }>;
+  limitingTargetSourceId: string;
+  grade: Grade;
+  ready: boolean;
+  certificationEligible: false;
+  warnings: string[];
+  generatedAt: string;
+  digest: string;
+}

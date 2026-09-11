@@ -37,4 +37,14 @@ describe("UI message validation", () => {
     expect(() => parseUiMessage({ ...valid, nodeIds: ["1", "1", "2"] })).toThrow("distinct");
     expect(() => parseUiMessage({ ...valid, rawValue: Number.POSITIVE_INFINITY })).toThrow("finite JSON");
   });
+
+  it("accepts bounded guidance and contribution commands", () => {
+    expect(parseUiMessage({ type: "import-project-style-guide", raw: "{}" })).toEqual({ type: "import-project-style-guide", raw: "{}" });
+    expect(parseUiMessage({ type: "add-session-reference", raw: "{}" })).toEqual({ type: "add-session-reference", raw: "{}" });
+    expect(parseUiMessage({ type: "remove-project-style-guide" })).toEqual({ type: "remove-project-style-guide" });
+    expect(parseUiMessage({ type: "clear-session-references" })).toEqual({ type: "clear-session-references" });
+    expect(parseUiMessage({ type: "preview-contribution" })).toEqual({ type: "preview-contribution" });
+    expect(parseUiMessage({ type: "export-contribution", digest: "h53:00112233445566" })).toEqual({ type: "export-contribution", digest: "h53:00112233445566" });
+    expect(() => parseUiMessage({ type: "add-session-reference", raw: "x".repeat(90_001) })).toThrow(/90 KB/i);
+  });
 });

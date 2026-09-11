@@ -25,7 +25,9 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 - Concise parent-only certificate annotations and relaunch actions on passing source frames and reusable components.
 - JSON Schema-validated profiles, findings, change plans, reports, and Code Connect parser input.
 - Complete JSON and escaped Markdown report exports.
-- No backend, telemetry, OAuth, URL fetching, or network access.
+- Project-scoped style-guide advisories, session-only references, and an explicit sanitized learning export that never changes grades.
+- A local Node companion for Figma REST ingestion and human-gated knowledge review.
+- No backend, telemetry, OAuth, or plugin network access. Only the separately run local companion fetches explicitly supplied Figma sources.
 
 ## Standards hierarchy
 
@@ -63,6 +65,7 @@ Build output:
 
 - `dist/code.js` — Figma plugin sandbox bundle.
 - `dist/index.html` — fully inlined React UI.
+- `dist/companion.mjs` — local ingestion and Knowledge Review companion.
 
 To test an unreleased local build in Figma Desktop:
 
@@ -74,6 +77,30 @@ To test an unreleased local build in Figma Desktop:
 The committed manifest uses the organization-published plugin ID. Do not change that ID for ordinary development or user installation; only a release owner should change it when Figma assigns a replacement published-plugin record.
 
 The Code Connect importer requires `figma.fileKey`, which Figma exposes only to eligible private-plugin contexts. It can remain disabled in a local development copy even though it is available in the organization-published plugin.
+
+### Project style guides and the local companion
+
+Project leads can generate an advisory pack from a project-specific Figma style guide without exposing a Figma token to the plugin:
+
+```bash
+FIGMA_TOKEN=... pnpm companion pack create \
+  --url "https://www.figma.com/design/..." \
+  --source-id style-guide:v1 \
+  --project-scope project:opaque-id \
+  --role style-guide \
+  --out .design-passport-local/project-style-guide.json
+```
+
+Choose the generated pack file in **Context → Style guide and references** while in Design Mode. Designers see a plain-language summary, version, and short reference—not raw JSON. The pack is validated and bound privately to that exact Figma file; collaborators in the file can use it on later normal audits. Dev Mode can read it but cannot replace or remove it. A copied file rejects the inherited binding because its file fingerprint differs. One-off `reference` packs use the same command with `--role reference`, remain session-only, and are labeled as inspiration. If an unsaved file has no stable file key, its style guide can be used for that session but cannot be connected permanently.
+
+After an audit, **Guidance → Contribute learnings** shows a plain-language preview of the sanitized observations and everything that is excluded. Exporting is optional and is the only way scanning data leaves the plugin. Import and review the machine-readable file locally:
+
+```bash
+pnpm companion learning import path/to/review.design-passport-learning.json
+pnpm companion knowledge review
+```
+
+The review screen generates draft wording automatically. A maintainer may edit it and must explicitly approve, reject, or defer it. Scope defaults to project-only; shared scope is an explicit client-neutral choice. See [the knowledge-loop guide](docs/knowledge-loop.md).
 
 ## Deterministic generated inputs
 
@@ -125,7 +152,7 @@ First run asks the designer to confirm:
 - Approved local/enabled-library variable collection keys.
 - Breakpoint names and widths (default 1440 / 768 / 375).
 
-Only this profile, compact certificate summaries, and explicit contextual-pattern confirmations are stored as shared plugin data. Full nodes, findings, text, Code Connect source paths, and imported templates are not persisted there. Text content is represented in the in-memory graph by length and a deterministic fingerprint, not raw characters.
+Only this profile, compact certificate summaries, and explicit contextual-pattern confirmations are stored as shared plugin data. A validated project style-guide binding is stored separately as private document-root plugin data, never public shared data or client storage. Full nodes, findings, text, Code Connect source paths, and imported templates are not persisted there. Text content is represented in the in-memory graph by length and a deterministic fingerprint, not raw characters.
 
 ## Component-set certification
 

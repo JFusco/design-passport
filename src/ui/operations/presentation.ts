@@ -31,3 +31,20 @@ export function relativeTime(value: string, now = Date.now()): string {
   if (minutes < 60) return `${minutes}m ago`;
   return `${Math.round(minutes / 60)}h ago`;
 }
+
+export function friendlyReference(value: string): string {
+  const normalized = value.replace(/^[^:]+:/u, "").replace(/[^A-Za-z0-9]/gu, "").toLocaleUpperCase("en-US");
+  const visible = normalized.slice(0, 8).padEnd(8, "0");
+  return `${visible.slice(0, 4)}-${visible.slice(4)}`;
+}
+
+export function humanizeIdentifier(value: string): string {
+  const label = value.replace(/^[^:]+:/u, "").replace(/styleguide/giu, "style guide").replace(/[._-]+/gu, " ").trim();
+  return label.replace(/\bui\b/giu, "UI").replace(/\b\w/gu, (character) => character.toLocaleUpperCase("en-US"));
+}
+
+export function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "Date unavailable";
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
