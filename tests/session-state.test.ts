@@ -35,6 +35,16 @@ describe("plugin session safety", () => {
     gate.enter("apply-all")();
   });
 
+  it("serializes captured-target refreshes with every other plugin command", () => {
+    const gate = new CommandGate();
+    const release = gate.enter("refresh-audit");
+
+    expect(() => gate.enter("scan")).toThrow("refresh-audit is still running");
+
+    release();
+    expect(() => gate.enter("scan")()).not.toThrow();
+  });
+
   it("ignores expected local mutation echoes but flags unrelated, remote, and expired changes", () => {
     const guard = new MutationChangeGuard();
     guard.arm(["root", "frame", "child"], 1_000, 5_000);

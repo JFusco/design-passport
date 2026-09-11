@@ -1,6 +1,14 @@
 import type { DesignKnowledgeGraph, NodeSnapshot, PageSnapshot, ReadinessProfile, ScanScope } from "../contracts";
 import { hashValue } from "../stable";
 
+export const AUDIT_TARGET_NODE_TYPES = ["FRAME", "COMPONENT", "COMPONENT_SET"] as const;
+
+export type AuditTargetNodeType = typeof AUDIT_TARGET_NODE_TYPES[number];
+
+export function isAuditTargetNodeType(type: string): type is AuditTargetNodeType {
+  return AUDIT_TARGET_NODE_TYPES.some((candidate) => candidate === type);
+}
+
 export function collectDescendants(graph: Pick<DesignKnowledgeGraph, "nodes">, rootId: string): NodeSnapshot[] {
   const output: NodeSnapshot[] = [];
   const pending = [rootId];
@@ -107,16 +115,21 @@ export function targetRootIds(
   currentPageId: string,
   selectionIds: readonly string[],
 ): string[] {
-  if (scope === "selection") return [...new Set(selectionIds)].filter((id) => Boolean(graph.nodes[id]));
+  if (scope === "selection") {
+    return [...new Set(selectionIds)].filter((id) => {
+      const node = graph.nodes[id];
+      return node ? isAuditTargetNodeType(node.type) : false;
+    });
+  }
   if (scope === "file") return [...new Set(graph.sourceFrameIds)];
   const page = graph.pages.find((candidate) => candidate.id === currentPageId);
   return [...new Set((page?.rootNodeIds ?? []).flatMap((id) => {
     const node = graph.nodes[id];
     if (!node) return [];
-    if (["FRAME", "COMPONENT", "COMPONENT_SET"].includes(node.type)) return [id];
+    if (isAuditTargetNodeType(node.type)) return [id];
     if (node.type === "SECTION") return node.childIds.filter((childId) => {
       const child = graph.nodes[childId];
-      return child && ["FRAME", "COMPONENT", "COMPONENT_SET"].includes(child.type);
+      return child && isAuditTargetNodeType(child.type);
     });
     return [];
   }))];

@@ -4,7 +4,7 @@ An organization-published private Figma Design plugin that builds whole-file des
 
 The target and context scopes are deliberately separate:
 
-- **Audit target:** current selection by default, current page, or all profile-designated source frames.
+- **Audit target:** selected frames, components, or component sets; the captured current page; or all profile-designated source frames.
 - **Knowledge scope:** the complete Figma file on every fresh audit. Pages are loaded sequentially with progress and cancellation.
 
 This lets a selected frame be graded at the altitude a pipeline consumes while component definitions, instances, variables, responsive siblings, repeated structures, page roles, and source relationships are understood across the design as a whole. Incomplete or stale whole-file knowledge is a hard certification blocker.

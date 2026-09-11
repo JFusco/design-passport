@@ -37,6 +37,7 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
   if (message.type === "initialize" || message.type === "cancel-scan" || message.type === "certify" || message.type === "certify-components"
     || message.type === "remove-project-style-guide" || message.type === "clear-session-references" || message.type === "preview-contribution") return { type: message.type };
   if (message.type === "save-profile") return { type: message.type, profile: profile(message.profile) };
+  if (message.type === "refresh-audit") return { type: message.type, profile: profile(message.profile) };
   if (message.type === "scan") {
     const request = record(message.request);
     if (!request || !["selection", "page", "file"].includes(String(request.scope)) || typeof request.refreshKnowledge !== "boolean") throw new Error("scan request is invalid");

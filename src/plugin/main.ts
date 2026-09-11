@@ -28,12 +28,13 @@ import { buildReadinessReport } from "../core/report";
 import { evaluateRules } from "../core/rules";
 import { hashValue, stableStringify } from "../core/stable";
 import { applyWaivers, sanitizeWaiverStore, type WaiverStore } from "../core/waivers";
-import { FigmaAdapter, type BootstrapData, type ProjectStyleGuideStatus, type VariableCollectionOption } from "../figma/adapter";
+import { FigmaAdapter, type BootstrapData, type CapturedAuditTarget, type ProjectStyleGuideStatus, type VariableCollectionOption } from "../figma/adapter";
 import { applyChangePlan, clearVariantCoverageAnnotations, createSemanticTokenAndBind, setCertification } from "../figma/mutations";
 import { buildKnowledgeSummary } from "./knowledge-summary";
 import { parseUiMessage } from "./message-validation";
 import type { PluginToUiMessage, UiToPluginMessage } from "./messages";
-import { pluginMessageForError, ScanCancelledError } from "./scan-errors";
+import { resolveAuditTarget, runCapturedAuditAttempt, scanFailureMessages } from "./scan-lifecycle";
+import { ScanCancelledError } from "./scan-errors";
 import { CommandGate, KnowledgeSessionState, MutationChangeGuard } from "./session-state";
 
 figma.skipInvisibleInstanceChildren = true;
@@ -48,6 +49,7 @@ let collections: VariableCollectionOption[] = [];
 let appliedChanges: ChangePlan[] = [];
 let graphProfileHash: string | undefined;
 let activeScope: ScanScope = "selection";
+let activeTarget: CapturedAuditTarget | undefined;
 let suppressDirty = false;
 let initialized = false;
 let initializeGeneration = 0;
@@ -66,6 +68,10 @@ const KNOWLEDGE_VERSION = TEAM_KNOWLEDGE_PACK.knowledgeVersion;
 
 function post(message: PluginToUiMessage): void {
   figma.ui.postMessage(message);
+}
+
+function assertScanNotCancelled(): void {
+  if (adapter.isScanCancelled()) throw new ScanCancelledError();
 }
 
 function errorMessage(error: unknown): string {
@@ -178,8 +184,11 @@ async function ensureDocumentChangeWatcher(): Promise<void> {
     },
   });
   await figma.loadAllPagesAsync();
-  figma.on("documentchange", handleDocumentChange);
-  documentChangeWatching = true;
+  if (!documentChangeWatching) {
+    figma.on("documentchange", handleDocumentChange);
+    documentChangeWatching = true;
+  }
+  assertScanNotCancelled();
 }
 
 function assertCurrentReport(action: string): { graph: DesignKnowledgeGraph; report: ReadinessReport } {
@@ -192,9 +201,11 @@ function assertCurrentReport(action: string): { graph: DesignKnowledgeGraph; rep
 }
 
 async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> {
+  assertScanNotCancelled();
   if (!graph || refresh || knowledgeState.dirty || !adapter.matchesDocumentTopology(graph)
     || graphProfileHash !== hashValue(profile) || !isKnowledgeFresh(graph)) {
     await ensureDocumentChangeWatcher();
+    assertScanNotCancelled();
     const token = knowledgeState.beginBuild();
     try {
       const result = await adapter.buildKnowledge(profile, (progress) => post({ type: "progress", progress }), graph?.codeConnect ?? []);
@@ -214,19 +225,23 @@ async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> 
       throw error;
     }
   }
+  assertScanNotCancelled();
   return graph;
 }
 
-async function analyzeCurrentGraph(scope: ScanScope, targetIds?: string[]): Promise<void> {
+async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[], cancellable = false): Promise<void> {
   if (!graph) throw new Error("Build whole-file knowledge before analyzing targets");
-  const rootIds = targetIds ?? adapter.targetRootIds(scope, graph);
+  if (cancellable) assertScanNotCancelled();
+  const rootIds = [...targetIds];
   if (rootIds.length === 0) {
     if (scope === "selection") throw new Error("Select at least one frame, component, or component set to audit");
     throw new Error(`No source frames were found for the ${scope} scope and current page-role mapping`);
   }
   post({ type: "progress", progress: { phase: "analyzing", completed: 0, total: rootIds.length, message: `Evaluating ${rootIds.length} source target${rootIds.length === 1 ? "" : "s"}` } });
   const rawFindings = evaluateRules(graph, profile, rootIds);
-  const findings = applyWaivers(rawFindings, await loadWaivers());
+  const waivers = await loadWaivers();
+  if (cancellable) assertScanNotCancelled();
+  const findings = applyWaivers(rawFindings, waivers);
   report = buildReadinessReport({ graph, profile, scope, targetRootIds: rootIds, appliedChanges, findings });
   plans = buildChangePlans(findings);
   const projectPack = activeProjectStyleGuidePack();
@@ -251,10 +266,41 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds?: string[]): Prom
   });
 }
 
-async function runScan(scope: ScanScope, refreshKnowledge: boolean): Promise<void> {
-  activeScope = scope;
-  await ensureKnowledge(refreshKnowledge);
-  await analyzeCurrentGraph(scope);
+async function runScan(
+  target: CapturedAuditTarget,
+  refreshKnowledge: boolean,
+  prepare?: () => Promise<void>,
+): Promise<void> {
+  await runCapturedAuditAttempt(target, {
+    begin: () => adapter.beginScan(),
+    post,
+    execute: async (capturedTarget) => {
+      if (prepare) await prepare();
+      assertScanNotCancelled();
+      const current = await ensureKnowledge(refreshKnowledge);
+      const rootIds = adapter.targetRootIds(capturedTarget, current);
+      await analyzeCurrentGraph(capturedTarget.scope, rootIds, true);
+    },
+    commit: (capturedTarget) => {
+      activeScope = capturedTarget.scope;
+      activeTarget = capturedTarget;
+    },
+  });
+}
+
+async function rescanActiveTarget(refreshKnowledge: boolean): Promise<void> {
+  if (!activeTarget) throw new Error("Run an audit before rescanning after changes");
+  await runScan(activeTarget, refreshKnowledge);
+}
+
+async function runScanWithProfile(target: CapturedAuditTarget, nextProfile: ReadinessProfile, refreshKnowledge: boolean): Promise<void> {
+  if (graphProfileHash !== hashValue(nextProfile)) knowledgeState.markDirty();
+  profile = nextProfile;
+  await runScan(
+    target,
+    refreshKnowledge,
+    figma.editorType === "figma" ? () => adapter.saveProfile(profile) : undefined,
+  );
 }
 
 async function initialize(): Promise<void> {
@@ -265,6 +311,7 @@ async function initialize(): Promise<void> {
     plans = [];
     appliedChanges = [];
     graphProfileHash = undefined;
+    activeTarget = undefined;
     knowledgeState.markDirty();
   }
   sessionReferencePacks = [];
@@ -297,10 +344,23 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       knowledgeState.markDirty();
       post({ type: "profile-saved", profile });
     } else if (message.type === "scan") {
-      if (graphProfileHash !== hashValue(message.request.profile)) knowledgeState.markDirty();
-      profile = message.request.profile;
-      if (figma.editorType === "figma") await adapter.saveProfile(profile);
-      await runScan(message.request.scope, message.request.refreshKnowledge);
+      const target = resolveAuditTarget(
+        { kind: "capture", scope: message.request.scope },
+        activeTarget,
+        (scope) => adapter.captureAuditTarget(scope),
+      );
+      await runScanWithProfile(
+        target,
+        message.request.profile,
+        message.request.refreshKnowledge,
+      );
+    } else if (message.type === "refresh-audit") {
+      const target = resolveAuditTarget(
+        { kind: "refresh" },
+        activeTarget,
+        (scope) => adapter.captureAuditTarget(scope),
+      );
+      await runScanWithProfile(target, message.profile, true);
     } else if (message.type === "navigate") {
       await adapter.navigate(message.nodeId);
     } else if (message.type === "apply-plan") {
@@ -315,7 +375,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         post({ type: "knowledge-stale" });
         throw error;
       }
-      await runScan(activeScope, true);
+      await rescanActiveTarget(true);
     } else if (message.type === "apply-all") {
       assertCurrentReport("applying all cleanup");
       const selectedPlans = message.planIds.map((planId) => plans.find((candidate) => candidate.id === planId));
@@ -363,7 +423,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         post({ type: "knowledge-stale" });
         throw new Error(`Fix all stopped after ${appliedOperationCount} completed operations. ${errorMessage(error)}`);
       }
-      await runScan(activeScope, true);
+      await rescanActiveTarget(true);
     } else if (message.type === "certify" || message.type === "certify-components") {
       assertDocumentMutationAllowed();
       const current = assertCurrentReport("certification");
@@ -425,11 +485,23 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       }
       post({ type: "certified", count, target: componentCertification ? "components" : "source frames", removedVariantAnnotations });
     } else if (message.type === "import-code-connect") {
-      const current = await ensureKnowledge(false);
-      const result = importCodeConnectJson(message.raw, current);
-      graph = replaceCodeConnectEvidence(current, result.evidence, profile);
-      graphProfileHash = hashValue(profile);
-      await analyzeCurrentGraph(activeScope, report?.target.rootIds);
+      const target = activeTarget ?? adapter.captureAuditTarget(activeScope);
+      const result = await runCapturedAuditAttempt(target, {
+        begin: () => adapter.beginScan(),
+        post,
+        execute: async (capturedTarget) => {
+          const current = await ensureKnowledge(false);
+          const importResult = importCodeConnectJson(message.raw, current);
+          graph = replaceCodeConnectEvidence(current, importResult.evidence, profile);
+          graphProfileHash = hashValue(profile);
+          await analyzeCurrentGraph(capturedTarget.scope, adapter.targetRootIds(capturedTarget, graph), true);
+          return importResult;
+        },
+        commit: (capturedTarget) => {
+          activeScope = capturedTarget.scope;
+          activeTarget = capturedTarget;
+        },
+      });
       // Keep the import outcome as the final user-facing message. analyzeCurrentGraph
       // posts a fresh report first, which would otherwise replace this confirmation
       // with the generic "Audit complete" notice.
@@ -525,7 +597,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       await runDocumentMutation(plan.operations.map((operation) => operation.nodeId), () => applyChangePlan(plan, { undoOnlyAcknowledged: false }));
       appliedChanges.push(plan);
       post({ type: "mutation-result", message: `Renamed the contextual alias to ${name}. Rescanning the complete file…` });
-      await runScan(activeScope, true);
+      await rescanActiveTarget(true);
     } else if (message.type === "create-token") {
       const current = assertCurrentReport("creating a token");
       const sourceFinding = current.report.findings.find((candidate) => {
@@ -547,7 +619,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
           rawValue: message.rawValue,
         }));
       post({ type: "mutation-result", message: `Created one semantic token and bound ${result.boundCount} repeated uses. Rescanning the complete file…` });
-      await runScan(activeScope, true);
+      await rescanActiveTarget(true);
     } else if (message.type === "export") {
       const current = assertCurrentReport("exporting a report");
       const content = message.format === "json" ? `${JSON.stringify(current.report, null, 2)}\n` : reportToMarkdown(current.report);
@@ -570,7 +642,16 @@ figma.ui.onmessage = async (rawMessage: unknown) => {
     release = commandGate.enter(message.type);
     await handleMessage(message);
   } catch (error) {
-    post(pluginMessageForError(error));
+    const graphFailureState = graph
+      ? { cancelled: graph.cancelled, complete: graph.complete, snapshotHash: graph.snapshotHash }
+      : undefined;
+    for (const failureMessage of scanFailureMessages(error, {
+      knowledgeDirty: knowledgeState.dirty,
+      graph: graphFailureState,
+      reportKnowledgeSnapshotHash: report?.target.knowledgeSnapshotHash,
+    })) {
+      post(failureMessage);
+    }
   } finally {
     release?.();
   }
@@ -578,5 +659,5 @@ figma.ui.onmessage = async (rawMessage: unknown) => {
 
 figma.on("selectionchange", () => {
   if (graph && !adapter.matchesDocumentTopology(graph)) markKnowledgeDirty();
-  post({ type: "selection", count: figma.currentPage.selection.length });
+  post({ type: "selection", summary: adapter.getSelectionSummary() });
 });

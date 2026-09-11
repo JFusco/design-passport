@@ -27,7 +27,9 @@ describe("UI message validation", () => {
 
   it("requires a schema-valid profile for scans", () => {
     expect(parseUiMessage({ type: "scan", request: { scope: "selection", profile: profile(), refreshKnowledge: true } })).toMatchObject({ type: "scan" });
+    expect(parseUiMessage({ type: "refresh-audit", profile: profile() })).toMatchObject({ type: "refresh-audit" });
     expect(() => parseUiMessage({ type: "scan", request: { scope: "selection", profile: {}, refreshKnowledge: true } })).toThrow("profile is invalid");
+    expect(() => parseUiMessage({ type: "refresh-audit", profile: {} })).toThrow("profile is invalid");
   });
 
   it("rejects malformed or unsafe token creation payloads", () => {

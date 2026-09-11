@@ -6,9 +6,15 @@ topics: [design-passport-architecture, design-readiness-standard, mutation-certi
 
 ## Decision
 
-Audit scope and knowledge scope are separate. A designer may grade one selected frame, the current page, or all designated source frames, but a fresh audit always indexes the complete Figma file first.
+Audit scope and knowledge scope are separate. A designer may grade a captured selection, the captured current page, or all designated source frames. A selection audit accepts only `FRAME`, `COMPONENT`, and `COMPONENT_SET` roots; empty, unsupported, and mixed supported/unsupported selections are blocked before any indexing begins.
+
+The target is captured before asynchronous context work starts. Later selection or page changes cannot retarget the in-flight audit, an explicit manual refresh reuses the last committed target, and an automatic post-cleanup rescan preserves the same target. If a captured root no longer exists, the audit fails clearly instead of broadening its scope.
 
 This prevents a locally clean frame from hiding inconsistent component definitions, variable sources, responsive siblings, repeated patterns, page roles, detached instances, or naming collisions elsewhere in the design system.
+
+Whole-file indexing remains on demand. A cold audit rebuilds the complete Figma-file graph before evaluating only the captured target. When a complete graph is still fresh, a cached audit skips that rebuild and proceeds directly to target analysis.
+
+The presentation stays target-first in both cases. The primary progress state names the audit scope, such as `Auditing selection (2)`, while cold-scan status describes file traversal only as preparation of supporting context and explicitly says that only the selection will be graded. Raw page names, node counts, knowledge-graph terminology, cross-file relationship messages, and resetting determinate progress are not primary UI. Results summarize the audited target immediately beneath the grade hero in Overview; detailed whole-file inventory remains in Context. Panel commands are inert while an audit is in flight so unrelated command failures cannot make a still-running audit appear complete; cancellation remains available during supporting-context preparation. Status notifications use a shared inset and vertical gap to remain separate from navigation and panel content.
 
 ## Graph contents
 
@@ -16,13 +22,13 @@ The normalized graph records all loaded pages, semantic page roles, node relatio
 
 Library source targeting is intentionally conservative. Component sets and standalone components remain addressable roots. Foundations retain their top-level frames. A frame on a component page qualifies only when it carries an existing Design Passport certificate, an explicit `AI source frame` marker, a development resource, or measured Ready for Dev evidence on itself or its containing section. The section-name fallback exists for runtimes that expose Dev Status in their type surface but reject the getter. Frames inside `Published source / …` sections are treated as canvas scaffolding unless they carry an actual certificate, so a stale source marker created by an earlier scan cannot keep helper labels in the grading set.
 
-Pages load sequentially under Figma's `dynamic-page` model with visible progress and cancellation. Invisible instance children are skipped by default. Traversal yields periodically so large files remain interactive.
+Pages load sequentially under Figma's `dynamic-page` model with quiet supporting-context progress and cancellation. Invisible instance children are skipped by default. Traversal yields periodically so large files remain interactive.
 
 ## Freshness and drift
 
 A graph is usable only when complete, profile-matched, topology-matched, snapshot-matched, and no more than 15 minutes old. Genuine document changes mark the report stale and disable certification and export until a rebuild. Expected plugin-owned mutations are suppressed during their guarded transaction, then followed by one deliberate full-file rescan.
 
-Cancellation produces a neutral recoverable state and never permits a partial graph to certify. A file changing while knowledge is built invalidates that build rather than silently accepting mixed-time evidence.
+Cancellation during whole-file context preparation produces a neutral recoverable state and never permits a partial graph to certify or export. A file changing while knowledge is built invalidates that build rather than silently accepting mixed-time evidence. A selection or page change alone does not retarget the captured audit.
 
 ## Observed scale
 

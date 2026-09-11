@@ -2,12 +2,12 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 26,
-    "edges": 103,
+    "nodes": 28,
+    "edges": 111,
     "byType": {
       "index": 3,
-      "journal": 10,
-      "plan": 7,
+      "journal": 11,
+      "plan": 8,
       "topic": 6
     }
   },
@@ -32,8 +32,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.885456,
-      "y": 0.464723,
+      "x": 0.900969,
+      "y": 0.433884,
       "size": 8
     },
     {
@@ -44,8 +44,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.748511,
-      "y": 0.663123,
+      "x": 0.781831,
+      "y": 0.62349,
       "size": 8
     },
     {
@@ -63,8 +63,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.568065,
-      "y": 0.822984,
+      "x": 0.62349,
+      "y": 0.781831,
       "size": 8
     },
     {
@@ -88,8 +88,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.354605,
-      "y": 0.935016,
+      "x": 0.433884,
+      "y": 0.900969,
       "size": 8
     },
     {
@@ -100,8 +100,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.120537,
-      "y": 0.992709,
+      "x": 0.222521,
+      "y": 0.974928,
       "size": 8
     },
     {
@@ -125,8 +125,8 @@
       ],
       "bytes": 2518,
       "degree": 3,
-      "x": -0.120537,
-      "y": 0.992709,
+      "x": 0,
+      "y": 1,
       "size": 8
     },
     {
@@ -144,8 +144,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": -0.354605,
-      "y": 0.935016,
+      "x": -0.222521,
+      "y": 0.974928,
       "size": 8
     },
     {
@@ -163,8 +163,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": -0.568065,
-      "y": 0.822984,
+      "x": -0.433884,
+      "y": 0.900969,
       "size": 8
     },
     {
@@ -175,8 +175,8 @@
       "githubRefs": [],
       "bytes": 2328,
       "degree": 4,
-      "x": -0.748511,
-      "y": 0.663123,
+      "x": -0.62349,
+      "y": 0.781831,
       "size": 8
     },
     {
@@ -187,8 +187,27 @@
       "githubRefs": [],
       "bytes": 3438,
       "degree": 6,
-      "x": -0.885456,
-      "y": 0.464723,
+      "x": -0.781831,
+      "y": 0.62349,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-11-scoped-audit-clarity.md",
+      "label": "Scoped audits now look and behave scoped",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 19,
+          "url": "https://github.com/jfusco/design-passport/issues/19"
+        }
+      ],
+      "bytes": 3544,
+      "degree": 6,
+      "x": -0.900969,
+      "y": 0.433884,
       "size": 8
     },
     {
@@ -199,8 +218,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.970942,
-      "y": 0.239316,
+      "x": 0.974928,
+      "y": 0.222521,
       "size": 12
     },
     {
@@ -211,8 +230,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.970942,
-      "y": 0.239316,
+      "x": -0.974928,
+      "y": 0.222521,
       "size": 8
     },
     {
@@ -235,8 +254,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.970942,
-      "y": -0.239316,
+      "x": -0.974928,
+      "y": -0.222521,
       "size": 8
     },
     {
@@ -254,8 +273,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.885456,
-      "y": -0.464723,
+      "x": -0.900969,
+      "y": -0.433884,
       "size": 8
     },
     {
@@ -266,8 +285,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.748511,
-      "y": -0.663123,
+      "x": -0.781831,
+      "y": -0.62349,
       "size": 8
     },
     {
@@ -278,8 +297,20 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.568065,
-      "y": -0.822984,
+      "x": -0.62349,
+      "y": -0.781831,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-11-make-scoped-audits-look-scoped-7be69504d6.md",
+      "label": "Make Scoped Audits Look Scoped",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2552,
+      "degree": 3,
+      "x": -0.433884,
+      "y": -0.900969,
       "size": 8
     },
     {
@@ -290,8 +321,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.354605,
-      "y": -0.935016,
+      "x": -0.222521,
+      "y": -0.974928,
       "size": 8
     },
     {
@@ -307,10 +338,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/38"
         }
       ],
-      "bytes": 17215,
-      "degree": 9,
-      "x": -0.120537,
-      "y": -0.992709,
+      "bytes": 17756,
+      "degree": 10,
+      "x": 0,
+      "y": -1,
       "size": 12
     },
     {
@@ -320,9 +351,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 3433,
-      "degree": 29,
-      "x": 0.120537,
-      "y": -0.992709,
+      "degree": 30,
+      "x": 0.222521,
+      "y": -0.974928,
       "size": 8
     },
     {
@@ -333,8 +364,8 @@
       "githubRefs": [],
       "bytes": 5546,
       "degree": 16,
-      "x": 0.354605,
-      "y": -0.935016,
+      "x": 0.433884,
+      "y": -0.900969,
       "size": 8
     },
     {
@@ -344,9 +375,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 8966,
-      "degree": 27,
-      "x": 0.568065,
-      "y": -0.822984,
+      "degree": 29,
+      "x": 0.62349,
+      "y": -0.781831,
       "size": 8
     },
     {
@@ -357,8 +388,8 @@
       "githubRefs": [],
       "bytes": 4773,
       "degree": 17,
-      "x": 0.748511,
-      "y": -0.663123,
+      "x": 0.781831,
+      "y": -0.62349,
       "size": 8
     },
     {
@@ -369,8 +400,8 @@
       "githubRefs": [],
       "bytes": 2812,
       "degree": 12,
-      "x": 0.885456,
-      "y": -0.464723,
+      "x": 0.900969,
+      "y": -0.433884,
       "size": 8
     },
     {
@@ -379,18 +410,32 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2953,
-      "degree": 19,
-      "x": 0.970942,
-      "y": -0.239316,
+      "bytes": 4705,
+      "degree": 22,
+      "x": 0.974928,
+      "y": -0.222521,
       "size": 8
     }
   ],
   "edges": [
     {
+      "id": "05f1fd6a7183f5fc",
+      "source": "wiki/journal/2026-09-11-scoped-audit-clarity.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "0e414a96ceaeba99",
       "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
       "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "12d7d385ae315a2b",
+      "source": "wiki/journal/2026-09-11-scoped-audit-clarity.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -426,6 +471,13 @@
       "id": "16e08e3bd93759b8",
       "source": "wiki/topics/whole-file-design-knowledge.md",
       "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "1ccc5eadccdce4dc",
+      "source": "wiki/journal/2026-09-11-scoped-audit-clarity.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -794,6 +846,13 @@
       "relation": "link"
     },
     {
+      "id": "9a8e4b0e4873bde9",
+      "source": "wiki/journal/2026-09-11-scoped-audit-clarity.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "9c424a2da4de3af5",
       "source": "wiki/plans/2026-09-11-shared-design-passport-knowledge-loop-a55aa1a3eb.md",
       "target": "wiki/topics/project-scoped-knowledge-loop.md",
@@ -806,6 +865,13 @@
       "target": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
       "type": "plan",
       "relation": "plan"
+    },
+    {
+      "id": "9fb9221ab02f37ff",
+      "source": "wiki/plans/2026-09-11-make-scoped-audits-look-scoped-7be69504d6.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "9fe35a52d25e506c",
@@ -1039,6 +1105,13 @@
       "relation": "topic"
     },
     {
+      "id": "e9dc69ff49e2d892",
+      "source": "wiki/journal/2026-09-11-scoped-audit-clarity.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "eb08cdc4f14e8eb2",
       "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -1051,6 +1124,13 @@
       "target": "wiki/topics/design-readiness-standard.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "f44123360ec8c4e1",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-11-make-scoped-audits-look-scoped-7be69504d6.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "f60dd861e053e651",
@@ -1079,6 +1159,13 @@
       "target": "wiki/topics/mutation-certification-safety.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "fa836817760befce",
+      "source": "wiki/journal/2026-09-11-scoped-audit-clarity.md",
+      "target": "wiki/plans/2026-09-11-make-scoped-audits-look-scoped-7be69504d6.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "fd1b100e108e2ce0",

@@ -10,8 +10,8 @@ import type {
   ScanProgress,
   ScanScope,
 } from "../core/contracts";
-import type { VariableCollectionOption } from "../figma/adapter";
-import type { KnowledgeSummary, PluginToUiMessage, UiToPluginMessage } from "../plugin/messages";
+import type { SelectionSummary, VariableCollectionOption } from "../figma/adapter";
+import type { AuditTargetSummary, KnowledgeSummary, PluginToUiMessage, UiToPluginMessage } from "../plugin/messages";
 import { BrandMark } from "./BrandMark";
 import { Cleanup } from "./components/Cleanup";
 import { ContextPanel } from "./components/ContextPanel";
@@ -20,10 +20,19 @@ import { Guidance } from "./components/Guidance";
 import { Modules } from "./components/Modules";
 import { Overview } from "./components/Overview";
 import { ProfileEditor } from "./components/ProfileEditor";
+import {
+  AUDIT_CANCELLED_NOTICE,
+  auditCompletionNotice,
+  auditProgressPresentation,
+  isAuditInterruptible,
+  scanInFlightAfter,
+} from "./operations/audit-scope";
 import { findingsForReview } from "./operations/findings";
 import { codeConnectImportFeedback } from "./operations/notices";
 import { certificationNotice, cloneProfile } from "./operations/presentation";
 import type { BootstrapEnvelope, Tab, TokenWizardState, WaiverDraft } from "./types";
+
+const EMPTY_SELECTION_SUMMARY: SelectionSummary = { eligibleCount: 0, unsupportedCount: 0 };
 
 function send(message: UiToPluginMessage): void {
   parent.postMessage({ pluginMessage: message }, "*");
@@ -50,7 +59,9 @@ export function App() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
-  const [selectionCount, setSelectionCount] = useState(0);
+  const [selectionSummary, setSelectionSummary] = useState<SelectionSummary>(EMPTY_SELECTION_SUMMARY);
+  const [auditTarget, setAuditTarget] = useState<AuditTargetSummary>();
+  const [scanInFlight, setScanInFlight] = useState(false);
   const [stale, setStale] = useState(true);
   const [showPassing, setShowPassing] = useState(false);
   const [axisFilter, setAxisFilter] = useState<Axis | "all">("all");
@@ -82,12 +93,16 @@ export function App() {
         });
         setProfile(cloneProfile(message.data.profile));
         setCollections(message.data.collections);
-        setSelectionCount(message.data.selectionCount);
+        setSelectionSummary(message.data.selectionSummary);
         if (!message.data.profileConfigured) setActiveTab("profile");
       } else if (message.type === "collections-result") {
         setCollections(message.collections);
+      } else if (message.type === "audit-started") {
+        setAuditTarget(message.target);
+        setScanInFlight((current) => scanInFlightAfter(current, "audit-started"));
       } else if (message.type === "progress") {
         setProgress(message.progress);
+        setScanInFlight((current) => scanInFlightAfter(current, "progress"));
         setError(undefined);
       } else if (message.type === "scan-result") {
         setReport(message.report);
@@ -99,13 +114,14 @@ export function App() {
         setBootstrap((current) => current ? { ...current, data: { ...current.data, projectStyleGuide: message.projectStyleGuide } } : current);
         setContribution(undefined);
         setProgress(undefined);
+        setScanInFlight((current) => scanInFlightAfter(current, "scan-result"));
         setStale(false);
         setError(undefined);
-        setNotice(`Audit complete: ${message.report.grade.letter} · ${message.report.ready ? "ready" : "not ready"}`);
+        setNotice(auditCompletionNotice(message.report.target.scope, message.report.grade.letter, message.report.ready));
       } else if (message.type === "knowledge-stale") {
         setStale(true);
       } else if (message.type === "selection") {
-        setSelectionCount(message.count);
+        setSelectionSummary(message.summary);
       } else if (message.type === "profile-saved") {
         setProfile(cloneProfile(message.profile));
         setReport(undefined);
@@ -149,10 +165,12 @@ export function App() {
       } else if (message.type === "scan-cancelled") {
         setError(undefined);
         setProgress(undefined);
-        setNotice("Audit cancelled. No document changes were applied.");
+        setScanInFlight((current) => scanInFlightAfter(current, "scan-cancelled"));
+        setNotice(AUDIT_CANCELLED_NOTICE);
       } else if (message.type === "error") {
         setError(message.message);
         setProgress(undefined);
+        setScanInFlight((current) => scanInFlightAfter(current, "error"));
         setNotice(undefined);
       }
     };
@@ -187,12 +205,24 @@ export function App() {
     if (!profile) return;
     setError(undefined);
     setNotice(undefined);
-    send({ type: "scan", request: { scope, profile, refreshKnowledge } });
+    setScanInFlight((current) => scanInFlightAfter(current, "local-scan"));
+    if (refreshKnowledge && report) send({ type: "refresh-audit", profile });
+    else send({ type: "scan", request: { scope, profile, refreshKnowledge } });
   };
 
   if (!bootstrap || !profile) {
     return <main className="loading"><span className="spinner" />Loading {PRODUCT_NAME}…</main>;
   }
+
+  const presentedProgress = scanInFlight && progress && auditTarget
+    ? auditProgressPresentation(progress, auditTarget)
+    : undefined;
+  const showStaleNotification = Boolean(stale && report && !error && !scanInFlight);
+  const hasNotifications = !bootstrap.data.profileConfigured
+    || !bootstrap.data.canMutateDocument
+    || showStaleNotification
+    || Boolean(error)
+    || Boolean(notice);
 
   return (
     <main className="app-shell">
@@ -207,13 +237,17 @@ export function App() {
         <div className="catalog-lock" title={bootstrap.catalogDigest}>Catalog {bootstrap.catalogVersion}</div>
       </header>
 
-      {!bootstrap.data.profileConfigured && (
-        <div className="banner warning">Confirm the file profile before the first audit. Suggested page roles are not persisted until they are saved in Design mode.</div>
-      )}
-      {!bootstrap.data.canMutateDocument && <div className="banner info">Dev Mode is audit-only. Switch to Design mode to save the profile, clean up findings, or certify frames.</div>}
-      {stale && report && !error && (!progress || progress.phase === "complete") && <div className="banner warning">The design changed after this scan. Certification is disabled until whole-file knowledge is refreshed.</div>}
-      {error && <div className="banner error"><span>{error}</span><button className="icon-button" onClick={() => setError(undefined)} aria-label="Dismiss error">×</button></div>}
-      {notice && <div className="banner success"><span>{notice}</span><button className="icon-button" onClick={() => setNotice(undefined)} aria-label="Dismiss notice">×</button></div>}
+      <div className={`notification-stack${hasNotifications ? " has-notifications" : ""}`}>
+        {!bootstrap.data.profileConfigured ? (
+          <div className="banner warning">Confirm the file profile before the first audit. Suggested page roles are not persisted until they are saved in Design mode.</div>
+        ) : null}
+        {!bootstrap.data.canMutateDocument ? <div className="banner info">Dev Mode is audit-only. Switch to Design mode to save the profile, clean up findings, or certify frames.</div> : null}
+        {showStaleNotification ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true">The design changed after this scan. Certification is disabled until whole-file knowledge is refreshed.</div> : null}
+        {error ? <div className="banner error" role="alert" aria-atomic="true"><span>{error}</span><button className="icon-button" onClick={() => setError(undefined)} aria-label="Dismiss error">×</button></div> : null}
+        <div className={notice ? "banner success" : "status-announcer"} role="status" aria-live="polite" aria-atomic="true">
+          {notice ? <><span>{notice}</span><button className="icon-button" onClick={() => setNotice(undefined)} aria-label="Dismiss notice">×</button></> : null}
+        </div>
+      </div>
 
       <nav className="tabs" aria-label="Plugin sections">
         {(["overview", "modules", "findings", "guidance", "cleanup", "context", "profile"] as Tab[]).map((tab) => (
@@ -224,150 +258,157 @@ export function App() {
         ))}
       </nav>
 
-      {progress && progress.phase !== "complete" && (
-        <section className="progress-card" aria-live="polite">
-          <div className="progress-copy"><span className="spinner" /><div><strong>{progress.message}</strong><small>{progress.pageName ?? "Building complete design context"}</small></div></div>
-          <div className="progress-track"><span style={{ width: `${progress.total ? Math.max(4, progress.completed / progress.total * 100) : 4}%` }} /></div>
-          <button className="button subtle" onClick={() => send({ type: "cancel-scan" })}>Cancel</button>
+      {presentedProgress && (
+        <section className="progress-card">
+          <div className="progress-copy" role="status" aria-live="polite" aria-atomic="true">
+            <span className="spinner" aria-hidden="true" />
+            <div><strong>{presentedProgress.headline}</strong><small>{presentedProgress.detail}</small></div>
+          </div>
+          {isAuditInterruptible(progress) ? <button className="button subtle" aria-label="Cancel audit" onClick={() => send({ type: "cancel-scan" })}>Cancel</button> : null}
         </section>
       )}
 
-      {activeTab === "overview" && (
-        <Overview
-          report={report}
-          knowledge={knowledge}
-          selectionCount={selectionCount}
-          stale={stale}
-          canMutateDocument={bootstrap.data.canMutateDocument}
-          scanning={Boolean(progress && progress.phase !== "complete")}
-          onScan={scan}
-          onCertify={() => send({ type: "certify" })}
-          onCertifyComponents={() => send({ type: "certify-components" })}
-          onExport={(format) => send({ type: "export", format })}
-        />
-      )}
-      {activeTab === "findings" && (
-        <Findings
-          findings={visibleFindings}
-          frames={report?.frames ?? []}
-          showPassing={showPassing}
-          axisFilter={axisFilter}
-          pageFilter={pageFilter}
-          rootFilter={rootFilter}
-          variantFilter={variantFilter}
-          expanded={expanded}
-          collections={collections.filter((collection) => !collection.remote && profile.tokenSourceCollectionKeys.includes(collection.key))}
-          tokenWizard={tokenWizard}
-          waiverDraft={waiverDraft}
-          disabled={stale}
-          canMutateDocument={bootstrap.data.canMutateDocument}
-          onTogglePassing={setShowPassing}
-          onAxisFilter={setAxisFilter}
-          onPageFilter={(pageId) => { setPageFilter(pageId); setRootFilter("all"); setVariantFilter("all"); }}
-          onRootFilter={(rootId) => { setRootFilter(rootId); setVariantFilter("all"); }}
-          onVariantFilter={setVariantFilter}
-          onExpand={(id) => setExpanded(expanded === id ? undefined : id)}
-          onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
-          onWaiverDraft={setWaiverDraft}
-          onWaive={() => {
-            if (!waiverDraft?.reason.trim()) return;
-            send({ type: "waive", findingId: waiverDraft.findingId, reason: waiverDraft.reason.trim() });
-            setWaiverDraft(undefined);
-          }}
-          onClearWaiver={(findingId) => send({ type: "clear-waiver", findingId })}
-          onConfirmPattern={(findingId, canonicalName) => send({ type: "confirm-pattern", findingId, canonicalName })}
-          onTokenWizard={setTokenWizard}
-          onCreateToken={() => {
-            if (!tokenWizard) return;
-            send({
-              type: "create-token",
-              collectionId: tokenWizard.collectionId,
-              name: tokenWizard.name,
-              field: tokenWizard.field,
-              nodeIds: tokenWizard.nodeIds,
-              rawValue: tokenWizard.rawValue,
-            });
-            setTokenWizard(undefined);
-          }}
-        />
-      )}
-      {activeTab === "modules" && (
-        <Modules
-          report={report}
-          onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
-          onViewFindings={(rootId) => {
-            const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
-            setPageFilter(frame?.pageId ?? "all");
-            setRootFilter(rootId);
-            setVariantFilter("all");
-            setActiveTab("findings");
-          }}
-          onViewVariantFindings={(rootId, variantId) => {
-            const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
-            setPageFilter(frame?.pageId ?? "all");
-            setRootFilter(rootId);
-            setVariantFilter(variantId);
-            setActiveTab("findings");
-          }}
-        />
-      )}
-      {activeTab === "guidance" && (
-        <Guidance
-          insights={insights}
-          hasReport={Boolean(report) && !stale}
-          contribution={contribution}
-          projectStyleGuide={bootstrap.data.projectStyleGuide}
-          onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
-          onPreviewContribution={() => send({ type: "preview-contribution" })}
-          onExportContribution={(digest) => send({ type: "export-contribution", digest })}
-          onCancelContribution={() => setContribution(undefined)}
-        />
-      )}
-      {activeTab === "cleanup" && (
-        <Cleanup
-          disabled={stale || !bootstrap.data.canMutateDocument}
-          plans={plans}
-          findings={report?.findings ?? []}
-          undoAcknowledged={undoAcknowledged}
-          onAcknowledge={setUndoAcknowledged}
-          onApply={(planId) => send({ type: "apply-plan", planId, undoOnlyAcknowledged: undoAcknowledged })}
-          onApplyAll={(planIds) => send({ type: "apply-all", planIds, undoOnlyAcknowledged: undoAcknowledged })}
-        />
-      )}
-      {activeTab === "context" && (
-        <ContextPanel
-          knowledge={knowledge}
-          codeConnectRaw={codeConnectRaw}
-          onCodeConnectRaw={setCodeConnectRaw}
-          onImport={() => send({ type: "import-code-connect", raw: codeConnectRaw })}
-          onRefresh={() => scan(report?.target.scope ?? "selection", true)}
-          projectStyleGuide={bootstrap.data.projectStyleGuide}
-          referencePackRaw={referencePackRaw}
-          onReferencePackRaw={setReferencePackRaw}
-          onImportProjectStyleGuide={() => send({ type: "import-project-style-guide", raw: referencePackRaw })}
-          onRemoveProjectStyleGuide={() => send({ type: "remove-project-style-guide" })}
-          onAddSessionReference={() => send({ type: "add-session-reference", raw: referencePackRaw })}
-          onClearSessionReferences={() => send({ type: "clear-session-references" })}
-          sessionReferenceCount={sessionReferenceCount}
-          canMutateDocument={bootstrap.data.canMutateDocument}
-          fileKeyAvailable={bootstrap.data.fileKeyAvailable}
-        />
-      )}
-      {activeTab === "profile" && (
-        <ProfileEditor
-          canPersist={bootstrap.data.canMutateDocument}
-          profile={profile}
-          pages={bootstrap.data.pages}
-          collections={collections}
-          onChange={(next) => {
-            setProfile(next);
-            setStale(true);
-            setNotice(undefined);
-            setError(undefined);
-          }}
-          onSave={() => send({ type: "save-profile", profile })}
-        />
-      )}
+      <div
+        className={`panel-host${scanInFlight ? " scan-locked" : ""}`}
+        inert={scanInFlight}
+        aria-busy={scanInFlight}
+      >
+        {activeTab === "overview" && (
+          <Overview
+            report={report}
+            selectionSummary={selectionSummary}
+            stale={stale}
+            canMutateDocument={bootstrap.data.canMutateDocument}
+            scanning={scanInFlight}
+            onScan={scan}
+            onCertify={() => send({ type: "certify" })}
+            onCertifyComponents={() => send({ type: "certify-components" })}
+            onExport={(format) => send({ type: "export", format })}
+          />
+        )}
+        {activeTab === "findings" && (
+          <Findings
+            findings={visibleFindings}
+            frames={report?.frames ?? []}
+            showPassing={showPassing}
+            axisFilter={axisFilter}
+            pageFilter={pageFilter}
+            rootFilter={rootFilter}
+            variantFilter={variantFilter}
+            expanded={expanded}
+            collections={collections.filter((collection) => !collection.remote && profile.tokenSourceCollectionKeys.includes(collection.key))}
+            tokenWizard={tokenWizard}
+            waiverDraft={waiverDraft}
+            disabled={stale}
+            canMutateDocument={bootstrap.data.canMutateDocument}
+            onTogglePassing={setShowPassing}
+            onAxisFilter={setAxisFilter}
+            onPageFilter={(pageId) => { setPageFilter(pageId); setRootFilter("all"); setVariantFilter("all"); }}
+            onRootFilter={(rootId) => { setRootFilter(rootId); setVariantFilter("all"); }}
+            onVariantFilter={setVariantFilter}
+            onExpand={(id) => setExpanded(expanded === id ? undefined : id)}
+            onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
+            onWaiverDraft={setWaiverDraft}
+            onWaive={() => {
+              if (!waiverDraft?.reason.trim()) return;
+              send({ type: "waive", findingId: waiverDraft.findingId, reason: waiverDraft.reason.trim() });
+              setWaiverDraft(undefined);
+            }}
+            onClearWaiver={(findingId) => send({ type: "clear-waiver", findingId })}
+            onConfirmPattern={(findingId, canonicalName) => send({ type: "confirm-pattern", findingId, canonicalName })}
+            onTokenWizard={setTokenWizard}
+            onCreateToken={() => {
+              if (!tokenWizard) return;
+              send({
+                type: "create-token",
+                collectionId: tokenWizard.collectionId,
+                name: tokenWizard.name,
+                field: tokenWizard.field,
+                nodeIds: tokenWizard.nodeIds,
+                rawValue: tokenWizard.rawValue,
+              });
+              setTokenWizard(undefined);
+            }}
+          />
+        )}
+        {activeTab === "modules" && (
+          <Modules
+            report={report}
+            onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
+            onViewFindings={(rootId) => {
+              const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
+              setPageFilter(frame?.pageId ?? "all");
+              setRootFilter(rootId);
+              setVariantFilter("all");
+              setActiveTab("findings");
+            }}
+            onViewVariantFindings={(rootId, variantId) => {
+              const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
+              setPageFilter(frame?.pageId ?? "all");
+              setRootFilter(rootId);
+              setVariantFilter(variantId);
+              setActiveTab("findings");
+            }}
+          />
+        )}
+        {activeTab === "guidance" && (
+          <Guidance
+            insights={insights}
+            hasReport={Boolean(report) && !stale}
+            contribution={contribution}
+            projectStyleGuide={bootstrap.data.projectStyleGuide}
+            onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
+            onPreviewContribution={() => send({ type: "preview-contribution" })}
+            onExportContribution={(digest) => send({ type: "export-contribution", digest })}
+            onCancelContribution={() => setContribution(undefined)}
+          />
+        )}
+        {activeTab === "cleanup" && (
+          <Cleanup
+            disabled={stale || !bootstrap.data.canMutateDocument}
+            plans={plans}
+            findings={report?.findings ?? []}
+            undoAcknowledged={undoAcknowledged}
+            onAcknowledge={setUndoAcknowledged}
+            onApply={(planId) => send({ type: "apply-plan", planId, undoOnlyAcknowledged: undoAcknowledged })}
+            onApplyAll={(planIds) => send({ type: "apply-all", planIds, undoOnlyAcknowledged: undoAcknowledged })}
+          />
+        )}
+        {activeTab === "context" && (
+          <ContextPanel
+            knowledge={knowledge}
+            codeConnectRaw={codeConnectRaw}
+            onCodeConnectRaw={setCodeConnectRaw}
+            onImport={() => send({ type: "import-code-connect", raw: codeConnectRaw })}
+            onRefresh={() => scan(report?.target.scope ?? "selection", true)}
+            projectStyleGuide={bootstrap.data.projectStyleGuide}
+            referencePackRaw={referencePackRaw}
+            onReferencePackRaw={setReferencePackRaw}
+            onImportProjectStyleGuide={() => send({ type: "import-project-style-guide", raw: referencePackRaw })}
+            onRemoveProjectStyleGuide={() => send({ type: "remove-project-style-guide" })}
+            onAddSessionReference={() => send({ type: "add-session-reference", raw: referencePackRaw })}
+            onClearSessionReferences={() => send({ type: "clear-session-references" })}
+            sessionReferenceCount={sessionReferenceCount}
+            canMutateDocument={bootstrap.data.canMutateDocument}
+            fileKeyAvailable={bootstrap.data.fileKeyAvailable}
+          />
+        )}
+        {activeTab === "profile" && (
+          <ProfileEditor
+            canPersist={bootstrap.data.canMutateDocument}
+            profile={profile}
+            pages={bootstrap.data.pages}
+            collections={collections}
+            onChange={(next) => {
+              setProfile(next);
+              setStale(true);
+              setNotice(undefined);
+              setError(undefined);
+            }}
+            onSave={() => send({ type: "save-profile", profile })}
+          />
+        )}
+      </div>
 
       <footer className="app-footer">
         <span>Ruleset {bootstrap.rulesetVersion}</span>
