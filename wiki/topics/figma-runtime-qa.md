@@ -11,8 +11,6 @@ topics: [design-passport-architecture, whole-file-design-knowledge, mutation-cer
 - Expected plugin mutations need a change guard so one cleanup does not create a cascade of false drift notices.
 - Audit cancellation is a neutral state, not a red plugin failure.
 - `window.prompt` is unreliable in the plugin sandbox, so waivers use an inline form.
-- Code Connect must post its refreshed report before its import confirmation or the generic audit notice wins.
-- The Figma plugin main thread does not consistently expose the browser `URL` constructor. Code Connect now uses a strict sandbox-safe HTTPS Figma URL parser and reports the first rejected entry's reason.
 
 ## Live verification, 2026-09-08
 
@@ -23,7 +21,6 @@ Figma Desktop was exercised against `UI Design Library` (`gXT4bIDrkgva2uSzY763oG
 - Whole-file progress, cancellation, rebuild, and genuine drift refresh passed without false notice storms.
 - Overview, Findings, Cleanup, Context, and Profile tabs were inspected; disclosure, filter, navigation, profile validation, breakpoint add/remove, token wizard validation, waiver apply/remove, and dismiss actions passed.
 - JSON and Markdown exports completed; exported JSON parsed against the stable report shape.
-- Malformed and hostile Code Connect imports were rejected safely; a valid encoded current-file URL was accepted while its template was neither rendered nor retained.
 - Dev Mode showed audit-only guidance and disabled profile save and certification.
 - “Fix all available” applied one low-risk operation in one undo group, rescanned all 36 pages, reduced findings from 6 to 5, raised pipeline readiness from 86.7 to 93.3, and raised the selected-frame score from 89.1 to 89.9.
 - Certification wrote a grade-B annotation and relaunch action. A deliberate clip-content toggle produced exactly one stale state; it was reverted before the refresh.
@@ -44,9 +41,19 @@ No pages or content were deleted or moved, structural conversions were not auto-
 
 ## Automated verification
 
-The release suite contains 27 Vitest files and 157 tests. It covers catalog resolution, grading boundaries, schemas and hostile input, session/drift state, mutation planning and rollback constraints, token compatibility, UI operations, annotation migration and idempotency, cancellation feedback, inline waiver validation, Code Connect feedback, project guidance, contribution sanitization, human-gated publication, knowledge-domain preservation, exact Figma URL validation, UTF-8 byte limits, copied-file protection, and exact inactive-component state handling for both definitions and placed instances. Performance fixtures exercise 10,000- and 50,000-node graphs.
+The release suite contains 27 Vitest files. It covers catalog resolution, grading boundaries, schemas and hostile input, committed/draft audit-setup state, automatic file classification, profile reconciliation, session/drift state, mutation planning and rollback constraints, token compatibility, UI operations, annotation migration and idempotency, cancellation feedback, inline waiver validation, project guidance, contribution sanitization, human-gated publication, knowledge-domain preservation, UTF-8 byte limits, copied-file protection, and exact inactive-component state handling for both definitions and placed instances. Performance fixtures exercise 10,000- and 50,000-node graphs.
 
 The release gate is `pnpm verify:ci`, followed by `git diff --check`; wiki integrity is included in that command.
+
+## Profile-state recovery, 2026-09-11
+
+The sandbox now owns the audit profile and scan requests carry no editable setup data. Conventional files are classified deterministically and can audit immediately. The primary navigation contains only Overview, Modules, Findings, Guidance, Cleanup, and Context, distributed across the full strip; Audit setup is a secondary footer/recovery link whose manual controls remain collapsed. The React UI keeps a separate advanced draft, validates page-role and breakpoint semantics inline, and blocks scans, rebuilds, cleanup, certification, contribution, and exports until Save or Discard resolves a draft. The prior report remains readable during an unsaved edit; a successful Save clears it and forces fresh whole-file knowledge.
+
+Bootstrap and pre-action reconciliation remove mappings to deleted pages without persisting the repair. A typed invalidation response returns the reconciled draft, current pages, suggested roles, and actionable issues, then opens Audit setup for explicit confirmation. Stored profiles from the prior plugin shape are read compatibly and are written in the current shape only after Save. Ruleset `1.0.0-beta.2` and plugin `0.1.1` make earlier certifications stale by design.
+
+The rebuilt development plugin was exercised in Figma Desktop against `UI Design Library`. Invalid and valid drafts, downstream gates, Save/Discard, duplicate breakpoints, invalid widths, deleted-page recovery, automatic section/page-role mapping, Semantic collection selection, and the absence of the retired integration all passed. The final restored 36-page library audit completed B/87.8 and ready without publishing the plugin.
+
+A disposable 37th page then stress-tested the complete designer journey with whitespace, default-name, missing-annotation, literal-style, clipping, spacer, and inferred-layout defects. It began F/49.9 with 25 findings. Ten safe/guarded operations in two undo groups moved it to D/58.5; inferred Auto Layout used a version-history checkpoint and clone validation; four newly measurable guarded bindings then left no previewable cleanup plans. The stress pass exposed and fixed a single-plan transient-clone event race that had invalidated the automatic rescan. Repeating the exact path completed cleanly. Two manual canvas decisions cleared the spacer/default-name findings, producing B/81.2 ready with Naming and Structure at 100. Certification was idempotent with one grade annotation plus one source marker. The disposable page was deleted, page count returned to 36, and the real library again audited B/87.8 with 36/36 pages loaded.
 
 ## Component annotation cleanup, 2026-09-09
 

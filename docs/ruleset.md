@@ -20,8 +20,6 @@ Axis score is `passed applicable weight / total applicable weight`. Token applic
 | D | ≥ 50 |
 | F | < 50 |
 
-Missing verified Code Connect evidence caps an otherwise A result at B. It does not block readiness. All in-scope core components must have verified evidence for A.
-
 ## Readiness gate
 
 `ready = every source frame is grade B or better && no hard blockers && no unresolved severity-4 reviews && whole-file knowledge is complete and fresh`.
@@ -103,7 +101,6 @@ Local token systems are valid. An enabled library is reported as a fact, never t
 - Source annotation and dev-resource evidence.
 - Stable export names.
 - Machine-readable styling.
-- Optional verified Code Connect evidence.
 - Existing certificate freshness.
 
 ## Source authority

@@ -1,6 +1,5 @@
 import type {
   CertificationSummary,
-  CodeConnectEvidence,
   DesignKnowledgeGraph,
   EffectSnapshot,
   NodeSnapshot,
@@ -15,7 +14,7 @@ import type {
 import { AI_SOURCE_FRAME_ANNOTATION, CERTIFICATION_ANNOTATION_PREFIX, LEGACY_CERTIFICATION_ANNOTATION_PREFIX } from "../core/constants";
 import { finalizeKnowledgeGraph } from "../core/knowledge";
 import { populateGraphMetrics, sourceFrameIds, targetRootIds } from "../core/operations/graph";
-import { assertProfileSemantics } from "../core/profile";
+import { assertProfileSemantics, profileSemanticErrors, reconcileProfilePages } from "../core/profile";
 import { inferProfileFromPages } from "../core/profile-inference";
 import { hashValue } from "../core/stable";
 import {
@@ -43,7 +42,9 @@ export interface BootstrapData {
   pages: PageOption[];
   collections: VariableCollectionOption[];
   profile: ReadinessProfile;
+  profileSuggestion: ReadinessProfile;
   profileConfigured: boolean;
+  profileIssues: string[];
   selectionCount: number;
   projectStyleGuide: ProjectStyleGuideStatus;
 }
@@ -519,14 +520,22 @@ export class FigmaAdapter {
 
   async getBootstrap(): Promise<BootstrapData> {
     const pages = figma.root.children;
+    const collections = await this.getCollectionOptions(false);
     const stored = figma.root.getSharedPluginData("verndaleAiReady", "profile-v1");
-    let profile = inferProfileFromPages(pages);
-    let profileConfigured = false;
+    const profileSuggestion = inferProfileFromPages(pages, collections);
+    let profile = profileSuggestion;
+    let profileConfigured = profileSemanticErrors(profileSuggestion, new Set(pages.map((page) => page.id))).length === 0;
+    let profileIssues: string[] = [];
     if (stored) {
       const candidate = parseStoredProfile(stored);
       if (candidate) {
-        profile = candidate;
-        profileConfigured = true;
+        const state = this.reconcileProfile(candidate, true, profileSuggestion);
+        profile = state.profile;
+        profileConfigured = state.profileConfigured;
+        profileIssues = state.profileIssues;
+      } else {
+        profileIssues = ["The stored profile could not be read. Review the suggested profile and save it to continue."];
+        profileConfigured = false;
       }
     }
     return {
@@ -535,9 +544,11 @@ export class FigmaAdapter {
       editorType: figma.editorType === "dev" ? "dev" : "figma",
       canMutateDocument: figma.editorType === "figma",
       pages: pages.map((page) => ({ id: page.id, name: page.name })),
-      collections: await this.getCollectionOptions(false),
+      collections,
       profile,
+      profileSuggestion,
       profileConfigured,
+      profileIssues,
       selectionCount: figma.currentPage.selection.length,
       projectStyleGuide: this.getProjectStyleGuideStatus(),
     };
@@ -595,6 +606,30 @@ export class FigmaAdapter {
     figma.root.setSharedPluginData("verndaleAiReady", "profile-v1", JSON.stringify(profile));
   }
 
+  reconcileProfile(
+    profile: ReadinessProfile,
+    previouslyConfigured: boolean,
+    suggestion?: ReadinessProfile,
+  ): Pick<BootstrapData, "pages" | "profile" | "profileSuggestion" | "profileConfigured" | "profileIssues"> {
+    const pages = figma.root.children;
+    const availablePageIds = new Set(pages.map((page) => page.id));
+    const reconciled = reconcileProfilePages(profile, availablePageIds);
+    const removedIssue = reconciled.removedPageIds.length > 0
+      ? [`Mapped pages were removed because they no longer exist: ${reconciled.removedPageIds.join(", ")}. Review and save the profile to confirm the new mapping.`]
+      : [];
+    const profileIssues = [...removedIssue, ...profileSemanticErrors(reconciled.profile, availablePageIds)];
+    return {
+      pages: pages.map((page) => ({ id: page.id, name: page.name })),
+      profile: reconciled.profile,
+      profileSuggestion: suggestion ?? {
+        ...inferProfileFromPages(pages),
+        tokenSourceCollectionKeys: [...profile.tokenSourceCollectionKeys],
+      },
+      profileConfigured: previouslyConfigured && profileIssues.length === 0,
+      profileIssues,
+    };
+  }
+
   matchesDocumentTopology(graph: Pick<DesignKnowledgeGraph, "pages">): boolean {
     const pages = figma.root.children;
     return pages.length === graph.pages.length
@@ -604,7 +639,6 @@ export class FigmaAdapter {
   async buildKnowledge(
     profile: ReadinessProfile,
     onProgress: (progress: ScanProgress) => void,
-    priorCodeConnect: CodeConnectEvidence[] = [],
   ): Promise<KnowledgeBuildResult> {
     this.cancelled = false;
     const pages = figma.root.children;
@@ -705,7 +739,6 @@ export class FigmaAdapter {
       componentIds,
       instanceIds,
       sourceFrameIds: [] as string[],
-      codeConnect: priorCodeConnect,
     };
     partial.sourceFrameIds = sourceFrameIds(partial, profile);
     const graph = finalizeKnowledgeGraph(partial, profile);

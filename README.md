@@ -13,7 +13,7 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 
 - Eight deterministic readiness axes and weighted A–F rollup.
 - Independent source-frame grades; the weakest designated frame limits file readiness.
-- Hard blockers, unresolved-review handling, non-inflating waivers, and the Code Connect B cap.
+- Hard blockers, unresolved-review handling, and non-inflating waivers.
 - A pinned projection of all 80 patterns and every alias from `@verndale/ui-design-brain@1.17.0`.
 - Contextual aliases (`CTA`, `Banner`, `Label`, and `Stepper`) that always require a designer choice.
 - Whole-file semantic index with page roles, component use, responsive families, variable sources, and repeated structural signatures.
@@ -23,7 +23,7 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 - Semantic token-creation wizard for values repeated at least three times.
 - Compact shared profile/certification data in the `verndaleAiReady` namespace.
 - Concise parent-only certificate annotations and relaunch actions on passing source frames and reusable components.
-- JSON Schema-validated profiles, findings, change plans, reports, and Code Connect parser input.
+- JSON Schema-validated profiles, findings, change plans, and reports.
 - Complete JSON and escaped Markdown report exports.
 - Project-scoped style-guide advisories, session-only references, and an explicit sanitized learning export that never changes grades.
 - A local Node companion for Figma REST ingestion and human-gated knowledge review.
@@ -33,7 +33,7 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 
 1. The measurable readiness and blocker model in the local Figma AI Readiness rubric.
 2. [`@verndale/ui-design-brain@1.17.0`](https://www.npmjs.com/package/@verndale/ui-design-brain) for canonical names, aliases, contextual disambiguation, and advisory pattern checklists.
-3. [Figma’s official MCP file-structure guidance](https://developers.figma.com/docs/figma-mcp-server/structure-figma-file/) for components, Code Connect, variables, semantic names, Auto Layout, annotations, and dev resources.
+3. [Figma’s official MCP file-structure guidance](https://developers.figma.com/docs/figma-mcp-server/structure-figma-file/) for components, variables, semantic names, Auto Layout, annotations, and dev resources.
 4. [WCAG 2.2](https://www.w3.org/TR/WCAG22/) for normative accessibility measurements.
 5. [Figma Recommended Practices in the Age of AI](https://arie-m-prasetyo.medium.com/figma-recommended-practices-in-the-age-of-ai-e766b098ef9f) as non-normative organizational guidance.
 
@@ -45,8 +45,8 @@ Design Passport is published to the Verndale organization. Organization members 
 
 1. Open the Figma Design or Dev Mode file to review.
 2. Open **Resources → Plugins** (or Quick Actions) and run **Design Passport**.
-3. On first use in a file, confirm the profile: artifact kind, page roles, approved token collections, and breakpoint names and widths.
-4. Choose an audit scope, wait for the complete file-wide knowledge build, then review Overview and Findings.
+3. Choose an audit scope. Design Passport automatically classifies conventional product and library files; there is no required setup step.
+4. Wait for the complete file-wide knowledge build, then review Overview and Findings.
 5. Apply only reviewed cleanup, let the rescan complete, and certify only when Overview reports **ready**.
 6. Export JSON for machine consumers or Markdown for people; do not distribute a stale or incomplete report.
 
@@ -75,8 +75,6 @@ To test an unreleased local build in Figma Desktop:
 4. Run the development copy from **Plugins → Development**.
 
 The committed manifest uses the organization-published plugin ID. Do not change that ID for ordinary development or user installation; only a release owner should change it when Figma assigns a replacement published-plugin record.
-
-The Code Connect importer requires `figma.fileKey`, which Figma exposes only to eligible private-plugin contexts. It can remain disabled in a local development copy even though it is available in the organization-published plugin.
 
 ### Project style guides and the local companion
 
@@ -142,17 +140,15 @@ pnpm pr:create
 
 Copy `.env.example` to `.env` only for local credentials or optional model settings. `.env` is ignored and must never be committed. The pull-request workflow expects the repository secret `PR_BOT_TOKEN`; optional AI-generated PR summaries additionally use the variables and secret documented in `.env.example`.
 
-## File profile
+## Automatic audit setup
 
-First run asks the designer to confirm:
+Designers normally open Design Passport and run an audit immediately. The plugin deterministically infers product screens or component-library intent, local page roles (`Foundations`, `Components`, `Screens`), local Semantic variable collections, and the standard 1440 / 768 / 375 breakpoints. It does not move, rename, or otherwise change Figma content while classifying the file.
 
-- Product or library artifact kind.
-- Local page roles (`Foundations`, `Components`, `Screens`) without moving or renaming pages.
-- Optional enabled-library role keys.
-- Approved local/enabled-library variable collection keys.
-- Breakpoint names and widths (default 1440 / 768 / 375).
+`Audit setup` is a secondary recovery surface, not part of the normal workflow. It appears automatically only when the file cannot be classified safely or a saved page mapping was deleted. A recommended one-click setup is offered when deterministic inference can repair the state; unusual files can use the collapsed advanced controls for manual roles, token sources, and breakpoints.
 
-Only this profile, compact certificate summaries, and explicit contextual-pattern confirmations are stored as shared plugin data. A validated project style-guide binding is stored separately as private document-root plugin data, never public shared data or client storage. Full nodes, findings, text, Code Connect source paths, and imported templates are not persisted there. Text content is represented in the in-memory graph by length and a deterministic fingerprint, not raw characters.
+Advanced edits remain a local draft until the designer explicitly saves them. Audits, context rebuilds, cleanup, certification, learning contribution, and report export stay unavailable while a draft is unsaved or invalid. Discard restores the committed setup. Deleted page mappings are removed from the draft and require review and confirmation before work continues.
+
+Only the committed profile, compact certificate summaries, and explicit contextual-pattern confirmations are stored as shared plugin data. A validated project style-guide binding is stored separately as private document-root plugin data, never public shared data or client storage. Full nodes, findings, and text are not persisted there. Text content is represented in the in-memory graph by length and a deterministic fingerprint, not raw characters.
 
 ## Component-set certification
 

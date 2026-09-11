@@ -39,8 +39,9 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
   if (message.type === "save-profile") return { type: message.type, profile: profile(message.profile) };
   if (message.type === "scan") {
     const request = record(message.request);
-    if (!request || !["selection", "page", "file"].includes(String(request.scope)) || typeof request.refreshKnowledge !== "boolean") throw new Error("scan request is invalid");
-    return { type: "scan", request: { scope: request.scope as "selection" | "page" | "file", profile: profile(request.profile), refreshKnowledge: request.refreshKnowledge } };
+    if (!request || Object.keys(request).some((key) => key !== "scope" && key !== "refreshKnowledge")
+      || !["selection", "page", "file"].includes(String(request.scope)) || typeof request.refreshKnowledge !== "boolean") throw new Error("scan request is invalid");
+    return { type: "scan", request: { scope: request.scope as "selection" | "page" | "file", refreshKnowledge: request.refreshKnowledge } };
   }
   if (message.type === "navigate") return { type: message.type, nodeId: text(message.nodeId, "nodeId", 200) };
   if (message.type === "apply-plan") {
@@ -53,10 +54,6 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
     const planIds = message.planIds.map((planId) => text(planId, "planId", 300));
     if (new Set(planIds).size !== planIds.length) throw new Error("planIds must be distinct");
     return { type: message.type, planIds, undoOnlyAcknowledged: message.undoOnlyAcknowledged };
-  }
-  if (message.type === "import-code-connect") {
-    if (typeof message.raw !== "string" || message.raw.length > 2_000_000) throw new Error("Code Connect JSON must be a string no larger than 2 MB");
-    return { type: message.type, raw: message.raw };
   }
   if (message.type === "import-project-style-guide" || message.type === "add-session-reference") {
     if (typeof message.raw !== "string" || utf8ByteLength(message.raw) > 90_000) {

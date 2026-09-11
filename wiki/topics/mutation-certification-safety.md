@@ -12,7 +12,7 @@ Structural work first requests the version-history checkpoint `Before Design Pas
 
 Inferred Auto Layout is tested on a temporary clone. Child order must remain stable, no overlap or clipping may appear, and every measured geometry bound must remain within 0.5 px. The plugin never deletes content, moves pages, enables libraries, guesses semantic mappings, or destructively replaces detached instances.
 
-Whole-library structural cleanup validates proposals component by component, commits every accepted proposal in its own undo group, rejects unsafe proposals without touching the source, and performs one fresh scan after the batch. Clone preflight runs before opening the source mutation transaction: a failed clone must never trigger undo, because doing so can unwind an earlier accepted component. Transient clone document-change events are ignored only locally; remote changes still invalidate the snapshot.
+Whole-library structural cleanup validates proposals component by component, commits every accepted proposal in its own undo group, rejects unsafe proposals without touching the source, and performs one fresh scan after the batch. Clone preflight runs before opening the source mutation transaction: a failed clone must never trigger undo, because doing so can unwind an earlier accepted component. Both single-plan and batch structural paths guard transient clone document-change events throughout the following rescan; remote changes still invalidate the snapshot.
 
 Repeated literals can open a semantic token wizard only after three matches. The designer must choose an existing local collection and a slash-separated semantic name. A unique compatible inferred variable may be guarded; multiple matches remain manual.
 
@@ -24,7 +24,7 @@ Waivers require an inline reason and remain score deductions. The Figma plugin s
 
 ## Certification
 
-Certification requires a fresh complete graph and a passing independent source-frame report. It writes a concise annotation, compact shared metadata, and a relaunch action containing grade, ruleset and catalog versions, timestamp, and snapshot hash. Full findings, sensitive content, and Code Connect source paths are not stored in shared plugin data.
+Certification requires a fresh complete graph, a confirmed committed profile, and a passing independent source-frame report. It writes a concise annotation, compact shared metadata, and a relaunch action containing grade, ruleset and catalog versions, timestamp, and snapshot hash. Full findings and sensitive content are not stored in shared plugin data.
 
 Source-frame and reusable-component certification are separate actions. Source-frame certification retains the whole-scope readiness gate; component certification considers only actual `COMPONENT` and `COMPONENT_SET` roots from the fresh scan and stamps each independently passing A or B root. This lets a healthy component library be certified even when documentation or specimen frames keep the broader file report below B.
 
@@ -34,4 +34,4 @@ For component sets, the set remains the sole graded and certified source root. I
 
 Component re-certification atomically removes every current direct-child annotation whose text begins with the exact legacy `[Design Passport] Covered by` prefix. Designer-authored and other unrelated annotations are preserved, the success notice reports the deletion count, and an immediate repeat certification removes zero. Compact shared metadata, the `AI source frame` marker, and the relaunch action remain on the certified root; legacy child notes never carried those fields.
 
-After cleanup, certification and exports always use the post-change rescan. See [runtime QA](./figma-runtime-qa.md) for the verified score improvement and relaunch path.
+An unsaved, invalid, or unconfirmed advanced audit-setup draft blocks cleanup, certification, contribution, and exports while leaving the earlier report readable for comparison. Automatically inferred valid setup does not block the normal designer journey. After cleanup, certification and exports always use the post-change rescan. See [runtime QA](./figma-runtime-qa.md) for the verified score improvement and relaunch path.

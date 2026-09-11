@@ -139,14 +139,8 @@ export function finalizeKnowledgeGraph(graph: Omit<DesignKnowledgeGraph, "respon
     componentIds: graph.componentIds.slice().sort(),
     instanceIds: graph.instanceIds.slice().sort(),
     sourceFrameIds: graph.sourceFrameIds.slice().sort(),
-    codeConnect: graph.codeConnect,
   };
   return { ...graph, responsiveFamilies, repeatedStructureGroups, snapshotHash: hashValue(snapshotMaterial) };
-}
-
-export function replaceCodeConnectEvidence(graph: DesignKnowledgeGraph, codeConnect: DesignKnowledgeGraph["codeConnect"], profile: ReadinessProfile): DesignKnowledgeGraph {
-  const { responsiveFamilies: _responsive, repeatedStructureGroups: _repeated, snapshotHash: _snapshotHash, ...base } = graph;
-  return finalizeKnowledgeGraph({ ...base, codeConnect }, profile);
 }
 
 export function isKnowledgeFresh(graph: DesignKnowledgeGraph, now = Date.now(), maximumAgeMs = 15 * 60 * 1000): boolean {

@@ -2,12 +2,12 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 26,
-    "edges": 103,
+    "nodes": 28,
+    "edges": 120,
     "byType": {
       "index": 3,
-      "journal": 10,
-      "plan": 7,
+      "journal": 11,
+      "plan": 8,
       "topic": 6
     }
   },
@@ -32,8 +32,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.885456,
-      "y": 0.464723,
+      "x": 0.900969,
+      "y": 0.433884,
       "size": 8
     },
     {
@@ -44,8 +44,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.748511,
-      "y": 0.663123,
+      "x": 0.781831,
+      "y": 0.62349,
       "size": 8
     },
     {
@@ -63,8 +63,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.568065,
-      "y": 0.822984,
+      "x": 0.62349,
+      "y": 0.781831,
       "size": 8
     },
     {
@@ -88,8 +88,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.354605,
-      "y": 0.935016,
+      "x": 0.433884,
+      "y": 0.900969,
       "size": 8
     },
     {
@@ -100,8 +100,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.120537,
-      "y": 0.992709,
+      "x": 0.222521,
+      "y": 0.974928,
       "size": 8
     },
     {
@@ -125,8 +125,8 @@
       ],
       "bytes": 2518,
       "degree": 3,
-      "x": -0.120537,
-      "y": 0.992709,
+      "x": 0,
+      "y": 1,
       "size": 8
     },
     {
@@ -144,8 +144,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": -0.354605,
-      "y": 0.935016,
+      "x": -0.222521,
+      "y": 0.974928,
       "size": 8
     },
     {
@@ -163,8 +163,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": -0.568065,
-      "y": 0.822984,
+      "x": -0.433884,
+      "y": 0.900969,
       "size": 8
     },
     {
@@ -175,8 +175,8 @@
       "githubRefs": [],
       "bytes": 2328,
       "degree": 4,
-      "x": -0.748511,
-      "y": 0.663123,
+      "x": -0.62349,
+      "y": 0.781831,
       "size": 8
     },
     {
@@ -187,8 +187,27 @@
       "githubRefs": [],
       "bytes": 3438,
       "degree": 6,
-      "x": -0.885456,
-      "y": 0.464723,
+      "x": -0.781831,
+      "y": 0.62349,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "label": "Profile state recovery and pipeline simplification",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 17,
+          "url": "https://github.com/jfusco/design-passport/issues/17"
+        }
+      ],
+      "bytes": 3988,
+      "degree": 11,
+      "x": -0.900969,
+      "y": 0.433884,
       "size": 8
     },
     {
@@ -199,8 +218,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.970942,
-      "y": 0.239316,
+      "x": 0.974928,
+      "y": 0.222521,
       "size": 12
     },
     {
@@ -211,8 +230,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.970942,
-      "y": 0.239316,
+      "x": -0.974928,
+      "y": 0.222521,
       "size": 8
     },
     {
@@ -235,8 +254,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.970942,
-      "y": -0.239316,
+      "x": -0.974928,
+      "y": -0.222521,
       "size": 8
     },
     {
@@ -254,8 +273,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.885456,
-      "y": -0.464723,
+      "x": -0.900969,
+      "y": -0.433884,
       "size": 8
     },
     {
@@ -266,8 +285,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.748511,
-      "y": -0.663123,
+      "x": -0.781831,
+      "y": -0.62349,
       "size": 8
     },
     {
@@ -278,8 +297,20 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.568065,
-      "y": -0.822984,
+      "x": -0.62349,
+      "y": -0.781831,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-11-profile-state-fix-and-code-connect-removal-80d06ac784.md",
+      "label": "Profile-state fix and Code Connect removal",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2654,
+      "degree": 7,
+      "x": -0.433884,
+      "y": -0.900969,
       "size": 8
     },
     {
@@ -290,8 +321,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.354605,
-      "y": -0.935016,
+      "x": -0.222521,
+      "y": -0.974928,
       "size": 8
     },
     {
@@ -307,10 +338,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/38"
         }
       ],
-      "bytes": 17215,
-      "degree": 9,
-      "x": -0.120537,
-      "y": -0.992709,
+      "bytes": 17784,
+      "degree": 10,
+      "x": 0,
+      "y": -1,
       "size": 12
     },
     {
@@ -319,10 +350,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 3433,
-      "degree": 29,
-      "x": 0.120537,
-      "y": -0.992709,
+      "bytes": 4240,
+      "degree": 32,
+      "x": 0.222521,
+      "y": -0.974928,
       "size": 8
     },
     {
@@ -331,10 +362,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 5546,
-      "degree": 16,
-      "x": 0.354605,
-      "y": -0.935016,
+      "bytes": 5450,
+      "degree": 19,
+      "x": 0.433884,
+      "y": -0.900969,
       "size": 8
     },
     {
@@ -343,10 +374,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 8966,
-      "degree": 27,
-      "x": 0.568065,
-      "y": -0.822984,
+      "bytes": 11124,
+      "degree": 30,
+      "x": 0.62349,
+      "y": -0.781831,
       "size": 8
     },
     {
@@ -355,10 +386,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 4773,
-      "degree": 17,
-      "x": 0.748511,
-      "y": -0.663123,
+      "bytes": 5091,
+      "degree": 20,
+      "x": 0.781831,
+      "y": -0.62349,
       "size": 8
     },
     {
@@ -369,8 +400,8 @@
       "githubRefs": [],
       "bytes": 2812,
       "degree": 12,
-      "x": 0.885456,
-      "y": -0.464723,
+      "x": 0.900969,
+      "y": -0.433884,
       "size": 8
     },
     {
@@ -379,14 +410,21 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2953,
-      "degree": 19,
-      "x": 0.970942,
-      "y": -0.239316,
+      "bytes": 3194,
+      "degree": 22,
+      "x": 0.974928,
+      "y": -0.222521,
       "size": 8
     }
   ],
   "edges": [
+    {
+      "id": "0b819571afa68868",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
+    },
     {
       "id": "0e414a96ceaeba99",
       "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
@@ -430,6 +468,13 @@
       "relation": "topic"
     },
     {
+      "id": "23d57d91a2ee4b45",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "25bcf1bc1b341da7",
       "source": "wiki/journal/2026-09-08-design-passport-v1.md",
       "target": "wiki/topics/design-readiness-standard.md",
@@ -449,6 +494,13 @@
       "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "277fd5eca85412d0",
+      "source": "wiki/plans/2026-09-11-profile-state-fix-and-code-connect-removal-80d06ac784.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "27e7e5ecc798e9c7",
@@ -484,6 +536,13 @@
       "target": "wiki/topics/figma-runtime-qa.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "2d456ac18352a987",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/plans/2026-09-11-profile-state-fix-and-code-connect-removal-80d06ac784.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "2dd31b33da8ac48b",
@@ -556,6 +615,13 @@
       "relation": "topic"
     },
     {
+      "id": "4e3e8279d2f00027",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "4eb1fc5fe71e304b",
       "source": "wiki/topics/figma-runtime-qa.md",
       "target": "wiki/topics/project-scoped-knowledge-loop.md",
@@ -584,6 +650,13 @@
       "relation": "topic"
     },
     {
+      "id": "5194f7b164c016f4",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "52d9234dfdfa4df0",
       "source": "wiki/plans/2026-09-09-clean-up-certification-annotations-eab120d954.md",
       "target": "wiki/topics/mutation-certification-safety.md",
@@ -596,6 +669,13 @@
       "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "5894e14fde9b9769",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "5af8331571935bd7",
@@ -631,6 +711,13 @@
       "target": "wiki/topics/figma-runtime-qa.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "662438216f91dc3b",
+      "source": "wiki/plans/2026-09-11-profile-state-fix-and-code-connect-removal-80d06ac784.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "6ec6491e49d33649",
@@ -703,6 +790,13 @@
       "relation": "topic"
     },
     {
+      "id": "8211e31a9b46b70a",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "872fa68cd056bb56",
       "source": "wiki/plans/2026-09-08-design-passport-ci-quality-gates-17bd086b3d.md",
       "target": "wiki/topics/design-passport-architecture.md",
@@ -720,6 +814,13 @@
       "id": "8ecd8097478bd20f",
       "source": "wiki/topics/mutation-certification-safety.md",
       "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "8f3343d9e0c77efc",
+      "source": "wiki/plans/2026-09-11-profile-state-fix-and-code-connect-removal-80d06ac784.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -755,6 +856,13 @@
       "id": "924f340d1be4d8bd",
       "source": "wiki/journal/2026-09-08-design-passport-v1.md",
       "target": "wiki/topics/design-passport-architecture.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "930a1585a923d454",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-11-profile-state-fix-and-code-connect-removal-80d06ac784.md",
       "type": "link",
       "relation": "link"
     },
@@ -864,6 +972,13 @@
       "relation": "link"
     },
     {
+      "id": "a8b79b75dce5cc35",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "a90c870959fcf5f5",
       "source": "wiki/plans/INDEX.md",
       "target": "wiki/plans/2026-09-09-variant-level-readiness-visibility-479be6bc3d.md",
@@ -871,9 +986,23 @@
       "relation": "link"
     },
     {
+      "id": "ad590d060e242784",
+      "source": "wiki/plans/2026-09-11-profile-state-fix-and-code-connect-removal-80d06ac784.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "af9d34d6275d64fb",
       "source": "wiki/topics/figma-runtime-qa.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "afe53ef7ea52f797",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/design-passport-architecture.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -934,6 +1063,13 @@
       "relation": "topic"
     },
     {
+      "id": "c1adfdae32cf70b2",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "c1c97b58b2e77483",
       "source": "wiki/topics/design-readiness-standard.md",
       "target": "wiki/topics/design-passport-architecture.md",
@@ -951,6 +1087,13 @@
       "id": "c4f463ba63916bbc",
       "source": "wiki/topics/design-readiness-standard.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "c8073b12cfbde6df",
+      "source": "wiki/plans/2026-09-11-profile-state-fix-and-code-connect-removal-80d06ac784.md",
+      "target": "wiki/topics/design-passport-architecture.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -1000,6 +1143,13 @@
       "id": "d3559bd8fc30defc",
       "source": "wiki/topics/project-scoped-knowledge-loop.md",
       "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "d5d7508fe3df9e1f",
+      "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/design-readiness-standard.md",
       "type": "topic",
       "relation": "topic"
     },

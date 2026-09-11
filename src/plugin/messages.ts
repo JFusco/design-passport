@@ -42,7 +42,6 @@ export type UiToPluginMessage =
   | { type: "apply-all"; planIds: string[]; undoOnlyAcknowledged: boolean }
   | { type: "certify" }
   | { type: "certify-components" }
-  | { type: "import-code-connect"; raw: string }
   | { type: "import-project-style-guide"; raw: string }
   | { type: "remove-project-style-guide" }
   | { type: "add-session-reference"; raw: string }
@@ -78,10 +77,10 @@ export type PluginToUiMessage =
   }
   | { type: "knowledge-stale" }
   | { type: "selection"; count: number }
-  | { type: "profile-saved"; profile: ReadinessProfile }
+  | { type: "profile-saved"; data: BootstrapData }
+  | { type: "profile-invalidated"; data: BootstrapData }
   | { type: "mutation-result"; message: string }
   | { type: "certified"; count: number; target: "source frames" | "components"; removedVariantAnnotations: number }
-  | { type: "code-connect-result"; accepted: number; rejected: Array<{ index: number; reason: string }> }
   | { type: "project-style-guide-result"; action: "imported" | "removed"; binding?: ProjectStyleGuideBindingV1; status: BootstrapData["projectStyleGuide"] }
   | { type: "session-reference-result"; count: number; projectStyleGuide: BootstrapData["projectStyleGuide"] }
   | { type: "contribution-preview"; envelope: ReviewLearningEnvelopeV1; content: string }

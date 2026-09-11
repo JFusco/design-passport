@@ -15,7 +15,9 @@ function parseObject(raw: string): Record<string, unknown> | undefined {
 
 export function parseStoredProfile(raw: string): ReadinessProfile | undefined {
   const value = parseObject(raw);
-  return value && validateContract("readiness-profile", value).valid ? value as unknown as ReadinessProfile : undefined;
+  if (!value) return undefined;
+  const { requireCodeConnect: _legacyRequireCodeConnect, ...current } = value;
+  return validateContract("readiness-profile", current).valid ? current as unknown as ReadinessProfile : undefined;
 }
 
 export function parseCertificationSummary(raw: string): CertificationSummary | undefined {

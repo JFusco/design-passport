@@ -73,6 +73,10 @@ export interface DocumentChangeSignal {
   properties?: readonly string[];
 }
 
+export function requiresTransientMutationGuard(risk: "low" | "guarded" | "structural"): boolean {
+  return risk === "structural";
+}
+
 function isLocalMetadataOnly(change: DocumentChangeSignal): boolean {
   return change.origin === "LOCAL"
     && change.type === "PROPERTY_CHANGE"

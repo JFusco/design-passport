@@ -14,7 +14,11 @@ Design Passport is a private Figma plugin with five explicit boundaries:
 4. The React UI presents state and sends validated commands; it does not contain grading or mutation policy.
 5. Project, reference, and shared knowledge is evaluated only after the deterministic report; the networked local companion remains outside the plugin runtime.
 
-The `ReadinessProfile`, `Finding`, `ChangePlan`, and `ReadinessReport` contracts are JSON Schema validated. This makes the graph and report reusable by a future REST or CI adapter without moving Figma runtime objects into the rule engine.
+The `ReadinessProfile`, `Finding`, `ChangePlan`, and `ReadinessReport` contracts are JSON Schema validated. This makes the graph and report reusable by a future REST or CI adapter without moving Figma runtime objects into the rule engine. Scan commands carry only scope and refresh intent; the sandbox-owned committed profile is the sole profile input to grading.
+
+On conventional files, bootstrap deterministically infers a valid in-memory audit setup from page names, component-section boundaries, local Semantic collections, and standard breakpoints. Designers can therefore audit immediately without learning file-type or page-role configuration. Audit setup is absent from primary navigation and appears only as a secondary recovery/advanced surface.
+
+That surface holds committed and editable values separately. Unsaved, invalid, or page-reconciled advanced drafts gate every profile-dependent action until the designer explicitly saves or discards them. Saving is the only setup persistence path and invalidates any earlier report; safe inference alone writes nothing to shared plugin data.
 
 ## Naming authority
 
@@ -22,7 +26,7 @@ The `ReadinessProfile`, `Finding`, `ChangePlan`, and `ReadinessReport` contracts
 
 ## Runtime boundary
 
-The production build is an inlined React document plus an ES2020 plugin bundle. The manifest is private, network-denied, dynamic-page aware, and supports Figma Design plus audit-only Dev Mode. Untrusted layer text, Markdown, URLs, and Code Connect templates are never evaluated; sensitive source paths and raw layer text are not persisted.
+The production build is an inlined React document plus an ES2020 plugin bundle. The manifest is private, network-denied, dynamic-page aware, and supports Figma Design plus audit-only Dev Mode. Untrusted layer text, Markdown, and URLs are never evaluated; raw layer text is not persisted.
 
 ## Release governance
 
