@@ -1,4 +1,4 @@
-import type { BootstrapData, VariableCollectionOption } from "../figma/adapter";
+import type { BootstrapData, SelectionSummary, VariableCollectionOption } from "../figma/adapter";
 import type {
   BindableField,
   ChangePlan,
@@ -10,6 +10,7 @@ import type {
   ReviewLearningEnvelopeV1,
   ScanProgress,
   ScanRequest,
+  ScanScope,
 } from "../core/contracts";
 
 export interface KnowledgeSummary {
@@ -32,10 +33,16 @@ export interface KnowledgeSummary {
   tokenCollections: Array<{ name: string; remote: boolean; variableCount: number }>;
 }
 
+export interface AuditTargetSummary {
+  scope: ScanScope;
+  selectionCount?: number;
+}
+
 export type UiToPluginMessage =
   | { type: "initialize" }
   | { type: "save-profile"; profile: ReadinessProfile }
   | { type: "scan"; request: ScanRequest }
+  | { type: "refresh-audit" }
   | { type: "cancel-scan" }
   | { type: "navigate"; nodeId: string }
   | { type: "apply-plan"; planId: string; undoOnlyAcknowledged: boolean }
@@ -64,6 +71,7 @@ export type UiToPluginMessage =
 export type PluginToUiMessage =
   | { type: "bootstrap"; data: BootstrapData; rulesetVersion: string; catalogVersion: string; catalogDigest: string }
   | { type: "collections-result"; collections: VariableCollectionOption[] }
+  | { type: "audit-started"; target: AuditTargetSummary }
   | { type: "progress"; progress: ScanProgress }
   | {
     type: "scan-result";
@@ -76,7 +84,7 @@ export type PluginToUiMessage =
     sessionReferenceCount: number;
   }
   | { type: "knowledge-stale" }
-  | { type: "selection"; count: number }
+  | { type: "selection"; summary: SelectionSummary }
   | { type: "profile-saved"; data: BootstrapData }
   | { type: "profile-invalidated"; data: BootstrapData }
   | { type: "mutation-result"; message: string }

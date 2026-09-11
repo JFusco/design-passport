@@ -29,6 +29,7 @@ describe("UI message validation", () => {
       type: "scan",
       request: { scope: "selection", refreshKnowledge: true },
     });
+    expect(parseUiMessage({ type: "refresh-audit" })).toEqual({ type: "refresh-audit" });
     expect(() => parseUiMessage({ type: "scan", request: { scope: "selection", profile: {}, refreshKnowledge: true } })).toThrow("scan request is invalid");
   });
 

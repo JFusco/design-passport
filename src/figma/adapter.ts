@@ -13,7 +13,7 @@ import type {
 } from "../core/contracts";
 import { AI_SOURCE_FRAME_ANNOTATION, CERTIFICATION_ANNOTATION_PREFIX, LEGACY_CERTIFICATION_ANNOTATION_PREFIX } from "../core/constants";
 import { finalizeKnowledgeGraph } from "../core/knowledge";
-import { populateGraphMetrics, sourceFrameIds, targetRootIds } from "../core/operations/graph";
+import { isAuditTargetNodeType, populateGraphMetrics, sourceFrameIds, targetRootIds } from "../core/operations/graph";
 import { assertProfileSemantics, profileSemanticErrors, reconcileProfilePages } from "../core/profile";
 import { inferProfileFromPages } from "../core/profile-inference";
 import { hashValue } from "../core/stable";
@@ -34,6 +34,26 @@ export interface PageOption {
   name: string;
 }
 
+export interface SelectionSummary {
+  eligibleCount: number;
+  unsupportedCount: number;
+}
+
+export type CapturedAuditTarget =
+  | { scope: "selection"; nodeIds: readonly string[] }
+  | { scope: "page"; pageId: string }
+  | { scope: "file" };
+
+export function summarizeSelection(selection: readonly Pick<BaseNode, "type">[]): SelectionSummary {
+  let eligibleCount = 0;
+  let unsupportedCount = 0;
+  for (const node of selection) {
+    if (isAuditTargetNodeType(node.type)) eligibleCount += 1;
+    else unsupportedCount += 1;
+  }
+  return { eligibleCount, unsupportedCount };
+}
+
 export interface BootstrapData {
   fileName: string;
   fileKeyAvailable: boolean;
@@ -45,7 +65,7 @@ export interface BootstrapData {
   profileSuggestion: ReadinessProfile;
   profileConfigured: boolean;
   profileIssues: string[];
-  selectionCount: number;
+  selectionSummary: SelectionSummary;
   projectStyleGuide: ProjectStyleGuideStatus;
 }
 
@@ -510,8 +530,16 @@ async function variableCandidates(
 export class FigmaAdapter {
   private cancelled = false;
 
+  beginScan(): void {
+    this.cancelled = false;
+  }
+
   cancel(): void {
     this.cancelled = true;
+  }
+
+  isScanCancelled(): boolean {
+    return this.cancelled;
   }
 
   getCollectionOptions(includeRemote = true, remoteTimeoutMs = 4_000): Promise<VariableCollectionOption[]> {
@@ -538,6 +566,7 @@ export class FigmaAdapter {
         profileConfigured = false;
       }
     }
+    const selectionSummary = this.getSelectionSummary();
     return {
       fileName: figma.root.name,
       fileKeyAvailable: Boolean(figma.fileKey),
@@ -549,9 +578,29 @@ export class FigmaAdapter {
       profileSuggestion,
       profileConfigured,
       profileIssues,
-      selectionCount: figma.currentPage.selection.length,
+      selectionSummary,
       projectStyleGuide: this.getProjectStyleGuideStatus(),
     };
+  }
+
+  getSelectionSummary(): SelectionSummary {
+    return summarizeSelection(figma.currentPage.selection);
+  }
+
+  captureAuditTarget(scope: ScanScope): CapturedAuditTarget {
+    if (scope === "file") return { scope };
+    if (scope === "page") return { scope, pageId: figma.currentPage.id };
+
+    const selection = figma.currentPage.selection;
+    const summary = summarizeSelection(selection);
+    if (summary.unsupportedCount > 0) {
+      const noun = summary.unsupportedCount === 1 ? "layer" : "layers";
+      throw new Error(`Audit selection supports only frames, components, and component sets. Remove ${summary.unsupportedCount} unsupported ${noun} and try again`);
+    }
+    if (summary.eligibleCount === 0) {
+      throw new Error("Select at least one frame, component, or component set to audit");
+    }
+    return { scope, nodeIds: [...new Set(selection.map((node) => node.id))] };
   }
 
   getProjectStyleGuideBinding(): ProjectStyleGuideBindingV1 | undefined {
@@ -640,7 +689,6 @@ export class FigmaAdapter {
     profile: ReadinessProfile,
     onProgress: (progress: ScanProgress) => void,
   ): Promise<KnowledgeBuildResult> {
-    this.cancelled = false;
     const pages = figma.root.children;
     const nodes: Record<string, NodeSnapshot> = {};
     const pageSnapshots: PageSnapshot[] = [];
@@ -746,8 +794,19 @@ export class FigmaAdapter {
     return { graph, collections };
   }
 
-  targetRootIds(scope: ScanScope, graph: DesignKnowledgeGraph): string[] {
-    return targetRootIds(scope, graph, figma.currentPage.id, figma.currentPage.selection.map((node) => node.id));
+  targetRootIds(target: CapturedAuditTarget, graph: DesignKnowledgeGraph): string[] {
+    if (target.scope === "selection") {
+      const missingIds = target.nodeIds.filter((id) => {
+        const node = graph.nodes[id];
+        return !node || !isAuditTargetNodeType(node.type);
+      });
+      if (missingIds.length > 0) {
+        throw new Error("The captured audit selection changed or no longer exists. Select the intended frames, components, or component sets and run the audit again");
+      }
+      return targetRootIds(target.scope, graph, "", target.nodeIds);
+    }
+    if (target.scope === "page") return targetRootIds(target.scope, graph, target.pageId, []);
+    return targetRootIds(target.scope, graph, "", []);
   }
 
   async navigate(nodeId: string): Promise<void> {

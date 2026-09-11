@@ -34,7 +34,7 @@ function jsonValue(value: unknown, depth = 0, ancestors = new Set<object>()): va
 export function parseUiMessage(value: unknown): UiToPluginMessage {
   const message = record(value);
   if (!message || typeof message.type !== "string") throw new Error("Plugin message must be an object with a type");
-  if (message.type === "initialize" || message.type === "cancel-scan" || message.type === "certify" || message.type === "certify-components"
+  if (message.type === "initialize" || message.type === "refresh-audit" || message.type === "cancel-scan" || message.type === "certify" || message.type === "certify-components"
     || message.type === "remove-project-style-guide" || message.type === "clear-session-references" || message.type === "preview-contribution") return { type: message.type };
   if (message.type === "save-profile") return { type: message.type, profile: profile(message.profile) };
   if (message.type === "scan") {

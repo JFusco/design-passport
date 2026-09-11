@@ -35,8 +35,13 @@ The primary designer journey is **choose a target → audit → review Findings 
 - Delete a mapped page, then attempt an audit; verify the mapping is removed, Audit setup opens with a typed recovery explanation, and explicit confirmation is required before the audit can run.
 - Add, remove, or rename pages after a successful audit and verify topology changes invalidate or rebuild whole-file knowledge without persisting a draft.
 - Load stored profiles created by version 0.1.0 with both values of its removed optional integration flag; verify unrelated page roles, token collections, and breakpoints survive and the new shape is persisted only after Save.
-- Scan one selection and verify all pages load before analysis.
-- Cancel during a large page; confirm the partial graph cannot certify.
+- Run **Audit selection** separately with a frame, component, and component set; confirm each is accepted as an audit root. Try an empty selection, an unsupported root, and a mixed supported/unsupported selection; confirm the action is disabled with guidance to select only frames, components, or component sets.
+- Start a cold selection audit and verify the target-first headline remains `Auditing selection (N)` while the secondary status explains that supporting file context is being prepared and only the selection will be graded. Confirm raw page names, node counts, knowledge-graph terminology, and a resetting determinate progress bar never appear. Switch tabs and confirm panel commands remain visibly locked while the audit runs, with Cancel still available during context preparation.
+- Trigger success, notice, stale, and error notifications and confirm each uses the same horizontal inset and leaves a visible gap from the tab row, progress status, and adjacent panel content at desktop and narrow plugin widths.
+- While that cold audit is preparing context, change both the Figma selection and current page. Confirm the in-flight audit remains bound to the original target count and names, and its results grade only those captured roots.
+- Cancel during cold file-context preparation; confirm it returns to a neutral recoverable state, no partial graph can certify or export, and a later audit succeeds. Also cancel an automatic post-cleanup rescan and confirm the completed cleanup remains applied.
+- Rerun the same selection while its complete graph is fresh; confirm the cached audit proceeds directly to target analysis, retains the captured selection, and does not rebuild file context.
+- After a selection or current-page report becomes stale, change the live selection or current page before choosing **Refresh audit to certify** or **Rebuild context**. Confirm the refreshed report still names and grades the previously captured target.
 - Inspect Context inventory for page roles, canonical/novel patterns, component use counts, responsive families, token collections, and repeated structures.
 - Use every finding’s node link across multiple pages.
 - Confirm default-name percentages against a manual count.
@@ -89,9 +94,10 @@ The primary designer journey is **choose a target → audit → review Findings 
 
 Automated fixtures exercise pure indexing at 10,000 and 50,000 nodes. In Figma, repeat with realistic instances and variables while confirming:
 
-- progress updates at least once per page and during large traversal;
-- cancellation remains responsive;
-- selection scans use the complete cached graph when it is fresh;
+- cold scans keep the selected target prominent while supporting-context status updates during page traversal and large traversal;
+- cancellation remains responsive during supporting-context traversal;
+- selection scans use the complete cached graph when it is fresh and skip context rebuilding;
+- changing the selection or current page mid-scan never retargets the in-flight audit;
 - document changes invalidate the cache;
 - invisible instance children remain skipped.
 
