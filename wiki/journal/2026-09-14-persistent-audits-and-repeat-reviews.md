@@ -2,6 +2,8 @@
 date: 2026-09-14
 topics: [persistent-audits]
 plans: [2026-09-14-persistent-audits-and-faster-repeat-reviews-898685bc09.md]
+issue: "https://github.com/jfusco/design-passport/issues/21"
+issues: ["https://github.com/jfusco/design-passport/issues/21"]
 ---
 
 # Persistent audits and repeat reviews
