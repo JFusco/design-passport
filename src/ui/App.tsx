@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PRODUCT_NAME } from "../core/constants";
 import type {
   Axis,
@@ -12,6 +12,7 @@ import type {
 } from "../core/contracts";
 import type { SelectionSummary, VariableCollectionOption } from "../figma/adapter";
 import type { AuditTargetSummary, KnowledgeSummary, PluginToUiMessage, UiToPluginMessage } from "../plugin/messages";
+import type { AuditSaveStatus, AuditViewState, SavedAuditSummary } from "../plugin/audit-state";
 import { BrandMark } from "./BrandMark";
 import { Cleanup } from "./components/Cleanup";
 import { ContextPanel } from "./components/ContextPanel";
@@ -20,6 +21,7 @@ import { Guidance } from "./components/Guidance";
 import { Modules } from "./components/Modules";
 import { Overview } from "./components/Overview";
 import { ProfileEditor } from "./components/ProfileEditor";
+import { SavedAudits } from "./components/SavedAudits";
 import {
   AUDIT_CANCELLED_NOTICE,
   auditCompletionNotice,
@@ -28,8 +30,9 @@ import {
   scanInFlightAfter,
 } from "./operations/audit-scope";
 import { findingsForReview } from "./operations/findings";
-import { certificationNotice, cloneProfile } from "./operations/presentation";
+import { certificationNotice, cloneProfile, formatDateTime } from "./operations/presentation";
 import { discardProfileDraft, profileDraftState } from "./operations/profile-state";
+import { batchCompletionNotice, defaultAuditView, reportTargetIdentity, shouldRestoreAudit, type RestoreRequest } from "./operations/saved-audits";
 import type { BootstrapEnvelope, Tab, TokenWizardState, WaiverDraft } from "./types";
 
 const EMPTY_SELECTION_SUMMARY: SelectionSummary = { eligibleCount: 0, unsupportedCount: 0 };
@@ -77,6 +80,17 @@ export function App() {
   const [referencePackRaw, setReferencePackRaw] = useState("");
   const [sessionReferenceCount, setSessionReferenceCount] = useState(0);
   const [contribution, setContribution] = useState<{ envelope: ReviewLearningEnvelopeV1; content: string }>();
+  const [savedAudits, setSavedAudits] = useState<SavedAuditSummary[]>([]);
+  const [activeSavedId, setActiveSavedId] = useState<string>();
+  const [saveStatus, setSaveStatus] = useState<AuditSaveStatus>();
+  const [historical, setHistorical] = useState(false);
+  const [loadingSavedAudit, setLoadingSavedAudit] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ completed: number; total: number; skipped: number; pageName?: string }>();
+  const restoreRequest = useRef<RestoreRequest>("startup");
+  const reportAccepted = useRef(false);
+  const batchRunning = useRef(false);
+  const lastPersistedView = useRef<string | undefined>(undefined);
+  const lastReportTarget = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     let initialized = false;
@@ -84,6 +98,7 @@ export function App() {
       const message = event.data?.pluginMessage;
       if (!message || typeof message !== "object" || typeof message.type !== "string") return;
       if (message.type === "bootstrap") {
+        if (initialized) return;
         initialized = true;
         setBootstrap({
           data: message.data,
@@ -95,7 +110,53 @@ export function App() {
         setProfile(cloneProfile(message.data.profile));
         setCollections(message.data.collections);
         setSelectionSummary(message.data.selectionSummary);
-        if (!message.data.profileConfigured) setActiveTab("profile");
+        if (!message.data.profileConfigured && !reportAccepted.current) setActiveTab("profile");
+      } else if (message.type === "saved-audits") {
+        setSavedAudits(message.audits);
+      } else if (message.type === "audit-save-status") {
+        setSaveStatus(message.status);
+      } else if (message.type === "restored-audit") {
+        if (!shouldRestoreAudit(restoreRequest.current, message.audit.id)) return;
+        restoreRequest.current = null;
+        setLoadingSavedAudit(false);
+        setScanInFlight(false);
+        reportAccepted.current = true;
+        const audit = message.audit;
+        lastReportTarget.current = reportTargetIdentity(audit.report);
+        const view = audit.viewState ?? defaultAuditView();
+        lastPersistedView.current = JSON.stringify({ id: audit.id, viewState: view });
+        setReport(audit.report);
+        setPlans(audit.plans);
+        setKnowledge(audit.knowledge);
+        setInsights(audit.insights);
+        setActiveSavedId(audit.id);
+        setSaveStatus({ state: "saved" });
+        setHistorical(true);
+        setStale(true);
+        setAuditTarget(audit.target.scope === "selection" ? { scope: "selection", selectionCount: audit.target.nodeIds.length } : { scope: audit.target.scope });
+        setActiveTab(view.activeTab);
+        setShowPassing(view.showPassing);
+        setAxisFilter(view.axisFilter);
+        setPageFilter(view.pageFilter);
+        setRootFilter(view.rootFilter);
+        setVariantFilter(view.variantFilter);
+        setExpanded(view.expanded);
+        setTokenWizard(undefined);
+        setWaiverDraft(undefined);
+        setUndoAcknowledged(false);
+        setContribution(undefined);
+        setError(undefined);
+        setNotice(undefined);
+      } else if (message.type === "batch-progress") {
+        batchRunning.current = true;
+        setBatchProgress(message);
+        setScanInFlight(true);
+      } else if (message.type === "batch-complete") {
+        batchRunning.current = false;
+        setBatchProgress(undefined);
+        setProgress(undefined);
+        setScanInFlight(false);
+        setNotice(batchCompletionNotice(message));
       } else if (message.type === "collections-result") {
         setCollections(message.collections);
       } else if (message.type === "audit-started") {
@@ -106,7 +167,26 @@ export function App() {
         setScanInFlight((current) => scanInFlightAfter(current, "progress"));
         setError(undefined);
       } else if (message.type === "scan-result") {
+        restoreRequest.current = null;
+        reportAccepted.current = true;
+        setActiveSavedId(message.savedAuditId);
+        setSaveStatus(message.saveStatus);
+        setHistorical(false);
+        const targetIdentity = reportTargetIdentity(message.report);
+        if (targetIdentity !== lastReportTarget.current) {
+          setShowPassing(false);
+          setAxisFilter("all");
+          setPageFilter("all");
+          setRootFilter("all");
+          setVariantFilter("all");
+          setExpanded(undefined);
+        }
+        lastReportTarget.current = targetIdentity;
         setReport(message.report);
+        setPageFilter((current) => current === "all" || message.report.frames.some((frame) => frame.pageId === current) ? current : "all");
+        setRootFilter((current) => current === "all" || message.report.frames.some((frame) => frame.rootId === current) ? current : "all");
+        setVariantFilter((current) => current === "all" || message.report.frames.some((frame) => frame.variantCoverage?.some((variant) => variant.variantId === current)) ? current : "all");
+        setExpanded((current) => message.report.findings.some((finding) => finding.id === current) ? current : undefined);
         setPlans(message.plans);
         setKnowledge(message.knowledge);
         setCollections(message.collections);
@@ -115,38 +195,45 @@ export function App() {
         setBootstrap((current) => current ? { ...current, data: { ...current.data, projectStyleGuide: message.projectStyleGuide } } : current);
         setContribution(undefined);
         setProgress(undefined);
-        setScanInFlight((current) => scanInFlightAfter(current, "scan-result"));
+        setScanInFlight(batchRunning.current);
         setStale(false);
         setError(undefined);
-        setNotice(auditCompletionNotice(message.report.target.scope, message.report.grade.letter, message.report.ready));
+        if (!batchRunning.current) setNotice(auditCompletionNotice(message.report.target.scope, message.report.grade.letter, message.report.ready));
       } else if (message.type === "knowledge-stale") {
         setStale(true);
       } else if (message.type === "selection") {
         setSelectionSummary(message.summary);
       } else if (message.type === "profile-saved") {
+        restoreRequest.current = null;
+        batchRunning.current = false;
         setBootstrap((current) => current ? { ...current, data: message.data } : current);
         setCommittedProfile(cloneProfile(message.data.profile));
         setProfile(cloneProfile(message.data.profile));
-        setReport(undefined);
-        setPlans([]);
-        setKnowledge(undefined);
-        setAuditTarget(undefined);
+        setContribution(undefined);
+        setProgress(undefined);
+        setBatchProgress(undefined);
+        setLoadingSavedAudit(false);
+        setTokenWizard(undefined);
+        setWaiverDraft(undefined);
+        setUndoAcknowledged(false);
         setScanInFlight((current) => scanInFlightAfter(current, "profile-saved"));
         setStale(true);
         setError(undefined);
-        setNotice("Audit setup saved. The next audit will rebuild whole-file knowledge.");
+        setNotice("Audit setup saved. Refresh to verify this setup; completed results remain available for browsing and historical export.");
         setActiveTab("overview");
       } else if (message.type === "profile-invalidated") {
+        restoreRequest.current = null;
+        batchRunning.current = false;
         setBootstrap((current) => current ? { ...current, data: message.data } : current);
         setCommittedProfile(cloneProfile(message.data.profile));
         setProfile(cloneProfile(message.data.profile));
-        setReport(undefined);
-        setPlans([]);
-        setKnowledge(undefined);
-        setInsights([]);
         setContribution(undefined);
         setProgress(undefined);
-        setAuditTarget(undefined);
+        setBatchProgress(undefined);
+        setLoadingSavedAudit(false);
+        setTokenWizard(undefined);
+        setWaiverDraft(undefined);
+        setUndoAcknowledged(false);
         setScanInFlight((current) => scanInFlightAfter(current, "profile-invalidated"));
         setStale(true);
         setError(undefined);
@@ -174,14 +261,22 @@ export function App() {
       } else if (message.type === "export-result") {
         download(message.filename, message.content, message.format === "json" ? "application/json" : "text/markdown");
       } else if (message.type === "scan-cancelled") {
+        batchRunning.current = false;
+        setBatchProgress(undefined);
         setError(undefined);
         setProgress(undefined);
         setScanInFlight((current) => scanInFlightAfter(current, "scan-cancelled"));
         setNotice(AUDIT_CANCELLED_NOTICE);
       } else if (message.type === "error") {
         setError(message.message);
-        setProgress(undefined);
-        setScanInFlight((current) => scanInFlightAfter(current, "error"));
+        if (!message.nonTerminal) {
+          batchRunning.current = false;
+          restoreRequest.current = null;
+          setBatchProgress(undefined);
+          setLoadingSavedAudit(false);
+          setProgress(undefined);
+          setScanInFlight((current) => scanInFlightAfter(current, "error"));
+        }
         setNotice(undefined);
       }
     };
@@ -196,6 +291,18 @@ export function App() {
       window.removeEventListener("message", handler);
     };
   }, []);
+
+  useEffect(() => {
+    if (!activeSavedId) return;
+    const viewState: AuditViewState = {
+      activeTab, showPassing, axisFilter, pageFilter, rootFilter, variantFilter,
+      ...(expanded === undefined ? {} : { expanded }),
+    };
+    const signature = JSON.stringify({ id: activeSavedId, viewState });
+    if (lastPersistedView.current === signature) return;
+    lastPersistedView.current = signature;
+    send({ type: "save-audit-view", id: activeSavedId, viewState });
+  }, [activeSavedId, activeTab, showPassing, axisFilter, pageFilter, rootFilter, variantFilter, expanded]);
 
   const visibleFindings = useMemo(
     () => {
@@ -235,11 +342,46 @@ export function App() {
       setActiveTab("profile");
       return;
     }
+    restoreRequest.current = null;
     setError(undefined);
     setNotice(undefined);
+    setContribution(undefined);
+    setTokenWizard(undefined);
+    setWaiverDraft(undefined);
+    setUndoAcknowledged(false);
     setScanInFlight((current) => scanInFlightAfter(current, "local-scan"));
     if (refreshKnowledge && report) send({ type: "refresh-audit" });
     else send({ type: "scan", request: { scope, refreshKnowledge } });
+  };
+
+  const reviewPages = (pageIds: string[]) => {
+    if (draftState.blocked || pageIds.length === 0 || !bootstrap?.data.fileKeyAvailable) return;
+    restoreRequest.current = null;
+    batchRunning.current = true;
+    setBatchProgress({ completed: 0, total: pageIds.length, skipped: 0 });
+    setScanInFlight(true);
+    setError(undefined);
+    setNotice(undefined);
+    setContribution(undefined);
+    setTokenWizard(undefined);
+    setWaiverDraft(undefined);
+    setUndoAcknowledged(false);
+    send({ type: "audit-pages", pageIds });
+  };
+
+  const forgetDisplayedResult = () => {
+    restoreRequest.current = null;
+    setActiveSavedId(undefined);
+    if (historical) {
+      setReport(undefined);
+      setPlans([]);
+      setKnowledge(undefined);
+      setInsights([]);
+      setHistorical(false);
+      setSaveStatus(undefined);
+    } else if (report) {
+      setSaveStatus({ state: "not-saved", message: "This result remains open but is no longer saved. Export it before closing to keep a copy." });
+    }
   };
 
   if (!bootstrap || !profile || !committedProfile) {
@@ -249,10 +391,14 @@ export function App() {
   const presentedProgress = scanInFlight && progress && auditTarget
     ? auditProgressPresentation(progress, auditTarget)
     : undefined;
-  const showStaleNotification = Boolean(stale && report && !error && !scanInFlight);
+  const showStaleNotification = Boolean(stale && report && !historical && !error && !scanInFlight);
+  const saveFailure = saveStatus && saveStatus.state !== "saved";
+  const panelLocked = scanInFlight && (!report || activeTab === "profile" || activeTab === "context");
   const hasNotifications = draftState.blocked
     || !bootstrap.data.canMutateDocument
     || showStaleNotification
+    || historical
+    || Boolean(saveFailure)
     || Boolean(error)
     || Boolean(notice);
 
@@ -272,12 +418,24 @@ export function App() {
       <div className={`notification-stack${hasNotifications ? " has-notifications" : ""}`}>
         {draftState.blocked ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true"><span>{profileGateMessage}</span><button className="button subtle" onClick={() => setActiveTab("profile")}>Fix audit setup</button></div> : null}
         {!bootstrap.data.canMutateDocument ? <div className="banner info">Dev Mode is audit-only. Switch to Design mode to save the profile, clean up findings, or certify frames.</div> : null}
-        {showStaleNotification ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true">The design changed after this scan. Certification is disabled until whole-file knowledge is refreshed.</div> : null}
+        {historical && report ? <div className="banner info" role="status"><span><strong>Saved result · {formatDateTime(report.generatedAt)}</strong><br />Browse, navigate, and export now. Refresh to verify the current design before applying fixes or certifying.</span></div> : null}
+        {saveFailure ? <div className="banner warning" role="status"><span><strong>{saveStatus.state === "session-only" ? "Available this session only" : "Not saved"}</strong><br />{saveStatus.message ?? "Export this result before closing Passport to keep a copy."}</span></div> : null}
+        {showStaleNotification ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true">This result hasn’t been verified against the current design and audit setup. Refresh before applying fixes or certifying.</div> : null}
         {error ? <div className="banner error" role="alert" aria-atomic="true"><span>{error}</span><button className="icon-button" onClick={() => setError(undefined)} aria-label="Dismiss error">×</button></div> : null}
         <div className={notice ? "banner success" : "status-announcer"} role="status" aria-live="polite" aria-atomic="true">
           {notice ? <><span>{notice}</span><button className="icon-button" onClick={() => setNotice(undefined)} aria-label="Dismiss notice">×</button></> : null}
         </div>
       </div>
+
+      <SavedAudits
+        audits={savedAudits}
+        activeId={activeSavedId}
+        status={saveStatus}
+        disabled={scanInFlight}
+        onOpen={(id) => { restoreRequest.current = { id }; setLoadingSavedAudit(true); setScanInFlight(true); send({ type: "open-saved-audit", id }); }}
+        onForget={(id) => { send({ type: "forget-saved-audit", id }); if (id === activeSavedId) forgetDisplayedResult(); }}
+        onClear={() => { send({ type: "clear-file-cache" }); forgetDisplayedResult(); }}
+      />
 
       <nav className="tabs" aria-label="Plugin sections">
         {(["overview", "modules", "findings", "guidance", "cleanup", "context"] as Tab[]).map((tab) => (
@@ -288,7 +446,15 @@ export function App() {
         ))}
       </nav>
 
-      {presentedProgress && (
+      {loadingSavedAudit ? <section className="progress-card" role="status"><div className="progress-copy"><span className="spinner" aria-hidden="true" /><strong>Opening saved result…</strong></div></section> : batchProgress ? (
+        <section className="progress-card">
+          <div className="progress-copy" role="status" aria-live="polite" aria-atomic="true">
+            <span className="spinner" aria-hidden="true" />
+            <div><strong>Reviewing pages · {batchProgress.completed} of {batchProgress.total} audited</strong><small>{batchProgress.pageName ? `Current page: ${batchProgress.pageName}. ` : "Preparing verified file context. "}{batchProgress.skipped > 0 ? `${batchProgress.skipped} pages skipped: no audit targets. ` : ""}{presentedProgress?.detail}</small></div>
+          </div>
+          <button className="button subtle" onClick={() => send({ type: "cancel-scan" })}>Cancel page review</button>
+        </section>
+      ) : presentedProgress ? (
         <section className="progress-card">
           <div className="progress-copy" role="status" aria-live="polite" aria-atomic="true">
             <span className="spinner" aria-hidden="true" />
@@ -296,11 +462,11 @@ export function App() {
           </div>
           {isAuditInterruptible(progress) ? <button className="button subtle" aria-label="Cancel audit" onClick={() => send({ type: "cancel-scan" })}>Cancel</button> : null}
         </section>
-      )}
+      ) : null}
 
       <div
-        className={`panel-host${scanInFlight ? " scan-locked" : ""}`}
-        inert={scanInFlight}
+        className={`panel-host${panelLocked ? " scan-locked" : ""}`}
+        inert={panelLocked}
         aria-busy={scanInFlight}
       >
         {activeTab === "overview" && (
@@ -311,6 +477,10 @@ export function App() {
             canMutateDocument={bootstrap.data.canMutateDocument}
             scanning={scanInFlight}
             actionsBlocked={draftState.blocked}
+            historical={historical}
+            pages={bootstrap.data.pages}
+            fileKeyAvailable={bootstrap.data.fileKeyAvailable}
+            onReviewPages={reviewPages}
             onScan={scan}
             onCertify={() => send({ type: "certify" })}
             onCertifyComponents={() => send({ type: "certify-components" })}
@@ -330,7 +500,7 @@ export function App() {
             collections={collections.filter((collection) => !collection.remote && profile.tokenSourceCollectionKeys.includes(collection.key))}
             tokenWizard={tokenWizard}
             waiverDraft={waiverDraft}
-            disabled={stale || draftState.blocked}
+            disabled={stale || draftState.blocked || scanInFlight}
             canMutateDocument={bootstrap.data.canMutateDocument}
             onTogglePassing={setShowPassing}
             onAxisFilter={setAxisFilter}
@@ -385,7 +555,9 @@ export function App() {
         {activeTab === "guidance" && (
           <Guidance
             insights={insights}
-            hasReport={Boolean(report) && !stale && !draftState.blocked}
+            hasReport={Boolean(report)}
+            canContribute={!stale && !draftState.blocked && !scanInFlight}
+            historical={historical}
             contribution={contribution}
             projectStyleGuide={bootstrap.data.projectStyleGuide}
             onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
@@ -396,7 +568,7 @@ export function App() {
         )}
         {activeTab === "cleanup" && (
           <Cleanup
-            disabled={stale || draftState.blocked || !bootstrap.data.canMutateDocument}
+            disabled={stale || draftState.blocked || scanInFlight || !bootstrap.data.canMutateDocument}
             plans={plans}
             findings={report?.findings ?? []}
             undoAcknowledged={undoAcknowledged}

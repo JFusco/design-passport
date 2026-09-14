@@ -1,6 +1,6 @@
 {
   "name": "figma-ai-ready",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Organization-published private Figma plugin for deterministic AI-readiness audits, repair planning, and certification.",
   "license": "UNLICENSED",
@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "ajv": "8.17.1",
+    "fflate": "0.8.3",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },

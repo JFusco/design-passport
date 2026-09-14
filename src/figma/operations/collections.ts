@@ -10,7 +10,8 @@ export interface VariableCollectionOption {
 
 let remoteCollectionsRequest: Promise<LibraryVariableCollection[]> | undefined;
 
-function loadRemoteCollections(): Promise<LibraryVariableCollection[]> {
+function loadRemoteCollections(refresh = false): Promise<LibraryVariableCollection[]> {
+  if (refresh) remoteCollectionsRequest = undefined;
   remoteCollectionsRequest ??= figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync().catch(() => []);
   return remoteCollectionsRequest;
 }
@@ -40,6 +41,7 @@ function settleWithin<T>(promise: Promise<T>, milliseconds: number): Promise<T |
 export async function listVariableCollectionOptions(options: {
   includeRemote: boolean;
   remoteTimeoutMs?: number;
+  refreshRemote?: boolean;
 }): Promise<VariableCollectionOption[]> {
   const local = await figma.variables.getLocalVariableCollectionsAsync();
   const output: VariableCollectionOption[] = local.map((collection) => ({
@@ -52,7 +54,7 @@ export async function listVariableCollectionOptions(options: {
   }));
 
   if (options.includeRemote) {
-    const remote = await settleWithin(loadRemoteCollections(), options.remoteTimeoutMs ?? 4_000);
+    const remote = await settleWithin(loadRemoteCollections(options.refreshRemote), options.remoteTimeoutMs ?? 4_000);
     if (remote) {
       output.push(...remote.map((collection) => ({
         id: `library:${collection.key}`,

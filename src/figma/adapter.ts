@@ -26,6 +26,9 @@ import { canReadComponentPropertyDefinitions } from "./operations/component";
 import { annotationText } from "./operations/annotations";
 import { listVariableCollectionOptions, type VariableCollectionOption } from "./operations/collections";
 import { parseCertificationSummary, parsePatternConfirmation, parseStoredProfile } from "./operations/shared-data";
+import { contextFragment, mapConcurrent, newBuildDiagnostics, readContextFragment, restPageFingerprint, restSubtreeCovers, restSubtreeNodes, type ContextCachePort, type KnowledgeBuildDiagnostics } from "./context-cache";
+
+export type { ContextCachePort, KnowledgeBuildDiagnostics } from "./context-cache";
 
 export type { VariableCollectionOption } from "./operations/collections";
 
@@ -86,6 +89,7 @@ const PROJECT_STYLE_GUIDE_KEY = "project-style-guide-binding-v1";
 export interface KnowledgeBuildResult {
   graph: DesignKnowledgeGraph;
   collections: VariableCollectionOption[];
+  diagnostics: KnowledgeBuildDiagnostics;
 }
 
 function roleForPage(pageId: string, profile: ReadinessProfile): PageSnapshot["role"] {
@@ -121,7 +125,7 @@ function paintSnapshots(node: SceneNode, field: "fills" | "strokes"): PaintSnaps
   if (!(field in node)) return [];
   const values = paints((node as unknown as Record<string, unknown>)[field]);
   const bound = node.boundVariables?.[field] ?? [];
-  const inferred = node.inferredVariables?.[field] ?? [];
+  const inferred: VariableAlias[][] = [];
   return values.map((paint, index) => {
     const solid = paint.type === "SOLID" ? paint : undefined;
     const boundFromPaint = solid?.boundVariables?.color?.id;
@@ -218,9 +222,8 @@ function boundVariableIds(
   return output;
 }
 
-function inferredBindings(node: SceneNode): NodeSnapshot["inferredBindings"] {
+function inferredBindings(inferred: SceneNode["inferredVariables"]): NodeSnapshot["inferredBindings"] {
   const output: NodeSnapshot["inferredBindings"] = {};
-  const inferred = node.inferredVariables;
   if (!inferred) return output;
   for (const [field, value] of Object.entries(inferred)) {
     if (!value) continue;
@@ -254,7 +257,7 @@ function layoutSnapshot(node: SceneNode): NodeSnapshot["layout"] {
       paddingLeft: frame.paddingLeft,
     }),
     ...("clipsContent" in frame && typeof frame.clipsContent === "boolean" ? { clipsContent: frame.clipsContent } : {}),
-    inferredAvailable: "inferredAutoLayout" in frame && frame.inferredAutoLayout !== null,
+    inferredAvailable: false,
   };
 }
 
@@ -417,7 +420,7 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
     ...(strokeWeight !== undefined ? { strokeWeight } : {}),
     boundFields: boundFields(node, fillData, strokeData),
     boundVariableIds: boundVariableIds(node, fillData, strokeData),
-    inferredBindings: inferredBindings(node),
+    inferredBindings: {},
     ...(text ? { text } : {}),
     ...(variantProperties ? { variantProperties } : {}),
     ...(component ? { component } : {}),
@@ -436,11 +439,283 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
   };
 }
 
+
+interface CaptureEntry {
+  node: SceneNode;
+  rootId: string;
+  path: string;
+}
+
+function captureEntries(root: SceneNode, pageName: string): CaptureEntry[] {
+  const entries: CaptureEntry[] = [];
+  const stack: CaptureEntry[] = [{ node: root, rootId: root.id, path: `${pageName} / ${root.name}` }];
+  while (stack.length > 0) {
+    const entry = stack.pop()!;
+    entries.push(entry);
+    if (entry.node.type !== "INSTANCE" && hasChildren(entry.node)) {
+      for (let index = entry.node.children.length - 1; index >= 0; index -= 1) {
+        const child = entry.node.children[index];
+        if (child) stack.push({ node: child, rootId: root.id, path: `${entry.path} / ${child.name}` });
+      }
+    }
+  }
+  return entries;
+}
+
+/** Inputs whose Plugin API representation is richer than the bulk REST export. */
+function captureSupplement(node: SceneNode, raw: Record<string, unknown> | undefined): unknown {
+  return {
+    id: node.id,
+    name: node.name,
+    parentId: node.parent?.id,
+    childIds: node.type !== "INSTANCE" && hasChildren(node) ? node.children.map((child) => child.id) : [],
+    visible: node.visible,
+    width: node.width,
+    height: node.height,
+    x: node.x,
+    y: node.y,
+    rotation: "rotation" in node ? node.rotation : 0,
+    opacity: "opacity" in node ? node.opacity : 1,
+    layout: layoutSnapshot(node),
+    boundVariables: node.boundVariables,
+    explicitVariableModes: node.explicitVariableModes,
+    resolvedVariableModes: node.resolvedVariableModes,
+    // REST may omit default-valued arrays. Read those fields directly rather
+    // than treating absence as evidence that the live value is unchanged.
+    fillsFallback: raw?.fills === undefined && "fills" in node ? paints(node.fills) : undefined,
+    strokesFallback: raw?.strokes === undefined && "strokes" in node ? paints(node.strokes) : undefined,
+    effectsFallback: raw?.effects === undefined && "effects" in node ? node.effects : undefined,
+    exportsFallback: raw?.exportSettings === undefined && "exportSettings" in node ? node.exportSettings : undefined,
+    paintBindings: {
+      fills: "fills" in node ? paints(node.fills).map((paint) => paint.type === "SOLID" ? paint.boundVariables : undefined) : [],
+      strokes: "strokes" in node ? paints(node.strokes).map((paint) => paint.type === "SOLID" ? paint.boundVariables : undefined) : [],
+    },
+    effectBindings: "effects" in node ? node.effects.map((effect) => "boundVariables" in effect ? effect.boundVariables : undefined) : [],
+    effectStyleId: "effectStyleId" in node ? node.effectStyleId : undefined,
+    cornerRadius: "cornerRadius" in node ? numberOrUndefined(node.cornerRadius) : undefined,
+    strokeWeight: "strokeWeight" in node ? numberOrUndefined(node.strokeWeight) : undefined,
+    text: node.type === "TEXT" ? {
+      fontSize: numberOrUndefined(node.fontSize),
+      fontWeight: numberOrUndefined(node.fontWeight),
+      fontName: node.fontName === figma.mixed ? undefined : node.fontName,
+      letterSpacing: node.letterSpacing === figma.mixed ? undefined : node.letterSpacing,
+      lineHeight: node.lineHeight === figma.mixed ? undefined : node.lineHeight,
+      paragraphSpacing: numberOrUndefined(node.paragraphSpacing),
+      paragraphIndent: numberOrUndefined(node.paragraphIndent),
+      background: resolveTextBackground(node),
+    } : undefined,
+    component: componentSnapshot(node),
+    variantProperties: variantPropertiesSnapshot(node),
+    detached: "detachedInfo" in node && node.detachedInfo !== null,
+    structuralSignature: structuralSignature(node),
+    annotations: "annotations" in node ? node.annotations.map(annotationText) : [],
+    devStatus: devStatusSnapshot(node),
+    certification: node.getSharedPluginData("verndaleAiReady", "certification-v1"),
+    confirmation: node.getSharedPluginData("verndaleAiReady", "pattern-resolution-v1"),
+  };
+}
+
+function enrichInferences(node: SceneNode, snapshot: NodeSnapshot): void {
+  // Figma inference has no revision token. Always refresh it, including on a
+  // cache hit, and preserve the whole-file inferred-variable inventory.
+  const inferred = node.inferredVariables;
+  snapshot.inferredBindings = inferredBindings(inferred);
+  snapshot.fills.forEach((paint, index) => { paint.inferredVariableIds = (inferred?.fills?.[index] ?? []).map((alias) => alias.id); });
+  snapshot.strokes.forEach((paint, index) => { paint.inferredVariableIds = (inferred?.strokes?.[index] ?? []).map((alias) => alias.id); });
+  if (snapshot.layout) {
+    snapshot.layout.inferredAvailable = snapshot.layout.mode === "NONE"
+      && (node.type === "FRAME" || node.type === "COMPONENT")
+      && snapshot.childIds.length >= 2
+      && "inferredAutoLayout" in node
+      && node.inferredAutoLayout !== null;
+  }
+}
+
+function variableAliases(value: unknown, output = new Set<string>()): Set<string> {
+  if (!value || typeof value !== "object") return output;
+  if (Array.isArray(value)) { value.forEach((item) => variableAliases(item, output)); return output; }
+  const object = value as Record<string, unknown>;
+  if (object.type === "VARIABLE_ALIAS" && typeof object.id === "string") output.add(object.id);
+  else Object.values(object).forEach((item) => variableAliases(item, output));
+  return output;
+}
+
+interface VariableProvenance {
+  localCollectionKeys: ReadonlySet<string>;
+  fingerprint(supplements: unknown[]): Promise<string | undefined>;
+  verify(): Promise<boolean>;
+}
+
+function variableMaterial(variable: Variable): unknown {
+  return { id: variable.id, key: variable.key, name: variable.name, collectionId: variable.variableCollectionId, remote: variable.remote, resolvedType: variable.resolvedType, valuesByMode: variable.valuesByMode, scopes: variable.scopes, codeSyntax: variable.codeSyntax };
+}
+
+function collectionMaterial(collection: VariableCollection): unknown {
+  return { id: collection.id, key: collection.key, name: collection.name, remote: collection.remote, modes: collection.modes, defaultModeId: collection.defaultModeId, variableIds: collection.variableIds };
+}
+
+/** Actual values/modes, not collection labels, establish bound-value provenance. */
+async function variableEnvironmentReader(cancelled: () => boolean): Promise<VariableProvenance | undefined> {
+  try {
+    const [locals, localCollections] = await Promise.all([
+      figma.variables.getLocalVariablesAsync(),
+      figma.variables.getLocalVariableCollectionsAsync(),
+    ]);
+    const localIds = locals.map((variable) => variable.id).sort();
+    const localCollectionIds = localCollections.map((collection) => collection.id).sort();
+    const localById = new Map(locals.map((variable) => [variable.id, variable]));
+    const collectionsById = new Map(localCollections.map((collection) => [collection.id, collection]));
+    interface Description { material: unknown; digest: string }
+    interface VariableDescription extends Description { collectionId: string; aliases: string[] }
+    interface Dependencies { variables: Map<string, VariableDescription>; collections: Map<string, Description>; missingVariables: Set<string>; missingCollections: Set<string> }
+    const descriptions = new Map<string, Promise<VariableDescription | undefined>>();
+    const collectionDescriptions = new Map<string, Promise<Description | undefined>>();
+    const describeVariable = (id: string): Promise<VariableDescription | undefined> => {
+      let request = descriptions.get(id);
+      if (!request) {
+        request = (async () => {
+          const variable = localById.get(id) ?? await figma.variables.getVariableByIdAsync(id);
+          if (!variable) return undefined;
+          // Material must not retain live nested values that could change during
+          // capture. Each variable/collection is serialized once per build.
+          const material: unknown = JSON.parse(JSON.stringify(variableMaterial(variable)));
+          return { material, digest: hashValue(material), collectionId: variable.variableCollectionId, aliases: [...variableAliases(material)] };
+        })();
+        descriptions.set(id, request);
+      }
+      return request;
+    };
+    const describeCollection = (id: string): Promise<Description | undefined> => {
+      let request = collectionDescriptions.get(id);
+      if (!request) {
+        request = (async () => {
+          const collection = collectionsById.get(id) ?? await figma.variables.getVariableCollectionByIdAsync(id);
+          if (!collection) return undefined;
+          const material: unknown = JSON.parse(JSON.stringify(collectionMaterial(collection)));
+          return { material, digest: hashValue(material) };
+        })();
+        collectionDescriptions.set(id, request);
+      }
+      return request;
+    };
+    const gather = async (ids: readonly string[], skipped = new Set<string>()): Promise<Dependencies | undefined> => {
+      const pending = [...new Set(ids)].sort();
+      const seen = new Set(skipped);
+      const result: Dependencies = { variables: new Map(), collections: new Map(), missingVariables: new Set(), missingCollections: new Set() };
+      while (pending.length > 0) {
+        if (cancelled()) return undefined;
+        const batch = [...new Set(pending.splice(0, 16))].filter((id) => !seen.has(id));
+        batch.forEach((id) => { seen.add(id); });
+        const resolved = await Promise.all(batch.map(describeVariable));
+        for (const [index, variable] of resolved.entries()) {
+          if (!variable) { result.missingVariables.add(batch[index]!); continue; }
+          const collection = await describeCollection(variable.collectionId);
+          result.variables.set(batch[index]!, variable);
+          if (collection) result.collections.set(variable.collectionId, collection);
+          else result.missingCollections.add(variable.collectionId);
+          pending.push(...variable.aliases.filter((id) => !seen.has(id)));
+        }
+      }
+      return result;
+    };
+    const materialFor = (dependencies: Dependencies) => ({
+      variables: [...dependencies.variables].sort(([left], [right]) => left.localeCompare(right)).map(([, value]) => value.material),
+      collections: [...dependencies.collections].sort(([left], [right]) => left.localeCompare(right)).map(([, value]) => value.material),
+    });
+    const base = await gather(localIds);
+    if (!base) return undefined;
+    // Empty collections still affect configured token sources and mode names.
+    for (const collection of localCollections) {
+      const description = await describeCollection(collection.id);
+      if (description) base.collections.set(collection.id, description);
+    }
+    const baseDigest = hashValue(materialFor(base));
+    const baseIds = new Set(base.variables.keys());
+    const extras = new Map<string, Promise<{ digest: string; dependencies: Dependencies } | undefined>>();
+    const used: Dependencies = { variables: new Map(), collections: new Map(), missingVariables: new Set(), missingCollections: new Set() };
+    const recordUsed = (dependencies: Dependencies) => {
+      dependencies.variables.forEach((value, id) => { used.variables.set(id, value); });
+      dependencies.collections.forEach((value, id) => { used.collections.set(id, value); });
+      dependencies.missingVariables.forEach((id) => { used.missingVariables.add(id); });
+      dependencies.missingCollections.forEach((id) => { used.missingCollections.add(id); });
+    };
+    let baseRecorded = false;
+    const recordedExtras = new Set<string>();
+    const recordBase = () => { if (!baseRecorded) { recordUsed(base); baseRecorded = true; } };
+    recordBase();
+    const complete = (dependencies: Dependencies) => dependencies.missingVariables.size === 0 && dependencies.missingCollections.size === 0;
+    return {
+      localCollectionKeys: new Set(localCollections.map((collection) => collection.key)),
+      fingerprint: async (supplements) => {
+        const ids = [...variableAliases(supplements)].filter((id) => !baseIds.has(id)).sort();
+        if (ids.length === 0) return complete(base) ? baseDigest : undefined;
+        const key = JSON.stringify(ids);
+        let request = extras.get(key);
+        if (!request) {
+          request = gather(ids, baseIds).then((dependencies) => dependencies
+            ? { digest: hashValue({ base: baseDigest, ...materialFor(dependencies) }), dependencies }
+            : undefined);
+          extras.set(key, request);
+        }
+        const extra = await request;
+        if (!extra) return undefined;
+        recordBase();
+        if (!recordedExtras.has(key)) { recordUsed(extra.dependencies); recordedExtras.add(key); }
+        return complete(base) && complete(extra.dependencies) ? extra.digest : undefined;
+      },
+      verify: async () => {
+        // Variable edits are not covered by documentchange. Recheck the frozen
+        // dependency epoch at audit boundaries without recapturing scene nodes.
+        try {
+          const [freshLocals, freshCollections] = await Promise.all([
+            figma.variables.getLocalVariablesAsync(), figma.variables.getLocalVariableCollectionsAsync(),
+          ]);
+          if (JSON.stringify(freshLocals.map((variable) => variable.id).sort()) !== JSON.stringify(localIds)
+            || JSON.stringify(freshCollections.map((collection) => collection.id).sort()) !== JSON.stringify(localCollectionIds)) return false;
+          const freshById = new Map(freshLocals.map((variable) => [variable.id, variable]));
+          const freshCollectionsById = new Map(freshCollections.map((collection) => [collection.id, collection]));
+          const variableMatches = await mapConcurrent([...used.variables], 16, async ([id, expected]) => {
+            const variable = freshById.get(id) ?? await figma.variables.getVariableByIdAsync(id).catch(() => null);
+            return Boolean(variable && hashValue(variableMaterial(variable)) === expected.digest);
+          }, cancelled);
+          const collectionMatches = await mapConcurrent([...used.collections], 8, async ([id, expected]) => {
+            const collection = freshCollectionsById.get(id) ?? await figma.variables.getVariableCollectionByIdAsync(id).catch(() => null);
+            return Boolean(collection && hashValue(collectionMaterial(collection)) === expected.digest);
+          }, cancelled);
+          const missingVariables = await mapConcurrent([...used.missingVariables], 16, async (id) => !await figma.variables.getVariableByIdAsync(id), cancelled);
+          const missingCollections = await mapConcurrent([...used.missingCollections], 8, async (id) => !await figma.variables.getVariableCollectionByIdAsync(id), cancelled);
+          return !cancelled() && variableMatches.every(Boolean) && collectionMatches.every(Boolean)
+            && missingVariables.every(Boolean) && missingCollections.every(Boolean);
+        } catch { return false; }
+      },
+    };
+  } catch {
+    // Cache provenance is unavailable; live capture remains the authority.
+    return undefined;
+  }
+}
+
+function referencedVariableIds(nodes: Record<string, NodeSnapshot>): string[] {
+  const ids = new Set<string>();
+  for (const node of Object.values(nodes)) {
+    for (const values of [...Object.values(node.boundVariableIds), ...Object.values(node.inferredBindings)]) {
+      for (const id of values ?? []) ids.add(id);
+    }
+    for (const paint of [...node.fills, ...node.strokes]) {
+      if (paint.boundVariableId) ids.add(paint.boundVariableId);
+      for (const id of paint.inferredVariableIds) ids.add(id);
+    }
+    for (const effect of node.effects) for (const id of effect.boundVariableIds) ids.add(id);
+  }
+  return [...ids];
+}
+
 async function variableCandidates(
   options: VariableCollectionOption[],
   nodes: Record<string, NodeSnapshot>,
   cancelled: () => boolean,
   approvedCollectionKeys: ReadonlySet<string>,
+  recordLibrary?: (key: string, variables: LibraryVariable[] | undefined) => void,
 ): Promise<VariableCandidate[]> {
   const isSemanticVariable = (name: string, collectionName: string): boolean => (
     /^semantic(?:\s|$)/i.test(collectionName.trim())
@@ -468,20 +743,26 @@ async function variableCandidates(
     };
   });
 
-  const referencedIds = new Set<string>();
-  for (const node of Object.values(nodes)) {
-    for (const values of Object.values(node.inferredBindings)) for (const id of values ?? []) referencedIds.add(id);
-    for (const paint of [...node.fills, ...node.strokes]) if (paint.boundVariableId) referencedIds.add(paint.boundVariableId);
-    for (const effect of node.effects) for (const id of effect.boundVariableIds) referencedIds.add(id);
-  }
+  const referencedIds = referencedVariableIds(nodes);
   const knownIds = new Set(output.map((variable) => variable.id));
-  for (const id of referencedIds) {
-    if (cancelled()) break;
-    if (knownIds.has(id)) continue;
-    const variable = await figma.variables.getVariableByIdAsync(id).catch(() => null);
-    if (!variable) continue;
-    const collection = await figma.variables.getVariableCollectionByIdAsync(variable.variableCollectionId).catch(() => null);
-    output.push({
+  const collectionRequests = new Map<string, Promise<VariableCollection | null>>();
+  const getCollection = (id: string): Promise<VariableCollection | null> => {
+    const local = localCollections.get(id);
+    if (local) return Promise.resolve(local);
+    let request = collectionRequests.get(id);
+    if (!request) {
+      request = figma.variables.getVariableCollectionByIdAsync(id);
+      collectionRequests.set(id, request);
+    }
+    return request;
+  };
+  const referenced = await mapConcurrent([...referencedIds].filter((id) => !knownIds.has(id)), 8, async (id): Promise<VariableCandidate | undefined> => {
+    // A rejected grading read must abort the build even if epoch reads before
+    // and after it succeed. Only an actual null establishes missing evidence.
+    const variable = await figma.variables.getVariableByIdAsync(id);
+    if (!variable) return undefined;
+    const collection = await getCollection(variable.variableCollectionId);
+    return {
       id: variable.id,
       key: variable.key,
       name: variable.name,
@@ -496,17 +777,23 @@ async function variableCandidates(
       scopes: [...variable.scopes],
       modeNames: collection?.modes.map((mode) => mode.name) ?? [],
       ...(variable.codeSyntax.WEB ? { webSyntax: variable.codeSyntax.WEB } : {}),
-    });
-    knownIds.add(id);
-  }
-
-  for (const option of options.filter((candidate) => candidate.remote && approvedCollectionKeys.has(candidate.key))) {
-    if (cancelled()) break;
-    try {
-      const variables = await figma.teamLibrary.getVariablesInLibraryCollectionAsync(option.key);
-      option.variableCount = variables.length;
-      const knownKeys = new Set(output.map((candidate) => candidate.key));
-      output.push(...variables.filter((variable) => !knownKeys.has(variable.key)).map((variable) => ({
+    };
+  }, cancelled);
+  output.push(...referenced.filter((value): value is VariableCandidate => Boolean(value)));
+  const remote = options.filter((candidate) => candidate.remote && approvedCollectionKeys.has(candidate.key));
+  const summaries = await mapConcurrent(remote, 4, async (option) => {
+    try { return await figma.teamLibrary.getVariablesInLibraryCollectionAsync(option.key); }
+    catch { return undefined; }
+  }, cancelled);
+  const knownKeys = new Set(output.map((candidate) => candidate.key));
+  for (const [index, variables] of summaries.entries()) {
+    recordLibrary?.(remote[index]!.key, variables);
+    if (!variables) continue;
+    const option = remote[index]!;
+    option.variableCount = variables.length;
+    for (const variable of variables) {
+      if (knownKeys.has(variable.key)) continue;
+      output.push({
         id: `library:${variable.key}`,
         key: variable.key,
         name: variable.name,
@@ -515,13 +802,12 @@ async function variableCandidates(
         collectionName: option.name,
         type: variable.resolvedType,
         remote: true,
-        evidenceLevel: "summary" as const,
+        evidenceLevel: "summary",
         semantic: isSemanticVariable(variable.name, option.name),
         scopes: [],
         modeNames: option.modeNames,
-      })));
-    } catch {
-      // Keep the collection descriptor while avoiding any claim about inaccessible variables.
+      });
+      knownKeys.add(variable.key);
     }
   }
   return output;
@@ -529,6 +815,12 @@ async function variableCandidates(
 
 export class FigmaAdapter {
   private cancelled = false;
+  private verifyVariableEnvironment: (() => Promise<boolean>) | undefined;
+
+  async matchesVariableEnvironment(): Promise<boolean> {
+    try { return await this.verifyVariableEnvironment?.() ?? false; }
+    catch { return false; }
+  }
 
   beginScan(): void {
     this.cancelled = false;
@@ -542,8 +834,8 @@ export class FigmaAdapter {
     return this.cancelled;
   }
 
-  getCollectionOptions(includeRemote = true, remoteTimeoutMs = 4_000): Promise<VariableCollectionOption[]> {
-    return listVariableCollectionOptions({ includeRemote, remoteTimeoutMs });
+  getCollectionOptions(includeRemote = true, remoteTimeoutMs = 4_000, refreshRemote = false): Promise<VariableCollectionOption[]> {
+    return listVariableCollectionOptions({ includeRemote, remoteTimeoutMs, refreshRemote });
   }
 
   async getBootstrap(): Promise<BootstrapData> {
@@ -688,90 +980,190 @@ export class FigmaAdapter {
   async buildKnowledge(
     profile: ReadinessProfile,
     onProgress: (progress: ScanProgress) => void,
+    options: { contextCache?: ContextCachePort; forceFullCapture?: boolean } = {},
   ): Promise<KnowledgeBuildResult> {
+    this.verifyVariableEnvironment = undefined;
+    const started = Date.now();
+    const diagnostics = newBuildDiagnostics();
     const pages = figma.root.children;
     const nodes: Record<string, NodeSnapshot> = {};
     const pageSnapshots: PageSnapshot[] = [];
     const componentIds: string[] = [];
     const instanceIds: string[] = [];
-    const enrich: Array<{ scene: SceneNode; snapshot: NodeSnapshot; getMain: boolean }> = [];
+    const instances: Array<{ scene: InstanceNode; snapshot: NodeSnapshot }> = [];
+    const pendingCache: Array<{ key: string; value: unknown }> = [];
+    // A root id is not a file identity. Files without a stable key use live capture.
+    const cache = figma.fileKey && !options.forceFullCapture ? options.contextCache : undefined;
     let loadedPageCount = 0;
+    const environmentStarted = Date.now();
+    const variableEnvironment = await variableEnvironmentReader(() => this.cancelled);
+    diagnostics.validationMs += Date.now() - environmentStarted;
 
     for (const [pageIndex, page] of pages.entries()) {
       if (this.cancelled) break;
       onProgress({ phase: "loading-pages", completed: pageIndex, total: pages.length, pageName: page.name, message: `Loading ${page.name}` });
+      let stageStarted = Date.now();
       await page.loadAsync();
+      diagnostics.pageLoadingMs += Date.now() - stageStarted;
+      if (this.cancelled) break;
       loadedPageCount += 1;
-      const rootNodeIds: string[] = [];
-      let pageNodeCount = 0;
-      const stack = [...page.children].reverse().map((node) => ({ node, rootId: node.id, path: `${page.name} / ${node.name}` }));
-      rootNodeIds.push(...page.children.map((node) => node.id));
-      while (stack.length > 0) {
-        if (this.cancelled) break;
-        const entry = stack.pop();
-        if (!entry) continue;
-        const snapshot = snapshotBase(entry.node, entry.rootId, page.id, entry.path);
-        nodes[entry.node.id] = snapshot;
-        pageNodeCount += 1;
-        if (entry.node.type === "COMPONENT" || entry.node.type === "COMPONENT_SET") componentIds.push(entry.node.id);
-        if (entry.node.type === "INSTANCE") instanceIds.push(entry.node.id);
-        enrich.push({
-          scene: entry.node,
-          snapshot,
-          getMain: entry.node.type === "INSTANCE",
-        });
-        if (entry.node.type !== "INSTANCE" && hasChildren(entry.node)) {
-          for (let index = entry.node.children.length - 1; index >= 0; index -= 1) {
-            const child = entry.node.children[index];
-            if (child) stack.push({ node: child, rootId: entry.rootId, path: `${entry.path} / ${child.name}` });
-          }
-        }
-        if (pageNodeCount % 500 === 0) {
-          onProgress({ phase: "indexing", completed: pageIndex, total: pages.length, pageName: page.name, message: `Indexed ${pageNodeCount.toLocaleString()} nodes on ${page.name}` });
-          await new Promise((resolve) => setTimeout(resolve, 0));
-        }
+      stageStarted = Date.now();
+      let exported: ReturnType<typeof restPageFingerprint>;
+      if (cache && "exportAsync" in page) {
+        try { exported = restPageFingerprint(await page.exportAsync({ format: "JSON_REST_V1" }), page.id); }
+        catch { /* Unsupported bulk serialization is a cache miss. */ }
       }
-      pageSnapshots.push({
-        id: page.id,
-        name: page.name,
-        role: roleForPage(page.id, profile),
-        loaded: true,
-        nodeCount: pageNodeCount,
-        rootNodeIds,
-      });
+      diagnostics.validationMs += Date.now() - stageStarted;
+      const rootNodeIds = page.children.map((node) => node.id);
+      let pageNodeCount = 0;
       for (const root of page.children) {
-        if (!("getDevResourcesAsync" in root)) continue;
+        if (this.cancelled) break;
+        const entries = captureEntries(root, page.name);
+        stageStarted = Date.now();
+        const restRoot = exported?.roots.get(root.id);
+        const restNodes = restRoot ? restSubtreeNodes(restRoot) : undefined;
+        let fingerprint: string | undefined;
         try {
-          const resources = await root.getDevResourcesAsync({ includeChildren: true });
-          for (const resource of resources) {
-            const snapshot = nodes[resource.nodeId];
-            if (snapshot) snapshot.devResourceCount += 1;
+          if (restRoot && variableEnvironment && restSubtreeCovers(restRoot, entries)) {
+            const supplements = entries.map(({ node }) => captureSupplement(node, restNodes?.get(node.id)));
+            const environment = await variableEnvironment.fingerprint(supplements);
+            if (environment) fingerprint = hashValue({ captureVersion: 1, fileKey: figma.fileKey, pageId: page.id, pageName: page.name, profile, restRoot, metadata: exported?.metadata, supplements, environment });
+          } else if (variableEnvironment) {
+            // Full capture needs the same dependency epoch as cached capture.
+            await variableEnvironment.fingerprint(entries.map(({ node }) => ({ boundVariables: node.boundVariables,
+              fills: "fills" in node ? node.fills : [], strokes: "strokes" in node ? node.strokes : [], effects: "effects" in node ? node.effects : [] })));
           }
         } catch {
-          // Dev-resource availability is represented by measured zero, never by fetching its URL.
+          // A richer validation getter may be unavailable on an older runtime.
+          // Continue through the established full capture instead of trusting it.
         }
+        const key = `capture-v1:${page.id}:${root.id}`;
+        let snapshots: NodeSnapshot[] | undefined;
+        if (cache && fingerprint) {
+          try { snapshots = readContextFragment(await cache.get(key), fingerprint, entries.map(({ node }) => node.id)); }
+          catch { diagnostics.cacheReadFailures += 1; }
+        }
+        diagnostics.validationMs += Date.now() - stageStarted;
+        if (this.cancelled) break;
+        if (snapshots) {
+          diagnostics.reusedFragments += 1;
+          diagnostics.reusedNodes += snapshots.length;
+        } else {
+          stageStarted = Date.now();
+          snapshots = [];
+          for (const [index, entry] of entries.entries()) {
+            if (this.cancelled) break;
+            snapshots.push(snapshotBase(entry.node, entry.rootId, page.id, entry.path));
+            if ((index + 1) % 500 === 0) {
+              onProgress({ phase: "indexing", completed: pageIndex, total: pages.length, pageName: page.name, message: `Capturing ${(pageNodeCount + index + 1).toLocaleString()} nodes on ${page.name}` });
+              await new Promise((resolve) => setTimeout(resolve, 0));
+            }
+          }
+          diagnostics.captureMs += Date.now() - stageStarted;
+          diagnostics.capturedFragments += 1;
+          diagnostics.capturedNodes += snapshots.length;
+          if (cache && fingerprint && !this.cancelled) pendingCache.push({ key, value: contextFragment(fingerprint, snapshots) });
+        }
+        if (this.cancelled) break;
+        stageStarted = Date.now();
+        for (const [index, entry] of entries.entries()) {
+          if (this.cancelled) break;
+          const snapshot = snapshots[index]!;
+          enrichInferences(entry.node, snapshot);
+          diagnostics.inferenceNodes += 1;
+          nodes[entry.node.id] = snapshot;
+          pageNodeCount += 1;
+          if (entry.node.type === "COMPONENT" || entry.node.type === "COMPONENT_SET") componentIds.push(entry.node.id);
+          if (entry.node.type === "INSTANCE") {
+            instanceIds.push(entry.node.id);
+            instances.push({ scene: entry.node, snapshot });
+          }
+          if (pageNodeCount % 500 === 0) {
+            onProgress({ phase: "indexing", completed: pageIndex, total: pages.length, pageName: page.name, message: `Indexed ${pageNodeCount.toLocaleString()} nodes on ${page.name}` });
+            await new Promise((resolve) => setTimeout(resolve, 0));
+          }
+        }
+        diagnostics.inferenceMs += Date.now() - stageStarted;
       }
+      pageSnapshots.push({ id: page.id, name: page.name, role: roleForPage(page.id, profile), loaded: true, nodeCount: pageNodeCount, rootNodeIds });
+      if (this.cancelled) break;
+      stageStarted = Date.now();
+      let resources: DevResourceWithNodeId[] | undefined;
+      if ("getDevResourcesAsync" in page) {
+        try { resources = await page.getDevResourcesAsync({ includeChildren: true }); }
+        catch { /* Older runtimes can still read resources from each root. */ }
+      }
+      if (!resources) {
+        const batches = await mapConcurrent(page.children, 8, async (root) => {
+          try { return await root.getDevResourcesAsync({ includeChildren: true }); }
+          catch { return []; }
+        }, () => this.cancelled);
+        resources = batches.flatMap((batch) => batch ?? []);
+      }
+      for (const resource of resources) {
+        const snapshot = nodes[resource.nodeId];
+        if (snapshot) snapshot.devResourceCount += 1;
+      }
+      diagnostics.devResourcesMs += Date.now() - stageStarted;
     }
 
-    for (let index = 0; index < enrich.length && !this.cancelled; index += 50) {
-      const batch = enrich.slice(index, index + 50);
-      await Promise.all(batch.map(async ({ scene, snapshot, getMain }) => {
-        if (getMain && scene.type === "INSTANCE") {
-          const main = await scene.getMainComponentAsync().catch(() => null);
-          snapshot.instance = {
-            detached: false,
-            ...(main ? { mainComponentId: main.id, mainComponentName: main.name, ...(main.key ? { mainComponentKey: main.key } : {}) } : {}),
-          };
-        }
-      }));
-    }
+    let stageStarted = Date.now();
+    await mapConcurrent(instances, 16, async ({ scene, snapshot }) => {
+      const main = await scene.getMainComponentAsync().catch(() => null);
+      snapshot.instance = {
+        detached: false,
+        ...(main ? { mainComponentId: main.id, mainComponentName: main.name, ...(main.key ? { mainComponentKey: main.key } : {}) } : {}),
+      };
+    }, () => this.cancelled);
+    diagnostics.componentsMs = Date.now() - stageStarted;
 
-    populateGraphMetrics(nodes);
     onProgress({ phase: "indexing", completed: loadedPageCount, total: pages.length, message: "Resolving variables and cross-file relationships" });
-    const collections = await this.getCollectionOptions(true);
-    const variables = this.cancelled
-      ? []
-      : await variableCandidates(collections, nodes, () => this.cancelled, new Set(profile.tokenSourceCollectionKeys));
+    stageStarted = Date.now();
+    const collections = await this.getCollectionOptions(true, 4_000, true);
+    const approvedKeys = new Set(profile.tokenSourceCollectionKeys);
+    const remoteKeys = new Set([...approvedKeys].filter((key) => !variableEnvironment?.localCollectionKeys.has(key)
+      && !collections.some((collection) => !collection.remote && collection.key === key)));
+    const libraryDigest = (variables: LibraryVariable[] | undefined) => variables
+      ? hashValue(variables.map(({ key, name, resolvedType }) => ({ key, name, resolvedType })).sort((a, b) => a.key.localeCompare(b.key))) : undefined;
+    const librarySummaries = new Map<string, string | undefined>();
+    // Enroll even inaccessible inferred IDs before reading grading candidates.
+    // Their later appearance or metadata changes must invalidate this epoch.
+    await variableEnvironment?.fingerprint(referencedVariableIds(nodes).map((id) => ({ type: "VARIABLE_ALIAS", id })));
+    const variables = this.cancelled ? [] : await variableCandidates(collections, nodes, () => this.cancelled, approvedKeys,
+      (key, values) => { librarySummaries.set(key, libraryDigest(values)); });
+    const libraryCollections = (values: VariableCollectionOption[]) => hashValue(values.filter((value) => value.remote && approvedKeys.has(value.key))
+      .map(({ key, name, libraryName }) => ({ key, name, libraryName })).sort((a, b) => a.key.localeCompare(b.key)));
+    const expectedLibraries = libraryCollections(collections);
+    const verifyLibraries = async (): Promise<boolean> => {
+      // Local collection keys are covered by the local epoch; they need no
+      // remote inventory calls at each report or mutation boundary.
+      if (remoteKeys.size === 0) return true;
+      // The discovery UI can fall back to an empty list on failure. Verification
+      // needs a successful bridge response to distinguish absence from failure.
+      const available = await new Promise<LibraryVariableCollection[] | undefined>((resolve) => {
+        const timer = setTimeout(() => resolve(undefined), 4_000);
+        Promise.resolve().then(() => figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync()).then(
+          (value) => { clearTimeout(timer); resolve(value); },
+          () => { clearTimeout(timer); resolve(undefined); },
+        );
+      });
+      if (!available || libraryCollections(available.map((collection) => ({ ...collection, id: `library:${collection.key}`, remote: true, modeNames: [], variableCount: 0 }))) !== expectedLibraries) return false;
+      const matches = await mapConcurrent([...librarySummaries], 4, async ([key, expected]) => {
+        const current = await figma.teamLibrary.getVariablesInLibraryCollectionAsync(key).catch(() => undefined);
+        return expected !== undefined && current !== undefined && libraryDigest(current) === expected;
+      }, () => this.cancelled);
+      return !this.cancelled && matches.every(Boolean);
+    };
+    diagnostics.variablesMs = Date.now() - stageStarted;
+    if (variableEnvironment && !this.cancelled) {
+      stageStarted = Date.now();
+      const verified = await variableEnvironment.verify();
+      diagnostics.validationMs += Date.now() - stageStarted;
+      if (!verified && !this.cancelled) throw new Error("Variable values or collections changed while file context was being verified. Run the audit again.");
+    }
+    if (!this.cancelled && !await verifyLibraries()) throw new Error("Available library variables changed while file context was being verified. Run the audit again.");
+    stageStarted = Date.now();
+    populateGraphMetrics(nodes);
     const partial = {
       schemaVersion: 1 as const,
       fileName: figma.root.name,
@@ -789,9 +1181,24 @@ export class FigmaAdapter {
       sourceFrameIds: [] as string[],
     };
     partial.sourceFrameIds = sourceFrameIds(partial, profile);
-    const graph = finalizeKnowledgeGraph(partial, profile);
+    let graph = finalizeKnowledgeGraph(partial, profile);
+    diagnostics.derivedMs = Date.now() - stageStarted;
+    if (graph.complete && cache) {
+      // The caller's storage port stages these writes until its document-change
+      // revision accepts the build; cancellation never publishes partial capture.
+      for (const entry of pendingCache) {
+        if (this.cancelled) break;
+        try { await cache.set(entry.key, entry.value); }
+        catch { diagnostics.cacheWriteFailures += 1; }
+      }
+    }
+    if (this.cancelled && graph.complete) graph = finalizeKnowledgeGraph({ ...graph, complete: false, cancelled: true }, profile);
+    if (graph.complete && variableEnvironment) {
+      this.verifyVariableEnvironment = async () => await variableEnvironment.verify() && await verifyLibraries();
+    }
+    diagnostics.totalMs = Date.now() - started;
     onProgress({ phase: "complete", completed: loadedPageCount, total: pages.length, message: graph.complete ? "Whole-file knowledge is complete" : "Whole-file knowledge is incomplete" });
-    return { graph, collections };
+    return { graph, collections, diagnostics };
   }
 
   targetRootIds(target: CapturedAuditTarget, graph: DesignKnowledgeGraph): string[] {

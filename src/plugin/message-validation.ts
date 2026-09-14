@@ -3,6 +3,7 @@ import { isBindableField } from "../core/operations/planning";
 import { validateContract } from "../core/schema";
 import { utf8ByteLength } from "../core/stable";
 import type { UiToPluginMessage } from "./messages";
+import { isAuditViewState } from "./audit-state";
 
 function record(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
@@ -35,7 +36,19 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
   const message = record(value);
   if (!message || typeof message.type !== "string") throw new Error("Plugin message must be an object with a type");
   if (message.type === "initialize" || message.type === "refresh-audit" || message.type === "cancel-scan" || message.type === "certify" || message.type === "certify-components"
-    || message.type === "remove-project-style-guide" || message.type === "clear-session-references" || message.type === "preview-contribution") return { type: message.type };
+    || message.type === "remove-project-style-guide" || message.type === "clear-session-references" || message.type === "preview-contribution"
+    || message.type === "clear-file-cache") return { type: message.type };
+  if (message.type === "open-saved-audit" || message.type === "forget-saved-audit") return { type: message.type, id: text(message.id, "id", 1_000) };
+  if (message.type === "save-audit-view") {
+    if (!isAuditViewState(message.viewState)) throw new Error("Saved audit view is invalid");
+    return { type: message.type, id: text(message.id, "id", 1_000), viewState: message.viewState };
+  }
+  if (message.type === "audit-pages") {
+    if (!Array.isArray(message.pageIds) || message.pageIds.length === 0 || message.pageIds.length > 1_000) throw new Error("Choose between 1 and 1,000 pages");
+    const pageIds = message.pageIds.map((id) => text(id, "pageId", 200));
+    if (new Set(pageIds).size !== pageIds.length) throw new Error("Page IDs must be distinct");
+    return { type: message.type, pageIds };
+  }
   if (message.type === "save-profile") return { type: message.type, profile: profile(message.profile) };
   if (message.type === "scan") {
     const request = record(message.request);

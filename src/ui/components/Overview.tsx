@@ -1,9 +1,10 @@
 import { AXIS_LABELS } from "../../core/constants";
 import type { ReadinessReport, ScanScope } from "../../core/contracts";
-import type { SelectionSummary } from "../../figma/adapter";
+import type { PageOption, SelectionSummary } from "../../figma/adapter";
 import { BrandMark } from "../BrandMark";
 import { auditedTargetSummary, selectionEligibility } from "../operations/audit-scope";
 import { gradeClass } from "../operations/presentation";
+import { PageBatch } from "./PageBatch";
 
 export interface OverviewProps {
   report: ReadinessReport | undefined;
@@ -12,6 +13,10 @@ export interface OverviewProps {
   canMutateDocument: boolean;
   scanning: boolean;
   actionsBlocked: boolean;
+  historical?: boolean;
+  pages?: PageOption[];
+  fileKeyAvailable?: boolean;
+  onReviewPages?: (pageIds: string[]) => void;
   onScan: (scope: ScanScope, refresh?: boolean) => void;
   onCertify: () => void;
   onCertifyComponents: () => void;
@@ -22,6 +27,7 @@ export function Overview(props: OverviewProps) {
   const componentFrames = props.report?.frames.filter((frame) => frame.rootType === "COMPONENT" || frame.rootType === "COMPONENT_SET") ?? [];
   const componentsReady = componentFrames.length > 0 && componentFrames.every((frame) => frame.ready);
   const eligibility = selectionEligibility(props.selectionSummary);
+  const historicalExport = props.historical || props.stale;
   const auditedTarget = props.report
     ? auditedTargetSummary(props.report.target.scope, props.report.frames.map((frame) => frame.rootName))
     : undefined;
@@ -48,13 +54,14 @@ export function Overview(props: OverviewProps) {
         </div>
         {eligibility.guidance ? <p id="selection-guidance" className="selection-guidance" aria-live="polite">{eligibility.guidance}</p> : null}
       </div>
+      {props.pages && props.onReviewPages ? <PageBatch pages={props.pages} canSave={props.fileKeyAvailable ?? true} disabled={props.actionsBlocked || props.scanning} onReview={props.onReviewPages} /> : null}
       {!props.report ? (
         <div className="empty-state"><div className="empty-mark"><BrandMark /></div><h2>Build a trustworthy handoff signal</h2><p>Choose an audit target to see its readiness. The rest of the file informs the analysis without becoming part of the grade.</p></div>
       ) : (
         <>
           <div className="result-hero">
             <div className={gradeClass(props.report.grade.letter)}>{props.report.grade.letter}</div>
-            <div><span className="section-label">Overall readiness</span><h2>{props.report.grade.score.toFixed(1)} / 100</h2><p className={props.stale ? "needs-refresh" : props.report.ready ? "ready" : "not-ready"}>{status}</p>{props.report.grade.capReason && <small>{props.report.grade.capReason}</small>}</div>
+            <div><span className="section-label">{historicalExport ? "Historical readiness" : "Overall readiness"}</span><h2>{props.report.grade.score.toFixed(1)} / 100</h2><p className={props.stale ? "needs-refresh" : props.report.ready ? "ready" : "not-ready"}>{status}</p>{props.report.grade.capReason && <small>{props.report.grade.capReason}</small>}</div>
           </div>
           <div className="audited-target-summary">
             <div>
@@ -77,8 +84,8 @@ export function Overview(props: OverviewProps) {
                 <button className="button primary" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !componentsReady} onClick={props.onCertifyComponents}>Certify components ({componentFrames.length})</button>
                 <button className="button" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !props.report.ready} onClick={props.onCertify}>Certify source frames</button>
               </>}
-            <button className="button" disabled={props.actionsBlocked || props.scanning || props.stale} onClick={() => props.onExport("json")}>Export JSON</button>
-            <button className="button" disabled={props.actionsBlocked || props.scanning || props.stale} onClick={() => props.onExport("markdown")}>Export Markdown</button>
+            <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("json")}>{historicalExport ? "Export historical JSON" : "Export JSON"}</button>
+            <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("markdown")}>{historicalExport ? "Export historical Markdown" : "Export Markdown"}</button>
           </div>
         </>
       )}
