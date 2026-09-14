@@ -25,6 +25,8 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 - Concise parent-only certificate annotations and relaunch actions on passing source frames and reusable components.
 - JSON Schema-validated profiles, findings, change plans, and reports.
 - Complete JSON and escaped Markdown report exports.
+- Automatic compressed local audit recovery, historical exports, and a saved-audit picker with per-target view preferences.
+- Validated persisted context fragments and multi-page batches that retain each completed page report.
 - Project-scoped style-guide advisories, session-only references, and an explicit sanitized learning export that never changes grades.
 - A local Node companion for Figma REST ingestion and human-gated knowledge review.
 - No backend, telemetry, OAuth, or plugin network access. Only the separately run local companion fetches explicitly supplied Figma sources.
@@ -46,9 +48,25 @@ Design Passport is published to the Verndale organization. Organization members 
 1. Open the Figma Design or Dev Mode file to review.
 2. Open **Resources → Plugins** (or Quick Actions) and run **Design Passport**.
 3. Choose an audit scope. Design Passport automatically classifies conventional product and library files; there is no required setup step.
-4. Wait for the complete file-wide knowledge build, then review Overview and Findings.
+4. Wait for the complete file-wide knowledge build, then review Overview and Findings. Completion shows whether the result was saved locally.
 5. Apply only reviewed cleanup, let the rescan complete, and certify only when Overview reports **ready**.
-6. Export JSON for machine consumers or Markdown for people; do not distribute a stale or incomplete report.
+6. Export current JSON for machine consumers or Markdown for people. Saved historical exports are explicitly labeled and do not establish current readiness.
+
+### Return to an audit
+
+Completed audits save automatically to this device. Closing Passport, switching to another plugin, or reopening the file restores the last-viewed saved result without starting another audit. The saved-audit chooser keeps the latest result for each page, selection, or whole-file audit and restores its tab, filters, and expanded finding. Node links and historical export remain available while an explicit refresh checks the design; cleanup and certification require verified current context.
+
+Saved results retain their original timestamp and configuration. Session reference packs still clear on restart; their previous advisory findings can be read as part of the historical audit but are not reapplied to a new review. A profile or rule update does not rewrite the old report. Changing audit setup also keeps an unsaved completed result available for historical export.
+
+Storage is local to the plugin and device, not shared with collaborators. The plugin uses compressed records within a conservative 4 MB budget below Figma's 5 MB quota, including existing storage. Reusable context is removed first, then least recently viewed reports. A new result never replaces the previous result for its target until the write succeeds. **Not saved** means the current result remains available for export but will not survive closing. A file without a stable file key supports session-only results. Clearing browser data or changing the plugin ID can also remove access to saved data.
+
+Choose **Review pages** to select several pages or all pages. A batch prepares context once, saves each completed page, and reports empty pages separately. Cancellation keeps completed page results; changed/expired context or a failed page save stops the batch. An unsaved page stays open for export instead of being replaced by the next page. Batches require a stable file key; single-page and selection audits support session-only files. Reopening does not restart an interrupted batch.
+
+### Repeat-review performance
+
+Within a fresh unchanged session, audits reuse whole-file knowledge. After reopening or an explicit refresh, Passport validates saved base fragments against bulk page exports and Plugin API metadata, then captures changed fragments. Inferred variables, relevant variable/alias evidence, component relationships, and documentation resources are refreshed; an unverified saved graph never enables cleanup or certification. If exports or dependencies cannot establish a match, capture falls back conservatively.
+
+Diagnostic timings and cache counts appear only in the local plugin console. `node scripts/benchmark-context-cache.mjs 65 30` runs a synthetic cache/parity benchmark; it excludes the real Figma bridge and cannot establish a user-facing speedup. See [runtime and performance QA](docs/manual-qa.md) for the cold, reopen, component-edit, next-page, and batch measurement procedure.
 
 Use the in-product guidance and [manual rollout QA](docs/manual-qa.md) for detailed operating and recovery steps. The published plugin is private to the Verndale organization; people outside it need an organization administrator to grant the appropriate Figma access before it can appear in Resources.
 
@@ -146,9 +164,9 @@ Designers normally open Design Passport and run an audit immediately. The plugin
 
 `Audit setup` is a secondary recovery surface, not part of the normal workflow. It appears automatically only when the file cannot be classified safely or a saved page mapping was deleted. A recommended one-click setup is offered when deterministic inference can repair the state; unusual files can use the collapsed advanced controls for manual roles, token sources, and breakpoints.
 
-Advanced edits remain a local draft until the designer explicitly saves them. Audits, context rebuilds, cleanup, certification, learning contribution, and report export stay unavailable while a draft is unsaved or invalid. Discard restores the committed setup. Deleted page mappings are removed from the draft and require review and confirmation before work continues.
+Advanced edits remain a local draft until the designer explicitly saves them. Audits, context rebuilds, cleanup, certification, learning contribution, and current report export stay unavailable while a draft is unsaved or invalid. Historical reports remain readable and exportable using their original configuration. Discard restores the committed setup. Deleted page mappings are removed from the draft and require review and confirmation before work continues.
 
-Only the committed profile, compact certificate summaries, and explicit contextual-pattern confirmations are stored as shared plugin data. A validated project style-guide binding is stored separately as private document-root plugin data, never public shared data or client storage. Full nodes, findings, and text are not persisted there. Text content is represented in the in-memory graph by length and a deterministic fingerprint, not raw characters.
+Only the committed profile, compact certificate summaries, and explicit contextual-pattern confirmations are stored as shared plugin data. A validated project style-guide binding is stored separately as private document-root plugin data, never public shared data or client storage. Full nodes, findings, and text are not persisted in the document. Completed reports and normalized context fragments are stored separately in local clientStorage. Text content is represented by length and a deterministic fingerprint, not raw characters; raw bulk exports are transient.
 
 ## Component-set certification
 

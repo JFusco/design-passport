@@ -28,7 +28,7 @@ The primary designer journey is **choose a target → audit → review Findings 
 - Separately, import `manifest.json` only when smoke-testing an unreleased local build; confirm it launches from **Plugins → Development**.
 - On first run with conventional page names, verify there is no Profile tab or setup gate and a Current page audit can start immediately. Confirm automatic classification does not move or rename a page.
 - Open the secondary **Audit setup** link and verify the status is Ready, manual choices are collapsed under Advanced, and Product/Library terminology is absent from the normal audit journey.
-- With an existing report, make one valid unsaved advanced setup edit and verify scans, context rebuild, cleanup, certification, learning contribution, and exports remain disabled while the prior report stays readable.
+- With an existing report, make one valid unsaved advanced setup edit and verify scans, context rebuild, cleanup, certification, learning contribution, and current-report exports remain disabled while the prior report stays readable. Restored historical reports remain exportable.
 - Make the draft semantically invalid by switching to Product without a Screens page; verify the error appears inline, Save is disabled, and no global runtime error appears.
 - Discard a configured draft and verify the committed settings and prior report remain available. In a file automatic classification cannot resolve, verify Audit setup opens with one recommended action when the suggestion is valid and otherwise explains the exact manual decision required.
 - Try duplicate page roles, duplicate breakpoint names or widths, blank/whitespace names, and invalid widths; verify each problem is explained inline.
@@ -36,10 +36,10 @@ The primary designer journey is **choose a target → audit → review Findings 
 - Add, remove, or rename pages after a successful audit and verify topology changes invalidate or rebuild whole-file knowledge without persisting a draft.
 - Load stored profiles created by version 0.1.0 with both values of its removed optional integration flag; verify unrelated page roles, token collections, and breakpoints survive and the new shape is persisted only after Save.
 - Run **Audit selection** separately with a frame, component, and component set; confirm each is accepted as an audit root. Try an empty selection, an unsupported root, and a mixed supported/unsupported selection; confirm the action is disabled with guidance to select only frames, components, or component sets.
-- Start a cold selection audit and verify the target-first headline remains `Auditing selection (N)` while the secondary status explains that supporting file context is being prepared and only the selection will be graded. Confirm raw page names, node counts, knowledge-graph terminology, and a resetting determinate progress bar never appear. Switch tabs and confirm panel commands remain visibly locked while the audit runs, with Cancel still available during context preparation.
+- Start a cold selection audit and verify the target-first headline remains `Auditing selection (N)` while the secondary status explains that supporting file context is being prepared and only the selection will be graded. Confirm raw page names, node counts, knowledge-graph terminology, and a resetting determinate progress bar never appear. Existing results remain browsable, while audit, mutation, and setup commands remain locked; Cancel stays available during context preparation.
 - Trigger success, notice, stale, and error notifications and confirm each uses the same horizontal inset and leaves a visible gap from the tab row, progress status, and adjacent panel content at desktop and narrow plugin widths.
 - While that cold audit is preparing context, change both the Figma selection and current page. Confirm the in-flight audit remains bound to the original target count and names, and its results grade only those captured roots.
-- Cancel during cold file-context preparation; confirm it returns to a neutral recoverable state, no partial graph can certify or export, and a later audit succeeds. Also cancel an automatic post-cleanup rescan and confirm the completed cleanup remains applied.
+- Cancel during cold file-context preparation; confirm it returns to a neutral recoverable state, no partial graph produces a current report or certification, and a later audit succeeds. Previous completed results remain available for historical export. Also cancel an automatic post-cleanup rescan and confirm the completed cleanup remains applied.
 - Rerun the same selection while its complete graph is fresh; confirm the cached audit proceeds directly to target analysis, retains the captured selection, and does not rebuild file context.
 - After a selection or current-page report becomes stale, change the live selection or current page before choosing **Refresh audit to certify** or **Rebuild context**. Confirm the refreshed report still names and grades the previously captured target.
 - Inspect Context inventory for page roles, canonical/novel patterns, component use counts, responsive families, token collections, and repeated structures.
@@ -66,7 +66,7 @@ The primary designer journey is **choose a target → audit → review Findings 
 - Apply safe and guarded cleanup. Verify each risk group is a separate undo group, the whole file rescans once, the automatic name/annotation findings clear, and the score improves.
 - Apply inferred Auto Layout. Verify clone validation and a version-history checkpoint occur before the source changes, delayed temporary-clone events do not invalidate the rescan, and any newly measurable token fields appear as a follow-up guarded plan.
 - Apply that follow-up and verify Cleanup reports no previewable plan while manual findings remain in Findings.
-- Resolve the manual spacer and default-name findings directly in Figma. Verify the old report becomes stale, export/certification are disabled, and a new audit clears those findings.
+- Resolve the manual spacer and default-name findings directly in Figma. Verify the old report becomes stale, certification is disabled, historical export stays available, and a new audit clears those findings.
 - If the fixture reaches B/ready, certify twice and verify exactly one grade annotation, one source marker, and current ruleset/catalog/snapshot metadata remain.
 - Delete the temporary page and verify the original page count and a normal current-page audit are restored. Never publish the development plugin during this test.
 
@@ -78,7 +78,7 @@ The primary designer journey is **choose a target → audit → review Findings 
 - Duplicate a bound file and verify the inherited fingerprint is rejected.
 - In Dev Mode, confirm the pack is readable and its advisories render, but import, replace, and remove controls are unavailable.
 - Attempt wrong-role, malformed, unsafe, digest-invalid, and >90 KB replacements; verify the prior valid binding remains active.
-- Add a `reference` pack, verify its suggestions are labeled inspiration and do not survive a plugin restart.
+- Add a `reference` pack and verify its suggestions are labeled inspiration. After restarting, the active session pack is gone; previously saved advisory insights remain visible only as historical content.
 - In an unsaved file with no stable key, verify a `style-guide` pack can be used for the session but cannot be connected permanently.
 - Deep-compare exported report and certification fields before and after loading zero, one, and multiple advisory packs.
 - Verify each applicable guidance card navigates to its target layer and is visually distinct from Passport findings.
@@ -100,6 +100,26 @@ Automated fixtures exercise pure indexing at 10,000 and 50,000 nodes. In Figma, 
 - changing the selection or current page mid-scan never retargets the in-flight audit;
 - document changes invalidate the cache;
 - invisible instance children remain skipped.
+
+## Persistent audit and batch QA
+
+- Complete a page audit and confirm Saved appears before closing. Open another plugin, close it, reopen Passport, and confirm the same timestamp, findings, grade, active tab, filters, and expanded finding return without a context build.
+- Repeat with a component, component set, multi-node selection, and source-frame audit. Switch pages/selections before reopening and verify the saved captured target remains authoritative. A fresh audit of a different target must reset incompatible finding filters.
+- Edit the design while Passport is closed. Reopen and verify the previous report remains readable as historical, cleanup/waivers/contributions/certification are disabled, and an explicit refresh verifies the current design before publishing a current report.
+- While that refresh runs, navigate a historical finding and export historical JSON/Markdown. Navigate a deleted node and verify the error does not unlock mutation controls or stop the ongoing refresh.
+- In Dev Mode and with invalid/unsaved current setup, historical navigation and export remain usable. JSON is a versioned historical envelope; Markdown prominently marks its timestamp and unverified current design. Current report exports retain their original contract.
+- Change the profile or rule version and confirm supported saved reports retain original provenance. Save or invalidate setup after a failed report save and verify the unsaved report remains browsable and exportable as historical. Session reference packs clear on reopening; historical advisories remain visible and cannot be contributed without refresh.
+- Open a different file and confirm no results cross file boundaries. Test absent fileKey, local quota failure, malformed records, unsuccessful replacement, and file-cache clearing. Verify explicit Not saved/session-only states and preservation of the last completed result after failed replacement.
+- Run Review pages with a 65-page checklist, empty pages, and mixed page roles. Verify one context preparation, page-specific results, skip counts, and preservation of completed results on cancellation. Change the file during a batch and verify it stops without silently rebuilding or certifying old context.
+- Fail a batch page's save and verify the batch stops immediately, that page remains open for export, and previous saved pages remain available. Session-only files cannot start a batch. If an unsaved single report becomes stale, its historical export remains available without another audit.
+
+### Runtime performance measurement
+
+Use a disposable golden fixture plus a representative large design-system file. Capture local `[Design Passport]` console timings and page/node counts for: first audit; another page in the same session; close/reopen plus explicit refresh; one component edit plus refresh; and a 65-page batch. Repeat three times and report medians alongside file size and runtime version. Separate report restoration time from verified-audit time.
+
+Compare against the main-branch development build on the same unchanged file, and verify findings/grades match. Cached and forced-full adapter paths have automated parity checks; the synthetic `node scripts/benchmark-context-cache.mjs 65 30` command checks fragment reuse and prints timings without Figma bridge overhead. A synthetic cache hit is not proof of an overall speedup. Record real runtime measurements before making speed claims.
+
+Recorded evidence for issue [JFusco/design-passport#21](https://github.com/JFusco/design-passport/issues/21): [acceptance scenarios](benchmarks/persistent-audits-acceptance.md) and [native runtime measurements](benchmarks/persistent-audits.md). These records distinguish automated fault injection, native behavior, and measured performance.
 
 ## Pilot
 
