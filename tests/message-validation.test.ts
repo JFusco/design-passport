@@ -2,6 +2,27 @@ import { describe, expect, it } from "vitest";
 import { parseUiMessage } from "../src/plugin/message-validation";
 
 describe("UI message validation", () => {
+  it("accepts 65 distinct page IDs and rejects empty, duplicate, or excessive batches", () => {
+    const pageIds = Array.from({ length: 65 }, (_, index) => `page:${index}`);
+    expect(parseUiMessage({ type: "audit-pages", pageIds })).toEqual({ type: "audit-pages", pageIds });
+    for (const invalid of [[], ["one", "one"], [null], ["x".repeat(201)], Array.from({ length: 1_001 }, (_, index) => String(index))]) {
+      expect(() => parseUiMessage({ type: "audit-pages", pageIds: invalid })).toThrow();
+    }
+  });
+
+  it("accepts saved-result commands while restricting persisted state to bounded presentation preferences", () => {
+    for (const type of ["open-saved-audit", "forget-saved-audit"]) {
+      expect(parseUiMessage({ type, id: "audit:1" })).toEqual({ type, id: "audit:1" });
+      expect(() => parseUiMessage({ type, id: "" })).toThrow();
+    }
+    expect(parseUiMessage({ type: "clear-file-cache" })).toEqual({ type: "clear-file-cache" });
+    const viewState = { activeTab: "findings", showPassing: false, axisFilter: "all", pageFilter: "all", rootFilter: "all", variantFilter: "all", expanded: "finding:1" };
+    expect(parseUiMessage({ type: "save-audit-view", id: "audit:1", viewState })).toEqual({ type: "save-audit-view", id: "audit:1", viewState });
+    for (const invalid of [{ ...viewState, profile: {} }, { ...viewState, expanded: "x".repeat(1_001) }, { ...viewState, activeTab: "unknown" }]) {
+      expect(() => parseUiMessage({ type: "save-audit-view", id: "audit:1", viewState: invalid })).toThrow();
+    }
+  });
+
   it("accepts source-frame and component certification requests", () => {
     expect(parseUiMessage({ type: "certify" })).toEqual({ type: "certify" });
     expect(parseUiMessage({ type: "certify-components" })).toEqual({ type: "certify-components" });

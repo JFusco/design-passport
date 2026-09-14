@@ -1,4 +1,5 @@
 import type { BootstrapData, SelectionSummary, VariableCollectionOption } from "../figma/adapter";
+import type { AuditSaveStatus, AuditViewState, SavedAuditSummary, SavedAuditV1 } from "./audit-state";
 import type {
   BindableField,
   ChangePlan,
@@ -42,6 +43,11 @@ export type UiToPluginMessage =
   | { type: "initialize" }
   | { type: "save-profile"; profile: ReadinessProfile }
   | { type: "scan"; request: ScanRequest }
+  | { type: "audit-pages"; pageIds: string[] }
+  | { type: "open-saved-audit"; id: string }
+  | { type: "forget-saved-audit"; id: string }
+  | { type: "clear-file-cache" }
+  | { type: "save-audit-view"; id: string; viewState: AuditViewState }
   | { type: "refresh-audit" }
   | { type: "cancel-scan" }
   | { type: "navigate"; nodeId: string }
@@ -73,6 +79,11 @@ export type PluginToUiMessage =
   | { type: "collections-result"; collections: VariableCollectionOption[] }
   | { type: "audit-started"; target: AuditTargetSummary }
   | { type: "progress"; progress: ScanProgress }
+  | { type: "saved-audits"; audits: SavedAuditSummary[]; activeId?: string }
+  | { type: "restored-audit"; audit: SavedAuditV1 }
+  | { type: "audit-save-status"; status: AuditSaveStatus }
+  | { type: "batch-progress"; completed: number; total: number; skipped: number; pageName?: string }
+  | { type: "batch-complete"; completed: number; total: number; skipped: number; cancelled: boolean }
   | {
     type: "scan-result";
     report: ReadinessReport;
@@ -82,6 +93,8 @@ export type PluginToUiMessage =
     insights: KnowledgeInsight[];
     projectStyleGuide: BootstrapData["projectStyleGuide"];
     sessionReferenceCount: number;
+    savedAuditId?: string;
+    saveStatus?: AuditSaveStatus;
   }
   | { type: "knowledge-stale" }
   | { type: "selection"; summary: SelectionSummary }
@@ -94,4 +107,4 @@ export type PluginToUiMessage =
   | { type: "contribution-preview"; envelope: ReviewLearningEnvelopeV1; content: string }
   | { type: "export-result"; format: "json" | "markdown"; filename: string; content: string }
   | { type: "scan-cancelled" }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string; nonTerminal?: boolean };

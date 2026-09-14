@@ -5,6 +5,8 @@ import { formatDateTime, friendlyReference, humanizeIdentifier } from "../operat
 export interface GuidanceProps {
   insights: KnowledgeInsight[];
   hasReport: boolean;
+  canContribute?: boolean;
+  historical?: boolean;
   contribution: { envelope: ReviewLearningEnvelopeV1; content: string } | undefined;
   projectStyleGuide: ProjectStyleGuideStatus;
   onNavigate: (nodeId: string) => void;
@@ -28,7 +30,8 @@ export function Guidance(props: GuidanceProps) {
         <h2>Guidance, separate from the grade</h2>
         <p className="fine-print">These suggestions never change Passport findings, scores, readiness, or certification.</p>
       </div>
-      {props.projectStyleGuide.state === "active" ? <div className="binding-card"><strong>{props.projectStyleGuide.persistent ? "Active project pack" : "Session project pack"} · v{props.projectStyleGuide.packVersion}</strong><span>Pack reference {friendlyReference(props.projectStyleGuide.digest)}</span></div> : null}
+      {props.historical ? <p className="fine-print">Saved guidance reflects the packs available during the original audit. Refresh the audit before contributing learnings.</p> : null}
+      {!props.historical && props.projectStyleGuide.state === "active" ? <div className="binding-card"><strong>{props.projectStyleGuide.persistent ? "Active project pack" : "Session project pack"} · v{props.projectStyleGuide.packVersion}</strong><span>Pack reference {friendlyReference(props.projectStyleGuide.digest)}</span></div> : null}
       {!props.hasReport ? <div className="empty-state compact">Run an audit to evaluate project, reference, and shared guidance.</div> : null}
       {props.hasReport && props.insights.length === 0 ? <div className="empty-state compact">No advisory guidance matched this review.</div> : null}
       {props.insights.map((insight) => (
@@ -43,10 +46,10 @@ export function Guidance(props: GuidanceProps) {
       <div>
         <span className="section-label">Optional knowledge loop</span>
         <h2>Contribute learnings</h2>
-        <p className="fine-print">Nothing is retained or shared by scanning. Preview the sanitized, structured envelope before choosing to export it.</p>
+        <p className="fine-print">Reports save locally; nothing is shared automatically. Preview the sanitized, structured envelope before choosing to export it.</p>
       </div>
       {!props.contribution ? (
-        <button className="button" disabled={!props.hasReport} onClick={props.onPreviewContribution}>Preview contribution</button>
+        <button className="button" disabled={!props.hasReport || props.historical || props.canContribute === false} onClick={props.onPreviewContribution}>Preview contribution</button>
       ) : (
         <div className="contribution-preview">
           <div className="snapshot"><span>Contribution preview</span><strong>Reference {friendlyReference(props.contribution.envelope.digest)}</strong><small>Created {formatDateTime(props.contribution.envelope.generatedAt)}</small></div>

@@ -35,10 +35,24 @@ import type { PluginToUiMessage, UiToPluginMessage } from "./messages";
 import { resolveAuditTarget, runCapturedAuditAttempt, scanFailureMessages } from "./scan-lifecycle";
 import { ScanCancelledError } from "./scan-errors";
 import { CommandGate, KnowledgeSessionState, MutationChangeGuard, requiresTransientMutationGuard } from "./session-state";
+import { AuditStorage } from "./audit-storage";
+import type { AuditSaveStatus, AuditViewState, SavedAuditV1 } from "./audit-state";
+import { canonicalAuditTargetKey } from "./audit-state";
+import { runPageBatch } from "./batch-audit";
+import { historicalAuditContent, type HistoricalAuditSource } from "./historical-export";
 
 figma.skipInvisibleInstanceChildren = true;
 
 const adapter = new FigmaAdapter();
+const codecMetrics = { compressMs: 0, decompressMs: 0, compressedBytes: 0, rawBytes: 0 };
+const auditStorage = new AuditStorage(figma.clientStorage, {
+  onCodec: (measurement) => {
+    if (measurement.operation === "compress") codecMetrics.compressMs += measurement.durationMs;
+    else codecMetrics.decompressMs += measurement.durationMs;
+    codecMetrics.compressedBytes += measurement.compressedBytes;
+    codecMetrics.rawBytes += measurement.rawBytes;
+  },
+});
 let bootstrap: BootstrapData;
 let profile: ReadinessProfile;
 let graph: DesignKnowledgeGraph | undefined;
@@ -59,6 +73,11 @@ let documentChangeWatching = false;
 let sessionReferencePacks: DesignReferencePackV1[] = [];
 let sessionStyleGuidePack: DesignReferencePackV1 | undefined;
 let pendingContribution: ReviewLearningEnvelopeV1 | undefined;
+let historicalAudit: SavedAuditV1 | undefined;
+let exportSnapshot: HistoricalAuditSource | undefined;
+let activeSavedAuditId: string | undefined;
+let activeViewState: AuditViewState | undefined;
+let displayRevision = 0;
 
 const PLUGIN_VERSION = "0.1.1";
 const TEAM_KNOWLEDGE_PACK = teamKnowledgePackJson as TeamKnowledgePackV1;
@@ -75,6 +94,63 @@ function assertScanNotCancelled(): void {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+async function postSavedAudits(): Promise<void> {
+  if (!figma.fileKey) {
+    post({ type: "saved-audits", audits: [] });
+    return;
+  }
+  try {
+    const audits = await auditStorage.listAudits(figma.fileKey);
+    post({ type: "saved-audits", audits, ...(activeSavedAuditId ? { activeId: activeSavedAuditId } : {}) });
+  } catch {
+    post({ type: "audit-save-status", status: { state: "not-saved", message: "Saved audits could not be read. You can still run and export an audit." } });
+  }
+}
+
+function restoreAudit(audit: SavedAuditV1): void {
+  historicalAudit = audit;
+  exportSnapshot = audit;
+  report = audit.report;
+  plans = audit.plans;
+  activeScope = audit.target.scope;
+  activeTarget = audit.target;
+  activeSavedAuditId = audit.id;
+  activeViewState = audit.viewState;
+  appliedChanges = [];
+  pendingContribution = undefined;
+  post({ type: "restored-audit", audit });
+}
+
+async function restoreLastAudit(generation: number, revision: number): Promise<void> {
+  const fileKey = figma.fileKey;
+  if (!fileKey) {
+    post({ type: "audit-save-status", status: { state: "session-only", message: "This file has no stable file key. Results are available for this session only." } });
+    return;
+  }
+  const audits = await auditStorage.listAudits(fileKey);
+  if (generation !== initializeGeneration || revision !== displayRevision) return;
+  post({ type: "saved-audits", audits });
+  const latest = [...audits].sort((left, right) => right.lastViewedAt.localeCompare(left.lastViewedAt) || right.generatedAt.localeCompare(left.generatedAt))[0];
+  if (!latest) return;
+  const candidates = [latest, ...audits.filter((audit) => audit.id !== latest.id).sort((left, right) => right.generatedAt.localeCompare(left.generatedAt))];
+  for (const candidate of candidates) {
+    const audit = await auditStorage.loadAudit(fileKey, candidate.id);
+    if (generation !== initializeGeneration || revision !== displayRevision) return;
+    if (!audit) continue;
+    restoreAudit(audit);
+    return;
+  }
+}
+
+function currentKnowledgeAvailable(): boolean {
+  return Boolean(graph && !knowledgeState.dirty && adapter.matchesDocumentTopology(graph)
+    && isKnowledgeFresh(graph) && graphProfileHash === hashValue(profile));
+}
+
+function assertVerifiedKnowledge(): void {
+  if (!currentKnowledgeAvailable()) throw new Error("The supporting file context changed or expired. Refresh the audit to continue.");
 }
 
 function storedProjectStyleGuideBinding() {
@@ -160,12 +236,11 @@ function invalidateProfileIfNeeded(): boolean {
   profile = state.profile;
   bootstrap = { ...bootstrap, ...state };
   graph = undefined;
-  report = undefined;
-  plans = [];
   appliedChanges = [];
   graphProfileHash = undefined;
   pendingContribution = undefined;
-  activeTarget = undefined;
+  // Setup changes invalidate verification, while the completed snapshot keeps
+  // its original provenance and remains available for historical export.
   knowledgeState.markDirty();
   post({ type: "profile-invalidated", data: bootstrap });
   return true;
@@ -208,6 +283,7 @@ async function ensureDocumentChangeWatcher(): Promise<void> {
 }
 
 function assertCurrentReport(action: string): { graph: DesignKnowledgeGraph; report: ReadinessReport } {
+  if (historicalAudit) throw new Error(`This is a saved historical audit. Refresh it before ${action}`);
   if (!graph || !report) throw new Error(`Run an audit before ${action}`);
   if (knowledgeState.dirty || !adapter.matchesDocumentTopology(graph) || !isKnowledgeFresh(graph) || graphProfileHash !== hashValue(profile)
     || report.target.knowledgeSnapshotHash !== graph.snapshotHash) {
@@ -218,13 +294,22 @@ function assertCurrentReport(action: string): { graph: DesignKnowledgeGraph; rep
 
 async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> {
   assertScanNotCancelled();
-  if (!graph || refresh || knowledgeState.dirty || !adapter.matchesDocumentTopology(graph)
-    || graphProfileHash !== hashValue(profile) || !isKnowledgeFresh(graph)) {
+  const rebuildReason = !graph ? "not-loaded" : refresh ? "requested-refresh" : knowledgeState.dirty ? "document-changed"
+    : !adapter.matchesDocumentTopology(graph) ? "page-topology-changed" : graphProfileHash !== hashValue(profile) ? "profile-changed"
+      : !isKnowledgeFresh(graph) ? "expired" : undefined;
+  if (!graph || rebuildReason) {
     await ensureDocumentChangeWatcher();
     assertScanNotCancelled();
     const token = knowledgeState.beginBuild();
     try {
-      const result = await adapter.buildKnowledge(profile, (progress) => post({ type: "progress", progress }));
+      const fileKey = figma.fileKey;
+      const stagedFragments = new Map<string, unknown>();
+      const result = await adapter.buildKnowledge(profile, (progress) => post({ type: "progress", progress }), {
+        ...(fileKey ? { contextCache: {
+          get: (key: string) => auditStorage.loadContext(fileKey, key),
+          set: async (key: string, value: unknown) => { stagedFragments.set(key, value); },
+        } } : {}),
+      });
       graph = result.graph;
       collections = result.collections;
       graphProfileHash = hashValue(profile);
@@ -236,17 +321,27 @@ async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> 
       // A successful whole-file rebuild is the synchronization boundary for
       // delayed documentchange echoes from the mutation that triggered it.
       mutationChangeGuard.clear();
+      const contextStorageStarted = Date.now();
+      if (fileKey && !adapter.isScanCancelled() && !knowledgeState.dirty) {
+        await auditStorage.saveContexts(fileKey, [...stagedFragments].map(([key, value]) => ({ key, value }))).catch(() => undefined);
+      }
+      console.info("[Design Passport] context build", {
+        reason: rebuildReason, ...result.diagnostics,
+        contextStorageMs: Date.now() - contextStorageStarted, codec: { ...codecMetrics },
+      });
     } catch (error) {
       if (knowledgeState.buildActive) knowledgeState.abandonBuild(token);
       throw error;
     }
-  }
+  } else console.info("[Design Passport] context reuse", { source: "current-session" });
   assertScanNotCancelled();
   return graph;
 }
 
-async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[], cancellable = false): Promise<void> {
+async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[], cancellable = false, capturedTarget = activeTarget): Promise<AuditSaveStatus> {
   if (!graph) throw new Error("Build whole-file knowledge before analyzing targets");
+  if (!capturedTarget) throw new Error("Capture an audit target before evaluating the design");
+  assertVerifiedKnowledge();
   if (cancellable) assertScanNotCancelled();
   const rootIds = [...targetIds];
   if (rootIds.length === 0) {
@@ -254,12 +349,14 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
     throw new Error(`No source frames were found for the ${scope} scope and current page-role mapping`);
   }
   post({ type: "progress", progress: { phase: "analyzing", completed: 0, total: rootIds.length, message: `Evaluating ${rootIds.length} source target${rootIds.length === 1 ? "" : "s"}` } });
+  const analysisStarted = Date.now();
   const rawFindings = evaluateRules(graph, profile, rootIds);
   const waivers = await loadWaivers();
   if (cancellable) assertScanNotCancelled();
+  assertVerifiedKnowledge();
   const findings = applyWaivers(rawFindings, waivers);
-  report = buildReadinessReport({ graph, profile, scope, targetRootIds: rootIds, appliedChanges, findings });
-  plans = buildChangePlans(findings);
+  const nextReport = buildReadinessReport({ graph, profile, scope, targetRootIds: rootIds, appliedChanges, findings });
+  const nextPlans = buildChangePlans(findings);
   const projectPack = activeProjectStyleGuidePack();
   const insights = buildKnowledgeInsights({
     graph,
@@ -269,17 +366,55 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
     teamPack: TEAM_KNOWLEDGE_PACK,
   });
   bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
+  const knowledge = buildKnowledgeSummary(graph);
+  console.info("[Design Passport] report evaluation", { elapsedMs: Date.now() - analysisStarted, targets: rootIds.length, findings: findings.length });
+  let saveStatus: AuditSaveStatus = { state: "session-only", message: "This file has no stable file key. Results are available for this session only." };
+  let savedAuditId: string | undefined;
+  let savedAt: string | undefined;
+  if (figma.fileKey && capturedTarget) {
+    const started = Date.now();
+    const saved = await auditStorage.saveAudit({
+      fileKey: figma.fileKey,
+      target: capturedTarget,
+      report: nextReport,
+      plans: nextPlans,
+      knowledge,
+      insights,
+      profile,
+      provenance: { pluginVersion: PLUGIN_VERSION, knowledgeVersion: KNOWLEDGE_VERSION },
+      ...(activeViewState && activeTarget && canonicalAuditTargetKey(activeTarget) === canonicalAuditTargetKey(capturedTarget)
+        ? { viewState: activeViewState } : {}),
+    });
+    console.info("[Design Passport] report persistence", { elapsedMs: Date.now() - started, state: saved.status.state });
+    saveStatus = saved.status;
+    if (saveStatus.state === "saved") {
+      savedAuditId = saved.audit.id;
+      savedAt = saved.audit.savedAt;
+    }
+  }
+  // A completed snapshot stays useful if the design changes during its save.
+  // Publish it with an immediate stale signal, never as permission to mutate.
+  report = nextReport;
+  plans = nextPlans;
+  historicalAudit = undefined;
+  exportSnapshot = { report: nextReport, target: capturedTarget, provenance: { pluginVersion: PLUGIN_VERSION, knowledgeVersion: KNOWLEDGE_VERSION }, ...(savedAt ? { savedAt } : {}) };
+  activeSavedAuditId = savedAuditId;
   pendingContribution = undefined;
+  await postSavedAudits();
   post({
     type: "scan-result",
     report,
     plans,
-    knowledge: buildKnowledgeSummary(graph),
+    knowledge,
     collections,
     insights,
     projectStyleGuide: bootstrap.projectStyleGuide,
     sessionReferenceCount: sessionReferencePacks.length,
+    saveStatus,
+    ...(savedAuditId ? { savedAuditId } : {}),
   });
+  if (!currentKnowledgeAvailable()) post({ type: "knowledge-stale" });
+  return saveStatus;
 }
 
 async function runScan(
@@ -293,7 +428,7 @@ async function runScan(
       assertScanNotCancelled();
       const current = await ensureKnowledge(refreshKnowledge);
       const rootIds = adapter.targetRootIds(capturedTarget, current);
-      await analyzeCurrentGraph(capturedTarget.scope, rootIds, true);
+      await analyzeCurrentGraph(capturedTarget.scope, rootIds, true, capturedTarget);
     },
     commit: (capturedTarget) => {
       activeScope = capturedTarget.scope;
@@ -307,8 +442,36 @@ async function rescanActiveTarget(refreshKnowledge: boolean): Promise<void> {
   await runScan(activeTarget, refreshKnowledge);
 }
 
+async function auditPages(pageIds: readonly string[]): Promise<void> {
+  if (!figma.fileKey) throw new Error("Page batches need local saving to retain each result. This file supports session-only results; use Current page or Audit selection instead.");
+  const pages = new Map(figma.root.children.map((page) => [page.id, page.name]));
+  if (pageIds.some((id) => !pages.has(id))) throw new Error("A selected page no longer exists. Choose the pages again.");
+  adapter.beginScan();
+  post({ type: "batch-progress", completed: 0, total: pageIds.length, skipped: 0 });
+  post({ type: "audit-started", target: { scope: "page" } });
+  const current = await ensureKnowledge(false);
+  const summary = await runPageBatch(pageIds, {
+    assertFresh: assertVerifiedKnowledge,
+    cancelled: () => adapter.isScanCancelled(),
+    progress: (state, pageId) => post({ type: "batch-progress", completed: state.completed, total: state.total, skipped: state.skipped, pageName: pages.get(pageId) ?? "Page" }),
+    yield: () => new Promise((resolve) => setTimeout(resolve, 0)),
+    auditPage: async (pageId) => {
+      const target: CapturedAuditTarget = { scope: "page", pageId };
+      const rootIds = adapter.targetRootIds(target, current);
+      if (rootIds.length === 0) return false;
+      const saveStatus = await analyzeCurrentGraph("page", rootIds, true, target);
+      activeScope = "page";
+      activeTarget = target;
+      if (saveStatus.state !== "saved") throw new Error("The batch stopped because this page could not be saved. Its result is still open; export it before continuing. Previously saved pages have been kept.");
+      return true;
+    },
+  });
+  post({ type: "batch-complete", ...summary });
+}
+
 async function initialize(): Promise<void> {
   const generation = ++initializeGeneration;
+  const revision = ++displayRevision;
   if (initialized) {
     graph = undefined;
     report = undefined;
@@ -318,6 +481,10 @@ async function initialize(): Promise<void> {
     activeTarget = undefined;
     knowledgeState.markDirty();
   }
+  historicalAudit = undefined;
+  exportSnapshot = undefined;
+  activeSavedAuditId = undefined;
+  activeViewState = undefined;
   sessionReferencePacks = [];
   sessionStyleGuidePack = undefined;
   pendingContribution = undefined;
@@ -326,6 +493,10 @@ async function initialize(): Promise<void> {
   collections = bootstrap.collections;
   initialized = true;
   post({ type: "bootstrap", data: bootstrap, rulesetVersion: RULESET_VERSION, catalogVersion: CATALOG_VERSION, catalogDigest: CATALOG_DIGEST });
+  void restoreLastAudit(generation, revision).catch(() => {
+    if (generation !== initializeGeneration || revision !== displayRevision) return;
+    post({ type: "audit-save-status", status: { state: "not-saved", message: "Saved audits could not be restored. You can still run and export an audit." } });
+  });
   void adapter.getCollectionOptions(true).then((discoveredCollections) => {
     if (generation !== initializeGeneration) return;
     collections = discoveredCollections;
@@ -340,18 +511,50 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
     return;
   }
   assertInitialized();
+  if (message.type === "scan" || message.type === "refresh-audit" || message.type === "audit-pages"
+    || message.type === "open-saved-audit" || message.type === "forget-saved-audit" || message.type === "clear-file-cache"
+    || message.type === "save-profile") displayRevision += 1;
+  if (message.type === "open-saved-audit") {
+    if (!figma.fileKey) throw new Error("Saved audits need a stable file key");
+    const audit = await auditStorage.loadAudit(figma.fileKey, message.id);
+    if (!audit) throw new Error("This saved audit is no longer available. It may have been removed to free local storage.");
+    restoreAudit(audit);
+    await postSavedAudits();
+    return;
+  }
+  if (message.type === "forget-saved-audit" || message.type === "clear-file-cache") {
+    if (!figma.fileKey) return;
+    if (message.type === "clear-file-cache") await auditStorage.clearFile(figma.fileKey);
+    else await auditStorage.forgetAudit(figma.fileKey, message.id);
+    if (message.type === "clear-file-cache" || activeSavedAuditId === message.id) {
+      activeSavedAuditId = undefined;
+      activeViewState = undefined;
+      if (historicalAudit) {
+        historicalAudit = undefined;
+        exportSnapshot = undefined;
+        report = undefined;
+        plans = [];
+        activeTarget = undefined;
+      }
+      post({ type: "audit-save-status", status: { state: "not-saved", message: "The saved copy was removed from this device." } });
+    }
+    await postSavedAudits();
+    return;
+  }
+  if (message.type === "audit-pages") {
+    if (invalidateProfileIfNeeded()) return;
+    await auditPages(message.pageIds);
+    return;
+  }
   if (message.type === "save-profile") {
       assertDocumentMutationAllowed();
       await adapter.saveProfile(message.profile);
       profile = message.profile;
       bootstrap = { ...bootstrap, ...adapter.reconcileProfile(profile, true) };
       graph = undefined;
-      report = undefined;
-      plans = [];
       appliedChanges = [];
       graphProfileHash = undefined;
       pendingContribution = undefined;
-      activeTarget = undefined;
       knowledgeState.markDirty();
       post({ type: "profile-saved", data: bootstrap });
     } else if (message.type === "scan") {
@@ -504,12 +707,12 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       const binding = adapter.importProjectStyleGuide(message.raw);
       sessionStyleGuidePack = undefined;
       bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
-      if (graph && report) await analyzeCurrentGraph(activeScope, report.target.rootIds);
+      if (graph && report && !historicalAudit && currentKnowledgeAvailable()) await analyzeCurrentGraph(activeScope, report.target.rootIds);
       post({ type: "project-style-guide-result", action: "imported", binding, status: bootstrap.projectStyleGuide });
     } else if (message.type === "remove-project-style-guide") {
       adapter.removeProjectStyleGuide();
       bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
-      if (graph && report) await analyzeCurrentGraph(activeScope, report.target.rootIds);
+      if (graph && report && !historicalAudit && currentKnowledgeAvailable()) await analyzeCurrentGraph(activeScope, report.target.rootIds);
       post({ type: "project-style-guide-result", action: "removed", status: bootstrap.projectStyleGuide });
     } else if (message.type === "add-session-reference") {
       const pack = parseReferencePack(message.raw);
@@ -523,13 +726,13 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         sessionReferencePacks.sort((left, right) => left.source.sourceId.localeCompare(right.source.sourceId));
       }
       bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
-      if (graph && report) await analyzeCurrentGraph(activeScope, report.target.rootIds);
+      if (graph && report && !historicalAudit && currentKnowledgeAvailable()) await analyzeCurrentGraph(activeScope, report.target.rootIds);
       post({ type: "session-reference-result", count: sessionReferencePacks.length + (sessionStyleGuidePack ? 1 : 0), projectStyleGuide: bootstrap.projectStyleGuide });
     } else if (message.type === "clear-session-references") {
       sessionReferencePacks = [];
       sessionStyleGuidePack = undefined;
       bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
-      if (graph && report) await analyzeCurrentGraph(activeScope, report.target.rootIds);
+      if (graph && report && !historicalAudit && currentKnowledgeAvailable()) await analyzeCurrentGraph(activeScope, report.target.rootIds);
       post({ type: "session-reference-result", count: 0, projectStyleGuide: bootstrap.projectStyleGuide });
     } else if (message.type === "preview-contribution") {
       if (invalidateProfileIfNeeded()) return;
@@ -620,7 +823,13 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       post({ type: "mutation-result", message: `Created one semantic token and bound ${result.boundCount} repeated uses. Rescanning the complete file…` });
       await rescanActiveTarget(true);
     } else if (message.type === "export") {
-      if (invalidateProfileIfNeeded()) return;
+      if (!report || !exportSnapshot) throw new Error("Run or open an audit before exporting a report");
+      if (historicalAudit || !currentKnowledgeAvailable() || report.profileHash !== hashValue(profile)) {
+        const extension = message.format === "json" ? "json" : "md";
+        const safeName = figma.root.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "figma-file";
+        post({ type: "export-result", format: message.format, filename: `${safeName}.historical-audit.${extension}`, content: historicalAuditContent(exportSnapshot, message.format) });
+        return;
+      }
       const current = assertCurrentReport("exporting a report");
       const content = message.format === "json" ? `${JSON.stringify(current.report, null, 2)}\n` : reportToMarkdown(current.report);
       const extension = message.format === "json" ? "json" : "md";
@@ -633,15 +842,36 @@ figma.showUI(__html__, { width: 500, height: 720, themeColors: true, title: PROD
 
 figma.ui.onmessage = async (rawMessage: unknown) => {
   let release: (() => void) | undefined;
+  let nonTerminal = false;
   try {
     const message = parseUiMessage(rawMessage);
     if (message.type === "cancel-scan") {
       adapter.cancel();
       return;
     }
+    if (message.type === "save-audit-view") {
+      if (initialized && figma.fileKey && activeSavedAuditId === message.id) {
+        activeViewState = message.viewState;
+        await auditStorage.updateView(figma.fileKey, message.id, message.viewState).catch(() => {
+          post({ type: "audit-save-status", status: { state: "saved", message: "The audit is saved, but its view position could not be updated." } });
+        });
+      }
+      return;
+    }
+    // Captured targets are immutable; browsing a historical result must remain
+    // possible while a new audit verifies the file in the background.
+    if (message.type === "navigate" || message.type === "export" && report) {
+      nonTerminal = commandGate.active;
+      await handleMessage(message);
+      return;
+    }
     release = commandGate.enter(message.type);
     await handleMessage(message);
   } catch (error) {
+    if (nonTerminal) {
+      post({ type: "error", message: errorMessage(error), nonTerminal: true });
+      return;
+    }
     const graphFailureState = graph
       ? { cancelled: graph.cancelled, complete: graph.complete, snapshotHash: graph.snapshotHash }
       : undefined;
