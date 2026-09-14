@@ -124,6 +124,183 @@ describe("validated persisted context", () => {
     expect(fixture.cacheValues.size).toBe(0);
   });
 
+  it.each(["cached", "forced full", "session only"])("retains a variable epoch after %s capture and rejects unannounced value changes", async (mode) => {
+    const fixture = contextFixture();
+    const variable = { id: "variable:1", key: "variable:key", name: "semantic/space", variableCollectionId: "collection:1", resolvedType: "FLOAT", remote: false, valuesByMode: { mode: 8 }, scopes: ["GAP"], codeSyntax: {} };
+    const collection = { id: "collection:1", key: "collection:key", name: "Semantic", remote: false, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: [variable.id] };
+    fixture.setVariables([variable as unknown as Variable]);
+    fixture.setCollections([collection as unknown as VariableCollection]);
+    if (mode === "session only") await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined);
+    else await build(fixture, mode === "forced full");
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    variable.valuesByMode.mode = 12;
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+    await build(fixture);
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    collection.modes[0]!.name = "Updated mode";
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
+  it("tracks empty local collections and aliases that were unresolved during capture", async () => {
+    const fixture = contextFixture();
+    const collection = { id: "empty:1", key: "empty:key", name: "Empty", remote: false, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: [] };
+    fixture.setCollections([collection as unknown as VariableCollection]);
+    fixture.pages[0]!.children[0]!.boundVariables = { width: { type: "VARIABLE_ALIAS", id: "missing:1" } };
+    await build(fixture);
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    expect(fixture.cacheValues.size).toBe(0);
+    collection.modes[0]!.name = "Renamed";
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+    await build(fixture);
+    fixture.figma.variables.getVariableByIdAsync = async () => ({ id: "missing:1" }) as Variable;
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
+  it("verifies remote variables introduced by inference and their transitive aliases", async () => {
+    const fixture = contextFixture();
+    const primitive = { id: "remote:primitive", key: "primitive:key", name: "space/8", variableCollectionId: "remote:collection", resolvedType: "FLOAT", remote: true, valuesByMode: { mode: 8 }, scopes: ["GAP"], codeSyntax: {} };
+    const semantic = { ...primitive, id: "remote:semantic", key: "semantic:key", name: "semantic/space", valuesByMode: { mode: { type: "VARIABLE_ALIAS", id: primitive.id } } };
+    const collection = { id: "remote:collection", key: "remote:key", name: "Semantic", remote: true, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: [semantic.id, primitive.id] };
+    fixture.figma.variables.getVariableByIdAsync = async (id) => [primitive, semantic].find((variable) => variable.id === id) as unknown as Variable ?? null;
+    fixture.figma.variables.getVariableCollectionByIdAsync = async () => collection as unknown as VariableCollection;
+    fixture.setInference({ width: [{ type: "VARIABLE_ALIAS", id: semantic.id }] });
+    const captured = await build(fixture, true);
+    expect(captured.graph.variables).toEqual(expect.arrayContaining([expect.objectContaining({ id: semantic.id })]));
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    primitive.valuesByMode.mode = 16;
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+    await build(fixture, true);
+    collection.modes[0]!.name = "Night";
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
+  it("invalidates available approved library summaries without a document change", async () => {
+    const fixture = contextFixture();
+    const library = { id: "library:collection:key", key: "collection:key", name: "Semantic", libraryName: "", remote: true, modeNames: [], variableCount: 0 };
+    let available = true;
+    const variables = [{ key: "library:space", name: "semantic/space", resolvedType: "FLOAT" as const }];
+    fixture.adapter.getCollectionOptions = async () => available ? [library] : [];
+    fixture.figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync = async () => available ? [{ key: library.key, name: library.name, libraryName: "" }] : [];
+    const libraryApi: { getVariablesInLibraryCollectionAsync: () => Promise<LibraryVariable[]> } = fixture.figma.teamLibrary;
+    libraryApi.getVariablesInLibraryCollectionAsync = async () => variables;
+    await build(fixture);
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    variables[0]!.name = "raw/space";
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+    await build(fixture);
+    available = false;
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
+  it("invalidates when an unresolved inferred remote variable becomes available", async () => {
+    const fixture = contextFixture();
+    const variable = { id: "inferred:remote", key: "inferred:key", name: "semantic/space", variableCollectionId: "remote:collection", resolvedType: "FLOAT", remote: true, valuesByMode: { mode: 8 }, scopes: ["GAP"], codeSyntax: {} };
+    const collection = { id: "remote:collection", key: "remote:key", name: "Semantic", remote: true, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: [variable.id] };
+    let available = false;
+    fixture.figma.variables.getVariableByIdAsync = async (id) => available && id === variable.id ? variable as unknown as Variable : null;
+    fixture.figma.variables.getVariableCollectionByIdAsync = async () => collection as unknown as VariableCollection;
+    fixture.setInference({ width: [{ type: "VARIABLE_ALIAS", id: variable.id }] });
+
+    const unresolved = await build(fixture);
+    expect(unresolved.graph.variables).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: variable.id })]));
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    available = true;
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+
+    const refreshed = await build(fixture);
+    const full = await build(fixture, true);
+    expect(refreshed.graph.variables).toEqual(expect.arrayContaining([expect.objectContaining({ id: variable.id, name: "semantic/space" })]));
+    expect(withoutTime(refreshed.graph)).toEqual(withoutTime(full.graph));
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+  });
+
+  it.each(["variable", "collection"])("does not treat a rejected missing %s read as authoritative absence", async (kind) => {
+    const fixture = contextFixture();
+    fixture.pages[0]!.children[0]!.boundVariables = { width: { type: "VARIABLE_ALIAS", id: "missing:1" } };
+    if (kind === "collection") {
+      fixture.figma.variables.getVariableByIdAsync = async () => ({ id: "missing:1", key: "remote:key", name: "semantic/space", variableCollectionId: "missing:collection", resolvedType: "FLOAT", remote: true, valuesByMode: { mode: 8 }, scopes: [], codeSyntax: {} }) as unknown as Variable;
+    }
+    await build(fixture);
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    const fail = async () => { throw new Error("Variable bridge unavailable"); };
+    if (kind === "variable") fixture.figma.variables.getVariableByIdAsync = fail;
+    else fixture.figma.variables.getVariableCollectionByIdAsync = fail;
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+    await expect(build(fixture)).rejects.toThrow("Variable bridge unavailable");
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
+  it.each(["inventory", "summary"])("rejects failed approved library %s reads instead of equating failures", async (kind) => {
+    const fixture = contextFixture();
+    const library = { id: "library:collection:key", key: "collection:key", name: "Semantic", libraryName: "System", remote: true, modeNames: [], variableCount: 0 };
+    fixture.adapter.getCollectionOptions = async () => [library];
+    fixture.figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync = async () => [{ key: library.key, name: library.name, libraryName: library.libraryName }];
+    fixture.figma.teamLibrary.getVariablesInLibraryCollectionAsync = async () => [{ key: "space:1", name: "semantic/space", resolvedType: "FLOAT" }];
+    await build(fixture);
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    const fail = async () => { throw new Error("Library unavailable"); };
+    if (kind === "inventory") fixture.figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync = fail;
+    else fixture.figma.teamLibrary.getVariablesInLibraryCollectionAsync = fail;
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+    await expect(build(fixture)).rejects.toThrow("Available library variables changed");
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
+  it("rejects inferred remote metadata changing between epoch enrollment and candidate capture", async () => {
+    const fixture = contextFixture();
+    const variable = { id: "inferred:remote", key: "inferred:key", name: "semantic/space", variableCollectionId: "remote:collection", resolvedType: "FLOAT", remote: true, valuesByMode: { mode: 8 }, scopes: ["GAP"], codeSyntax: {} };
+    const collection = { id: "remote:collection", key: "remote:key", name: "Semantic", remote: true, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: [variable.id] };
+    let reads = 0;
+    fixture.figma.variables.getVariableByIdAsync = async (id) => {
+      if (id !== variable.id) return null;
+      reads += 1;
+      // The first observation must establish the epoch before candidate metadata
+      // is copied. Late enrollment would instead accept the new name while the
+      // graph still contains the old name and semantic classification.
+      return { ...variable, name: reads === 1 ? "semantic/space" : "primitive/raw" } as unknown as Variable;
+    };
+    fixture.figma.variables.getVariableCollectionByIdAsync = async () => collection as unknown as VariableCollection;
+    fixture.setInference({ width: [{ type: "VARIABLE_ALIAS", id: variable.id }] });
+
+    await expect(build(fixture)).rejects.toThrow("Variable values or collections changed");
+    expect(reads).toBeGreaterThanOrEqual(3);
+    expect(fixture.counts.cacheWrites).toBe(0);
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
+  it.each(["variable", "collection"])("rejects a transient remote %s failure while copying grading candidates", async (kind) => {
+    const fixture = contextFixture();
+    const variable = { id: "inferred:remote", key: "inferred:key", name: "raw/space", variableCollectionId: "remote:collection", resolvedType: "FLOAT", remote: true, valuesByMode: { mode: 8 }, scopes: ["GAP"], codeSyntax: {} };
+    const collection = { id: "remote:collection", key: "remote:key", name: "Semantic", remote: true, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: [variable.id] };
+    let variableReads = 0;
+    let collectionReads = 0;
+    fixture.figma.variables.getVariableByIdAsync = async (id) => {
+      if (id !== variable.id) return null;
+      variableReads += 1;
+      if (kind === "variable" && variableReads === 2) throw new Error("Candidate bridge unavailable");
+      return variable as unknown as Variable;
+    };
+    fixture.figma.variables.getVariableCollectionByIdAsync = async () => {
+      collectionReads += 1;
+      if (kind === "collection" && collectionReads === 2) throw new Error("Candidate bridge unavailable");
+      return collection as unknown as VariableCollection;
+    };
+    fixture.setInference({ width: [{ type: "VARIABLE_ALIAS", id: variable.id }] });
+
+    // Enrollment succeeds and later reads recover. Silently treating only the
+    // candidate read as missing would publish an incomplete graph with a valid
+    // epoch (or lose the collection's semantic classification).
+    await expect(build(fixture)).rejects.toThrow("Candidate bridge unavailable");
+    expect(fixture.counts.cacheWrites).toBe(0);
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+
+    const recovered = await build(fixture);
+    const full = await build(fixture, true);
+    expect(recovered.graph.variables).toEqual(expect.arrayContaining([expect.objectContaining({ id: variable.id, collectionKey: collection.key, collectionName: "Semantic", semantic: true })]));
+    expect(withoutTime(recovered.graph)).toEqual(withoutTime(full.graph));
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+  });
+
   it("recaptures deleted, inserted and moved nodes while retaining other fragments", async () => {
     const fixture = contextFixture(2, 2);
     await build(fixture);

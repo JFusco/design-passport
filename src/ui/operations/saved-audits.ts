@@ -24,6 +24,6 @@ export function reportTargetIdentity(report: ReadinessReport): string {
 }
 
 export function batchCompletionNotice(result: { completed: number; total: number; skipped: number; cancelled: boolean }): string {
-  const skipped = result.skipped > 0 ? ` ${result.skipped} empty page${result.skipped === 1 ? " was" : "s were"} skipped.` : "";
-  return `${result.cancelled ? "Page review stopped" : "Page review complete"}: ${result.completed} of ${result.total} pages audited.${skipped} Completed results remain available.`;
+  const skipped = result.skipped > 0 ? ` ${result.skipped} page${result.skipped === 1 ? " was" : "s were"} skipped because no audit targets were found.` : "";
+  return `${result.cancelled ? "Page review stopped" : "Page review complete"}: ${result.completed} of ${result.total} pages audited.${skipped} Saved results remain available within this device’s local storage limit.`;
 }

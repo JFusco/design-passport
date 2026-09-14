@@ -11,7 +11,7 @@ export interface BatchAuditSummary {
 export async function runPageBatch(
   requestedPageIds: readonly string[],
   actions: {
-    assertFresh: () => void;
+    assertFresh: () => void | Promise<void>;
     cancelled: () => boolean;
     auditPage: (pageId: string) => Promise<boolean>;
     progress: (summary: BatchAuditSummary, pageId: string) => void;
@@ -22,9 +22,10 @@ export async function runPageBatch(
   const summary: BatchAuditSummary = { completed: 0, skipped: 0, total: pageIds.length, cancelled: false };
   for (const pageId of pageIds) {
     if (actions.cancelled()) return { ...summary, cancelled: true };
-    actions.assertFresh();
-    actions.progress({ ...summary }, pageId);
     try {
+      await actions.assertFresh();
+      if (actions.cancelled()) return { ...summary, cancelled: true };
+      actions.progress({ ...summary }, pageId);
       if (await actions.auditPage(pageId)) summary.completed += 1;
       else summary.skipped += 1;
     } catch (error) {
@@ -34,6 +35,11 @@ export async function runPageBatch(
     actions.progress({ ...summary }, pageId);
     await actions.yield();
   }
-  actions.assertFresh();
+  if (actions.cancelled()) return { ...summary, cancelled: true };
+  try { await actions.assertFresh(); }
+  catch (error) {
+    if (error instanceof ScanCancelledError) return { ...summary, cancelled: true };
+    throw error;
+  }
   return summary;
 }

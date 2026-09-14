@@ -18,6 +18,7 @@ class MemoryStorage implements ClientStoragePort {
   failWrites = false;
   quota = 5_000_000;
   beforeSet: ((key: string) => Promise<void>) | undefined;
+  beforeDelete: ((key: string) => Promise<void>) | undefined;
   reads = 0;
   inventories = 0;
 
@@ -42,6 +43,7 @@ class MemoryStorage implements ClientStoragePort {
   }
   async deleteAsync(key: string): Promise<void> {
     this.events.push(`delete:${key}`);
+    await this.beforeDelete?.(key);
     this.values.delete(key);
   }
 }
@@ -209,6 +211,56 @@ describe("durable audit storage", () => {
     expect(port.values.get("waivers:file-one")).toEqual({ reason: "keep this unrelated preference" });
   });
 
+  it("does not evict any prior report for a single oversized new result", async () => {
+    const port = new MemoryStorage();
+    const initial = await new AuditStorage(port).saveAudit(input());
+    const storage = new AuditStorage(port, { maximumBytes: port.size() });
+    const oversized = input({ target: { scope: "page", pageId: "page:other" } });
+    oversized.report.findings[0]!.message += noise(4_000);
+    const saved = await storage.saveAudit(oversized);
+    expect(saved.status.state).toBe("not-saved");
+    expect(saved.audit.report).toEqual(oversized.report);
+    expect((await new AuditStorage(port).listAudits("file-one")).map((entry) => entry.id)).toEqual([initial.audit.id]);
+    expect(port.events.some((event) => event.startsWith("delete:"))).toBe(false);
+  });
+
+  it("preserves the predecessor when the platform quota fills after the storage inventory", async () => {
+    const port = new MemoryStorage();
+    const storage = new AuditStorage(port);
+    const previous = await storage.saveAudit(input());
+    port.quota = port.size() + 100;
+    port.beforeSet = async (key) => {
+      if (key.includes(":audit:") && !key.endsWith(previous.audit.id)) port.values.set("concurrent-preference", "x".repeat(40));
+    };
+    const result = await storage.saveAudit(input({ at: "2026-09-14T12:05:00.000Z" }));
+    expect(result.status).toMatchObject({ state: "not-saved", message: "Quota exceeded" });
+    expect((await new AuditStorage(port).loadAudit("file-one", previous.audit.id))?.report).toEqual(previous.audit.report);
+    expect(await port.getAsync("concurrent-preference")).toBe("x".repeat(40));
+  });
+
+  it("recovers a committed replacement when its originating instance stops before predecessor cleanup", async () => {
+    const port = new MemoryStorage();
+    const storage = new AuditStorage(port);
+    const previous = await storage.saveAudit(input());
+    let interrupted = () => {};
+    let reached = () => {};
+    const stop = new Promise<void>((_resolve, reject) => { interrupted = () => reject(new Error("Plugin instance stopped")); });
+    const deleting = new Promise<void>((resolve) => { reached = resolve; });
+    port.beforeDelete = async (key) => {
+      if (key.endsWith(previous.audit.id) && key.includes(":audit:")) { reached(); await stop; }
+    };
+    const replacementInput = input({ at: "2026-09-14T12:05:00.000Z" });
+    const writing = storage.saveAudit(replacementInput);
+    await deleting;
+    const reopened = new AuditStorage(port);
+    const newest = (await reopened.listAudits("file-one"))[0]!;
+    expect(newest.id).not.toBe(previous.audit.id);
+    expect((await reopened.loadAudit("file-one", newest.id))?.report).toEqual(replacementInput.report);
+    interrupted();
+    expect((await writing).status.state).toBe("saved");
+    expect([...port.values.keys()].filter((key) => key.includes(":audit:"))).toHaveLength(2);
+  });
+
   it("evicts optional context before report history and never evicts reports to store context", async () => {
     const port = new MemoryStorage();
     const originalStorage = new AuditStorage(port);
@@ -241,6 +293,34 @@ describe("durable audit storage", () => {
     expect(restored?.viewState).toEqual(view);
     expect(isAuditViewState({ ...view, undoAcknowledged: true })).toBe(false);
     expect(isAuditViewState({ ...view, activeTab: "profile" })).toBe(true);
+  });
+
+  it("ignores a corrupt view overlay without losing the saved report or its safe original view", async () => {
+    const port = new MemoryStorage();
+    const storage = new AuditStorage(port);
+    const originalView = { ...view, activeTab: "modules" as const };
+    const saved = await storage.saveAudit({ ...input(), viewState: originalView });
+    await storage.updateView("file-one", saved.audit.id, view);
+    const key = [...port.values.keys()].find((candidate) => candidate.includes(":view:"))!;
+    port.values.set(key, { schemaVersion: 1, lastViewedAt: new Date().toISOString(), viewState: { ...view, undoAcknowledged: true } });
+    const restored = await new AuditStorage(port).loadAudit("file-one", saved.audit.id);
+    expect(restored?.report).toEqual(saved.audit.report);
+    expect(restored?.viewState).toEqual(originalView);
+    expect(restored?.viewState).not.toHaveProperty("undoAcknowledged");
+  });
+
+  it("restores supported reports with original versions instead of requiring the current ruleset", async () => {
+    const original = input();
+    original.report.rulesetVersion = "archived-ruleset-v0";
+    original.report.catalogVersion = "archived-catalog-v0";
+    original.provenance = { pluginVersion: "0.0.1", knowledgeVersion: "archived-knowledge-v0" };
+    const port = new MemoryStorage();
+    const saved = await new AuditStorage(port).saveAudit(original);
+    const restored = await new AuditStorage(port).loadAudit("file-one", saved.audit.id);
+    expect(saved.status.state).toBe("saved");
+    expect(restored?.report).toEqual(original.report);
+    expect(restored?.profile).toEqual(original.profile);
+    expect(restored?.provenance).toEqual(original.provenance);
   });
 
   it("retains the most recently accessed reports when the history count is bounded", async () => {

@@ -450,9 +450,9 @@ export function App() {
         <section className="progress-card">
           <div className="progress-copy" role="status" aria-live="polite" aria-atomic="true">
             <span className="spinner" aria-hidden="true" />
-            <div><strong>Reviewing pages · {batchProgress.completed} of {batchProgress.total} audited</strong><small>{batchProgress.pageName ? `Current page: ${batchProgress.pageName}. ` : "Preparing verified file context. "}{batchProgress.skipped > 0 ? `${batchProgress.skipped} empty pages skipped. ` : ""}{presentedProgress?.detail}</small></div>
+            <div><strong>Reviewing pages · {batchProgress.completed} of {batchProgress.total} audited</strong><small>{batchProgress.pageName ? `Current page: ${batchProgress.pageName}. ` : "Preparing verified file context. "}{batchProgress.skipped > 0 ? `${batchProgress.skipped} pages skipped: no audit targets. ` : ""}{presentedProgress?.detail}</small></div>
           </div>
-          <button className="button subtle" onClick={() => send({ type: "cancel-scan" })}>Stop after current page</button>
+          <button className="button subtle" onClick={() => send({ type: "cancel-scan" })}>Cancel page review</button>
         </section>
       ) : presentedProgress ? (
         <section className="progress-card">

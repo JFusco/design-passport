@@ -54,7 +54,10 @@ export function contextFixture(pageCount = 1, childrenPerRoot = 1) {
   const figma = {
     fileKey: "test-file-key", root: { id: "document", name: "Cache fixture", children: pages }, mixed: Symbol("mixed"),
     variables: { getLocalVariableCollectionsAsync: async () => collections, getLocalVariablesAsync: async () => variables, getVariableByIdAsync: async (id: string) => variables.find((variable) => variable.id === id) ?? null, getVariableCollectionByIdAsync: async (id: string) => collections.find((collection) => collection.id === id) ?? null },
-    teamLibrary: { getVariablesInLibraryCollectionAsync: async () => [] },
+    teamLibrary: {
+      getAvailableLibraryVariableCollectionsAsync: async (): Promise<LibraryVariableCollection[]> => [],
+      getVariablesInLibraryCollectionAsync: async (): Promise<LibraryVariable[]> => [],
+    },
   };
   Object.assign(globalThis, { figma });
   const adapter = new FigmaAdapter();

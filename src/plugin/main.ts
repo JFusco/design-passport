@@ -79,7 +79,7 @@ let activeSavedAuditId: string | undefined;
 let activeViewState: AuditViewState | undefined;
 let displayRevision = 0;
 
-const PLUGIN_VERSION = "0.1.1";
+const PLUGIN_VERSION = "0.2.0";
 const TEAM_KNOWLEDGE_PACK = teamKnowledgePackJson as TeamKnowledgePackV1;
 assertTeamKnowledgePack(TEAM_KNOWLEDGE_PACK);
 const KNOWLEDGE_VERSION = TEAM_KNOWLEDGE_PACK.knowledgeVersion;
@@ -149,8 +149,20 @@ function currentKnowledgeAvailable(): boolean {
     && isKnowledgeFresh(graph) && graphProfileHash === hashValue(profile));
 }
 
-function assertVerifiedKnowledge(): void {
-  if (!currentKnowledgeAvailable()) throw new Error("The supporting file context changed or expired. Refresh the audit to continue.");
+async function verifiedKnowledgeAvailable(): Promise<boolean> {
+  if (!currentKnowledgeAvailable()) return false;
+  if (!await adapter.matchesVariableEnvironment()) {
+    markKnowledgeDirty();
+    return false;
+  }
+  // The bridge calls above can overlap a document change or expiry.
+  return currentKnowledgeAvailable();
+}
+
+async function assertVerifiedKnowledge(): Promise<void> {
+  const verified = await verifiedKnowledgeAvailable();
+  assertScanNotCancelled();
+  if (!verified) throw new Error("The supporting file context changed or expired. Refresh the audit to continue.");
 }
 
 function storedProjectStyleGuideBinding() {
@@ -282,10 +294,10 @@ async function ensureDocumentChangeWatcher(): Promise<void> {
   assertScanNotCancelled();
 }
 
-function assertCurrentReport(action: string): { graph: DesignKnowledgeGraph; report: ReadinessReport } {
+async function assertCurrentReport(action: string): Promise<{ graph: DesignKnowledgeGraph; report: ReadinessReport }> {
   if (historicalAudit) throw new Error(`This is a saved historical audit. Refresh it before ${action}`);
   if (!graph || !report) throw new Error(`Run an audit before ${action}`);
-  if (knowledgeState.dirty || !adapter.matchesDocumentTopology(graph) || !isKnowledgeFresh(graph) || graphProfileHash !== hashValue(profile)
+  if (!await verifiedKnowledgeAvailable()
     || report.target.knowledgeSnapshotHash !== graph.snapshotHash) {
     throw new Error(`Whole-file knowledge is stale; rescan before ${action}`);
   }
@@ -294,9 +306,10 @@ function assertCurrentReport(action: string): { graph: DesignKnowledgeGraph; rep
 
 async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> {
   assertScanNotCancelled();
-  const rebuildReason = !graph ? "not-loaded" : refresh ? "requested-refresh" : knowledgeState.dirty ? "document-changed"
+  let rebuildReason = !graph ? "not-loaded" : refresh ? "requested-refresh" : knowledgeState.dirty ? "document-changed"
     : !adapter.matchesDocumentTopology(graph) ? "page-topology-changed" : graphProfileHash !== hashValue(profile) ? "profile-changed"
       : !isKnowledgeFresh(graph) ? "expired" : undefined;
+  if (graph && !rebuildReason && !await verifiedKnowledgeAvailable()) rebuildReason = "variable-environment-changed";
   if (!graph || rebuildReason) {
     await ensureDocumentChangeWatcher();
     assertScanNotCancelled();
@@ -341,7 +354,7 @@ async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> 
 async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[], cancellable = false, capturedTarget = activeTarget): Promise<AuditSaveStatus> {
   if (!graph) throw new Error("Build whole-file knowledge before analyzing targets");
   if (!capturedTarget) throw new Error("Capture an audit target before evaluating the design");
-  assertVerifiedKnowledge();
+  await assertVerifiedKnowledge();
   if (cancellable) assertScanNotCancelled();
   const rootIds = [...targetIds];
   if (rootIds.length === 0) {
@@ -353,7 +366,7 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
   const rawFindings = evaluateRules(graph, profile, rootIds);
   const waivers = await loadWaivers();
   if (cancellable) assertScanNotCancelled();
-  assertVerifiedKnowledge();
+  await assertVerifiedKnowledge();
   const findings = applyWaivers(rawFindings, waivers);
   const nextReport = buildReadinessReport({ graph, profile, scope, targetRootIds: rootIds, appliedChanges, findings });
   const nextPlans = buildChangePlans(findings);
@@ -401,6 +414,7 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
   activeSavedAuditId = savedAuditId;
   pendingContribution = undefined;
   await postSavedAudits();
+  const verifiedAtPublication = await verifiedKnowledgeAvailable();
   post({
     type: "scan-result",
     report,
@@ -413,7 +427,7 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
     saveStatus,
     ...(savedAuditId ? { savedAuditId } : {}),
   });
-  if (!currentKnowledgeAvailable()) post({ type: "knowledge-stale" });
+  if (!verifiedAtPublication) post({ type: "knowledge-stale" });
   return saveStatus;
 }
 
@@ -577,7 +591,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       await adapter.navigate(message.nodeId);
     } else if (message.type === "apply-plan") {
       if (invalidateProfileIfNeeded()) return;
-      assertCurrentReport("applying cleanup");
+      await assertCurrentReport("applying cleanup");
       const plan = plans.find((candidate) => candidate.id === message.planId);
       if (!plan) throw new Error("The cleanup plan is stale; rescan before applying changes");
       try {
@@ -595,7 +609,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       await rescanActiveTarget(true);
     } else if (message.type === "apply-all") {
       if (invalidateProfileIfNeeded()) return;
-      assertCurrentReport("applying all cleanup");
+      await assertCurrentReport("applying all cleanup");
       const selectedPlans = message.planIds.map((planId) => plans.find((candidate) => candidate.id === planId));
       if (selectedPlans.some((plan) => !plan)) throw new Error("At least one cleanup plan is stale; rescan before applying all fixes");
       const approvedPlans = selectedPlans as ChangePlan[];
@@ -645,7 +659,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
     } else if (message.type === "certify" || message.type === "certify-components") {
       if (invalidateProfileIfNeeded()) return;
       assertDocumentMutationAllowed();
-      const current = assertCurrentReport("certification");
+      const current = await assertCurrentReport("certification");
       const componentCertification = message.type === "certify-components";
       const certificationFrames = componentCertification
         ? current.report.frames.filter((frame) => frame.rootType === "COMPONENT" || frame.rootType === "COMPONENT_SET")
@@ -736,7 +750,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       post({ type: "session-reference-result", count: 0, projectStyleGuide: bootstrap.projectStyleGuide });
     } else if (message.type === "preview-contribution") {
       if (invalidateProfileIfNeeded()) return;
-      const current = assertCurrentReport("previewing a learning contribution");
+      const current = await assertCurrentReport("previewing a learning contribution");
       const projectScope = activeProjectStyleGuidePack()?.source.projectScope
         ?? (figma.fileKey ? `project:${targetFileFingerprint(figma.fileKey).slice(4)}` : "project:session-unbound");
       pendingContribution = buildLearningEnvelope({
@@ -748,7 +762,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       post({ type: "contribution-preview", envelope: pendingContribution, content: `${JSON.stringify(pendingContribution, null, 2)}\n` });
     } else if (message.type === "export-contribution") {
       if (invalidateProfileIfNeeded()) return;
-      const current = assertCurrentReport("exporting a learning contribution");
+      const current = await assertCurrentReport("exporting a learning contribution");
       if (!pendingContribution || pendingContribution.digest !== message.digest) throw new Error("The contribution preview is stale; preview it again before export");
       if (current.report.rulesetVersion !== pendingContribution.producer.rulesetVersion) throw new Error("The contribution preview is stale; preview it again before export");
       const safeName = figma.root.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "figma-file";
@@ -760,7 +774,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       });
     } else if (message.type === "waive" || message.type === "clear-waiver") {
       if (invalidateProfileIfNeeded()) return;
-      const current = assertCurrentReport("managing waivers");
+      const current = await assertCurrentReport("managing waivers");
       if (!current.report.findings.some((finding) => finding.id === message.findingId)) throw new Error("The finding is stale; rescan before managing its waiver");
       const waivers = await loadWaivers();
       if (message.type === "waive") {
@@ -774,7 +788,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       await analyzeCurrentGraph(activeScope, current.report.target.rootIds);
     } else if (message.type === "confirm-pattern") {
       if (invalidateProfileIfNeeded()) return;
-      const current = assertCurrentReport("resolving a contextual alias");
+      const current = await assertCurrentReport("resolving a contextual alias");
       const finding = current.report.findings.find((candidate) => candidate.id === message.findingId);
       if (!finding || finding.ruleId !== "naming.pattern-contextual" || !finding.patternResolution?.candidates?.includes(message.canonicalName)) {
         throw new Error("The contextual alias choice is stale or invalid; rescan before renaming");
@@ -801,7 +815,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       await rescanActiveTarget(true);
     } else if (message.type === "create-token") {
       if (invalidateProfileIfNeeded()) return;
-      const current = assertCurrentReport("creating a token");
+      const current = await assertCurrentReport("creating a token");
       const sourceFinding = current.report.findings.find((candidate) => {
         const suggested = candidate.suggestedValue as { field?: unknown; nodeIds?: unknown; rawValue?: unknown } | undefined;
         return candidate.ruleId === "token.application.repeated-literal"
@@ -824,14 +838,14 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       await rescanActiveTarget(true);
     } else if (message.type === "export") {
       if (!report || !exportSnapshot) throw new Error("Run or open an audit before exporting a report");
-      if (historicalAudit || !currentKnowledgeAvailable() || report.profileHash !== hashValue(profile)) {
+      if (historicalAudit || !await verifiedKnowledgeAvailable() || report.profileHash !== hashValue(profile)
+        || report.target.knowledgeSnapshotHash !== graph?.snapshotHash) {
         const extension = message.format === "json" ? "json" : "md";
         const safeName = figma.root.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "figma-file";
         post({ type: "export-result", format: message.format, filename: `${safeName}.historical-audit.${extension}`, content: historicalAuditContent(exportSnapshot, message.format) });
         return;
       }
-      const current = assertCurrentReport("exporting a report");
-      const content = message.format === "json" ? `${JSON.stringify(current.report, null, 2)}\n` : reportToMarkdown(current.report);
+      const content = message.format === "json" ? `${JSON.stringify(report, null, 2)}\n` : reportToMarkdown(report);
       const extension = message.format === "json" ? "json" : "md";
       const safeName = figma.root.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "figma-file";
       post({ type: "export-result", format: message.format, filename: `${safeName}.ai-readiness.${extension}`, content });

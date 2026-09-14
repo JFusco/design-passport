@@ -541,6 +541,7 @@ function variableAliases(value: unknown, output = new Set<string>()): Set<string
 }
 
 interface VariableProvenance {
+  localCollectionKeys: ReadonlySet<string>;
   fingerprint(supplements: unknown[]): Promise<string | undefined>;
   verify(): Promise<boolean>;
 }
@@ -566,14 +567,14 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
     const collectionsById = new Map(localCollections.map((collection) => [collection.id, collection]));
     interface Description { material: unknown; digest: string }
     interface VariableDescription extends Description { collectionId: string; aliases: string[] }
-    interface Dependencies { variables: Map<string, VariableDescription>; collections: Map<string, Description> }
+    interface Dependencies { variables: Map<string, VariableDescription>; collections: Map<string, Description>; missingVariables: Set<string>; missingCollections: Set<string> }
     const descriptions = new Map<string, Promise<VariableDescription | undefined>>();
     const collectionDescriptions = new Map<string, Promise<Description | undefined>>();
     const describeVariable = (id: string): Promise<VariableDescription | undefined> => {
       let request = descriptions.get(id);
       if (!request) {
         request = (async () => {
-          const variable = localById.get(id) ?? await figma.variables.getVariableByIdAsync(id).catch(() => null);
+          const variable = localById.get(id) ?? await figma.variables.getVariableByIdAsync(id);
           if (!variable) return undefined;
           // Material must not retain live nested values that could change during
           // capture. Each variable/collection is serialized once per build.
@@ -588,7 +589,7 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
       let request = collectionDescriptions.get(id);
       if (!request) {
         request = (async () => {
-          const collection = collectionsById.get(id) ?? await figma.variables.getVariableCollectionByIdAsync(id).catch(() => null);
+          const collection = collectionsById.get(id) ?? await figma.variables.getVariableCollectionByIdAsync(id);
           if (!collection) return undefined;
           const material: unknown = JSON.parse(JSON.stringify(collectionMaterial(collection)));
           return { material, digest: hashValue(material) };
@@ -600,18 +601,18 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
     const gather = async (ids: readonly string[], skipped = new Set<string>()): Promise<Dependencies | undefined> => {
       const pending = [...new Set(ids)].sort();
       const seen = new Set(skipped);
-      const result: Dependencies = { variables: new Map(), collections: new Map() };
+      const result: Dependencies = { variables: new Map(), collections: new Map(), missingVariables: new Set(), missingCollections: new Set() };
       while (pending.length > 0) {
         if (cancelled()) return undefined;
         const batch = [...new Set(pending.splice(0, 16))].filter((id) => !seen.has(id));
         batch.forEach((id) => { seen.add(id); });
         const resolved = await Promise.all(batch.map(describeVariable));
         for (const [index, variable] of resolved.entries()) {
-          if (!variable) return undefined;
+          if (!variable) { result.missingVariables.add(batch[index]!); continue; }
           const collection = await describeCollection(variable.collectionId);
-          if (!collection) return undefined;
           result.variables.set(batch[index]!, variable);
-          result.collections.set(variable.collectionId, collection);
+          if (collection) result.collections.set(variable.collectionId, collection);
+          else result.missingCollections.add(variable.collectionId);
           pending.push(...variable.aliases.filter((id) => !seen.has(id)));
         }
       }
@@ -623,21 +624,31 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
     });
     const base = await gather(localIds);
     if (!base) return undefined;
+    // Empty collections still affect configured token sources and mode names.
+    for (const collection of localCollections) {
+      const description = await describeCollection(collection.id);
+      if (description) base.collections.set(collection.id, description);
+    }
     const baseDigest = hashValue(materialFor(base));
     const baseIds = new Set(base.variables.keys());
     const extras = new Map<string, Promise<{ digest: string; dependencies: Dependencies } | undefined>>();
-    const used: Dependencies = { variables: new Map(), collections: new Map() };
+    const used: Dependencies = { variables: new Map(), collections: new Map(), missingVariables: new Set(), missingCollections: new Set() };
     const recordUsed = (dependencies: Dependencies) => {
       dependencies.variables.forEach((value, id) => { used.variables.set(id, value); });
       dependencies.collections.forEach((value, id) => { used.collections.set(id, value); });
+      dependencies.missingVariables.forEach((id) => { used.missingVariables.add(id); });
+      dependencies.missingCollections.forEach((id) => { used.missingCollections.add(id); });
     };
     let baseRecorded = false;
     const recordedExtras = new Set<string>();
     const recordBase = () => { if (!baseRecorded) { recordUsed(base); baseRecorded = true; } };
+    recordBase();
+    const complete = (dependencies: Dependencies) => dependencies.missingVariables.size === 0 && dependencies.missingCollections.size === 0;
     return {
+      localCollectionKeys: new Set(localCollections.map((collection) => collection.key)),
       fingerprint: async (supplements) => {
         const ids = [...variableAliases(supplements)].filter((id) => !baseIds.has(id)).sort();
-        if (ids.length === 0) { recordBase(); return baseDigest; }
+        if (ids.length === 0) return complete(base) ? baseDigest : undefined;
         const key = JSON.stringify(ids);
         let request = extras.get(key);
         if (!request) {
@@ -650,11 +661,11 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
         if (!extra) return undefined;
         recordBase();
         if (!recordedExtras.has(key)) { recordUsed(extra.dependencies); recordedExtras.add(key); }
-        return extra.digest;
+        return complete(base) && complete(extra.dependencies) ? extra.digest : undefined;
       },
       verify: async () => {
         // Variable edits are not covered by documentchange. Recheck the frozen
-        // dependency epoch once, rather than serializing it for every root.
+        // dependency epoch at audit boundaries without recapturing scene nodes.
         try {
           const [freshLocals, freshCollections] = await Promise.all([
             figma.variables.getLocalVariablesAsync(), figma.variables.getLocalVariableCollectionsAsync(),
@@ -671,7 +682,10 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
             const collection = freshCollectionsById.get(id) ?? await figma.variables.getVariableCollectionByIdAsync(id).catch(() => null);
             return Boolean(collection && hashValue(collectionMaterial(collection)) === expected.digest);
           }, cancelled);
-          return !cancelled() && variableMatches.every(Boolean) && collectionMatches.every(Boolean);
+          const missingVariables = await mapConcurrent([...used.missingVariables], 16, async (id) => !await figma.variables.getVariableByIdAsync(id), cancelled);
+          const missingCollections = await mapConcurrent([...used.missingCollections], 8, async (id) => !await figma.variables.getVariableCollectionByIdAsync(id), cancelled);
+          return !cancelled() && variableMatches.every(Boolean) && collectionMatches.every(Boolean)
+            && missingVariables.every(Boolean) && missingCollections.every(Boolean);
         } catch { return false; }
       },
     };
@@ -681,11 +695,27 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
   }
 }
 
+function referencedVariableIds(nodes: Record<string, NodeSnapshot>): string[] {
+  const ids = new Set<string>();
+  for (const node of Object.values(nodes)) {
+    for (const values of [...Object.values(node.boundVariableIds), ...Object.values(node.inferredBindings)]) {
+      for (const id of values ?? []) ids.add(id);
+    }
+    for (const paint of [...node.fills, ...node.strokes]) {
+      if (paint.boundVariableId) ids.add(paint.boundVariableId);
+      for (const id of paint.inferredVariableIds) ids.add(id);
+    }
+    for (const effect of node.effects) for (const id of effect.boundVariableIds) ids.add(id);
+  }
+  return [...ids];
+}
+
 async function variableCandidates(
   options: VariableCollectionOption[],
   nodes: Record<string, NodeSnapshot>,
   cancelled: () => boolean,
   approvedCollectionKeys: ReadonlySet<string>,
+  recordLibrary?: (key: string, variables: LibraryVariable[] | undefined) => void,
 ): Promise<VariableCandidate[]> {
   const isSemanticVariable = (name: string, collectionName: string): boolean => (
     /^semantic(?:\s|$)/i.test(collectionName.trim())
@@ -713,12 +743,7 @@ async function variableCandidates(
     };
   });
 
-  const referencedIds = new Set<string>();
-  for (const node of Object.values(nodes)) {
-    for (const values of Object.values(node.inferredBindings)) for (const id of values ?? []) referencedIds.add(id);
-    for (const paint of [...node.fills, ...node.strokes]) if (paint.boundVariableId) referencedIds.add(paint.boundVariableId);
-    for (const effect of node.effects) for (const id of effect.boundVariableIds) referencedIds.add(id);
-  }
+  const referencedIds = referencedVariableIds(nodes);
   const knownIds = new Set(output.map((variable) => variable.id));
   const collectionRequests = new Map<string, Promise<VariableCollection | null>>();
   const getCollection = (id: string): Promise<VariableCollection | null> => {
@@ -726,13 +751,15 @@ async function variableCandidates(
     if (local) return Promise.resolve(local);
     let request = collectionRequests.get(id);
     if (!request) {
-      request = figma.variables.getVariableCollectionByIdAsync(id).catch(() => null);
+      request = figma.variables.getVariableCollectionByIdAsync(id);
       collectionRequests.set(id, request);
     }
     return request;
   };
   const referenced = await mapConcurrent([...referencedIds].filter((id) => !knownIds.has(id)), 8, async (id): Promise<VariableCandidate | undefined> => {
-    const variable = await figma.variables.getVariableByIdAsync(id).catch(() => null);
+    // A rejected grading read must abort the build even if epoch reads before
+    // and after it succeed. Only an actual null establishes missing evidence.
+    const variable = await figma.variables.getVariableByIdAsync(id);
     if (!variable) return undefined;
     const collection = await getCollection(variable.variableCollectionId);
     return {
@@ -760,6 +787,7 @@ async function variableCandidates(
   }, cancelled);
   const knownKeys = new Set(output.map((candidate) => candidate.key));
   for (const [index, variables] of summaries.entries()) {
+    recordLibrary?.(remote[index]!.key, variables);
     if (!variables) continue;
     const option = remote[index]!;
     option.variableCount = variables.length;
@@ -787,6 +815,12 @@ async function variableCandidates(
 
 export class FigmaAdapter {
   private cancelled = false;
+  private verifyVariableEnvironment: (() => Promise<boolean>) | undefined;
+
+  async matchesVariableEnvironment(): Promise<boolean> {
+    try { return await this.verifyVariableEnvironment?.() ?? false; }
+    catch { return false; }
+  }
 
   beginScan(): void {
     this.cancelled = false;
@@ -948,6 +982,7 @@ export class FigmaAdapter {
     onProgress: (progress: ScanProgress) => void,
     options: { contextCache?: ContextCachePort; forceFullCapture?: boolean } = {},
   ): Promise<KnowledgeBuildResult> {
+    this.verifyVariableEnvironment = undefined;
     const started = Date.now();
     const diagnostics = newBuildDiagnostics();
     const pages = figma.root.children;
@@ -961,7 +996,7 @@ export class FigmaAdapter {
     const cache = figma.fileKey && !options.forceFullCapture ? options.contextCache : undefined;
     let loadedPageCount = 0;
     const environmentStarted = Date.now();
-    const variableEnvironment = cache ? await variableEnvironmentReader(() => this.cancelled) : undefined;
+    const variableEnvironment = await variableEnvironmentReader(() => this.cancelled);
     diagnostics.validationMs += Date.now() - environmentStarted;
 
     for (const [pageIndex, page] of pages.entries()) {
@@ -993,6 +1028,10 @@ export class FigmaAdapter {
             const supplements = entries.map(({ node }) => captureSupplement(node, restNodes?.get(node.id)));
             const environment = await variableEnvironment.fingerprint(supplements);
             if (environment) fingerprint = hashValue({ captureVersion: 1, fileKey: figma.fileKey, pageId: page.id, pageName: page.name, profile, restRoot, metadata: exported?.metadata, supplements, environment });
+          } else if (variableEnvironment) {
+            // Full capture needs the same dependency epoch as cached capture.
+            await variableEnvironment.fingerprint(entries.map(({ node }) => ({ boundVariables: node.boundVariables,
+              fills: "fills" in node ? node.fills : [], strokes: "strokes" in node ? node.strokes : [], effects: "effects" in node ? node.effects : [] })));
           }
         } catch {
           // A richer validation getter may be unavailable on an older runtime.
@@ -1081,7 +1120,40 @@ export class FigmaAdapter {
     onProgress({ phase: "indexing", completed: loadedPageCount, total: pages.length, message: "Resolving variables and cross-file relationships" });
     stageStarted = Date.now();
     const collections = await this.getCollectionOptions(true, 4_000, true);
-    const variables = this.cancelled ? [] : await variableCandidates(collections, nodes, () => this.cancelled, new Set(profile.tokenSourceCollectionKeys));
+    const approvedKeys = new Set(profile.tokenSourceCollectionKeys);
+    const remoteKeys = new Set([...approvedKeys].filter((key) => !variableEnvironment?.localCollectionKeys.has(key)
+      && !collections.some((collection) => !collection.remote && collection.key === key)));
+    const libraryDigest = (variables: LibraryVariable[] | undefined) => variables
+      ? hashValue(variables.map(({ key, name, resolvedType }) => ({ key, name, resolvedType })).sort((a, b) => a.key.localeCompare(b.key))) : undefined;
+    const librarySummaries = new Map<string, string | undefined>();
+    // Enroll even inaccessible inferred IDs before reading grading candidates.
+    // Their later appearance or metadata changes must invalidate this epoch.
+    await variableEnvironment?.fingerprint(referencedVariableIds(nodes).map((id) => ({ type: "VARIABLE_ALIAS", id })));
+    const variables = this.cancelled ? [] : await variableCandidates(collections, nodes, () => this.cancelled, approvedKeys,
+      (key, values) => { librarySummaries.set(key, libraryDigest(values)); });
+    const libraryCollections = (values: VariableCollectionOption[]) => hashValue(values.filter((value) => value.remote && approvedKeys.has(value.key))
+      .map(({ key, name, libraryName }) => ({ key, name, libraryName })).sort((a, b) => a.key.localeCompare(b.key)));
+    const expectedLibraries = libraryCollections(collections);
+    const verifyLibraries = async (): Promise<boolean> => {
+      // Local collection keys are covered by the local epoch; they need no
+      // remote inventory calls at each report or mutation boundary.
+      if (remoteKeys.size === 0) return true;
+      // The discovery UI can fall back to an empty list on failure. Verification
+      // needs a successful bridge response to distinguish absence from failure.
+      const available = await new Promise<LibraryVariableCollection[] | undefined>((resolve) => {
+        const timer = setTimeout(() => resolve(undefined), 4_000);
+        Promise.resolve().then(() => figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync()).then(
+          (value) => { clearTimeout(timer); resolve(value); },
+          () => { clearTimeout(timer); resolve(undefined); },
+        );
+      });
+      if (!available || libraryCollections(available.map((collection) => ({ ...collection, id: `library:${collection.key}`, remote: true, modeNames: [], variableCount: 0 }))) !== expectedLibraries) return false;
+      const matches = await mapConcurrent([...librarySummaries], 4, async ([key, expected]) => {
+        const current = await figma.teamLibrary.getVariablesInLibraryCollectionAsync(key).catch(() => undefined);
+        return expected !== undefined && current !== undefined && libraryDigest(current) === expected;
+      }, () => this.cancelled);
+      return !this.cancelled && matches.every(Boolean);
+    };
     diagnostics.variablesMs = Date.now() - stageStarted;
     if (variableEnvironment && !this.cancelled) {
       stageStarted = Date.now();
@@ -1089,6 +1161,7 @@ export class FigmaAdapter {
       diagnostics.validationMs += Date.now() - stageStarted;
       if (!verified && !this.cancelled) throw new Error("Variable values or collections changed while file context was being verified. Run the audit again.");
     }
+    if (!this.cancelled && !await verifyLibraries()) throw new Error("Available library variables changed while file context was being verified. Run the audit again.");
     stageStarted = Date.now();
     populateGraphMetrics(nodes);
     const partial = {
@@ -1120,6 +1193,9 @@ export class FigmaAdapter {
       }
     }
     if (this.cancelled && graph.complete) graph = finalizeKnowledgeGraph({ ...graph, complete: false, cancelled: true }, profile);
+    if (graph.complete && variableEnvironment) {
+      this.verifyVariableEnvironment = async () => await variableEnvironment.verify() && await verifyLibraries();
+    }
     diagnostics.totalMs = Date.now() - started;
     onProgress({ phase: "complete", completed: loadedPageCount, total: pages.length, message: graph.complete ? "Whole-file knowledge is complete" : "Whole-file knowledge is incomplete" });
     return { graph, collections, diagnostics };

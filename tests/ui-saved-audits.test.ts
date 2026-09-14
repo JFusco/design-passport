@@ -140,7 +140,7 @@ describe("persistent audit presentation", () => {
   });
 
   it("explains skipped and cancelled pages without claiming an interrupted batch will resume", () => {
-    expect(batchCompletionNotice({ completed: 3, total: 65, skipped: 1, cancelled: true })).toBe("Page review stopped: 3 of 65 pages audited. 1 empty page was skipped. Completed results remain available.");
-    expect(batchCompletionNotice({ completed: 63, total: 65, skipped: 2, cancelled: false })).toBe("Page review complete: 63 of 65 pages audited. 2 empty pages were skipped. Completed results remain available.");
+    expect(batchCompletionNotice({ completed: 3, total: 65, skipped: 1, cancelled: true })).toBe("Page review stopped: 3 of 65 pages audited. 1 page was skipped because no audit targets were found. Saved results remain available within this device’s local storage limit.");
+    expect(batchCompletionNotice({ completed: 63, total: 65, skipped: 2, cancelled: false })).toBe("Page review complete: 63 of 65 pages audited. 2 pages were skipped because no audit targets were found. Saved results remain available within this device’s local storage limit.");
   });
 });

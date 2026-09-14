@@ -50,4 +50,17 @@ describe("page batch execution", () => {
       progress: () => undefined, yield: async () => undefined,
     })).toEqual({ total: 1, completed: 0, skipped: 0, cancelled: true });
   });
+
+  it("waits for asynchronous context verification and handles cancellation during that bridge call", async () => {
+    const auditPage = vi.fn(async () => true);
+    let reject!: (error: Error) => void;
+    const result = runPageBatch(["a", "b"], {
+      assertFresh: () => new Promise<void>((_, failure) => { reject = failure; }),
+      cancelled: () => false, auditPage, progress: () => undefined, yield: async () => undefined,
+    });
+    expect(auditPage).not.toHaveBeenCalled();
+    reject(new ScanCancelledError());
+    expect(await result).toEqual({ total: 2, completed: 0, skipped: 0, cancelled: true });
+    expect(auditPage).not.toHaveBeenCalled();
+  });
 });

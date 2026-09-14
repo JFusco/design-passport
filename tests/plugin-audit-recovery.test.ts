@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CapturedAuditTarget } from "../src/figma/adapter";
 import type { PluginToUiMessage, UiToPluginMessage } from "../src/plugin/messages";
+import { hashValue } from "../src/core/stable";
 import { healthyGraph, profile } from "./fixtures";
+import { contextFixture } from "./context-cache-fixtures";
 
 function memoryStorage() {
   const data = new Map<string, unknown>();
@@ -14,10 +16,9 @@ function memoryStorage() {
   };
 }
 
-async function launch(storage = memoryStorage(), fileKey: string | undefined = "file-key", editorType: "figma" | "dev" = "figma", waitForRestore = true) {
+async function launch(storage = memoryStorage(), fileKey: string | undefined = "file-key", editorType: "figma" | "dev" = "figma", waitForRestore = true, inputProfile = profile()) {
   vi.resetModules();
   const events: PluginToUiMessage[] = [];
-  const inputProfile = profile();
   let cancelled = false;
   const adapter = {
     getBootstrap: vi.fn(async () => ({
@@ -39,6 +40,7 @@ async function launch(storage = memoryStorage(), fileKey: string | undefined = "
       return { graph, collections: [], diagnostics: {} };
     }),
     matchesDocumentTopology: vi.fn(() => true),
+    matchesVariableEnvironment: vi.fn(async () => true),
     captureAuditTarget: vi.fn((scope: string): CapturedAuditTarget => scope === "page"
       ? { scope: "page", pageId: "page:1" } : { scope: "selection", nodeIds: ["root:desktop"] }),
     targetRootIds: vi.fn((target: CapturedAuditTarget) => target.scope === "selection" ? [...target.nodeIds] : ["root:desktop"]),
@@ -63,6 +65,27 @@ async function launch(storage = memoryStorage(), fileKey: string | undefined = "
   await send({ type: "initialize" });
   if (waitForRestore) await vi.waitFor(() => expect(events.some((event) => event.type === "saved-audits" || event.type === "audit-save-status")).toBe(true));
   return { storage, events, adapter, handlers, send, figmaMock };
+}
+
+async function launchWithVariables() {
+  const fixture = contextFixture(2);
+  const variable = { id: "variable:1", key: "variable:key", name: "semantic/space", variableCollectionId: "collection:1", resolvedType: "FLOAT", remote: false, valuesByMode: { mode: 8 }, scopes: ["GAP"], codeSyntax: {} };
+  const collection = { id: "collection:1", key: "collection:key", name: "Semantic", remote: false, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: [variable.id] };
+  fixture.setVariables([variable as unknown as Variable]);
+  fixture.setCollections([collection as unknown as VariableCollection]);
+  const plugin = await launch(memoryStorage(), "file-key", "figma", true, fixture.readinessProfile);
+  Object.assign(plugin.figmaMock, { variables: fixture.figma.variables, teamLibrary: fixture.figma.teamLibrary, mixed: fixture.figma.mixed });
+  plugin.figmaMock.root.children.splice(0, plugin.figmaMock.root.children.length, ...fixture.pages);
+  plugin.adapter.buildKnowledge.mockImplementation(async () => {
+    const result = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache });
+    return { ...result, collections: [] };
+  });
+  plugin.adapter.matchesVariableEnvironment.mockImplementation(() => fixture.adapter.matchesVariableEnvironment());
+  plugin.adapter.captureAuditTarget.mockReturnValue({ scope: "page", pageId: "page:0" });
+  plugin.adapter.targetRootIds.mockImplementation((target) => target.scope === "page"
+    ? fixture.pages.find((page) => page.id === target.pageId)?.children.map((root) => root.id) ?? []
+    : fixture.pages.flatMap((page) => page.children.map((root) => root.id)));
+  return { ...plugin, fixture, variable };
 }
 
 afterEach(() => {
@@ -109,6 +132,65 @@ describe("plugin audit recovery integration", () => {
     expect(restored?.type === "restored-audit" && restored.audit.id).toBe(initial?.type === "scan-result" && initial.savedAuditId);
   });
 
+  it("rejects every historical mutation command before invoking document or storage mutations", async () => {
+    const first = await launch();
+    await first.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    const reopened = await launch(first.storage);
+    await vi.waitFor(() => expect(reopened.events.some((event) => event.type === "restored-audit")).toBe(true));
+    const writes = reopened.storage.setAsync.mock.calls.length;
+    const commands: UiToPluginMessage[] = [
+      { type: "apply-plan", planId: "any", undoOnlyAcknowledged: false },
+      { type: "apply-all", planIds: ["any"], undoOnlyAcknowledged: false },
+      { type: "certify" },
+      { type: "certify-components" },
+      { type: "waive", findingId: "any", reason: "Temporary exemption" },
+      { type: "clear-waiver", findingId: "any" },
+      { type: "confirm-pattern", findingId: "any", canonicalName: "Button" },
+      { type: "create-token", collectionId: "any", name: "space/test", field: "width", nodeIds: ["a", "b", "c"], rawValue: 8 },
+      { type: "preview-contribution" },
+      { type: "export-contribution", digest: "anything" },
+    ];
+    for (const command of commands) {
+      await reopened.send(command);
+      expect(reopened.events.at(-1), command.type).toMatchObject({ type: "error", message: expect.stringContaining("saved historical audit") });
+    }
+    expect(reopened.storage.setAsync).toHaveBeenCalledTimes(writes);
+    expect(reopened.adapter.buildKnowledge).not.toHaveBeenCalled();
+    expect(reopened.adapter.saveProfile).not.toHaveBeenCalled();
+  });
+
+  it("restores original setup provenance and uses changed setup only on explicit refresh", async () => {
+    const first = await launch();
+    await first.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    const initial = first.events.find((event) => event.type === "scan-result");
+    const changedProfile = profile({ tokenSourceCollectionKeys: ["changed-collection"] });
+    const reopened = await launch(first.storage, "file-key", "figma", true, changedProfile);
+    await vi.waitFor(() => expect(reopened.events.some((event) => event.type === "restored-audit")).toBe(true));
+    const restored = reopened.events.find((event) => event.type === "restored-audit");
+    expect(restored).toMatchObject({ audit: { profile: profile(), report: { profileHash: hashValue(profile()) } } });
+    expect(restored?.type === "restored-audit" && restored.audit.report).toEqual(initial?.type === "scan-result" && initial.report);
+    expect(reopened.adapter.buildKnowledge).not.toHaveBeenCalled();
+    await reopened.send({ type: "refresh-audit" });
+    expect(reopened.events.find((event) => event.type === "scan-result")).toMatchObject({ report: { profileHash: hashValue(changedProfile) } });
+  });
+
+  it("retains a deleted captured target's saved result and export when refresh cannot resolve it", async () => {
+    const first = await launch();
+    await first.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
+    const initial = first.events.find((event) => event.type === "scan-result");
+    const reopened = await launch(first.storage);
+    await vi.waitFor(() => expect(reopened.events.some((event) => event.type === "restored-audit")).toBe(true));
+    reopened.adapter.targetRootIds.mockImplementationOnce(() => { throw new Error("The captured selection no longer exists"); });
+    await reopened.send({ type: "refresh-audit" });
+    expect(reopened.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("no longer exists") });
+    expect(reopened.events.some((event) => event.type === "scan-result")).toBe(false);
+    expect(reopened.adapter.captureAuditTarget).not.toHaveBeenCalled();
+    await reopened.send({ type: "export", format: "json" });
+    const exported = reopened.events.at(-1);
+    expect(exported?.type).toBe("export-result");
+    if (exported?.type === "export-result" && initial?.type === "scan-result") expect(JSON.parse(exported.content).report).toEqual(initial.report);
+  });
+
   it("restores in Dev Mode, isolates files, and handles a missing file key without a shared fallback", async () => {
     const first = await launch();
     await first.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
@@ -130,6 +212,76 @@ describe("plugin audit recovery integration", () => {
     expect(plugin.events.at(-1)).toMatchObject({ type: "batch-complete", completed: 2, total: 2, cancelled: false });
   });
 
+  it("rebuilds same-session context after variable values change without a document event", async () => {
+    const plugin = await launchWithVariables();
+    await plugin.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    expect(plugin.events.filter((event) => event.type === "scan-result")).toHaveLength(1);
+    plugin.variable.valuesByMode.mode = 12;
+    await plugin.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(2);
+    expect(plugin.events.filter((event) => event.type === "scan-result")).toHaveLength(2);
+    expect(await plugin.fixture.adapter.matchesVariableEnvironment()).toBe(true);
+  });
+
+  it("stops a batch when a variable changes between pages without rebuilding", async () => {
+    const plugin = await launchWithVariables();
+    const originalPost = plugin.figmaMock.ui.postMessage;
+    plugin.figmaMock.ui.postMessage = (message) => {
+      originalPost(message);
+      if (message.type === "scan-result") plugin.variable.valuesByMode.mode = 12;
+    };
+    await plugin.send({ type: "audit-pages", pageIds: ["page:0", "page:1"] });
+    expect(plugin.events.filter((event) => event.type === "scan-result")).toHaveLength(1);
+    expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(1);
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("changed or expired") });
+    expect(plugin.events.some((event) => event.type === "knowledge-stale")).toBe(true);
+    await plugin.send({ type: "export", format: "json" });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "export-result", content: expect.stringContaining('"historical-audit"') });
+  });
+
+  it("rejects mutation authority and exports historically after an unannounced variable edit", async () => {
+    const plugin = await launchWithVariables();
+    await plugin.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    plugin.variable.valuesByMode.mode = 12;
+    await plugin.send({ type: "certify" });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("stale") });
+    expect(plugin.events.some((event) => event.type === "knowledge-stale")).toBe(true);
+    await plugin.send({ type: "export", format: "json" });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "export-result", content: expect.stringContaining('"historical-audit"') });
+    expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(1);
+  });
+
+  it("publishes a completed snapshot as stale when a variable changes during its durable save", async () => {
+    const plugin = await launchWithVariables();
+    const set = plugin.storage.setAsync.getMockImplementation()!;
+    plugin.storage.setAsync.mockImplementation(async (key, value) => {
+      if (key.includes(":audit:")) plugin.variable.valuesByMode.mode = 12;
+      await set(key, value);
+    });
+    await plugin.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    const resultIndex = plugin.events.findIndex((event) => event.type === "scan-result");
+    expect(plugin.events[resultIndex]).toMatchObject({ saveStatus: { state: "saved" } });
+    expect(plugin.events[resultIndex + 1]).toEqual({ type: "knowledge-stale" });
+    await plugin.send({ type: "export", format: "json" });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "export-result", content: expect.stringContaining('"historical-audit"') });
+  });
+
+  it("keeps the predecessor when a variable changes before report publication", async () => {
+    const plugin = await launchWithVariables();
+    await plugin.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    const original = plugin.events.find((event) => event.type === "scan-result");
+    const reads = plugin.storage.getAsync.getMockImplementation()!;
+    const writeCount = plugin.storage.setAsync.mock.calls.length;
+    plugin.storage.getAsync.mockImplementation(async (key) => {
+      if (key.startsWith("waivers:")) plugin.variable.valuesByMode.mode = 12;
+      return reads(key);
+    });
+    await plugin.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    expect(plugin.events.filter((event) => event.type === "scan-result")).toEqual([original]);
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("changed or expired") });
+    expect(plugin.storage.setAsync).toHaveBeenCalledTimes(writeCount);
+  });
+
   it("keeps saved page results when a batch is cancelled between pages", async () => {
     const plugin = await launch();
     plugin.figmaMock.root.children.push({ id: "page:2", name: "Components" });
@@ -143,6 +295,53 @@ describe("plugin audit recovery integration", () => {
     expect(plugin.events.filter((event) => event.type === "scan-result")).toHaveLength(1);
     const reopened = await launch(plugin.storage);
     await vi.waitFor(() => expect(reopened.events.some((event) => event.type === "restored-audit")).toBe(true));
+  });
+
+  it.each(["expiry", "remote document change"])("stops a batch on %s without rebuilding or publishing another page", async (change) => {
+    const plugin = await launch();
+    plugin.figmaMock.root.children.push({ id: "page:2", name: "Components" });
+    const originalPost = plugin.figmaMock.ui.postMessage;
+    plugin.figmaMock.ui.postMessage = (message) => {
+      originalPost(message);
+      if (message.type !== "scan-result") return;
+      if (change === "expiry") vi.spyOn(Date, "now").mockReturnValue(Date.now() + 16 * 60 * 1000);
+      else plugin.handlers.get("documentchange")?.({ documentChanges: [{ id: "button:1", origin: "REMOTE", type: "PROPERTY_CHANGE", properties: ["width"] }] });
+    };
+    await plugin.send({ type: "audit-pages", pageIds: ["page:1", "page:2"] });
+    expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(1);
+    expect(plugin.events.filter((event) => event.type === "scan-result")).toHaveLength(1);
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("changed or expired") });
+    expect(plugin.events.some((event) => event.type === "batch-complete")).toBe(false);
+    await plugin.send({ type: "export", format: "json" });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "export-result", content: expect.stringContaining('"historical-audit"') });
+    vi.restoreAllMocks();
+    const reopened = await launch(plugin.storage);
+    await vi.waitFor(() => expect(reopened.events.some((event) => event.type === "restored-audit")).toBe(true));
+    expect(reopened.events.find((event) => event.type === "saved-audits")).toMatchObject({ audits: [{ target: { scope: "page", pageId: "page:1" } }] });
+  });
+
+  it("retains the saved report if an explicit refresh is cancelled during capture", async () => {
+    const first = await launch();
+    await first.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    const initial = first.events.find((event) => event.type === "scan-result");
+    const reopened = await launch(first.storage);
+    await vi.waitFor(() => expect(reopened.events.some((event) => event.type === "restored-audit")).toBe(true));
+    const build = reopened.adapter.buildKnowledge.getMockImplementation()!;
+    let release!: () => void;
+    reopened.adapter.buildKnowledge.mockImplementationOnce(async () => {
+      await new Promise<void>((resolve) => { release = resolve; });
+      return build();
+    });
+    const refresh = reopened.send({ type: "refresh-audit" });
+    await vi.waitFor(() => expect(release).toBeTypeOf("function"));
+    await reopened.send({ type: "cancel-scan" });
+    release();
+    await refresh;
+    expect(reopened.events.some((event) => event.type === "scan-result")).toBe(false);
+    expect(reopened.events.some((event) => event.type === "scan-cancelled")).toBe(true);
+    const third = await launch(first.storage);
+    await vi.waitFor(() => expect(third.events.some((event) => event.type === "restored-audit")).toBe(true));
+    expect(third.events.find((event) => event.type === "restored-audit")).toMatchObject({ audit: { id: initial?.type === "scan-result" && initial.savedAuditId } });
   });
 
   it("stops on the first unsaved batch page so its live report remains available", async () => {
@@ -259,5 +458,34 @@ describe("plugin audit recovery integration", () => {
     release();
     await refresh;
     expect(reopened.events.filter((event) => event.type === "scan-result")).toHaveLength(1);
+  });
+
+  it("exports the still-displayed old report historically while a changed graph's replacement is saving", async () => {
+    const plugin = await launch();
+    await plugin.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    const original = plugin.events.find((event) => event.type === "scan-result");
+    const build = plugin.adapter.buildKnowledge.getMockImplementation()!;
+    plugin.adapter.buildKnowledge.mockImplementationOnce(async () => {
+      const result = await build();
+      result.graph.snapshotHash = "changed-context-hash";
+      return result;
+    });
+    const set = plugin.storage.setAsync.getMockImplementation()!;
+    let release!: () => void;
+    plugin.storage.setAsync.mockImplementationOnce(async (key, value) => {
+      await new Promise<void>((resolve) => { release = resolve; });
+      await set(key, value);
+    });
+    const refresh = plugin.send({ type: "refresh-audit" });
+    await vi.waitFor(() => expect(release).toBeTypeOf("function"));
+    await plugin.send({ type: "export", format: "json" });
+    const exported = plugin.events.at(-1);
+    expect(exported?.type).toBe("export-result");
+    if (exported?.type === "export-result" && original?.type === "scan-result") {
+      expect(JSON.parse(exported.content)).toMatchObject({ kind: "historical-audit", report: original.report });
+    }
+    release();
+    await refresh;
+    expect(plugin.events.filter((event) => event.type === "scan-result")).toHaveLength(2);
   });
 });
