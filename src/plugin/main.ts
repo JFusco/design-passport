@@ -27,11 +27,13 @@ import { buildReadinessReport } from "../core/report";
 import { evaluateRules } from "../core/rules";
 import { hashValue, stableStringify } from "../core/stable";
 import { applyWaivers, sanitizeWaiverStore, type WaiverStore } from "../core/waivers";
-import { FigmaAdapter, type BootstrapData, type CapturedAuditTarget, type ProjectStyleGuideStatus, type VariableCollectionOption } from "../figma/adapter";
+import { FigmaAdapter, FullKnowledgeRebuildRequired, type BootstrapData, type CapturedAuditTarget, type ProjectStyleGuideStatus, type VariableCollectionOption } from "../figma/adapter";
 import { applyChangePlan, clearVariantCoverageAnnotations, createSemanticTokenAndBind, setCertification } from "../figma/mutations";
 import { buildKnowledgeSummary } from "./knowledge-summary";
 import { parseUiMessage } from "./message-validation";
-import type { PluginToUiMessage, UiToPluginMessage } from "./messages";
+import type { AuditRecheckRequest, AuditRefreshResult, PluginToUiMessage, UiToPluginMessage } from "./messages";
+import { captureRecheckFindings, recheckCounts } from "./recheck";
+import { version as PLUGIN_VERSION } from "../../package.json";
 import { resolveAuditTarget, runCapturedAuditAttempt, scanFailureMessages } from "./scan-lifecycle";
 import { ScanCancelledError } from "./scan-errors";
 import { CommandGate, KnowledgeSessionState, MutationChangeGuard, requiresTransientMutationGuard } from "./session-state";
@@ -63,7 +65,6 @@ let appliedChanges: ChangePlan[] = [];
 let graphProfileHash: string | undefined;
 let activeScope: ScanScope = "selection";
 let activeTarget: CapturedAuditTarget | undefined;
-let suppressDirty = false;
 let initialized = false;
 let initializeGeneration = 0;
 const knowledgeState = new KnowledgeSessionState();
@@ -78,8 +79,9 @@ let exportSnapshot: HistoricalAuditSource | undefined;
 let activeSavedAuditId: string | undefined;
 let activeViewState: AuditViewState | undefined;
 let displayRevision = 0;
+let mutationRecheckPending = false;
+let lastRefresh: Pick<AuditRefreshResult, "mode" | "reason"> = { mode: "full", reason: "not-loaded" };
 
-const PLUGIN_VERSION = "0.2.0";
 const TEAM_KNOWLEDGE_PACK = teamKnowledgePackJson as TeamKnowledgePackV1;
 assertTeamKnowledgePack(TEAM_KNOWLEDGE_PACK);
 const KNOWLEDGE_VERSION = TEAM_KNOWLEDGE_PACK.knowledgeVersion;
@@ -165,6 +167,11 @@ async function assertVerifiedKnowledge(): Promise<void> {
   if (!verified) throw new Error("The supporting file context changed or expired. Refresh the audit to continue.");
 }
 
+function assertKnowledgeRevision(): void {
+  assertScanNotCancelled();
+  if (!currentKnowledgeAvailable()) throw new Error("The supporting file context changed or expired. Refresh the audit to continue.");
+}
+
 function storedProjectStyleGuideBinding() {
   if (adapter.getProjectStyleGuideStatus().state !== "active") return undefined;
   try {
@@ -209,14 +216,13 @@ async function saveWaivers(waivers: WaiverStore): Promise<void> {
 async function runDocumentMutation<T>(expectedNodeIds: readonly string[], mutation: () => Promise<T>, includesTransientNodes = false): Promise<T> {
   assertDocumentMutationAllowed();
   mutationChangeGuard.arm(documentMutationIds(expectedNodeIds), Date.now(), 120_000, includesTransientNodes);
-  suppressDirty = true;
   try {
     const result = await mutation();
     await new Promise((resolve) => setTimeout(resolve, 0));
     return result;
   } finally {
-    suppressDirty = false;
-    knowledgeState.markDirty();
+    mutationRecheckPending = true;
+    knowledgeState.markDirty(expectedNodeIds, includesTransientNodes ? "structural-mutation" : undefined);
   }
 }
 
@@ -230,6 +236,11 @@ function documentMutationIds(expectedNodeIds: readonly string[]): string[] {
     }
   }
   return [...affectedIds];
+}
+
+function recordCertificationAnnotations(node: SceneNode): void {
+  if (!("annotations" in node)) return;
+  mutationChangeGuard.expectAnnotations(node.id, hashValue(node.annotations), () => node.removed ? undefined : hashValue(node.annotations));
 }
 
 function assertInitialized(): void {
@@ -258,9 +269,8 @@ function invalidateProfileIfNeeded(): boolean {
   return true;
 }
 
-function markKnowledgeDirty(): void {
-  if (suppressDirty) return;
-  knowledgeState.markDirty();
+function markKnowledgeDirty(nodeIds?: readonly string[], fullBuildReason?: string): void {
+  knowledgeState.markDirty(nodeIds, fullBuildReason);
   post({ type: "knowledge-stale" });
 }
 
@@ -272,7 +282,22 @@ function handleDocumentChange(event: DocumentChangeEvent): void {
     ...(change.type === "PROPERTY_CHANGE" ? { properties: change.properties } : {}),
   }));
   if (!mutationChangeGuard.hasUnexpectedChange(changes)) return;
-  markKnowledgeDirty();
+  const supportedProperties = new Set([
+    "name", "visible", "opacity", "fills", "strokes", "strokeWeight", "strokeTopWeight", "strokeRightWeight", "strokeBottomWeight", "strokeLeftWeight",
+    "cornerRadius", "topLeftRadius", "topRightRadius", "bottomLeftRadius", "bottomRightRadius", "clipsContent", "isMask", "effects",
+    "characters", "fontSize", "fontName", "fontWeight", "textStyleId", "letterSpacing", "lineHeight", "textCase", "textDecoration", "textAutoResize",
+    "width", "height", "x", "y", "rotation", "relativeTransform", "size", "layoutMode", "itemSpacing", "counterAxisSpacing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+    "layoutSizingHorizontal", "layoutSizingVertical", "primaryAxisSizingMode", "counterAxisSizingMode", "layoutAlign", "layoutGrow",
+    "boundVariables", "explicitVariableModes", "resolvedVariableModes", "componentProperties", "variantProperties", "reactions", "annotations", "description", "exportSettings", "pluginData",
+  ]);
+  const unknown = changes.some((change) => change.type !== "PROPERTY_CHANGE" || !change.properties?.length
+    || change.properties.some((property) => !supportedProperties.has(property)
+      // A new binding or applied style can introduce a resource that the
+      // previous graph did not reference. Rebuild so candidate inventories and
+      // the resource fingerprint advance together.
+      || ["boundVariables", "explicitVariableModes", "resolvedVariableModes", "textStyleId"].includes(property))
+    || !graph?.nodes[change.id]);
+  markKnowledgeDirty(changes.map((change) => change.id), unknown ? "structural-or-unknown-change" : undefined);
 }
 
 async function ensureDocumentChangeWatcher(): Promise<void> {
@@ -304,7 +329,7 @@ async function assertCurrentReport(action: string): Promise<{ graph: DesignKnowl
   return { graph, report };
 }
 
-async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> {
+async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutationRetry = false): Promise<DesignKnowledgeGraph> {
   assertScanNotCancelled();
   let rebuildReason = !graph ? "not-loaded" : refresh ? "requested-refresh" : knowledgeState.dirty ? "document-changed"
     : !adapter.matchesDocumentTopology(graph) ? "page-topology-changed" : graphProfileHash !== hashValue(profile) ? "profile-changed"
@@ -317,23 +342,59 @@ async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> 
     try {
       const fileKey = figma.fileKey;
       const stagedFragments = new Map<string, unknown>();
-      const result = await adapter.buildKnowledge(profile, (progress) => post({ type: "progress", progress }), {
-        ...(fileKey ? { contextCache: {
+      const changeJournal = knowledgeState.changes;
+      const journalRequiresFull = Boolean(changeJournal.fullBuildReason && changeJournal.fullBuildReason !== "not-loaded");
+      let forceFull = forceFullCapture || journalRequiresFull || Boolean(graph && (rebuildReason === "profile-changed"
+        || rebuildReason === "page-topology-changed" || rebuildReason === "variable-environment-changed"));
+      let previousGraph = !forceFull && changeJournal.nodeIds.length > 0 ? graph : undefined;
+      // Full builds must not retain the previous large graph. The saved report
+      // remains available as historical output if replacement fails.
+      graph = undefined;
+      const cachePort = fileKey ? {
           get: (key: string) => auditStorage.loadContext(fileKey, key),
           set: async (key: string, value: unknown) => { stagedFragments.set(key, value); },
-        } } : {}),
-      });
+        } : undefined;
+      let result;
+      try {
+        result = await adapter.buildKnowledge(profile, (progress) => post({ type: "progress", progress }), {
+          forceFullCapture: forceFull,
+          dirtyNodeIds: changeJournal.nodeIds,
+          ...(previousGraph ? { previousGraph, previousCollections: collections } : {}),
+          ...(cachePort ? { contextCache: cachePort } : {}),
+        });
+      } catch (error) {
+        if (adapter.isScanCancelled()) throw new ScanCancelledError();
+        if (!(error instanceof FullKnowledgeRebuildRequired)) throw error;
+        graph = undefined;
+        previousGraph = undefined;
+        forceFull = true;
+        result = await adapter.buildKnowledge(profile, (progress) => post({ type: "progress", progress }), {
+          forceFullCapture: true,
+          dirtyNodeIds: changeJournal.nodeIds,
+          ...(cachePort ? { contextCache: cachePort } : {}),
+        });
+      }
+      assertScanNotCancelled();
+      const resourcesMatch = await adapter.matchesVariableEnvironment();
+      const accepted = knowledgeState.completeBuild(token, result.graph.complete && resourcesMatch);
+      if (!accepted) {
+        if (result.graph.cancelled) throw new ScanCancelledError();
+        // A plugin mutation can deliver its queued event while capture is in
+        // flight. Capture once more from the new revision; never ignore the
+        // event or retry indefinitely while a designer keeps editing.
+        if (mutationRecheckPending && !mutationRetry && !adapter.isScanCancelled()) return ensureKnowledge(true, true, true);
+        throw new Error("The design changed while whole-file knowledge was being built; run the audit again");
+      }
       graph = result.graph;
       collections = result.collections;
       graphProfileHash = hashValue(profile);
-      const accepted = knowledgeState.completeBuild(token, graph.complete);
-      if (!accepted) {
-        if (graph.cancelled) throw new ScanCancelledError();
-        throw new Error("The design changed while whole-file knowledge was being built; run the audit again");
-      }
-      // A successful whole-file rebuild is the synchronization boundary for
-      // delayed documentchange echoes from the mutation that triggered it.
-      mutationChangeGuard.clear();
+      lastRefresh = {
+        mode: !forceFull && (previousGraph || result.diagnostics.reusedFragments > 0) ? "incremental" : "full",
+        reason: forceFullCapture ? "requested-full-rescan" : changeJournal.fullBuildReason ?? rebuildReason ?? "validated-fragments",
+      };
+      // Exact annotation signatures remain safe after a build: a delayed event
+      // with different live output still invalidates, regardless of its node ID.
+      mutationRecheckPending = false;
       const contextStorageStarted = Date.now();
       if (fileKey && !adapter.isScanCancelled() && !knowledgeState.dirty) {
         await auditStorage.saveContexts(fileKey, [...stagedFragments].map(([key, value]) => ({ key, value }))).catch(() => undefined);
@@ -346,15 +407,20 @@ async function ensureKnowledge(refresh: boolean): Promise<DesignKnowledgeGraph> 
       if (knowledgeState.buildActive) knowledgeState.abandonBuild(token);
       throw error;
     }
-  } else console.info("[Design Passport] context reuse", { source: "current-session" });
+  } else {
+    lastRefresh = { mode: "session", reason: "verified-current-session" };
+    console.info("[Design Passport] context reuse", { source: "current-session" });
+  }
   assertScanNotCancelled();
   return graph;
 }
 
-async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[], cancellable = false, capturedTarget = activeTarget): Promise<AuditSaveStatus> {
+async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[], cancellable = false, capturedTarget = activeTarget, recheck?: ReturnType<typeof captureRecheckFindings>): Promise<AuditSaveStatus> {
   if (!graph) throw new Error("Build whole-file knowledge before analyzing targets");
   if (!capturedTarget) throw new Error("Capture an audit target before evaluating the design");
-  await assertVerifiedKnowledge();
+  // This preparation cannot publish or mutate the document. Full resource
+  // verification follows the asynchronous waiver read and surrounds saving.
+  assertKnowledgeRevision();
   if (cancellable) assertScanNotCancelled();
   const rootIds = [...targetIds];
   if (rootIds.length === 0) {
@@ -384,6 +450,33 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
   let saveStatus: AuditSaveStatus = { state: "session-only", message: "This file has no stable file key. Results are available for this session only." };
   let savedAuditId: string | undefined;
   let savedAt: string | undefined;
+  let published = false;
+  const publish = (status: AuditSaveStatus, audit?: SavedAuditV1): void => {
+    savedAuditId = audit?.id;
+    savedAt = audit?.savedAt;
+    report = nextReport;
+    plans = nextPlans;
+    historicalAudit = undefined;
+    activeScope = capturedTarget.scope;
+    activeTarget = capturedTarget;
+    exportSnapshot = { report: nextReport, target: capturedTarget, provenance: { pluginVersion: PLUGIN_VERSION, knowledgeVersion: KNOWLEDGE_VERSION }, ...(savedAt ? { savedAt } : {}) };
+    activeSavedAuditId = savedAuditId;
+    pendingContribution = undefined;
+    published = true;
+    post({
+      type: "scan-result",
+      report,
+      plans,
+      knowledge,
+      collections,
+      insights,
+      projectStyleGuide: bootstrap.projectStyleGuide,
+      sessionReferenceCount: sessionReferencePacks.length,
+      saveStatus: status,
+      ...(savedAuditId ? { savedAuditId } : {}),
+      ...(recheck ? { refresh: { ...lastRefresh, requested: recheck.request.mode, ...recheckCounts(recheck, nextReport) } } : {}),
+    });
+  };
   if (figma.fileKey && capturedTarget) {
     const started = Date.now();
     const saved = await auditStorage.saveAudit({
@@ -397,52 +490,40 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
       provenance: { pluginVersion: PLUGIN_VERSION, knowledgeVersion: KNOWLEDGE_VERSION },
       ...(activeViewState && activeTarget && canonicalAuditTargetKey(activeTarget) === canonicalAuditTargetKey(capturedTarget)
         ? { viewState: activeViewState } : {}),
+    }, {
+      assertCurrent: async (phase) => { if (phase === "prepare") assertKnowledgeRevision(); else await assertVerifiedKnowledge(); },
+      commit: (audit) => publish({ state: "saved" }, audit),
     });
     console.info("[Design Passport] report persistence", { elapsedMs: Date.now() - started, state: saved.status.state });
     saveStatus = saved.status;
-    if (saveStatus.state === "saved") {
-      savedAuditId = saved.audit.id;
-      savedAt = saved.audit.savedAt;
+    if (published && saveStatus.state !== "saved") {
+      activeSavedAuditId = undefined;
+      post({ type: "audit-save-status", status: saveStatus });
     }
   }
-  // A completed snapshot stays useful if the design changes during its save.
-  // Publish it with an immediate stale signal, never as permission to mutate.
-  report = nextReport;
-  plans = nextPlans;
-  historicalAudit = undefined;
-  exportSnapshot = { report: nextReport, target: capturedTarget, provenance: { pluginVersion: PLUGIN_VERSION, knowledgeVersion: KNOWLEDGE_VERSION }, ...(savedAt ? { savedAt } : {}) };
-  activeSavedAuditId = savedAuditId;
-  pendingContribution = undefined;
+  if (!published) {
+    // Session-only results and storage failures still require a current revision.
+    await assertVerifiedKnowledge();
+    publish(saveStatus);
+  }
   await postSavedAudits();
-  const verifiedAtPublication = await verifiedKnowledgeAvailable();
-  post({
-    type: "scan-result",
-    report,
-    plans,
-    knowledge,
-    collections,
-    insights,
-    projectStyleGuide: bootstrap.projectStyleGuide,
-    sessionReferenceCount: sessionReferencePacks.length,
-    saveStatus,
-    ...(savedAuditId ? { savedAuditId } : {}),
-  });
-  if (!verifiedAtPublication) post({ type: "knowledge-stale" });
   return saveStatus;
 }
 
 async function runScan(
   target: CapturedAuditTarget,
   refreshKnowledge: boolean,
+  recheckRequest?: AuditRecheckRequest,
 ): Promise<void> {
+  const recheck = recheckRequest ? captureRecheckFindings(recheckRequest, report, graph, Boolean(historicalAudit)) : undefined;
   await runCapturedAuditAttempt(target, {
     begin: () => adapter.beginScan(),
     post,
     execute: async (capturedTarget) => {
       assertScanNotCancelled();
-      const current = await ensureKnowledge(refreshKnowledge);
+      const current = await ensureKnowledge(refreshKnowledge, recheckRequest?.mode === "full");
       const rootIds = adapter.targetRootIds(capturedTarget, current);
-      await analyzeCurrentGraph(capturedTarget.scope, rootIds, true, capturedTarget);
+      await analyzeCurrentGraph(capturedTarget.scope, rootIds, true, capturedTarget, recheck);
     },
     commit: (capturedTarget) => {
       activeScope = capturedTarget.scope;
@@ -525,7 +606,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
     return;
   }
   assertInitialized();
-  if (message.type === "scan" || message.type === "refresh-audit" || message.type === "audit-pages"
+  if (message.type === "scan" || message.type === "refresh-audit" || message.type === "recheck-audit" || message.type === "audit-pages"
     || message.type === "open-saved-audit" || message.type === "forget-saved-audit" || message.type === "clear-file-cache"
     || message.type === "save-profile") displayRevision += 1;
   if (message.type === "open-saved-audit") {
@@ -579,14 +660,14 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         (scope) => adapter.captureAuditTarget(scope),
       );
       await runScan(target, message.request.refreshKnowledge);
-    } else if (message.type === "refresh-audit") {
+    } else if (message.type === "refresh-audit" || message.type === "recheck-audit") {
       if (invalidateProfileIfNeeded()) return;
       const target = resolveAuditTarget(
         { kind: "refresh" },
         activeTarget,
         (scope) => adapter.captureAuditTarget(scope),
       );
-      await runScan(target, true);
+      await runScan(target, true, message.type === "recheck-audit" ? message.request : { mode: "changes" });
     } else if (message.type === "navigate") {
       await adapter.navigate(message.nodeId);
     } else if (message.type === "apply-plan") {
@@ -685,36 +766,39 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         ...(componentCertification ? (frame.variantCoverage ?? []).map((variant) => variant.variantId) : []),
       ]);
       mutationChangeGuard.arm(documentMutationIds(certificationNodeIds));
-      suppressDirty = true;
       let count = 0;
       let removedVariantAnnotations = 0;
+      let wroteCertification = false;
       figma.commitUndo();
       try {
         for (const frame of certificationFrames) {
           const node = await figma.getNodeByIdAsync(frame.rootId);
           if (!node || node.type === "DOCUMENT" || node.type === "PAGE") throw new Error(`Source frame ${frame.rootId} no longer exists`);
+          await assertVerifiedKnowledge();
           const summary = { ...summaryBase, grade: frame.grade.letter, score: frame.grade.score };
           const variants = componentCertification ? frame.variantCoverage ?? [] : [];
           setCertification(node, summary, variants.length);
+          wroteCertification = true;
+          recordCertificationAnnotations(node);
           for (const variant of variants) {
             const variantNode = await figma.getNodeByIdAsync(variant.variantId);
             if (!variantNode || variantNode.type === "DOCUMENT" || variantNode.type === "PAGE") {
               throw new Error(`Variant ${variant.variantId} no longer exists`);
             }
             removedVariantAnnotations += clearVariantCoverageAnnotations(variantNode);
+            recordCertificationAnnotations(variantNode);
           }
           count += 1;
         }
+        await assertVerifiedKnowledge();
         if (count !== certificationFrames.length) throw new Error(`Every ${componentCertification ? "component" : "source frame"} must be certified in the same undo group`);
         figma.commitUndo();
         await new Promise((resolve) => setTimeout(resolve, 0));
       } catch (error) {
-        figma.triggerUndo();
+        if (wroteCertification) figma.triggerUndo();
         knowledgeState.markDirty();
         post({ type: "knowledge-stale" });
         throw error;
-      } finally {
-        suppressDirty = false;
       }
       post({ type: "certified", count, target: componentCertification ? "components" : "source frames", removedVariantAnnotations });
     } else if (message.type === "import-project-style-guide") {

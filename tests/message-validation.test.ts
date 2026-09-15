@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { parseUiMessage } from "../src/plugin/message-validation";
 
 describe("UI message validation", () => {
+  it("accepts explicit recheck modes and rejects missing or contradictory target IDs", () => {
+    for (const request of [{ mode: "changes" }, { mode: "full" }, { mode: "component", componentId: "1:2" }, { mode: "issue", issueId: "issue:1" }]) {
+      expect(parseUiMessage({ type: "recheck-audit", request })).toEqual({ type: "recheck-audit", request });
+    }
+    for (const request of [{ mode: "component" }, { mode: "issue", issueId: "" }, { mode: "changes", componentId: "1:2" }, { mode: "issue", issueId: "valid", componentId: "1:2" }, { mode: "unknown" }]) {
+      expect(() => parseUiMessage({ type: "recheck-audit", request })).toThrow();
+    }
+  });
   it("accepts 65 distinct page IDs and rejects empty, duplicate, or excessive batches", () => {
     const pageIds = Array.from({ length: 65 }, (_, index) => `page:${index}`);
     expect(parseUiMessage({ type: "audit-pages", pageIds })).toEqual({ type: "audit-pages", pageIds });

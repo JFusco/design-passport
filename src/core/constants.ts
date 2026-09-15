@@ -1,6 +1,6 @@
 import type { Axis, ReadinessProfile, SourceRef } from "./contracts";
 
-export const RULESET_VERSION = "1.0.0-beta.2";
+export const RULESET_VERSION = "1.0.0-beta.3";
 export const PRODUCT_NAME = "Design Passport";
 export const AI_SOURCE_FRAME_ANNOTATION = "AI source frame";
 export const CERTIFICATION_ANNOTATION_PREFIX = "[Design Passport]";
@@ -52,6 +52,11 @@ export const SOURCES = {
     kind: "wcag",
     label: "WCAG 2.2 — 2.5.8 Target Size (Minimum)",
     url: "https://www.w3.org/TR/WCAG22/#target-size-minimum",
+  },
+  wcagTargetEnhanced: {
+    kind: "wcag",
+    label: "WCAG 2.2 — 2.5.5 Target Size (Enhanced, AAA)",
+    url: "https://www.w3.org/TR/WCAG22/#target-size-enhanced",
   },
   uiBrain: {
     kind: "ui-design-brain",

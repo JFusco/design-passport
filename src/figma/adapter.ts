@@ -1,4 +1,5 @@
 import type {
+  BindableField,
   CertificationSummary,
   DesignKnowledgeGraph,
   EffectSnapshot,
@@ -17,6 +18,7 @@ import { isAuditTargetNodeType, populateGraphMetrics, sourceFrameIds, targetRoot
 import { assertProfileSemantics, profileSemanticErrors, reconcileProfilePages } from "../core/profile";
 import { inferProfileFromPages } from "../core/profile-inference";
 import { hashValue } from "../core/stable";
+import { assessTokenProperty, eligibleTokenFields, propertyBindingEvidence } from "../core/operations/node-fields";
 import {
   buildProjectStyleGuideBinding,
   parseProjectStyleGuideBinding,
@@ -26,6 +28,10 @@ import { canReadComponentPropertyDefinitions } from "./operations/component";
 import { annotationText } from "./operations/annotations";
 import { listVariableCollectionOptions, type VariableCollectionOption } from "./operations/collections";
 import { parseCertificationSummary, parsePatternConfirmation, parseStoredProfile } from "./operations/shared-data";
+import { resolveTextBackground } from "./operations/background";
+import { interactionPropertiesSnapshot } from "./operations/interaction-state";
+import { mixedTypographyFields, TextStyleEvidenceReader } from "./operations/text-style";
+export { resolveTextBackground } from "./operations/background";
 import { contextFragment, mapConcurrent, newBuildDiagnostics, readContextFragment, restPageFingerprint, restSubtreeCovers, restSubtreeNodes, type ContextCachePort, type KnowledgeBuildDiagnostics } from "./context-cache";
 
 export type { ContextCachePort, KnowledgeBuildDiagnostics } from "./context-cache";
@@ -90,6 +96,15 @@ export interface KnowledgeBuildResult {
   graph: DesignKnowledgeGraph;
   collections: VariableCollectionOption[];
   diagnostics: KnowledgeBuildDiagnostics;
+}
+
+/** Signals that a tracked edit touched evidence that cannot be refreshed from
+ * the current in-memory graph. The caller retries as a verified full rebuild. */
+export class FullKnowledgeRebuildRequired extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FullKnowledgeRebuildRequired";
+  }
 }
 
 function roleForPage(pageId: string, profile: ReadinessProfile): PageSnapshot["role"] {
@@ -261,32 +276,7 @@ function layoutSnapshot(node: SceneNode): NodeSnapshot["layout"] {
   };
 }
 
-export function resolveTextBackground(node: TextNode): { color?: { r: number; g: number; b: number; a: number }; resolvable: boolean } {
-  let parent = node.parent;
-  while (parent && parent.type !== "PAGE" && parent.type !== "DOCUMENT") {
-    if (isSceneNode(parent) && "fills" in parent) {
-      const visible = paints(parent.fills).filter((paint) => paint.visible !== false && (paint.opacity ?? 1) > 0);
-      if (visible.length > 0) {
-        if (visible.length !== 1 || visible[0]?.type !== "SOLID") return { resolvable: false };
-        const paint = visible[0];
-        return { color: { r: paint.color.r, g: paint.color.g, b: paint.color.b, a: (paint.opacity ?? 1) * ("opacity" in parent ? parent.opacity : 1) }, resolvable: true };
-      }
-    }
-    // A component-set canvas is an authoring surface, not a guaranteed runtime
-    // backdrop. Once a text node reaches a transparent component/instance
-    // boundary, anything outside that boundary belongs to the consumer.
-    if (parent.type === "COMPONENT" || parent.type === "COMPONENT_SET" || parent.type === "INSTANCE") {
-      return { resolvable: false };
-    }
-    parent = parent.parent;
-  }
-  // A transparent component may be placed on any consumer surface. Treat that
-  // background as unresolved instead of inventing a white canvas and reporting
-  // a false contrast failure for dark-surface variants.
-  return { resolvable: false };
-}
-
-function textSnapshot(node: SceneNode): NodeSnapshot["text"] {
+export function textSnapshot(node: SceneNode): NodeSnapshot["text"] {
   if (node.type !== "TEXT") return undefined;
   const fillsValue = paints(node.fills);
   const visible = fillsValue.filter((paint) => paint.visible !== false && (paint.opacity ?? 1) > 0);
@@ -311,11 +301,16 @@ function textSnapshot(node: SceneNode): NodeSnapshot["text"] {
     ...(lineHeightPx !== undefined ? { lineHeightPx } : {}),
     ...(paragraphSpacing !== undefined ? { paragraphSpacing } : {}),
     ...(paragraphIndent !== undefined ? { paragraphIndent } : {}),
+    ...(node.letterSpacing && node.letterSpacing !== figma.mixed ? { letterSpacing: { ...node.letterSpacing } } : {}),
+    ...(node.lineHeight && node.lineHeight !== figma.mixed ? { lineHeight: { ...node.lineHeight } } : {}),
+    mixedFields: mixedTypographyFields(node),
     charactersLength: node.characters.length,
     contentHash: hashValue(node.characters),
-    ...(solid ? { textColor: { r: solid.color.r, g: solid.color.g, b: solid.color.b, a: (solid.opacity ?? 1) * node.opacity } } : {}),
+    ...(background.foregroundColor ? { textColor: background.foregroundColor } : solid ? { textColor: { r: solid.color.r, g: solid.color.g, b: solid.color.b, a: (solid.opacity ?? 1) * node.opacity } } : {}),
     ...(background.color ? { backgroundColor: background.color } : {}),
-    backgroundResolvable: Boolean(solid) && background.resolvable,
+    backgroundResolvable: Boolean(background.foregroundColor) && background.resolvable,
+    backgroundSourceNodeIds: background.sourceNodeIds,
+    ...(background.reason ? { backgroundReason: background.reason } : {}),
   };
 }
 
@@ -378,12 +373,82 @@ function devStatusSnapshot(node: SceneNode): NodeSnapshot["devStatus"] {
   }
 }
 
+function renderVisible(node: SceneNode): boolean {
+  let current: BaseNode | null = node;
+  while (current && current.type !== "PAGE" && current.type !== "DOCUMENT") {
+    if ("visible" in current && current.visible === false || "opacity" in current && current.opacity === 0) return false;
+    current = current.parent;
+  }
+  return true;
+}
+
+function geometryEvidence(node: SceneNode): Pick<NodeSnapshot, "cornerRadii" | "strokeWeights" | "clipsContent" | "isMask" | "absoluteBounds" | "boundGeometryFields"> {
+  const corners = "topLeftRadius" in node ? { topLeft: node.topLeftRadius, topRight: node.topRightRadius, bottomLeft: node.bottomLeftRadius, bottomRight: node.bottomRightRadius } : undefined;
+  const weights = "strokeTopWeight" in node ? { top: node.strokeTopWeight, right: node.strokeRightWeight, bottom: node.strokeBottomWeight, left: node.strokeLeftWeight } : undefined;
+  const bounds = node.absoluteBoundingBox;
+  return {
+    ...(corners && Object.values(corners).every((value) => typeof value === "number" && Number.isFinite(value)) ? { cornerRadii: corners } : {}),
+    ...(weights && Object.values(weights).every((value) => typeof value === "number" && Number.isFinite(value)) ? { strokeWeights: weights } : {}),
+    ...("clipsContent" in node ? { clipsContent: node.clipsContent } : {}),
+    ...("isMask" in node ? { isMask: node.isMask } : {}),
+    ...(bounds ? { absoluteBounds: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } } : {}),
+    boundGeometryFields: Object.entries(node.boundVariables ?? {}).filter(([, value]) => Boolean(value)).map(([field]) => field),
+  };
+}
+
+/** Live repair validation feeds the exact same property policy as audit rules. */
+export async function tokenPropertySnapshot(node: SceneNode): Promise<NodeSnapshot> {
+  const fillData = paintSnapshots(node, "fills");
+  const strokeData = paintSnapshots(node, "strokes");
+  const text = textSnapshot(node);
+  if (node.type === "TEXT" && text) {
+    const style = await new TextStyleEvidenceReader().evidence(node, text);
+    if (style) text.style = style;
+  }
+  const layout = layoutSnapshot(node);
+  let ancestor = node.parent;
+  let instanceAncestor: string | undefined;
+  while (ancestor && ancestor.type !== "PAGE" && ancestor.type !== "DOCUMENT") {
+    if (ancestor.type === "INSTANCE") { instanceAncestor = ancestor.id; break; }
+    ancestor = ancestor.parent;
+  }
+  const radius = "cornerRadius" in node ? numberOrUndefined(node.cornerRadius) : undefined;
+  const weight = "strokeWeight" in node ? numberOrUndefined(node.strokeWeight) : undefined;
+  return { id: node.id, rootId: node.id, pageId: "", path: node.name, name: node.name, type: node.type,
+    visible: node.visible, renderVisible: renderVisible(node), width: node.width, height: node.height, x: node.x, y: node.y,
+    opacity: "opacity" in node ? node.opacity : 1, rotation: 0, childIds: [], descendantCount: 0,
+    fills: fillData, strokes: strokeData, effects: [], boundFields: boundFields(node, fillData, strokeData),
+    boundVariableIds: boundVariableIds(node, fillData, strokeData), inferredBindings: {}, hasAnnotations: false, devResourceCount: 0, exportSettings: [],
+    ...geometryEvidence(node), ...(text ? { text } : {}), ...(layout ? { layout } : {}),
+    ...(radius !== undefined ? { cornerRadius: radius } : {}), ...(weight !== undefined ? { strokeWeight: weight } : {}),
+    ...(instanceAncestor ? { evidenceRole: "instance-descendant", owningInstanceId: instanceAncestor } : {}),
+  };
+}
+
+function instanceProvenance(node: InstanceNode): Pick<NonNullable<NodeSnapshot["instance"]>, "overridesKnown" | "directOverrideFields" | "scaleFactor"> {
+  try {
+    const overridesKnown = Array.isArray(node.overrides);
+    return { overridesKnown,
+      ...(overridesKnown ? { directOverrideFields: node.overrides.filter((entry) => entry.id === node.id).flatMap((entry) => entry.overriddenFields) } : {}),
+      ...(Number.isFinite(node.scaleFactor) ? { scaleFactor: node.scaleFactor } : {}),
+    };
+  } catch { return { overridesKnown: false }; }
+}
+
+function pointerInteraction(node: SceneNode): boolean | undefined {
+  try { return "reactions" in node ? node.reactions.some((reaction) => reaction.trigger?.type === "ON_CLICK") : false; }
+  catch { return undefined; }
+}
+
 function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: string): NodeSnapshot {
   const fillData = paintSnapshots(node, "fills");
   const strokeData = paintSnapshots(node, "strokes");
   const effectData = effectSnapshots(node);
   const radius = "cornerRadius" in node ? numberOrUndefined(node.cornerRadius) : undefined;
   const strokeWeight = "strokeWeight" in node ? numberOrUndefined(node.strokeWeight) : undefined;
+  // Instance descendants are captured selectively as rendering occurrences.
+  // Their graph links are assigned after traversal so decorative internals do
+  // not become source structure or keep a large library graph alive twice.
   const children = node.type !== "INSTANCE" && hasChildren(node) ? node.children.map((child) => child.id) : [];
   const detached = "detachedInfo" in node && node.detachedInfo !== null;
   const layout = layoutSnapshot(node);
@@ -396,6 +461,10 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
   const annotationTexts = "annotations" in node ? node.annotations.map(annotationText) : [];
   const devStatus = devStatusSnapshot(node);
   return {
+    ...geometryEvidence(node),
+    renderVisible: renderVisible(node),
+    ...((value) => value === undefined ? {} : { hasPointerInteraction: value })(pointerInteraction(node)),
+    ...((value) => value ? { interactionProperties: value } : {})(interactionPropertiesSnapshot(node)),
     id: node.id,
     rootId,
     pageId,
@@ -444,22 +513,95 @@ interface CaptureEntry {
   node: SceneNode;
   rootId: string;
   path: string;
+  owningInstanceId?: string;
 }
 
-function captureEntries(root: SceneNode, pageName: string): CaptureEntry[] {
+function captureEntries(root: SceneNode, pageName: string, identity?: { rootId: string; path: string }): CaptureEntry[] {
   const entries: CaptureEntry[] = [];
-  const stack: CaptureEntry[] = [{ node: root, rootId: root.id, path: `${pageName} / ${root.name}` }];
+  const stack: Array<CaptureEntry & { include: boolean }> = [{ node: root, rootId: identity?.rootId ?? root.id, path: identity?.path ?? `${pageName} / ${root.name}`, include: true }];
   while (stack.length > 0) {
     const entry = stack.pop()!;
-    entries.push(entry);
-    if (entry.node.type !== "INSTANCE" && hasChildren(entry.node)) {
+    if (entry.include) entries.push(entry);
+    if (hasChildren(entry.node)) {
+      const occurrenceOwner = entry.node.type === "INSTANCE" ? entry.node.id : entry.owningInstanceId;
       for (let index = entry.node.children.length - 1; index >= 0; index -= 1) {
         const child = entry.node.children[index];
-        if (child) stack.push({ node: child, rootId: root.id, path: `${entry.path} / ${child.name}` });
+        if (!child || occurrenceOwner && !child.visible) continue;
+        // Contrast needs visible text occurrences. Target-size/state evidence
+        // additionally needs explicit prototype targets and nested instances,
+        // but decorative vectors and layout wrappers are already represented
+        // by their source component and must not multiply the source graph.
+        const include = !occurrenceOwner || child.type === "TEXT" || child.type === "INSTANCE" || pointerInteraction(child) === true;
+        stack.push({ node: child, rootId: root.id, path: `${entry.path} / ${child.name}`, include,
+          ...(occurrenceOwner ? { owningInstanceId: occurrenceOwner } : {}) });
       }
     }
   }
   return entries;
+}
+
+interface CaptureFragmentEntries {
+  root: SceneNode;
+  entries: CaptureEntry[];
+}
+
+/** Sections organize independent sources. Their own metadata stays in a small
+ * header fragment while each child source retains the original graph ownership. */
+function captureFragments(root: SceneNode, pageName: string): CaptureFragmentEntries[] {
+  const fragments = new Map<string, CaptureFragmentEntries>();
+  const ownerByNodeId = new Map<string, string>();
+  const sourceTypes = new Set(["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET", "INSTANCE", "SECTION"]);
+  for (const entry of captureEntries(root, pageName)) {
+    const startsFragment = entry.node.id === root.id || entry.node.parent?.type === "SECTION" && sourceTypes.has(entry.node.type);
+    const fragmentId = startsFragment ? entry.node.id : ownerByNodeId.get(entry.node.parent?.id ?? "") ?? entry.owningInstanceId ?? root.id;
+    ownerByNodeId.set(entry.node.id, fragmentId);
+    let fragment = fragments.get(fragmentId);
+    if (!fragment) { fragment = { root: entry.node, entries: [] }; fragments.set(fragmentId, fragment); }
+    fragment.entries.push(entry);
+  }
+  return [...fragments.values()];
+}
+
+const FRAGMENT_SOURCE_TYPES = new Set(["FRAME", "GROUP", "COMPONENT", "COMPONENT_SET", "INSTANCE", "SECTION"]);
+
+/** Finds the independently cached source that owns a changed scene node. */
+function liveFragmentRoot(node: SceneNode): SceneNode {
+  let current = node;
+  while (current.parent && current.parent.type !== "PAGE" && current.parent.type !== "DOCUMENT") {
+    if (current.parent.type === "SECTION" && FRAGMENT_SOURCE_TYPES.has(current.type)) return current;
+    current = current.parent as SceneNode;
+  }
+  return current;
+}
+
+function graphDescendantIds(nodes: Record<string, NodeSnapshot>, rootId: string): string[] {
+  const output: string[] = [];
+  const pending = [rootId];
+  const seen = new Set<string>();
+  while (pending.length > 0) {
+    const id = pending.pop();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const node = nodes[id];
+    if (!node) continue;
+    output.push(id);
+    pending.push(...node.childIds);
+  }
+  return output;
+}
+
+function* capturePageFragments(roots: readonly SceneNode[], pageName: string): Generator<CaptureFragmentEntries> {
+  for (const root of roots) yield* captureFragments(root, pageName);
+}
+
+/** Parent child IDs are validated live, without hashing every child source twice. */
+function restFragmentRoot(root: Record<string, unknown>, entries: readonly CaptureEntry[]): Record<string, unknown> {
+  if (root.type !== "SECTION") return root;
+  const included = new Set(entries.map((entry) => entry.node.id));
+  const project = (value: Record<string, unknown>): Record<string, unknown> => ({ ...value,
+    ...(Array.isArray(value.children) ? { children: value.children.filter((child: unknown) => child && typeof child === "object" && "id" in child && typeof child.id === "string" && included.has(child.id))
+      .map((child: Record<string, unknown>) => project(child)) } : {}) });
+  return project(root);
 }
 
 /** Inputs whose Plugin API representation is richer than the bulk REST export. */
@@ -468,7 +610,12 @@ function captureSupplement(node: SceneNode, raw: Record<string, unknown> | undef
     id: node.id,
     name: node.name,
     parentId: node.parent?.id,
-    childIds: node.type !== "INSTANCE" && hasChildren(node) ? node.children.map((child) => child.id) : [],
+    childIds: hasChildren(node) ? node.children.filter((child) => node.type !== "INSTANCE" || child.visible).map((child) => child.id) : [],
+    geometry: geometryEvidence(node),
+    renderVisible: renderVisible(node),
+    pointerInteraction: pointerInteraction(node),
+    interactionProperties: interactionPropertiesSnapshot(node),
+    instanceProvenance: node.type === "INSTANCE" ? instanceProvenance(node) : undefined,
     visible: node.visible,
     width: node.width,
     height: node.height,
@@ -495,6 +642,8 @@ function captureSupplement(node: SceneNode, raw: Record<string, unknown> | undef
     cornerRadius: "cornerRadius" in node ? numberOrUndefined(node.cornerRadius) : undefined,
     strokeWeight: "strokeWeight" in node ? numberOrUndefined(node.strokeWeight) : undefined,
     text: node.type === "TEXT" ? {
+      textStyleId: node.textStyleId === figma.mixed ? "mixed" : node.textStyleId,
+      mixedFields: mixedTypographyFields(node),
       fontSize: numberOrUndefined(node.fontSize),
       fontWeight: numberOrUndefined(node.fontWeight),
       fontName: node.fontName === figma.mixed ? undefined : node.fontName,
@@ -515,20 +664,52 @@ function captureSupplement(node: SceneNode, raw: Record<string, unknown> | undef
   };
 }
 
-function enrichInferences(node: SceneNode, snapshot: NodeSnapshot): void {
-  // Figma inference has no revision token. Always refresh it, including on a
-  // cache hit, and preserve the whole-file inferred-variable inventory.
-  const inferred = node.inferredVariables;
+function enrichLiveEvidence(node: SceneNode, snapshot: NodeSnapshot): void {
+  for (const field of ["cornerRadii", "strokeWeights", "clipsContent", "isMask", "absoluteBounds", "boundGeometryFields"] as const) delete snapshot[field];
+  snapshot.renderVisible = renderVisible(node);
+  Object.assign(snapshot, geometryEvidence(node));
+  const pointer = pointerInteraction(node);
+  if (pointer === undefined) delete snapshot.hasPointerInteraction;
+  else snapshot.hasPointerInteraction = pointer;
+  if (node.type === "TEXT" && snapshot.text && snapshot.text.mixedFields === undefined) {
+    // Cached fragments deliberately omit evidence that must be read from the
+    // live Plugin API. Replace the complete text snapshot so colors and the
+    // resolvability decision cannot survive from a stale rendering context.
+    const liveText = textSnapshot(node);
+    if (liveText) snapshot.text = liveText;
+  }
+  const interaction = interactionPropertiesSnapshot(node);
+  if (interaction) snapshot.interactionProperties = interaction;
+  else delete snapshot.interactionProperties;
+}
+
+/** Only query Figma's expensive inference bridge when a rule can use its result.
+ * Keep layout inference independent: a fully token-bound source may still need
+ * a guarded layout repair. Rendering-only instance descendants own neither. */
+function tokenInferenceFields(snapshot: NodeSnapshot): BindableField[] {
+  return eligibleTokenFields(snapshot).filter((field) => assessTokenProperty(snapshot, field).repairable && !propertyBindingEvidence(snapshot, field));
+}
+
+function enrichInferences(node: SceneNode, snapshot: NodeSnapshot, tokenFields: readonly BindableField[]): boolean {
+  const inferred = tokenFields.length > 0 ? node.inferredVariables : undefined;
   snapshot.inferredBindings = inferredBindings(inferred);
+  if (node.type !== "TEXT") for (const field of ["fontFamily", "fontSize", "fontStyle", "fontWeight", "letterSpacing", "lineHeight", "paragraphSpacing", "paragraphIndent"] as BindableField[]) delete snapshot.inferredBindings[field];
   snapshot.fills.forEach((paint, index) => { paint.inferredVariableIds = (inferred?.fills?.[index] ?? []).map((alias) => alias.id); });
   snapshot.strokes.forEach((paint, index) => { paint.inferredVariableIds = (inferred?.strokes?.[index] ?? []).map((alias) => alias.id); });
-  if (snapshot.layout) {
-    snapshot.layout.inferredAvailable = snapshot.layout.mode === "NONE"
-      && (node.type === "FRAME" || node.type === "COMPONENT")
-      && snapshot.childIds.length >= 2
-      && "inferredAutoLayout" in node
-      && node.inferredAutoLayout !== null;
-  }
+  const needsLayoutInference = snapshot.evidenceRole !== "instance-descendant" && snapshot.layout?.mode === "NONE"
+    && (node.type === "FRAME" || node.type === "COMPONENT") && snapshot.childIds.length >= 2 && "inferredAutoLayout" in node;
+  if (snapshot.layout) snapshot.layout.inferredAvailable = Boolean(needsLayoutInference && node.inferredAutoLayout !== null);
+  return tokenFields.length > 0 || needsLayoutInference;
+}
+
+function bindingSignature(node: SceneNode): string {
+  return hashValue({ boundVariables: node.boundVariables, explicitModes: node.explicitVariableModes,
+    resolvedModes: node.resolvedVariableModes,
+    paintBindings: { fills: "fills" in node ? paints(node.fills).map((paint) => paint.type === "SOLID" ? paint.boundVariables : undefined) : [],
+      strokes: "strokes" in node ? paints(node.strokes).map((paint) => paint.type === "SOLID" ? paint.boundVariables : undefined) : [] },
+    textStyleId: node.type === "TEXT" ? node.textStyleId === figma.mixed ? "mixed" : node.textStyleId : undefined,
+    effectStyleId: "effectStyleId" in node ? node.effectStyleId : undefined,
+    patternResolution: node.getSharedPluginData("verndaleAiReady", "pattern-resolution-v1") });
 }
 
 function variableAliases(value: unknown, output = new Set<string>()): Set<string> {
@@ -815,11 +996,23 @@ async function variableCandidates(
 
 export class FigmaAdapter {
   private cancelled = false;
-  private verifyVariableEnvironment: (() => Promise<boolean>) | undefined;
+  private verifyResourceEnvironment: (() => Promise<boolean>) | undefined;
+  private sceneSignatures = new Map<string, string>();
+  private sessionInferences = new Map<string, { fingerprint: string; nodes: NodeSnapshot[] }>();
 
   async matchesVariableEnvironment(): Promise<boolean> {
-    try { return await this.verifyVariableEnvironment?.() ?? false; }
+    try { return Boolean(await this.verifyResourceEnvironment?.()) && await this.matchesSceneSignatures(); }
     catch { return false; }
+  }
+
+  private async matchesSceneSignatures(ignored = new Set<string>()): Promise<boolean> {
+    const entries = [...this.sceneSignatures].filter(([id]) => !ignored.has(id));
+    const matches = await mapConcurrent(entries, 32, async ([id, digest]) => {
+      const node = await figma.getNodeByIdAsync(id).catch(() => null);
+      try { return Boolean(node && isSceneNode(node) && !node.removed && bindingSignature(node) === digest); }
+      catch { return false; }
+    }, () => this.cancelled);
+    return !this.cancelled && matches.every(Boolean);
   }
 
   beginScan(): void {
@@ -977,12 +1170,254 @@ export class FigmaAdapter {
       && pages.every((page, index) => page.id === graph.pages[index]?.id && page.name === graph.pages[index]?.name);
   }
 
+  /**
+   * Refresh a tracked property edit from the current graph. This path avoids
+   * materializing a second whole-file graph: it stages changed fragments,
+   * verifies the resource epoch, and only then replaces those fragments in the
+   * previous graph. Structural and resource-sensitive edits are routed to the
+   * full builder by the caller.
+   */
+  private async refreshTrackedFragments(
+    previous: DesignKnowledgeGraph,
+    profile: ReadinessProfile,
+    onProgress: (progress: ScanProgress) => void,
+    options: { contextCache?: ContextCachePort; dirtyNodeIds: readonly string[]; previousCollections?: readonly VariableCollectionOption[] },
+  ): Promise<KnowledgeBuildResult> {
+    const started = Date.now();
+    const diagnostics = newBuildDiagnostics();
+    const priorResourceVerifier = this.verifyResourceEnvironment;
+    if (!priorResourceVerifier) throw new FullKnowledgeRebuildRequired("The previous resource epoch is unavailable");
+    const resourceFingerprint = previous.resourceFingerprint;
+    if (!resourceFingerprint) throw new FullKnowledgeRebuildRequired("The previous resource fingerprint is unavailable");
+    let stageStarted = Date.now();
+    if (!await priorResourceVerifier()) throw new FullKnowledgeRebuildRequired("Variables, styles, or libraries changed outside the tracked scene edit");
+    diagnostics.validationMs += Date.now() - stageStarted;
+    if (this.cancelled) throw new FullKnowledgeRebuildRequired("The incremental refresh was cancelled");
+
+    stageStarted = Date.now();
+    const variableEnvironment = await variableEnvironmentReader(() => this.cancelled);
+    diagnostics.variablesMs += Date.now() - stageStarted;
+    if (!variableEnvironment) throw new FullKnowledgeRebuildRequired("Variable provenance could not be verified incrementally");
+
+    const dirtyScenes: SceneNode[] = [];
+    for (const id of [...new Set(options.dirtyNodeIds)]) {
+      const node = await figma.getNodeByIdAsync(id);
+      if (!node || !isSceneNode(node) || node.removed) throw new FullKnowledgeRebuildRequired("A tracked node was deleted or is no longer a scene node");
+      dirtyScenes.push(node);
+    }
+    if (dirtyScenes.length === 0) throw new FullKnowledgeRebuildRequired("No tracked scene edits were available");
+
+    const affectedRoots = new Map<string, SceneNode>();
+    const sourceComponentIds = new Set<string>();
+    const addAffectedRoot = (node: SceneNode): void => {
+      const root = liveFragmentRoot(node);
+      // A section owns independently cached child sources. Changes to the
+      // section itself can affect every child and therefore require a full pass.
+      if (root.type === "SECTION") throw new FullKnowledgeRebuildRequired("A section-level change affects multiple source fragments");
+      affectedRoots.set(root.id, root);
+    };
+    for (const scene of dirtyScenes) {
+      addAffectedRoot(scene);
+      let current: BaseNode | null = scene;
+      while (current && current.type !== "PAGE" && current.type !== "DOCUMENT") {
+        if (current.type === "COMPONENT" || current.type === "COMPONENT_SET") sourceComponentIds.add(current.id);
+        current = current.parent;
+      }
+      if (scene.type === "COMPONENT_SET") {
+        for (const id of graphDescendantIds(previous.nodes, scene.id)) {
+          if (previous.nodes[id]?.type === "COMPONENT") sourceComponentIds.add(id);
+        }
+      }
+    }
+    if (sourceComponentIds.size > 0) {
+      for (const instanceId of previous.instanceIds) {
+        const mainId = previous.nodes[instanceId]?.instance?.mainComponentId;
+        if (!mainId || !sourceComponentIds.has(mainId)) continue;
+        const instance = await figma.getNodeByIdAsync(instanceId);
+        if (!instance || instance.type !== "INSTANCE" || instance.removed) throw new FullKnowledgeRebuildRequired("A component consumer changed structurally");
+        addAffectedRoot(instance);
+      }
+    }
+
+    // Retain only outermost roots when a source and one of its descendants are
+    // both present in the dependency closure.
+    for (const [id, root] of [...affectedRoots]) {
+      let parent = root.parent;
+      while (parent && parent.type !== "PAGE" && parent.type !== "DOCUMENT") {
+        if (affectedRoots.has(parent.id)) { affectedRoots.delete(id); break; }
+        parent = parent.parent;
+      }
+    }
+    const affectedPreviousIds = new Set<string>();
+    for (const root of affectedRoots.values()) for (const id of graphDescendantIds(previous.nodes, root.id)) affectedPreviousIds.add(id);
+    if (!await this.matchesSceneSignatures(affectedPreviousIds)) {
+      throw new FullKnowledgeRebuildRequired("An untracked scene binding or confirmation changed");
+    }
+
+    const styles = new TextStyleEvidenceReader();
+    const staged: Array<{ root: SceneNode; page: PageNode; key: string; fingerprint: string; snapshots: NodeSnapshot[]; signatures: Array<[string, string]> }> = [];
+    const rootsByPage = new Map<string, { page: PageNode; roots: SceneNode[] }>();
+    for (const root of affectedRoots.values()) {
+      const page = findPage(root);
+      if (!page) throw new FullKnowledgeRebuildRequired("An affected source is detached from its page");
+      const group = rootsByPage.get(page.id) ?? { page, roots: [] };
+      group.roots.push(root);
+      rootsByPage.set(page.id, group);
+    }
+    const pageGroups = [...rootsByPage.values()];
+    let completedPages = 0;
+    for (const { page, roots } of pageGroups) {
+      onProgress({ phase: "loading-pages", completed: completedPages, total: pageGroups.length, pageName: page.name,
+        message: `Refreshing ${roots.length} affected source${roots.length === 1 ? "" : "s"} on ${page.name}` });
+      stageStarted = Date.now();
+      await page.loadAsync();
+      diagnostics.pageLoadingMs += Date.now() - stageStarted;
+      let exported: ReturnType<typeof restPageFingerprint>;
+      if (options.contextCache && "exportAsync" in page) {
+        try { exported = restPageFingerprint(await page.exportAsync({ format: "JSON_REST_V1" }), page.id); }
+        catch { /* A missing validation export requires the conservative path. */ }
+      }
+      if (!exported) throw new FullKnowledgeRebuildRequired("The affected page could not be fingerprinted");
+      const restNodes = new Map([...exported.roots.values()].flatMap((root) => [...restSubtreeNodes(root)]));
+      for (const root of roots) {
+        if (this.cancelled) throw new FullKnowledgeRebuildRequired("The incremental refresh was cancelled");
+        const previousRoot = previous.nodes[root.id];
+        if (!previousRoot) throw new FullKnowledgeRebuildRequired("An affected source is absent from the current graph");
+        const entries = captureEntries(root, page.name, { rootId: previousRoot.rootId, path: (() => {
+          const names: string[] = [];
+          let current: BaseNode | null = root;
+          while (current && current.type !== "PAGE" && current.type !== "DOCUMENT") { names.push(current.name); current = current.parent; }
+          return `${page.name} / ${names.reverse().join(" / ")}`;
+        })() });
+        const exportedRoot = restNodes.get(root.id);
+        const supplements = entries.map(({ node, rootId, path }) => ({ rootId, path, node: captureSupplement(node, restNodes.get(node.id)) }));
+        stageStarted = Date.now();
+        const environment = exportedRoot && restSubtreeCovers(exportedRoot, entries) ? await variableEnvironment.fingerprint(supplements) : undefined;
+        const fingerprint = environment ? hashValue({ captureVersion: 2, fileKey: figma.fileKey, pageId: page.id, pageName: page.name,
+          profile, restRoot: exportedRoot, metadata: exported.metadata, supplements, environment }) : undefined;
+        diagnostics.validationMs += Date.now() - stageStarted;
+        if (!fingerprint) throw new FullKnowledgeRebuildRequired("An affected source has incomplete dependency evidence");
+
+        stageStarted = Date.now();
+        const snapshots = entries.map((entry) => snapshotBase(entry.node, entry.rootId, page.id, entry.path));
+        const signatures: Array<[string, string]> = [];
+        diagnostics.captureMs += Date.now() - stageStarted;
+        diagnostics.capturedFragments += 1;
+        diagnostics.capturedNodes += snapshots.length;
+        const occurrenceChildren = new Map<string, string[]>();
+        for (const entry of entries) {
+          if (!entry.owningInstanceId) continue;
+          occurrenceChildren.set(entry.owningInstanceId, [...(occurrenceChildren.get(entry.owningInstanceId) ?? []), entry.node.id]);
+        }
+        const instances: Array<{ scene: InstanceNode; snapshot: NodeSnapshot }> = [];
+        stageStarted = Date.now();
+        for (const [index, entry] of entries.entries()) {
+          const snapshot = snapshots[index]!;
+          if (entry.owningInstanceId) {
+            snapshot.evidenceRole = "instance-descendant";
+            snapshot.owningInstanceId = entry.owningInstanceId;
+            snapshot.parentId = entry.owningInstanceId;
+            snapshot.childIds = entry.node.type === "INSTANCE" ? occurrenceChildren.get(entry.node.id) ?? [] : [];
+          } else if (entry.node.type === "INSTANCE") snapshot.childIds = occurrenceChildren.get(entry.node.id) ?? [];
+          enrichLiveEvidence(entry.node, snapshot);
+          if (entry.node.type === "TEXT" && snapshot.text) {
+            const style = await styles.evidence(entry.node, snapshot.text);
+            if (style) snapshot.text.style = style;
+          }
+          if (enrichInferences(entry.node, snapshot, tokenInferenceFields(snapshot))) diagnostics.inferenceNodes += 1;
+          signatures.push([entry.node.id, bindingSignature(entry.node)]);
+          if (entry.node.type === "INSTANCE") instances.push({ scene: entry.node, snapshot });
+        }
+        diagnostics.inferenceMs += Date.now() - stageStarted;
+        stageStarted = Date.now();
+        await mapConcurrent(instances, 16, async ({ scene, snapshot }) => {
+          const main = await scene.getMainComponentAsync().catch(() => null);
+          snapshot.instance = { detached: false, ...instanceProvenance(scene),
+            ...(main ? { mainComponentId: main.id, mainComponentName: main.name, ...(main.key ? { mainComponentKey: main.key } : {}) } : {}) };
+        }, () => this.cancelled);
+        diagnostics.componentsMs += Date.now() - stageStarted;
+        stageStarted = Date.now();
+        let resources: DevResourceWithNodeId[] = [];
+        try { resources = await root.getDevResourcesAsync({ includeChildren: true }); } catch { /* Missing resources remain zero. */ }
+        for (const resource of resources) {
+          const index = entries.findIndex((entry) => entry.node.id === resource.nodeId);
+          if (index >= 0) snapshots[index]!.devResourceCount += 1;
+        }
+        diagnostics.devResourcesMs += Date.now() - stageStarted;
+        staged.push({ root, page, key: `capture-v1:${page.id}:${root.id}`, fingerprint, snapshots, signatures });
+      }
+      completedPages += 1;
+    }
+
+    stageStarted = Date.now();
+    if (!await variableEnvironment.verify() || !await styles.verify() || !await priorResourceVerifier()
+      || !await this.matchesSceneSignatures(affectedPreviousIds)) {
+      throw new FullKnowledgeRebuildRequired("Resources changed while affected sources were refreshed");
+    }
+    diagnostics.validationMs += Date.now() - stageStarted;
+
+    for (const { key, fingerprint, snapshots } of staged) {
+      if (options.contextCache) {
+        try { await options.contextCache.set(key, contextFragment(fingerprint, snapshots)); }
+        catch { diagnostics.cacheWriteFailures += 1; }
+      }
+    }
+
+    // No asynchronous work occurs after this point. The caller's build token
+    // rejects a concurrent document event before publishing the returned graph.
+    stageStarted = Date.now();
+    for (const id of affectedPreviousIds) delete previous.nodes[id];
+    for (const { snapshots } of staged) for (const snapshot of snapshots) previous.nodes[snapshot.id] = snapshot;
+    populateGraphMetrics(previous.nodes);
+    const counts = new Map<string, number>();
+    for (const node of Object.values(previous.nodes)) counts.set(node.pageId, (counts.get(node.pageId) ?? 0) + 1);
+    const pages = previous.pages.map((page) => ({ ...page, role: roleForPage(page.id, profile), nodeCount: counts.get(page.id) ?? 0 }));
+    const componentIds = Object.values(previous.nodes).filter((node) => node.type === "COMPONENT" || node.type === "COMPONENT_SET").map((node) => node.id);
+    const instanceIds = Object.values(previous.nodes).filter((node) => node.type === "INSTANCE").map((node) => node.id);
+    const partial = {
+      schemaVersion: 1 as const,
+      resourceFingerprint,
+      fileName: figma.root.name,
+      ...(figma.fileKey ? { fileKey: figma.fileKey } : {}),
+      builtAt: new Date().toISOString(), complete: true, cancelled: false,
+      pageCount: pages.length, loadedPageCount: pages.length, pages, nodes: previous.nodes,
+      variables: previous.variables, componentIds, instanceIds, sourceFrameIds: [] as string[],
+    };
+    partial.sourceFrameIds = sourceFrameIds(partial, profile);
+    const graph = finalizeKnowledgeGraph(partial, profile);
+    diagnostics.derivedMs += Date.now() - stageStarted;
+    diagnostics.reusedNodes = Math.max(0, Object.keys(graph.nodes).length - diagnostics.capturedNodes);
+    diagnostics.reusedFragments = Math.max(0, this.sessionInferences.size - diagnostics.capturedFragments);
+    for (const { key, fingerprint, snapshots } of staged) {
+      this.sessionInferences.set(key, { fingerprint, nodes: snapshots });
+    }
+    for (const id of affectedPreviousIds) this.sceneSignatures.delete(id);
+    for (const { signatures } of staged) for (const [id, digest] of signatures) this.sceneSignatures.set(id, digest);
+    this.verifyResourceEnvironment = async () => await priorResourceVerifier() && await variableEnvironment.verify() && await styles.verify();
+    diagnostics.totalMs = Date.now() - started;
+    onProgress({ phase: "complete", completed: pageGroups.length, total: pageGroups.length,
+      message: `Refreshed ${staged.length} affected source${staged.length === 1 ? "" : "s"}` });
+    return { graph, collections: [...(options.previousCollections ?? [])], diagnostics };
+  }
+
   async buildKnowledge(
     profile: ReadinessProfile,
     onProgress: (progress: ScanProgress) => void,
-    options: { contextCache?: ContextCachePort; forceFullCapture?: boolean } = {},
+    options: { contextCache?: ContextCachePort; forceFullCapture?: boolean; dirtyNodeIds?: readonly string[];
+      previousGraph?: DesignKnowledgeGraph; previousCollections?: readonly VariableCollectionOption[] } = {},
   ): Promise<KnowledgeBuildResult> {
-    this.verifyVariableEnvironment = undefined;
+    if (options.previousGraph && options.dirtyNodeIds?.length && !options.forceFullCapture) {
+      return this.refreshTrackedFragments(options.previousGraph, profile, onProgress, {
+        ...(options.contextCache ? { contextCache: options.contextCache } : {}),
+        dirtyNodeIds: options.dirtyNodeIds,
+        ...(options.previousCollections ? { previousCollections: options.previousCollections } : {}),
+      });
+    }
+    this.verifyResourceEnvironment = undefined;
+    if (options.forceFullCapture) {
+      this.sessionInferences.clear();
+      this.sceneSignatures.clear();
+    }
     const started = Date.now();
     const diagnostics = newBuildDiagnostics();
     const pages = figma.root.children;
@@ -992,6 +1427,10 @@ export class FigmaAdapter {
     const instanceIds: string[] = [];
     const instances: Array<{ scene: InstanceNode; snapshot: NodeSnapshot }> = [];
     const pendingCache: Array<{ key: string; value: unknown }> = [];
+    const styles = new TextStyleEvidenceReader();
+    const nextSessionInferences = new Map<string, { fingerprint: string; nodes: NodeSnapshot[] }>();
+    const nextSceneSignatures = new Map<string, string>();
+    const dirty = new Set(options.dirtyNodeIds ?? []);
     // A root id is not a file identity. Files without a stable key use live capture.
     const cache = figma.fileKey && !options.forceFullCapture ? options.contextCache : undefined;
     let loadedPageCount = 0;
@@ -1015,19 +1454,19 @@ export class FigmaAdapter {
       }
       diagnostics.validationMs += Date.now() - stageStarted;
       const rootNodeIds = page.children.map((node) => node.id);
+      const restNodes = exported ? new Map([...exported.roots.values()].flatMap((root) => [...restSubtreeNodes(root)])) : undefined;
       let pageNodeCount = 0;
-      for (const root of page.children) {
+      for (const { root, entries } of capturePageFragments(page.children, page.name)) {
         if (this.cancelled) break;
-        const entries = captureEntries(root, page.name);
         stageStarted = Date.now();
-        const restRoot = exported?.roots.get(root.id);
-        const restNodes = restRoot ? restSubtreeNodes(restRoot) : undefined;
+        const exportedRoot = restNodes?.get(root.id);
+        const restRoot = exportedRoot ? restFragmentRoot(exportedRoot, entries) : undefined;
         let fingerprint: string | undefined;
         try {
           if (restRoot && variableEnvironment && restSubtreeCovers(restRoot, entries)) {
-            const supplements = entries.map(({ node }) => captureSupplement(node, restNodes?.get(node.id)));
+            const supplements = entries.map(({ node, rootId, path }) => ({ rootId, path, node: captureSupplement(node, restNodes?.get(node.id)) }));
             const environment = await variableEnvironment.fingerprint(supplements);
-            if (environment) fingerprint = hashValue({ captureVersion: 1, fileKey: figma.fileKey, pageId: page.id, pageName: page.name, profile, restRoot, metadata: exported?.metadata, supplements, environment });
+            if (environment) fingerprint = hashValue({ captureVersion: 2, fileKey: figma.fileKey, pageId: page.id, pageName: page.name, profile, restRoot, metadata: exported?.metadata, supplements, environment });
           } else if (variableEnvironment) {
             // Full capture needs the same dependency epoch as cached capture.
             await variableEnvironment.fingerprint(entries.map(({ node }) => ({ boundVariables: node.boundVariables,
@@ -1066,11 +1505,52 @@ export class FigmaAdapter {
         }
         if (this.cancelled) break;
         stageStarted = Date.now();
+        const occurrenceChildren = new Map<string, string[]>();
+        for (const entry of entries) {
+          if (!entry.owningInstanceId) continue;
+          const children = occurrenceChildren.get(entry.owningInstanceId) ?? [];
+          children.push(entry.node.id);
+          occurrenceChildren.set(entry.owningInstanceId, children);
+        }
+        const previousInference = this.sessionInferences.get(key);
+        // Reuse only within an explicitly tracked session edit and a complete
+        // local-variable epoch. Remote inference has no dependable revision token.
+        const reuseInference = options.dirtyNodeIds !== undefined && !options.forceFullCapture
+          && fingerprint !== undefined && previousInference?.fingerprint === fingerprint
+          && profile.tokenSourceCollectionKeys.every((collectionKey) => variableEnvironment?.localCollectionKeys.has(collectionKey))
+          && !entries.some(({ node }) => dirty.has(node.id));
         for (const [index, entry] of entries.entries()) {
           if (this.cancelled) break;
           const snapshot = snapshots[index]!;
-          enrichInferences(entry.node, snapshot);
-          diagnostics.inferenceNodes += 1;
+          if (entry.owningInstanceId) {
+            snapshot.evidenceRole = "instance-descendant";
+            snapshot.owningInstanceId = entry.owningInstanceId;
+            snapshot.parentId = entry.owningInstanceId;
+            snapshot.childIds = entry.node.type === "INSTANCE" ? occurrenceChildren.get(entry.node.id) ?? [] : [];
+          } else {
+            delete snapshot.evidenceRole;
+            delete snapshot.owningInstanceId;
+            if (entry.node.type === "INSTANCE") snapshot.childIds = occurrenceChildren.get(entry.node.id) ?? [];
+          }
+          enrichLiveEvidence(entry.node, snapshot);
+          if (entry.node.type === "TEXT" && snapshot.text) {
+            const style = await styles.evidence(entry.node, snapshot.text);
+            if (style) snapshot.text.style = style;
+            else delete snapshot.text.style;
+          }
+          const tokenFields = tokenInferenceFields(snapshot);
+          const previous = reuseInference ? previousInference?.nodes[index] : undefined;
+          // A text style can change without a document event or scene fingerprint
+          // change. Newly uncovered fields need fresh Figma candidate evidence.
+          if (previous?.id === entry.node.id && JSON.stringify(tokenInferenceFields(previous)) === JSON.stringify(tokenFields)) {
+            snapshot.inferredBindings = JSON.parse(JSON.stringify(previous.inferredBindings)) as NodeSnapshot["inferredBindings"];
+            snapshot.fills.forEach((paint, index) => { paint.inferredVariableIds = [...(previous.fills[index]?.inferredVariableIds ?? [])]; });
+            snapshot.strokes.forEach((paint, index) => { paint.inferredVariableIds = [...(previous.strokes[index]?.inferredVariableIds ?? [])]; });
+            if (snapshot.layout && previous.layout) snapshot.layout.inferredAvailable = previous.layout.inferredAvailable;
+          } else if (enrichInferences(entry.node, snapshot, tokenFields)) {
+            diagnostics.inferenceNodes += 1;
+          }
+          nextSceneSignatures.set(entry.node.id, bindingSignature(entry.node));
           nodes[entry.node.id] = snapshot;
           pageNodeCount += 1;
           if (entry.node.type === "COMPONENT" || entry.node.type === "COMPONENT_SET") componentIds.push(entry.node.id);
@@ -1084,6 +1564,7 @@ export class FigmaAdapter {
           }
         }
         diagnostics.inferenceMs += Date.now() - stageStarted;
+        if (fingerprint) nextSessionInferences.set(key, { fingerprint, nodes: snapshots });
       }
       pageSnapshots.push({ id: page.id, name: page.name, role: roleForPage(page.id, profile), loaded: true, nodeCount: pageNodeCount, rootNodeIds });
       if (this.cancelled) break;
@@ -1112,6 +1593,7 @@ export class FigmaAdapter {
       const main = await scene.getMainComponentAsync().catch(() => null);
       snapshot.instance = {
         detached: false,
+        ...instanceProvenance(scene),
         ...(main ? { mainComponentId: main.id, mainComponentName: main.name, ...(main.key ? { mainComponentKey: main.key } : {}) } : {}),
       };
     }, () => this.cancelled);
@@ -1128,7 +1610,7 @@ export class FigmaAdapter {
     const librarySummaries = new Map<string, string | undefined>();
     // Enroll even inaccessible inferred IDs before reading grading candidates.
     // Their later appearance or metadata changes must invalidate this epoch.
-    await variableEnvironment?.fingerprint(referencedVariableIds(nodes).map((id) => ({ type: "VARIABLE_ALIAS", id })));
+    const variableResourceFingerprint = await variableEnvironment?.fingerprint(referencedVariableIds(nodes).map((id) => ({ type: "VARIABLE_ALIAS", id })));
     const variables = this.cancelled ? [] : await variableCandidates(collections, nodes, () => this.cancelled, approvedKeys,
       (key, values) => { librarySummaries.set(key, libraryDigest(values)); });
     const libraryCollections = (values: VariableCollectionOption[]) => hashValue(values.filter((value) => value.remote && approvedKeys.has(value.key))
@@ -1161,11 +1643,14 @@ export class FigmaAdapter {
       diagnostics.validationMs += Date.now() - stageStarted;
       if (!verified && !this.cancelled) throw new Error("Variable values or collections changed while file context was being verified. Run the audit again.");
     }
+    if (!this.cancelled && !await styles.verify()) throw new Error("Text styles changed while file context was being verified. Run the audit again.");
     if (!this.cancelled && !await verifyLibraries()) throw new Error("Available library variables changed while file context was being verified. Run the audit again.");
     stageStarted = Date.now();
     populateGraphMetrics(nodes);
     const partial = {
       schemaVersion: 1 as const,
+      resourceFingerprint: hashValue({ variables: variableResourceFingerprint ?? "unavailable", styles: await styles.fingerprint(),
+        libraries: expectedLibraries, librarySummaries: [...librarySummaries].sort(([left], [right]) => left.localeCompare(right)) }),
       fileName: figma.root.name,
       ...(figma.fileKey ? { fileKey: figma.fileKey } : {}),
       builtAt: new Date().toISOString(),
@@ -1194,7 +1679,12 @@ export class FigmaAdapter {
     }
     if (this.cancelled && graph.complete) graph = finalizeKnowledgeGraph({ ...graph, complete: false, cancelled: true }, profile);
     if (graph.complete && variableEnvironment) {
-      this.verifyVariableEnvironment = async () => await variableEnvironment.verify() && await verifyLibraries();
+      // Scene bindings are covered by the document-change journal. Retaining a
+      // live handle and signature for every node doubles peak memory in large
+      // libraries and repeats tens of thousands of bridge reads at each save.
+      this.verifyResourceEnvironment = async () => await variableEnvironment.verify() && await verifyLibraries() && await styles.verify();
+      this.sceneSignatures = nextSceneSignatures;
+      this.sessionInferences = nextSessionInferences;
     }
     diagnostics.totalMs = Date.now() - started;
     onProgress({ phase: "complete", completed: loadedPageCount, total: pages.length, message: graph.complete ? "Whole-file knowledge is complete" : "Whole-file knowledge is incomplete" });

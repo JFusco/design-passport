@@ -36,6 +36,13 @@ export interface AuditCodecMeasurement {
   rawBytes: number;
 }
 
+export interface AuditSaveGuard {
+  /** Revalidate revision, resources and cancellation before replacing saved work. */
+  assertCurrent(phase: "prepare" | "before-write" | "after-write"): Promise<void>;
+  /** Publish synchronously at the verified durable commit, before pruning old results. */
+  commit?(audit: SavedAuditV1): void;
+}
+
 const PREFIX = "design-passport:cache:v1:";
 const AUDIT_PREFIX = `${PREFIX}audit:`;
 const CONTEXT_PREFIX = `${PREFIX}context:`;
@@ -422,7 +429,7 @@ export class AuditStorage {
     });
   }
 
-  saveAudit(input: SaveAuditInput): Promise<{ audit: SavedAuditV1; status: AuditSaveStatus }> {
+  saveAudit(input: SaveAuditInput, guard?: AuditSaveGuard): Promise<{ audit: SavedAuditV1; status: AuditSaveStatus }> {
     // Capture caller-owned values before queueing behind any asynchronous work.
     const captured = JSON.parse(JSON.stringify(input)) as SaveAuditInput;
     const now = this.now();
@@ -431,7 +438,9 @@ export class AuditStorage {
       savedAt: new Date(now).toISOString(), targetKey: canonicalAuditTargetKey(captured.target),
     };
     return this.enqueue(async () => {
+      let uncommittedKey: string | undefined;
       try {
+        await guard?.assertCurrent("prepare");
         if (!savedAudit(audit)) throw new Error("The completed audit could not be validated for local storage");
         const value = auditPacket(audit, this.onCodec);
         const key = reportKey(audit.fileKey, audit.id);
@@ -443,12 +452,23 @@ export class AuditStorage {
         if (!await this.makeRoom(entries, storageBytes(key, value), protectedKeys, true)) {
           throw new Error("Local audit storage is full. The previous saved result has been kept; export this result to keep a copy.");
         }
+        await guard?.assertCurrent("before-write");
+        uncommittedKey = key;
         await this.storage.setAsync(key, value);
+        await guard?.assertCurrent("after-write");
+        // No asynchronous work may separate the last freshness check from the
+        // caller's publication. Pruning happens after this committed revision;
+        // an edit during cleanup makes that result stale, not a failed replacement.
+        guard?.commit?.(audit);
+        uncommittedKey = undefined;
         // Cleanup cannot turn a successfully persisted report into an apparent failure.
         const retained = await this.prune(audit).catch(() => true);
         if (!retained) return { audit, status: { state: "not-saved", message: "A newer result for this target finished saving first. This older result remains available for export." } };
         return { audit, status: { state: "saved" } };
       } catch (error) {
+        // The predecessor is still present until this candidate has passed its
+        // post-write verification. Failed/cancelled replacement never prunes it.
+        if (uncommittedKey) await this.storage.deleteAsync(uncommittedKey).catch(() => undefined);
         return { audit, status: { state: "not-saved", message: error instanceof Error ? error.message : "This result could not be saved locally. The previous saved result has been kept." } };
       }
     });

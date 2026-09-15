@@ -2,12 +2,12 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 33,
-    "edges": 132,
+    "nodes": 35,
+    "edges": 136,
     "byType": {
       "index": 3,
-      "journal": 13,
-      "plan": 10,
+      "journal": 14,
+      "plan": 11,
       "topic": 7
     }
   },
@@ -32,8 +32,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.928368,
-      "y": 0.371662,
+      "x": 0.936235,
+      "y": 0.351375,
       "size": 8
     },
     {
@@ -44,8 +44,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.841254,
-      "y": 0.540641,
+      "x": 0.858449,
+      "y": 0.512899,
       "size": 8
     },
     {
@@ -63,8 +63,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.723734,
-      "y": 0.690079,
+      "x": 0.753071,
+      "y": 0.657939,
       "size": 8
     },
     {
@@ -88,8 +88,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.580057,
-      "y": 0.814576,
+      "x": 0.62349,
+      "y": 0.781831,
       "size": 8
     },
     {
@@ -100,8 +100,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.415415,
-      "y": 0.909632,
+      "x": 0.473869,
+      "y": 0.880596,
       "size": 8
     },
     {
@@ -125,8 +125,8 @@
       ],
       "bytes": 2518,
       "degree": 3,
-      "x": 0.235759,
-      "y": 0.971812,
+      "x": 0.309017,
+      "y": 0.951057,
       "size": 8
     },
     {
@@ -144,8 +144,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": 0.047582,
-      "y": 0.998867,
+      "x": 0.134233,
+      "y": 0.99095,
       "size": 8
     },
     {
@@ -163,8 +163,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": -0.142315,
-      "y": 0.989821,
+      "x": -0.044865,
+      "y": 0.998993,
       "size": 8
     },
     {
@@ -175,8 +175,8 @@
       "githubRefs": [],
       "bytes": 2328,
       "degree": 4,
-      "x": -0.327068,
-      "y": 0.945001,
+      "x": -0.222521,
+      "y": 0.974928,
       "size": 8
     },
     {
@@ -187,8 +187,8 @@
       "githubRefs": [],
       "bytes": 3438,
       "degree": 6,
-      "x": -0.5,
-      "y": 0.866025,
+      "x": -0.393025,
+      "y": 0.919528,
       "size": 8
     },
     {
@@ -206,8 +206,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": -0.654861,
-      "y": 0.75575,
+      "x": -0.550897,
+      "y": 0.834573,
       "size": 8
     },
     {
@@ -225,8 +225,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": -0.786053,
-      "y": 0.618159,
+      "x": -0.691063,
+      "y": 0.722795,
       "size": 8
     },
     {
@@ -244,8 +244,27 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": -0.888835,
-      "y": 0.458227,
+      "x": -0.809017,
+      "y": 0.587785,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-14-scanner-maintenance-verification.md",
+      "label": "Scanner maintenance implementation and verification",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 24,
+          "url": "https://github.com/jfusco/design-passport/issues/24"
+        }
+      ],
+      "bytes": 5378,
+      "degree": 2,
+      "x": -0.900969,
+      "y": 0.433884,
       "size": 8
     },
     {
@@ -256,8 +275,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.981929,
-      "y": 0.189251,
+      "x": 0.98393,
+      "y": 0.178557,
       "size": 12
     },
     {
@@ -268,8 +287,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.959493,
-      "y": 0.281733,
+      "x": -0.963963,
+      "y": 0.266037,
       "size": 8
     },
     {
@@ -280,8 +299,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.995472,
-      "y": 0.095056,
+      "x": -0.995974,
+      "y": 0.089639,
       "size": 8
     },
     {
@@ -292,8 +311,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.995472,
-      "y": -0.095056,
+      "x": -0.995974,
+      "y": -0.089639,
       "size": 8
     },
     {
@@ -311,8 +330,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.959493,
-      "y": -0.281733,
+      "x": -0.963963,
+      "y": -0.266037,
       "size": 8
     },
     {
@@ -323,8 +342,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.888835,
-      "y": -0.458227,
+      "x": -0.900969,
+      "y": -0.433884,
       "size": 8
     },
     {
@@ -335,8 +354,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.786053,
-      "y": -0.618159,
+      "x": -0.809017,
+      "y": -0.587785,
       "size": 8
     },
     {
@@ -347,8 +366,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.654861,
-      "y": -0.75575,
+      "x": -0.691063,
+      "y": -0.722795,
       "size": 8
     },
     {
@@ -359,8 +378,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.5,
-      "y": -0.866025,
+      "x": -0.550897,
+      "y": -0.834573,
       "size": 8
     },
     {
@@ -371,8 +390,27 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.327068,
-      "y": -0.945001,
+      "x": -0.393025,
+      "y": -0.919528,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-14-make-the-ai-readiness-scanner-faster-and-easier-to-act-on-a3b4d3365c.md",
+      "label": "Make the AI Readiness Scanner faster and easier to act on",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 24,
+          "url": "https://github.com/jfusco/design-passport/issues/24"
+        }
+      ],
+      "bytes": 6239,
+      "degree": 3,
+      "x": -0.222521,
+      "y": -0.974928,
       "size": 8
     },
     {
@@ -383,8 +421,8 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.142315,
-      "y": -0.989821,
+      "x": -0.044865,
+      "y": -0.998993,
       "size": 8
     },
     {
@@ -396,14 +434,20 @@
         {
           "repository": "jfusco/design-passport",
           "kind": "issue",
+          "number": 24,
+          "url": "https://github.com/jfusco/design-passport/issues/24"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
           "number": 38,
           "url": "https://github.com/jfusco/design-passport/issues/38"
         }
       ],
-      "bytes": 18793,
-      "degree": 12,
-      "x": 0.047582,
-      "y": -0.998867,
+      "bytes": 19167,
+      "degree": 13,
+      "x": 0.134233,
+      "y": -0.99095,
       "size": 12
     },
     {
@@ -414,8 +458,8 @@
       "githubRefs": [],
       "bytes": 4240,
       "degree": 33,
-      "x": 0.235759,
-      "y": -0.971812,
+      "x": 0.309017,
+      "y": -0.951057,
       "size": 8
     },
     {
@@ -426,8 +470,8 @@
       "githubRefs": [],
       "bytes": 5450,
       "degree": 19,
-      "x": 0.415415,
-      "y": -0.909632,
+      "x": 0.473869,
+      "y": -0.880596,
       "size": 8
     },
     {
@@ -436,10 +480,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 11124,
-      "degree": 32,
-      "x": 0.580057,
-      "y": -0.814576,
+      "bytes": 14564,
+      "degree": 34,
+      "x": 0.62349,
+      "y": -0.781831,
       "size": 8
     },
     {
@@ -450,8 +494,8 @@
       "githubRefs": [],
       "bytes": 5091,
       "degree": 20,
-      "x": 0.723734,
-      "y": -0.690079,
+      "x": 0.753071,
+      "y": -0.657939,
       "size": 8
     },
     {
@@ -469,8 +513,8 @@
       ],
       "bytes": 4457,
       "degree": 2,
-      "x": 0.841254,
-      "y": -0.540641,
+      "x": 0.858449,
+      "y": -0.512899,
       "size": 8
     },
     {
@@ -481,8 +525,8 @@
       "githubRefs": [],
       "bytes": 2812,
       "degree": 12,
-      "x": 0.928368,
-      "y": -0.371662,
+      "x": 0.936235,
+      "y": -0.351375,
       "size": 8
     },
     {
@@ -493,8 +537,8 @@
       "githubRefs": [],
       "bytes": 4946,
       "degree": 25,
-      "x": 0.981929,
-      "y": -0.189251,
+      "x": 0.98393,
+      "y": -0.178557,
       "size": 8
     }
   ],
@@ -1200,6 +1244,13 @@
       "relation": "topic"
     },
     {
+      "id": "c344c2eedaedc2a8",
+      "source": "wiki/plans/2026-09-14-make-the-ai-readiness-scanner-faster-and-easier-to-act-on-a3b4d3365c.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "c44c09241a055bc6",
       "source": "wiki/topics/design-passport-architecture.md",
       "target": "wiki/topics/project-scoped-knowledge-loop.md",
@@ -1291,6 +1342,13 @@
       "relation": "topic"
     },
     {
+      "id": "dea5c52a8e426887",
+      "source": "wiki/journal/2026-09-14-scanner-maintenance-verification.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "e02a9b05029235af",
       "source": "wiki/journal/2026-09-08-live-readiness-stress-test.md",
       "target": "wiki/topics/design-readiness-standard.md",
@@ -1361,6 +1419,13 @@
       "relation": "link"
     },
     {
+      "id": "f54e705868348ee8",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-14-make-the-ai-readiness-scanner-faster-and-easier-to-act-on-a3b4d3365c.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "f60dd861e053e651",
       "source": "wiki/topics/design-passport-architecture.md",
       "target": "wiki/topics/design-readiness-standard.md",
@@ -1380,6 +1445,13 @@
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "f99091226ea1f574",
+      "source": "wiki/journal/2026-09-14-scanner-maintenance-verification.md",
+      "target": "wiki/plans/2026-09-14-make-the-ai-readiness-scanner-faster-and-easier-to-act-on-a3b4d3365c.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "f99c80559a7406b6",

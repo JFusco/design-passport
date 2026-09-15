@@ -6,6 +6,8 @@ import { axisScores, capGradeForTokenCoverage, gradeFromAxes, isAtLeastB, worstA
 import { evaluateRules } from "./rules";
 import { assertContract } from "./schema";
 import { hashValue } from "./stable";
+import { affectsScore, blocksReadiness, classifyFinding } from "./finding-policy";
+import { attachFindingProvenance, buildFindingGroups } from "./finding-groups";
 
 export interface BuildReportInput {
   graph: DesignKnowledgeGraph;
@@ -18,11 +20,11 @@ export interface BuildReportInput {
 }
 
 function blockers(findings: Finding[]): Finding[] {
-  return findings.filter((item) => item.hardBlocker && item.status !== "pass" && item.status !== "not-applicable");
+  return findings.filter(blocksReadiness);
 }
 
 function unresolvedCritical(findings: Finding[]): boolean {
-  return findings.some((item) => item.scoreImpact !== false && item.status === "needs-review" && item.severity === 4);
+  return findings.some((item) => affectsScore(item) && item.status === "needs-review" && item.severity === 4);
 }
 
 function tokenCoverage(findings: Finding[]): number | undefined {
@@ -58,7 +60,8 @@ function variantCoverage(
 export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
   const targetRootIds = [...new Set(input.targetRootIds)];
   if (targetRootIds.length === 0) throw new Error("A report requires at least one source frame");
-  const findings = input.findings ?? evaluateRules(input.graph, input.profile, targetRootIds);
+  const findings = (input.findings ?? evaluateRules(input.graph, input.profile, targetRootIds))
+    .map(classifyFinding).map((finding) => attachFindingProvenance(finding, input.graph));
   const targetSet = new Set(targetRootIds);
   const foreignFinding = findings.find((finding) => !targetSet.has(finding.rootId));
   if (foreignFinding) throw new Error(`Finding ${foreignFinding.id} does not belong to an in-scope source frame`);
@@ -104,7 +107,7 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
   const blockerFindings = blockers(findings);
   const generatedAt = (input.now ?? new Date()).toISOString();
   const report: ReadinessReport = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     rulesetVersion: RULESET_VERSION,
     catalogVersion: CATALOG_VERSION,
     catalogDigest: CATALOG_DIGEST,
@@ -121,6 +124,7 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
     ready: frames.every((frame) => frame.ready) && knowledgeComplete,
     blockers: blockerFindings.map((item) => `${item.title}: ${item.nodePath}`),
     findings,
+    issueGroups: buildFindingGroups(findings),
     appliedChanges: input.appliedChanges ?? [],
     generatedAt,
     snapshotHash: "pending",

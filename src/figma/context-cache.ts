@@ -31,7 +31,7 @@ export function newBuildDiagnostics(): KnowledgeBuildDiagnostics {
 }
 
 interface ContextFragment {
-  schemaVersion: 1;
+  schemaVersion: 2;
   fingerprint: string;
   nodes: NodeSnapshot[];
   digest: string;
@@ -48,11 +48,32 @@ export function baseSnapshot(snapshot: NodeSnapshot): NodeSnapshot {
   clone.devResourceCount = 0;
   clone.descendantCount = 0;
   delete clone.contentSignature;
+  // These rule-relevant fields require live Figma evidence. Persisting them
+  // would otherwise turn a complete checksum into an unsupported freshness claim.
+  if (clone.text) {
+    delete clone.text.style;
+    delete clone.text.letterSpacing;
+    delete clone.text.lineHeight;
+    delete clone.text.mixedFields;
+    delete clone.text.backgroundSourceNodeIds;
+    delete clone.text.backgroundReason;
+  }
+  delete clone.evidenceRole;
+  delete clone.renderVisible;
+  delete clone.owningInstanceId;
+  delete clone.absoluteBounds;
+  delete clone.hasPointerInteraction;
+  delete clone.interactionProperties;
+  delete clone.clipsContent;
+  delete clone.isMask;
+  delete clone.cornerRadii;
+  delete clone.strokeWeights;
+  delete clone.boundGeometryFields;
   return clone;
 }
 
 export function contextFragment(fingerprint: string, nodes: readonly NodeSnapshot[]): ContextFragment {
-  const base = { schemaVersion: 1 as const, fingerprint, nodes: nodes.map(baseSnapshot) };
+  const base = { schemaVersion: 2 as const, fingerprint, nodes: nodes.map(baseSnapshot) };
   return { ...base, digest: hashValue(base) };
 }
 
@@ -63,8 +84,8 @@ function record(value: unknown): value is Record<string, unknown> {
 /** Cache contents are optional and untrusted; corruption is a miss, not an audit failure. */
 export function readContextFragment(value: unknown, fingerprint: string, ids: readonly string[]): NodeSnapshot[] | undefined {
   try {
-    if (!record(value) || value.schemaVersion !== 1 || value.fingerprint !== fingerprint || typeof value.digest !== "string" || !Array.isArray(value.nodes) || value.nodes.length !== ids.length) return undefined;
-    const base = { schemaVersion: 1, fingerprint: value.fingerprint, nodes: value.nodes };
+    if (!record(value) || value.schemaVersion !== 2 || value.fingerprint !== fingerprint || typeof value.digest !== "string" || !Array.isArray(value.nodes) || value.nodes.length !== ids.length) return undefined;
+    const base = { schemaVersion: 2, fingerprint: value.fingerprint, nodes: value.nodes };
     if (hashValue(base) !== value.digest) return undefined;
     for (const [index, candidate] of value.nodes.entries()) {
       if (!record(candidate) || candidate.id !== ids[index] || typeof candidate.type !== "string" || typeof candidate.name !== "string" || typeof candidate.pageId !== "string" || typeof candidate.rootId !== "string" || typeof candidate.path !== "string" || typeof candidate.visible !== "boolean") return undefined;

@@ -3,7 +3,7 @@ import { bindingCoverage, eligibleTokenFields, rawFieldValue } from "../src/core
 import { node } from "./fixtures";
 
 describe("code-relevant node fields", () => {
-  it("does not count default zero geometry as token debt unless it is bound", () => {
+  it("does not count or reward inert zero metadata even when it is bound", () => {
     const unbound = node({
       fills: [],
       boundFields: [],
@@ -14,7 +14,8 @@ describe("code-relevant node fields", () => {
     expect(eligibleTokenFields(unbound)).toEqual([]);
 
     const bound = node({ ...unbound, boundFields: ["paddingBottom", "paragraphIndent"] });
-    expect(eligibleTokenFields(bound)).toEqual(["paddingBottom", "paragraphIndent"]);
+    expect(eligibleTokenFields(bound)).toEqual([]);
+    expect(bindingCoverage([bound])).toEqual(bindingCoverage([unbound]));
   });
 
   it("counts non-zero padding edges independently", () => {

@@ -55,6 +55,33 @@ export interface SourceRef {
   url?: string;
 }
 
+export type FindingCategory = "requirement" | "recommendation" | "governance";
+
+export interface FindingProvenance {
+  kind: "direct" | "inherited" | "style" | "unknown";
+  /** Selectable owning node for rendered evidence that Figma cannot select directly. */
+  navigationNodeId?: string;
+  sourceNodeId?: string;
+  sourceStyleId?: string;
+  sourceLabel?: string;
+  property?: string;
+  contextKey?: string;
+  relatedComponentId?: string;
+}
+
+export interface FindingGroup {
+  id: string;
+  kind: "source" | "related";
+  primaryFindingId: string;
+  findingIds: string[];
+  occurrenceCount: number;
+  sourceNodeId?: string;
+  sourceStyleId?: string;
+  sourceLabel?: string;
+  property?: string;
+  contextKey?: string;
+}
+
 export interface Finding {
   id: string;
   ruleId: string;
@@ -75,6 +102,9 @@ export interface Finding {
   patternResolution?: PatternResolution;
   fixability: Fixability;
   confidence: number;
+  /** Absent only on historical v1 findings. */
+  category?: FindingCategory;
+  provenance?: FindingProvenance;
   hardBlocker?: boolean;
   scoreImpact?: boolean;
   suggestedValue?: JsonValue;
@@ -165,7 +195,7 @@ export interface FrameResult {
 }
 
 export interface ReadinessReport {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   rulesetVersion: string;
   catalogVersion: string;
   catalogDigest: string;
@@ -182,6 +212,8 @@ export interface ReadinessReport {
   ready: boolean;
   blockers: string[];
   findings: Finding[];
+  /** v2 presentation groups preserve the raw findings used for scoring and waivers. */
+  issueGroups?: FindingGroup[];
   appliedChanges: ChangePlan[];
   generatedAt: string;
   snapshotHash: string;
@@ -250,6 +282,15 @@ export interface NodeSnapshot {
   rotation: number;
   childIds: string[];
   descendantCount: number;
+  /** Rendered occurrence evidence; its inherited source debt is evaluated at the definition. */
+  evidenceRole?: "instance-descendant";
+  owningInstanceId?: string;
+  renderVisible?: boolean;
+  absoluteBounds?: { x: number; y: number; width: number; height: number };
+  hasPointerInteraction?: boolean;
+  interactionProperties?: Record<string, string>;
+  clipsContent?: boolean;
+  isMask?: boolean;
   layout?: {
     mode: "NONE" | "HORIZONTAL" | "VERTICAL" | "GRID";
     primarySizing?: string;
@@ -269,7 +310,11 @@ export interface NodeSnapshot {
   strokes: PaintSnapshot[];
   effects: EffectSnapshot[];
   cornerRadius?: number;
+  cornerRadii?: { topLeft: number; topRight: number; bottomLeft: number; bottomRight: number };
   strokeWeight?: number;
+  strokeWeights?: { top: number; right: number; bottom: number; left: number };
+  /** Original property keys retain evidence of partially bound mixed geometry. */
+  boundGeometryFields?: string[];
   boundFields: string[];
   boundVariableIds: Partial<Record<BindableField, string[]>>;
   inferredBindings: Partial<Record<BindableField, string[]>>;
@@ -279,7 +324,21 @@ export interface NodeSnapshot {
     fontFamily?: string;
     fontStyle?: string;
     letterSpacingPx?: number;
+    letterSpacing?: { unit: "PIXELS" | "PERCENT"; value: number };
     lineHeightPx?: number;
+    lineHeight?: { unit: "PIXELS" | "PERCENT"; value: number } | { unit: "AUTO" };
+    mixedFields?: BindableField[];
+    style?: {
+      id?: string;
+      key?: string;
+      name?: string;
+      remote?: boolean;
+      status: "resolved" | "unavailable" | "mixed";
+      controlledFields: BindableField[];
+      overriddenFields: BindableField[];
+      /** Figma's explicit semantic override markers, when the runtime exposes them. */
+      explicitOverrideKinds?: string[];
+    };
     paragraphSpacing?: number;
     paragraphIndent?: number;
     charactersLength: number;
@@ -287,6 +346,8 @@ export interface NodeSnapshot {
     textColor?: { r: number; g: number; b: number; a: number };
     backgroundColor?: { r: number; g: number; b: number; a: number };
     backgroundResolvable: boolean;
+    backgroundSourceNodeIds?: string[];
+    backgroundReason?: string;
   };
   variantProperties?: Record<string, string>;
   component?: {
@@ -301,6 +362,9 @@ export interface NodeSnapshot {
     mainComponentName?: string;
     mainComponentKey?: string;
     detached: boolean;
+    directOverrideFields?: string[];
+    overridesKnown?: boolean;
+    scaleFactor?: number;
   };
   hasAnnotations: boolean;
   devResourceCount: number;
@@ -334,6 +398,8 @@ export interface ResponsiveFamily {
 
 export interface DesignKnowledgeGraph {
   schemaVersion: 1;
+  /** Hash of variable values, modes, aliases, applied styles and library inventory. */
+  resourceFingerprint?: string;
   fileName: string;
   fileKey?: string;
   builtAt: string;
@@ -396,6 +462,7 @@ export interface ReferenceFactV1 {
   domain: ReferenceDomainV1;
   label: string;
   guidance: string;
+  exceptions?: string[];
   matcher: ReferenceMatcherV1;
   provenance: "figma-derived" | "approved-project" | "shared";
   candidateDigest?: string;
@@ -501,6 +568,7 @@ export interface TeamKnowledgePackV1 {
     decisionId: string;
     domain: ReferenceDomainV1;
     wording: string;
+    exceptions?: string[];
     contexts: string[];
   }>;
   generatedAt: string;

@@ -4,6 +4,22 @@ topics: [design-passport-architecture, whole-file-design-knowledge, mutation-cer
 
 # Figma runtime and release QA
 
+## Scanner maintenance verification, 2026-09-14
+
+The maintenance implementation uses shared rendered-property eligibility, text-style field control, explicit finding categories and occurrence-backed source groups. Optional guidance and vocabulary governance cannot score or independently block readiness. Supported text contrast resolves evidenced solid-paint stacks and explicit disabled state; unknown rendering remains review. Visible instance descendants supply rendering evidence without duplicating definition-based token or structural debt.
+
+Incremental verification extends the existing persistent fragment cache. Section contents can refresh independently, but resources, topology and revision checks still guard the full derived graph and active pure rules. Report publication is tied to a verified durable save; storage pruning follows that commit boundary, so native timing must retain both visible-result and complete-handler latency. A failed replacement preserves the previous saved result. v1 reports retain historical provenance while the new ruleset produces schema 2.
+
+Native release evidence must identify actual production bundle bytes and Figma file/revision/targets. A development wrapper may collect diagnostics and drive the real message handler, but mock fixtures cannot substitute for native execution. Compare complete reports and repairs at the same knowledge revision, validate each original report hash, and exclude only generation time and its derived report identity. Cold, validated-cache, localized refresh and forced-full timings are distinct; include preflight and post-save maintenance when calculating the required median improvement.
+
+Private copies and an explicit write allowlist protect production documents. A separate Figma-assigned development plugin ID can isolate bounded client storage from other ongoing QA while baseline and candidate share the same test namespace. Keep raw client evidence local and commit only sanitized outcomes and reproducible fixtures. Shared learning tests use an isolated companion store and cannot promote QA content into the real release.
+
+Native candidate verification passed on the WilmerHale private copy, the disposable acceptance and cache-isolation fixtures, UI Design Library, and its Style Guide. Three localized edit pairs produced a 2.585× median complete-handler speedup over forced-full scans at identical revisions, with report and repair parity. The WilmerHale run also found and resolved both observed process-memory failures. The mandatory guidance and learning round trip passed in the actual plugin UI and an isolated running companion without changing repository knowledge.
+
+The complete repository gate passes with 443 tests in 45 files plus catalog, schema, knowledge, wiki, TypeScript, and all production builds. The rebuilt plugin and UI bytes match the native-tested hashes, and the final companion bundle restored the isolated review store in a browser smoke test.
+
+The independent Colliers source is view-only, disables development plugins, and explicitly prevents exporting or copying. Its permitted local-copy attempt ended at the same owner restriction. The maintainer removed Colliers from this release matrix on 2026-09-15; the [maintenance verification record](../../docs/qa/ai-readiness-scanner-maintenance.md) claims no result for that file. All remaining native and local gates pass, and the GitHub release workflow follows.
+
 ## Runtime fixes found in Desktop
 
 - The development manifest must include both `figma` and `dev`; Dev Mode remains audit-only.

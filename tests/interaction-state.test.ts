@@ -3,8 +3,10 @@ import { evaluateAccessibilityRules } from "../src/core/rules/accessibility";
 import {
   hasInactiveVariantState,
   isWithinInactiveComponent,
+  interactionState,
   variantProperties,
 } from "../src/core/operations/interaction-state";
+import { interactionPropertiesSnapshot } from "../src/figma/operations/interaction-state";
 import { healthyGraph, node } from "./fixtures";
 
 describe("component interaction state", () => {
@@ -17,7 +19,10 @@ describe("component interaction state", () => {
     expect(hasInactiveVariantState("Variant=Primary, Disabled=True")).toBe(true);
     expect(hasInactiveVariantState("state=disabled, size=small")).toBe(true);
     expect(hasInactiveVariantState("state=Disabled off")).toBe(true);
-    expect(hasInactiveVariantState("status=Unavailable-item")).toBe(true);
+    expect(hasInactiveVariantState("status=Unavailable-item")).toBe(false);
+    expect(hasInactiveVariantState("State=Inactive")).toBe(false);
+    expect(hasInactiveVariantState("Selected=False, Checked=False")).toBe(false);
+    expect(hasInactiveVariantState("Disabled=true, Enabled=true")).toBe(false);
     expect(hasInactiveVariantState("isEnabled=false")).toBe(true);
     expect(hasInactiveVariantState("Disabled button guidance")).toBe(false);
     expect(hasInactiveVariantState("Disabled=False, State=Default")).toBe(false);
@@ -123,5 +128,46 @@ describe("component interaction state", () => {
       status: "fail",
       evidence: { measured: { textNodeCount: 2, activeTextNodeCount: 1, inactiveTextNodeCount: 1, failures: 1 } },
     });
+  });
+});
+
+describe("captured Boolean control evidence", () => {
+  it("takes actual Figma Boolean values into the disabled rule", () => {
+    const graph = healthyGraph();
+    const properties = interactionPropertiesSnapshot({
+      type: "INSTANCE",
+      componentProperties: { "Disabled#12:4": { type: "BOOLEAN", value: true }, "State": { type: "VARIANT", value: "Default" }, "Label#9:1": { type: "TEXT", value: "Disabled=false" } },
+    } as unknown as SceneNode);
+    graph.nodes.control = node({ id: "control", type: "INSTANCE", interactionProperties: properties });
+    expect(properties).toEqual({ "Disabled#12:4": "true", State: "Default" });
+    expect(interactionState(graph, graph.nodes.control!)).toEqual({ state: "disabled", evidence: [{ nodeId: "control", property: "disabled", value: "true", disabled: true }] });
+  });
+
+  it("does not read forbidden variant property definitions", () => {
+    const variant = { type: "COMPONENT", parent: { type: "COMPONENT_SET" }, variantProperties: { State: "Disabled" }, get componentPropertyDefinitions() { throw new Error("Cannot access variant property definitions"); } } as unknown as SceneNode;
+    expect(interactionPropertiesSnapshot(variant)).toEqual({ State: "Disabled" });
+  });
+
+  it("reviews conflicting state instead of failing or exempting contrast", () => {
+    const graph = healthyGraph();
+    const root = graph.nodes["root:desktop"]!;
+    root.type = "INSTANCE";
+    root.interactionProperties = { Disabled: "true", Enabled: "true" };
+    const text = graph.nodes["text:1"]!;
+    text.text!.textColor = { r: 1, g: 1, b: 1, a: 1 };
+    const findings = evaluateAccessibilityRules(graph, root, [root, text]);
+    expect(findings.find((finding) => finding.ruleId === "accessibility.text-contrast")).toMatchObject({ status: "needs-review", scoreImpact: false });
+    expect(findings.find((finding) => finding.ruleId === "accessibility.contrast-unresolved")).toMatchObject({ evidence: { measured: { interactionState: "conflicting" } } });
+    expect(findings.some((finding) => finding.ruleId === "accessibility.contrast-disabled")).toBe(false);
+  });
+
+  it.each(["Inactive", "Unavailable", "Unselected", "Unchecked"])("continues to evaluate %s controls", (state) => {
+    const graph = healthyGraph();
+    const root = graph.nodes["root:desktop"]!;
+    root.type = "INSTANCE";
+    root.interactionProperties = { State: state };
+    const text = graph.nodes["text:1"]!;
+    text.text!.textColor = { r: 1, g: 1, b: 1, a: 1 };
+    expect(evaluateAccessibilityRules(graph, root, [root, text]).find((finding) => finding.ruleId === "accessibility.text-contrast")).toMatchObject({ status: "fail", scoreImpact: true });
   });
 });

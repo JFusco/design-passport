@@ -8,6 +8,14 @@ export class KnowledgeSessionState {
   private cleanRevision = -1;
   private nextBuildId = 1;
   private activeBuildId: number | undefined;
+  private changedNodeIds = new Set<string>();
+  private fullBuildReason: string | undefined = "not-loaded";
+
+  get documentRevision(): number { return this.revision; }
+
+  get changes(): { nodeIds: string[]; fullBuildReason?: string } {
+    return { nodeIds: [...this.changedNodeIds], ...(this.fullBuildReason ? { fullBuildReason: this.fullBuildReason } : {}) };
+  }
 
   get dirty(): boolean {
     return this.cleanRevision !== this.revision;
@@ -17,8 +25,10 @@ export class KnowledgeSessionState {
     return this.activeBuildId !== undefined;
   }
 
-  markDirty(): void {
+  markDirty(nodeIds?: readonly string[], fullBuildReason?: string): void {
     this.revision += 1;
+    for (const id of nodeIds ?? []) this.changedNodeIds.add(id);
+    if (fullBuildReason || !nodeIds) this.fullBuildReason = fullBuildReason ?? "unknown-change";
   }
 
   beginBuild(): KnowledgeBuildToken {
@@ -33,7 +43,11 @@ export class KnowledgeSessionState {
   completeBuild(token: KnowledgeBuildToken, complete: boolean): boolean {
     this.assertActive(token);
     this.activeBuildId = undefined;
-    if (complete && token.revision === this.revision) this.cleanRevision = this.revision;
+    if (complete && token.revision === this.revision) {
+      this.cleanRevision = this.revision;
+      this.changedNodeIds.clear();
+      this.fullBuildReason = undefined;
+    }
     return !this.dirty;
   }
 
@@ -85,34 +99,31 @@ function isLocalMetadataOnly(change: DocumentChangeSignal): boolean {
 }
 
 /**
- * Figma batches documentchange events after plugin mutations. This guard keeps
- * those delayed echoes from invalidating the clean rebuild that immediately
- * follows, while remote or unrelated local changes still invalidate it.
+ * Node IDs and event timing cannot prove a change is our own mutation echo.
+ * Only local plugin metadata is inert to design rules. All visual changes,
+ * including edits to an expected node or transient clones, invalidate knowledge.
  */
 export class MutationChangeGuard {
-  private expectedNodeIds = new Set<string>();
-  private expiresAt = 0;
-  private ignoreAllLocal = false;
+  private annotationSignatures = new Map<string, { expected: string; current: () => string | undefined }>();
 
-  arm(nodeIds: readonly string[], now = Date.now(), lifetimeMs = 120_000, ignoreAllLocal = false): void {
-    this.expectedNodeIds = new Set(nodeIds);
-    this.expiresAt = now + lifetimeMs;
-    this.ignoreAllLocal = ignoreAllLocal;
+  arm(_nodeIds: readonly string[], _now = Date.now(), _lifetimeMs = 120_000, _includesTransientNodes = false): void { this.clear(); }
+
+  /** Certification records its exact annotation output immediately after writing. */
+  expectAnnotations(nodeId: string, expected: string, current: () => string | undefined): void {
+    this.annotationSignatures.set(nodeId, { expected, current });
   }
 
-  hasUnexpectedChange(changes: readonly DocumentChangeSignal[], now = Date.now()): boolean {
-    if (now > this.expiresAt) this.clear();
+  hasUnexpectedChange(changes: readonly DocumentChangeSignal[], _now = Date.now()): boolean {
     return changes.some((change) => {
-      if (change.origin === "REMOTE") return true;
-      if (this.ignoreAllLocal) return false;
       if (isLocalMetadataOnly(change)) return false;
-      return !this.expectedNodeIds.has(change.id);
+      const signature = this.annotationSignatures.get(change.id);
+      if (signature && change.origin === "LOCAL" && change.type === "PROPERTY_CHANGE" && change.properties?.length
+        && change.properties.every((property) => property === "annotations" || property === "pluginData")) {
+        try { return signature.current() !== signature.expected; } catch { return true; }
+      }
+      return true;
     });
   }
 
-  clear(): void {
-    this.expectedNodeIds.clear();
-    this.expiresAt = 0;
-    this.ignoreAllLocal = false;
-  }
+  clear(): void { this.annotationSignatures.clear(); }
 }

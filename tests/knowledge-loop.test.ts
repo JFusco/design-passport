@@ -92,6 +92,46 @@ describe("project-scoped advisory packs", () => {
   });
 });
 
+describe("guidance and learning compatibility after scanner changes", () => {
+  it("keeps full audit outputs identical with zero, one and multiple advisory packs", () => {
+    const p = profile(); const graph = healthyGraph(p); const snapshot = structuredClone(graph);
+    const audit = () => buildReadinessReport({ graph, profile: p, scope: "selection", targetRootIds: ["root:desktop"], findings: evaluateRules(graph, p, ["root:desktop"]), now: new Date("2026-09-14T12:00:00Z") });
+    const before = audit();
+    buildKnowledgeInsights({ graph, targetRootIds: ["root:desktop"] });
+    expect(audit()).toEqual(before);
+    buildKnowledgeInsights({ graph, targetRootIds: ["root:desktop"], projectPack: pack() });
+    expect(audit()).toEqual(before);
+    buildKnowledgeInsights({ graph, targetRootIds: ["root:desktop"], projectPack: pack(), referencePacks: [pack("reference"), pack("reference")] });
+    expect(audit()).toEqual(before);
+    expect(graph).toEqual(snapshot);
+  });
+
+  it("does not double-count presentation groups or leak provenance into sanitized learning", () => {
+    const readiness = report();
+    expect(readiness.schemaVersion).toBe(2);
+    expect(readiness.issueGroups?.length).toBeGreaterThan(0);
+    const withoutGroups = structuredClone(readiness); delete withoutGroups.issueGroups;
+    const make = (value: typeof readiness) => buildLearningEnvelope({ projectScope: "project:ui-library", report: value, pluginVersion: "1", knowledgeVersion: "1", now: new Date("2026-09-14T12:00:00Z") });
+    const grouped = make(readiness); const ungrouped = make(withoutGroups);
+    expect(grouped).toEqual(ungrouped);
+    expect(grouped.observations.reduce((count, observation) => count + observation.count, 0)).toBe(readiness.findings.filter((finding) => finding.status !== "pass" && finding.status !== "not-applicable").length);
+    expect(JSON.stringify(grouped)).not.toMatch(/nodeId|sourceNodeId|occurrenceIds|issueGroups|figma\.com/u);
+    expect(generateCandidateDrafts([grouped, ungrouped]).every((candidate) => candidate.evidenceEnvelopeDigests.length === 1)).toBe(true);
+  });
+
+  it("preserves v1 and v2 reports inside the non-certifying companion wrapper", () => {
+    const current = report(); const historical = structuredClone(current);
+    historical.schemaVersion = 1; historical.rulesetVersion = "1.0.0-beta.2"; historical.generatedAt = "2026-09-10T12:00:00.000Z";
+    delete historical.issueGroups;
+    historical.findings.forEach((finding) => { delete finding.category; delete finding.provenance; });
+    const source = (sourceId: string) => ({ schemaVersion: 1 as const, sourceId, projectScope: "project:ui-library", role: "target" as const, contentDigest: hashValue(sourceId), completeness: { complete: true, availableDomains: ["layout" as const], warnings: [] } });
+    const wrapper = buildMultiFileReviewReport({ projectScope: "project:ui-library", targets: [{ source: source("target:historical"), report: historical }, { source: source("target:current"), report: current }] });
+    expect(wrapper.targets.map((target) => target.report.schemaVersion)).toEqual([2, 1]);
+    expect(wrapper.targets[1]!.report.generatedAt).toBe(historical.generatedAt);
+    expect(wrapper.certificationEligible).toBe(false);
+  });
+});
+
 describe("human-gated knowledge loop", () => {
   it("uses timestamp-independent envelope identity and neutral unique-contribution counts", () => {
     const first = buildLearningEnvelope({ projectScope: "project:ui-library", report: report(), pluginVersion: "1", knowledgeVersion: "1", now: new Date("2026-09-10T12:00:00Z") });

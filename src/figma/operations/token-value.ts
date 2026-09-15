@@ -20,7 +20,11 @@ export function variableTypeForField(field: BindableField): VariableResolvedData
 }
 
 export function variableScopesForField(field: BindableField): VariableScope[] {
-  return [...scopesForBindableField(field)] as VariableScope[];
+  const scopes = scopesForBindableField(field);
+  // Figma treats ALL_FILLS as mutually exclusive with FRAME_FILL,
+  // SHAPE_FILL, and TEXT_FILL. Matching accepts either representation, while
+  // token creation must choose the single broad scope to remain valid.
+  return (scopes.includes("ALL_FILLS") ? ["ALL_FILLS"] : [...scopes]) as VariableScope[];
 }
 
 export function webCodeSyntaxForTokenName(name: string): string {

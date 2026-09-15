@@ -206,6 +206,24 @@ export function knowledgeDomainForContext(context: string): ReferenceDomainV1 {
   return "layout";
 }
 
+function guidanceWithExceptions(wording: string, exceptions?: readonly string[]): string {
+  return exceptions?.length ? `${wording} Exceptions: ${exceptions.join(" ")}` : wording;
+}
+
+/** Preserve the exact applicability caveats approved with the candidate digest. */
+export function projectGuidanceFact(candidate: KnowledgeCandidateV1): ReferenceFactV1 {
+  return {
+    factId: candidate.candidateId,
+    domain: knowledgeDomainForContext(candidate.context),
+    label: "Approved project guidance",
+    guidance: candidate.wording,
+    ...(candidate.exceptions.length ? { exceptions: [...candidate.exceptions] } : {}),
+    matcher: { kind: "informational" },
+    provenance: "approved-project",
+    candidateDigest: candidate.digest,
+  };
+}
+
 export function buildKnowledgeInsights(input: {
   graph: DesignKnowledgeGraph;
   targetRootIds: string[];
@@ -214,7 +232,7 @@ export function buildKnowledgeInsights(input: {
   teamPack?: TeamKnowledgePackV1;
 }): KnowledgeInsight[] {
   const targetRoots = new Set(input.targetRootIds);
-  const inScope = Object.values(input.graph.nodes).filter((node) => targetRoots.has(node.rootId));
+  const inScope = Object.values(input.graph.nodes).filter((node) => targetRoots.has(node.rootId) && node.evidenceRole !== "instance-descendant");
   const packs: Array<{ origin: KnowledgeInsight["origin"]; pack: DesignReferencePackV1 }> = [
     ...(input.projectPack ? [{ origin: "project" as const, pack: input.projectPack }] : []),
     ...(input.referencePacks ?? []).map((pack) => ({ origin: "reference" as const, pack })),
@@ -230,7 +248,7 @@ export function buildKnowledgeInsights(input: {
           sourceId: pack.source.sourceId,
           domain: fact.domain,
           title: `${labelForOrigin(origin)} · ${fact.label}`,
-          message: fact.guidance,
+          message: guidanceWithExceptions(fact.guidance, fact.exceptions),
           factId: fact.factId,
         });
         continue;
@@ -252,7 +270,7 @@ export function buildKnowledgeInsights(input: {
           sourceId: pack.source.sourceId,
           domain: fact.domain,
           title: `${labelForOrigin(origin)} · ${fact.label}`,
-          message: `${fact.guidance} Current value: ${String(measured)}.`,
+          message: `${guidanceWithExceptions(fact.guidance, fact.exceptions)} Current value: ${String(measured)}.`,
           factId: fact.factId,
           targetNodeId: node.id,
         });
@@ -267,7 +285,7 @@ export function buildKnowledgeInsights(input: {
       sourceId: "design-passport-shared",
       domain: entry.domain,
       title: "Shared guidance",
-      message: entry.wording,
+      message: guidanceWithExceptions(entry.wording, entry.exceptions),
       factId: entry.candidateId,
     });
   }
@@ -568,6 +586,7 @@ export function compileTeamKnowledgePack(input: {
       decisionId: decision.decisionId,
       domain: knowledgeDomainForContext(candidate.context),
       wording: candidate.wording,
+      ...(candidate.exceptions.length ? { exceptions: [...candidate.exceptions] } : {}),
       contexts: [candidate.context],
     }];
   });
