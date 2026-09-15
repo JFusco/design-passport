@@ -1,6 +1,8 @@
 ---
 topics: [figma-runtime-qa]
 plans: [2026-09-14-make-the-ai-readiness-scanner-faster-and-easier-to-act-on-a3b4d3365c.md]
+issue: "https://github.com/jfusco/design-passport/issues/24"
+issues: ["https://github.com/jfusco/design-passport/issues/24"]
 ---
 
 # Scanner maintenance implementation and verification
