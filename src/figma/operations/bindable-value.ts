@@ -11,7 +11,7 @@ export function readBindableRawValue(node: SceneNode, field: BindableField): Jso
     const value = field === "fills"
       ? ("fills" in node ? node.fills : undefined)
       : ("strokes" in node ? node.strokes : undefined);
-    const paint = paints(value).find((item) => item.type === "SOLID" && item.visible !== false);
+    const paint = paints(value).find((item) => item.type === "SOLID" && item.visible !== false && (item.opacity ?? 1) > 0);
     return paint?.type === "SOLID" ? { r: paint.color.r, g: paint.color.g, b: paint.color.b, a: paint.opacity ?? 1 } : undefined;
   }
   if (field === "lineHeight" && node.type === "TEXT") {

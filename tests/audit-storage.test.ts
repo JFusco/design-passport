@@ -151,6 +151,64 @@ describe("durable audit storage", () => {
     expect(await reopened.listAudits("other-file")).toEqual([]);
   });
 
+  it("keeps historical report v1 provenance while newly saved v2 reports carry categorized groups", async () => {
+    const storage = new AuditStorage(new MemoryStorage());
+    const legacy = input();
+    legacy.report.schemaVersion = 1;
+    legacy.report.rulesetVersion = "1.0.0-beta.2";
+    delete legacy.report.issueGroups;
+    for (const finding of legacy.report.findings) {
+      delete finding.category;
+      delete finding.provenance;
+    }
+    const saved = await storage.saveAudit(legacy);
+    expect(saved.status.state).toBe("saved");
+    expect((await storage.loadAudit(legacy.fileKey, saved.audit.id))?.report).toEqual(legacy.report);
+    const current = input({ target: { scope: "file" } });
+    const next = await storage.saveAudit(current);
+    expect(next.status.state).toBe("saved");
+    expect((await storage.loadAudit(current.fileKey, next.audit.id))?.report.schemaVersion).toBe(2);
+  });
+
+  it.each(["changed", "cancelled"])("retains the predecessor when replacement becomes %s during its durable write", async (reason) => {
+    const port = new MemoryStorage();
+    const storage = new AuditStorage(port);
+    const previous = await storage.saveAudit(input());
+    let stale = false;
+    port.beforeSet = async (key) => { if (key.includes(":audit:")) stale = true; };
+    const candidate = await storage.saveAudit(input({ at: "2026-09-14T12:05:00.000Z" }), {
+      assertCurrent: async () => { if (stale) throw new Error(reason); },
+    });
+    expect(candidate.status).toEqual({ state: "not-saved", message: reason });
+    expect(await storage.loadAudit("file-one", candidate.audit.id)).toBeUndefined();
+    expect((await storage.listAudits("file-one")).map((audit) => audit.id)).toEqual([previous.audit.id]);
+    expect((await storage.loadAudit("file-one", previous.audit.id))?.report).toEqual(previous.audit.report);
+  });
+
+  it("publishes at the verified durable commit before asynchronous predecessor cleanup", async () => {
+    const port = new MemoryStorage();
+    const storage = new AuditStorage(port);
+    const previous = await storage.saveAudit(input());
+    const events: string[] = [];
+    port.beforeDelete = async (key) => { if (key.includes(":audit:") && key.endsWith(previous.audit.id)) events.push("prune"); };
+    const candidate = await storage.saveAudit(input({ at: "2026-09-14T12:05:00.000Z" }), {
+      assertCurrent: async (phase) => { events.push(phase); },
+      commit: (audit) => {
+        expect([...port.values.keys()].some((key) => key.endsWith(audit.id))).toBe(true);
+        expect([...port.values.keys()].some((key) => key.endsWith(previous.audit.id))).toBe(true);
+        events.push("commit");
+      },
+    });
+    expect(candidate.status.state).toBe("saved");
+    expect(events).toEqual(["prepare", "before-write", "after-write", "commit", "prune"]);
+  });
+
+  it("validates category filters without requiring them on historical view state", () => {
+    expect(isAuditViewState(view)).toBe(true);
+    for (const categoryFilter of ["all", "requirement", "recommendation", "governance"]) expect(isAuditViewState({ ...view, categoryFilter })).toBe(true);
+    expect(isAuditViewState({ ...view, categoryFilter: "anything" })).toBe(false);
+  });
+
   it("lists small headers without decompressing report bodies, then decodes only the chosen result", async () => {
     const measurements: AuditCodecMeasurement[] = [];
     const storage = new AuditStorage(new MemoryStorage(), { onCodec: (sample) => measurements.push(sample) });

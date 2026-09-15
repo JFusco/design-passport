@@ -22,7 +22,8 @@
         "factId": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/opaqueId" },
         "domain": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/referenceDomain" },
         "label": { "type": "string", "minLength": 1, "maxLength": 200 },
-        "guidance": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "guidance": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "exceptions": { "type": "array", "maxItems": 50, "items": { "type": "string", "minLength": 1, "maxLength": 300 } },
         "matcher": {
           "oneOf": [
             { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "informational" } } },

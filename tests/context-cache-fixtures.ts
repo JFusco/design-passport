@@ -53,6 +53,15 @@ export function contextFixture(pageCount = 1, childrenPerRoot = 1) {
   });
   const figma = {
     fileKey: "test-file-key", root: { id: "document", name: "Cache fixture", children: pages }, mixed: Symbol("mixed"),
+    getNodeByIdAsync: async (id: string) => {
+      const pending: Array<Record<string, any>> = [...pages];
+      while (pending.length > 0) {
+        const candidate = pending.pop()!;
+        if (candidate.id === id) return candidate;
+        pending.push(...(candidate.children ?? []));
+      }
+      return null;
+    },
     variables: { getLocalVariableCollectionsAsync: async () => collections, getLocalVariablesAsync: async () => variables, getVariableByIdAsync: async (id: string) => variables.find((variable) => variable.id === id) ?? null, getVariableCollectionByIdAsync: async (id: string) => collections.find((collection) => collection.id === id) ?? null },
     teamLibrary: {
       getAvailableLibraryVariableCollectionsAsync: async (): Promise<LibraryVariableCollection[]> => [],

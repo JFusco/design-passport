@@ -19,6 +19,7 @@ describe("semantic token operations", () => {
   it("derives exact Figma type, scope and web syntax", () => {
     expect(variableTypeForField("fills")).toBe("COLOR");
     expect(variableTypeForField("fontFamily")).toBe("STRING");
+    expect(variableScopesForField("fills")).toEqual(["ALL_FILLS"]);
     expect(variableScopesForField("paddingBottom")).toEqual(["GAP"]);
     expect(webCodeSyntaxForTokenName("Semantic / Space / Card Gap")).toBe("var(--semantic-space-card-gap)");
   });

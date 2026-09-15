@@ -50,6 +50,20 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
     return { type: message.type, pageIds };
   }
   if (message.type === "save-profile") return { type: message.type, profile: profile(message.profile) };
+  if (message.type === "recheck-audit") {
+    const request = record(message.request);
+    if (!request) throw new Error("recheck request is invalid");
+    if ((request.mode === "changes" || request.mode === "full") && Object.keys(request).length === 1) {
+      return { type: message.type, request: { mode: request.mode } };
+    }
+    if (request.mode === "component" && Object.keys(request).every((key) => key === "mode" || key === "componentId")) {
+      return { type: message.type, request: { mode: "component", componentId: text(request.componentId, "componentId", 200) } };
+    }
+    if (request.mode === "issue" && Object.keys(request).every((key) => key === "mode" || key === "issueId")) {
+      return { type: message.type, request: { mode: "issue", issueId: text(request.issueId, "issueId", 500) } };
+    }
+    throw new Error("recheck request is invalid");
+  }
   if (message.type === "scan") {
     const request = record(message.request);
     if (!request || Object.keys(request).some((key) => key !== "scope" && key !== "refreshKnowledge")

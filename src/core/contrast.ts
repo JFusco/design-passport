@@ -26,9 +26,11 @@ export function relativeLuminance(color: Rgba): number {
 }
 
 export function contrastRatio(foreground: Rgba, background: Rgba): number {
-  const white = { r: 1, g: 1, b: 1, a: 1 };
-  const fg = foreground.a < 1 ? composite(foreground, background.a < 1 ? composite(background, white) : background) : foreground;
-  const bg = background.a < 1 ? composite(background, white) : background;
+  // A translucent background is not a measured consumer surface. Callers must
+  // resolve it against actual rendering evidence before computing a ratio.
+  if (background.a < 1) return Number.NaN;
+  const fg = foreground.a < 1 ? composite(foreground, background) : foreground;
+  const bg = background;
   const light = Math.max(relativeLuminance(fg), relativeLuminance(bg));
   const dark = Math.min(relativeLuminance(fg), relativeLuminance(bg));
   return (light + 0.05) / (dark + 0.05);

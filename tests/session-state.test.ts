@@ -45,26 +45,26 @@ describe("plugin session safety", () => {
     expect(() => gate.enter("scan")()).not.toThrow();
   });
 
-  it("ignores expected local mutation echoes but flags unrelated, remote, and expired changes", () => {
+  it("never uses an expected node ID to discard a designer's visual edit", () => {
     const guard = new MutationChangeGuard();
     guard.arm(["root", "frame", "child"], 1_000, 5_000);
-    expect(guard.hasUnexpectedChange([{ id: "child", origin: "LOCAL" }, { id: "frame", origin: "LOCAL" }], 2_000)).toBe(false);
+    expect(guard.hasUnexpectedChange([{ id: "child", origin: "LOCAL" }, { id: "frame", origin: "LOCAL" }], 2_000)).toBe(true);
     expect(guard.hasUnexpectedChange([{ id: "other", origin: "LOCAL" }], 2_000)).toBe(true);
     expect(guard.hasUnexpectedChange([{ id: "child", origin: "REMOTE" }], 2_000)).toBe(true);
     expect(guard.hasUnexpectedChange([{ id: "child", origin: "LOCAL" }], 6_001)).toBe(true);
   });
 
-  it("keeps large mutation echoes guarded for a full post-mutation rescan", () => {
+  it("requires live recapture of delayed same-node visual changes throughout a post-mutation scan", () => {
     const guard = new MutationChangeGuard();
     guard.arm(["frame"], 1_000);
-    expect(guard.hasUnexpectedChange([{ id: "frame", origin: "LOCAL" }], 120_999)).toBe(false);
+    expect(guard.hasUnexpectedChange([{ id: "frame", origin: "LOCAL" }], 120_999)).toBe(true);
     expect(guard.hasUnexpectedChange([{ id: "frame", origin: "LOCAL" }], 121_001)).toBe(true);
   });
 
-  it("ignores transient local clone events only when explicitly armed for structural validation", () => {
+  it("does not confuse transient clone IDs with proof that every concurrent local edit is safe", () => {
     const guard = new MutationChangeGuard();
     guard.arm(["frame"], 1_000, 120_000, true);
-    expect(guard.hasUnexpectedChange([{ id: "temporary-clone", origin: "LOCAL", type: "CREATE" }], 2_000)).toBe(false);
+    expect(guard.hasUnexpectedChange([{ id: "temporary-clone", origin: "LOCAL", type: "CREATE" }], 2_000)).toBe(true);
     expect(guard.hasUnexpectedChange([{ id: "frame", origin: "REMOTE" }], 2_000)).toBe(true);
     guard.clear();
     expect(guard.hasUnexpectedChange([{ id: "temporary-clone", origin: "LOCAL", type: "CREATE" }], 2_000)).toBe(true);
@@ -91,5 +91,31 @@ describe("plugin session safety", () => {
       type: "PROPERTY_CHANGE",
       properties: ["pluginData", "fills"],
     }], 60_000)).toBe(true);
+  });
+
+  it("retains a bounded change journal until a complete stable capture", () => {
+    const state = new KnowledgeSessionState();
+    state.completeBuild(state.beginBuild(), true);
+    state.markDirty(["first"]);
+    state.markDirty(["first", "second"]);
+    expect(state.changes).toEqual({ nodeIds: ["first", "second"] });
+    const capture = state.beginBuild();
+    state.markDirty(["third"], "structural-change");
+    expect(state.completeBuild(capture, true)).toBe(false);
+    expect(state.changes).toEqual({ nodeIds: ["first", "second", "third"], fullBuildReason: "structural-change" });
+    state.completeBuild(state.beginBuild(), true);
+    expect(state.changes).toEqual({ nodeIds: [] });
+  });
+
+  it("reconciles only exact annotation output and still invalidates real edits on that same node", () => {
+    const guard = new MutationChangeGuard();
+    let annotations = "certified annotation";
+    guard.expectAnnotations("frame", annotations, () => annotations);
+    const event = { id: "frame", origin: "LOCAL" as const, type: "PROPERTY_CHANGE", properties: ["annotations", "pluginData"] };
+    expect(guard.hasUnexpectedChange([event])).toBe(false);
+    expect(guard.hasUnexpectedChange([{ ...event, properties: ["annotations", "fills"] }])).toBe(true);
+    expect(guard.hasUnexpectedChange([{ ...event, origin: "REMOTE" }])).toBe(true);
+    annotations = "designer changed documentation";
+    expect(guard.hasUnexpectedChange([event])).toBe(true);
   });
 });

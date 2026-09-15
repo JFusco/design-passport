@@ -8,6 +8,9 @@ import {
   VARIANT_COVERAGE_ANNOTATION_PREFIX,
 } from "../core/constants";
 import type { BindableField, CertificationSummary, ChangeOperation, ChangePlan, JsonValue } from "../core/contracts";
+import { tokenPropertySnapshot } from "./adapter";
+import { assessTokenProperty, propertyBindingEvidence } from "../core/operations/node-fields";
+import { variableTypeForBindableField, scopesForBindableField } from "../core/operations/variable-compatibility";
 import { assertContract } from "../core/schema";
 import { stableStringify } from "../core/stable";
 import { readBindableRawValue, sameBindableValue } from "./operations/bindable-value";
@@ -137,7 +140,18 @@ async function loadTextFonts(node: SceneNode): Promise<void> {
   await Promise.all([...fonts.values()].map((font) => figma.loadFontAsync(font)));
 }
 
+async function validateTokenRepair(node: SceneNode, field: BindableField): Promise<void> {
+  const snapshot = await tokenPropertySnapshot(node);
+  if (!assessTokenProperty(snapshot, field).repairable || propertyBindingEvidence(snapshot, field) === "text-style") {
+    throw new Error(`The ${field} proposal is no longer applicable to this rendered property; recheck before applying it`);
+  }
+}
+
 async function bindVariable(node: SceneNode, field: BindableField, variable: Variable): Promise<void> {
+  await validateTokenRepair(node, field);
+  if (variable.resolvedType !== variableTypeForBindableField(field) || !variable.scopes.some((scope) => scopesForBindableField(field).includes(scope))) {
+    throw new Error("The selected variable no longer has a compatible type and property scope");
+  }
   await loadTextFonts(node);
   const bindable = asBindable(node);
   if (field === "fills" || field === "strokes") {
@@ -146,7 +160,7 @@ async function bindVariable(node: SceneNode, field: BindableField, variable: Var
     if (source === figma.mixed) throw new Error(`${field} are mixed and cannot be bound automatically`);
     let changed = false;
     const next = source.map((paint) => {
-      if (!changed && paint.type === "SOLID" && paint.visible !== false) {
+      if (!changed && paint.type === "SOLID" && paint.visible !== false && (paint.opacity ?? 1) > 0) {
         changed = true;
         return figma.variables.setBoundVariableForPaint(paint, "color", variable);
       }
@@ -192,10 +206,11 @@ function boundVariableIdsForField(node: SceneNode, field: BindableField): Set<st
 }
 
 async function preflightOperation(operation: ChangeOperation): Promise<void> {
-  if (operation.kind !== "apply-inferred-auto-layout") return;
+  if (operation.kind !== "apply-inferred-auto-layout" && operation.kind !== "bind-variable") return;
   const base = await figma.getNodeByIdAsync(operation.nodeId);
   if (!isSceneNode(base)) throw new Error(`Node ${operation.nodeId} no longer exists`);
-  await validateInferredAutoLayout(base, operation.value.tolerance);
+  if (operation.kind === "bind-variable") await validateTokenRepair(base, operation.value.field);
+  else await validateInferredAutoLayout(base, operation.value.tolerance);
 }
 
 async function applyOperation(operation: ChangeOperation, prevalidatedNodeIds: ReadonlySet<string>): Promise<void> {
@@ -344,6 +359,7 @@ export async function createSemanticTokenAndBind(input: {
   const nodes = await Promise.all(nodeIds.map((nodeId) => figma.getNodeByIdAsync(nodeId)));
   if (!nodes.every(isSceneNode)) throw new Error("Every repeated-use node must still exist");
   for (const node of nodes) {
+    await validateTokenRepair(node, input.field);
     if (hasVariableBinding(node, input.field) || !sameBindableValue(readBindableRawValue(node, input.field), input.rawValue)) {
       throw new Error("The repeated-value proposal is stale; rescan before creating a token");
     }

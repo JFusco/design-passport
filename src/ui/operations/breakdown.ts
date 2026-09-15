@@ -1,13 +1,31 @@
 import type { Axis, Finding, FrameResult, ReadinessReport, VariantCoverage } from "../../core/contracts";
+import { groupsForFindings } from "../../core/finding-groups";
+import { isActionableFinding } from "../../core/finding-policy";
 
-export interface VariantBreakdown extends VariantCoverage {
+export interface IssueSummary {
   actionableCount: number;
+  occurrenceCount: number;
+  relatedGroupCount: number;
+}
+
+/** Only verified sources reduce issue counts. A related group is an organizing
+ * aid and retains each occurrence as an independently actionable issue. */
+export function actionableIssueSummary(report: ReadinessReport, findings: readonly Finding[] = report.findings): IssueSummary {
+  const actionable = findings.filter(isActionableFinding);
+  const groups = groupsForFindings(actionable, report.schemaVersion === 2 ? report.issueGroups : undefined);
+  return {
+    actionableCount: groups.reduce((count, group) => count + (group.kind === "related" ? group.occurrenceCount : 1), 0),
+    occurrenceCount: groups.reduce((count, group) => count + group.occurrenceCount, 0),
+    relatedGroupCount: groups.filter((group) => group.kind === "related").length,
+  };
+}
+
+export interface VariantBreakdown extends VariantCoverage, IssueSummary {
   failCount: number;
   reviewCount: number;
 }
 
-export interface ModuleBreakdown extends FrameResult {
-  actionableCount: number;
+export interface ModuleBreakdown extends FrameResult, IssueSummary {
   failCount: number;
   reviewCount: number;
   weakestAxes: Axis[];
@@ -15,16 +33,11 @@ export interface ModuleBreakdown extends FrameResult {
   variants: VariantBreakdown[];
 }
 
-export interface PageBreakdown {
+export interface PageBreakdown extends IssueSummary {
   pageId: string;
   pageName: string;
   modules: ModuleBreakdown[];
-  actionableCount: number;
   gradeCounts: Record<FrameResult["grade"]["letter"], number>;
-}
-
-function isActionable(finding: Finding): boolean {
-  return finding.status === "fail" || finding.status === "needs-review" || finding.status === "waived";
 }
 
 export function reportBreakdown(report: ReadinessReport): PageBreakdown[] {
@@ -38,12 +51,12 @@ export function reportBreakdown(report: ReadinessReport): PageBreakdown[] {
 
   const modules = report.frames.map<ModuleBreakdown>((frame) => {
     const findings = byRoot.get(frame.rootId) ?? [];
-    const actionable = findings.filter(isActionable);
+    const actionable = findings.filter(isActionableFinding);
     const ruleCounts = new Map<string, number>();
     for (const finding of actionable) ruleCounts.set(finding.ruleId, (ruleCounts.get(finding.ruleId) ?? 0) + 1);
     return {
       ...frame,
-      actionableCount: actionable.length,
+      ...actionableIssueSummary(report, actionable),
       failCount: findings.filter((finding) => finding.status === "fail").length,
       reviewCount: findings.filter((finding) => finding.status === "needs-review").length,
       weakestAxes: [...frame.axisScores]
@@ -61,7 +74,7 @@ export function reportBreakdown(report: ReadinessReport): PageBreakdown[] {
         });
         return {
           ...variant,
-          actionableCount: variantFindings.filter(isActionable).length,
+          ...actionableIssueSummary(report, variantFindings),
           failCount: variantFindings.filter((finding) => finding.status === "fail").length,
           reviewCount: variantFindings.filter((finding) => finding.status === "needs-review").length,
         };
@@ -76,10 +89,11 @@ export function reportBreakdown(report: ReadinessReport): PageBreakdown[] {
       pageName: module.pageName,
       modules: [],
       actionableCount: 0,
+      occurrenceCount: 0,
+      relatedGroupCount: 0,
       gradeCounts: { A: 0, B: 0, C: 0, D: 0, F: 0 },
     };
     page.modules.push(module);
-    page.actionableCount += module.actionableCount;
     page.gradeCounts[module.grade.letter] += 1;
     pages.set(module.pageId, page);
   }
@@ -87,6 +101,7 @@ export function reportBreakdown(report: ReadinessReport): PageBreakdown[] {
   return [...pages.values()]
     .map((page) => ({
       ...page,
+      ...actionableIssueSummary(report, page.modules.flatMap((module) => byRoot.get(module.rootId) ?? [])),
       modules: page.modules.sort((left, right) => left.grade.score - right.grade.score || left.rootName.localeCompare(right.rootName)),
     }))
     .sort((left, right) => left.pageName.localeCompare(right.pageName));

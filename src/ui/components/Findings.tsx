@@ -1,7 +1,9 @@
 import { AXIS_LABELS } from "../../core/constants";
 import { getPatternChecklist } from "../../core/catalog";
-import type { Axis, BindableField, Finding, FrameResult, JsonValue } from "../../core/contracts";
+import type { Axis, BindableField, Finding, FindingCategory, FindingGroup, FrameResult, JsonValue } from "../../core/contracts";
 import type { VariableCollectionOption } from "../../figma/adapter";
+import { groupsForFindings } from "../../core/finding-groups";
+import { findingImpactLabel } from "../../core/finding-policy";
 import { statusClass } from "../operations/presentation";
 import { defaultTokenCollectionId } from "../operations/token-wizard";
 import { isWaiverReasonValid } from "../operations/waivers";
@@ -9,6 +11,11 @@ import type { TokenWizardState, WaiverDraft } from "../types";
 
 export interface FindingsProps {
   findings: Finding[];
+  groups?: FindingGroup[];
+  categoryFilter?: FindingCategory | "all";
+  onCategoryFilter?: (value: FindingCategory | "all") => void;
+  onRecheckIssue?: (issueId: string) => void;
+  recheckDisabled?: boolean;
   frames: FrameResult[];
   showPassing: boolean;
   axisFilter: Axis | "all";
@@ -37,6 +44,10 @@ export interface FindingsProps {
 }
 
 export function Findings(props: FindingsProps) {
+  const groups = groupsForFindings(props.findings, props.groups);
+  const issueCount = groups.reduce((count, group) => count + (group.kind === "related" ? group.occurrenceCount : 1), 0);
+  const byId = new Map(props.findings.map((finding) => [finding.id, finding]));
+  const navigationTarget = (finding: Finding) => finding.provenance?.navigationNodeId ?? finding.nodeId;
   const pages = [...new Map(props.frames.map((frame) => [frame.pageId, frame.pageName])).entries()]
     .sort((left, right) => left[1].localeCompare(right[1]));
   const roots = props.frames
@@ -62,29 +73,47 @@ export function Findings(props: FindingsProps) {
           <option value="all">All axes</option>
           {Object.entries(AXIS_LABELS).map(([axis, label]) => <option key={axis} value={axis}>{label}</option>)}
         </select>
+        <select disabled={props.findings.length > 0 && props.findings.every((finding) => finding.category === undefined)} value={props.categoryFilter ?? "all"} onChange={(event) => props.onCategoryFilter?.(event.target.value as FindingCategory | "all")} aria-label="Filter by category">
+          <option value="all">All categories</option><option value="requirement">Requirements</option><option value="recommendation">Recommendations</option><option value="governance">Vocabulary governance</option>
+        </select>
         <label className="check"><input type="checkbox" checked={props.showPassing} onChange={(event) => props.onTogglePassing(event.target.checked)} /> Show passing</label>
       </div>
-      {props.findings.length === 0 ? <div className="empty-state compact"><h2>No findings in this view</h2><p>Run an audit or change the filters.</p></div> : props.findings.map((finding) => {
-        const isExpanded = props.expanded === finding.id;
+      {props.findings.length > 0 && <p className="muted">{issueCount} issue{issueCount === 1 ? "" : "s"} · {props.findings.length} finding occurrences in this view. Filters do not change grades.</p>}
+      {props.findings.length === 0 ? <div className="empty-state compact"><h2>No findings in this view</h2><p>Run an audit or change the filters.</p></div> : groups.map((group) => {
+        const selectedId = props.expanded && group.findingIds.includes(props.expanded) ? props.expanded : group.primaryFindingId;
+        const finding = byId.get(selectedId)!;
+        const isExpanded = props.expanded === group.id || group.findingIds.includes(props.expanded ?? "");
         const checklist = finding.patternResolution?.canonicalName ? getPatternChecklist(finding.patternResolution.canonicalName) : [];
         return (
-          <article className={`finding-card severity-${finding.severity}`} key={finding.id}>
-            <button className="finding-summary" onClick={() => props.onExpand(finding.id)} aria-expanded={isExpanded}>
+          <article className={`finding-card severity-${finding.severity}`} key={group.id}>
+            <button className="finding-summary" onClick={() => props.onExpand(isExpanded ? props.expanded! : group.id)} aria-expanded={isExpanded}>
               <span className={statusClass(finding.status)}>{finding.status}</span>
-              <span className="finding-title"><strong>{finding.title}</strong><small>{AXIS_LABELS[finding.axis]} · severity {finding.severity}{finding.hardBlocker ? " · blocker" : ""}</small></span>
+              <span className="finding-title"><strong>{finding.title}</strong><small>{AXIS_LABELS[finding.axis]} · {findingImpactLabel(finding)}{group.findingIds.length > 1 ? ` · ${group.occurrenceCount} affected layers` : ""}{group.kind === "related" ? " · related findings" : ""}</small></span>
               <span className="chevron" aria-hidden="true">{isExpanded ? "−" : "+"}</span>
             </button>
             {isExpanded && (
               <div className="finding-detail">
+                {group.kind === "related" && <p>These findings are related. A shared fix has not been verified; review each occurrence and its overrides.</p>}
                 <p>{finding.message}</p>
-                <button className="node-link" onClick={() => props.onNavigate(finding.nodeId)}>{finding.nodePath}</button>
+                <p><strong>Score effect:</strong> {findingImpactLabel(finding)}</p>
+                {group.sourceNodeId && <button className="button" onClick={() => props.onNavigate(group.sourceNodeId!)}>Go to source</button>}
+                {group.sourceStyleId && <button className="button" onClick={() => props.onNavigate(navigationTarget(finding))}>Show layer using this style</button>}
+                {group.sourceLabel && <small>Source: {group.sourceLabel}</small>}
+                {group.sourceStyleId && <small>Style ID: {group.sourceStyleId}. Select an affected text layer to inspect its applied style.</small>}
+                {group.findingIds.length > 1 && <details><summary>Show affected layers ({group.occurrenceCount})</summary><ul>{group.findingIds.map((id) => {
+                  const occurrence = byId.get(id)!;
+                  return <li key={id}><button className="node-link" onClick={() => props.onNavigate(navigationTarget(occurrence))}>{occurrence.nodePath}</button><button className="button subtle" onClick={() => props.onExpand(id)}>Inspect occurrence</button></li>;
+                })}</ul></details>}
+                {props.onRecheckIssue && <button className="button" disabled={props.recheckDisabled} onClick={() => props.onRecheckIssue!(group.id)}>Recheck this issue</button>}
+                <button className="node-link" onClick={() => props.onNavigate(navigationTarget(finding))}>{finding.nodePath}</button>
                 <dl><dt>Evidence</dt><dd>{finding.evidence.summary}</dd><dt>Fixability</dt><dd>{finding.fixability}</dd><dt>Confidence</dt><dd>{Math.round(finding.confidence * 100)}%</dd></dl>
+                <details><summary>Measured evidence</summary><pre className="finding-evidence">{JSON.stringify(finding.evidence.measured, null, 2)}</pre></details>
                 {finding.patternResolution && <div className="resolution"><strong>Pattern resolution</strong><span>{finding.patternResolution.kind}{finding.patternResolution.canonicalName ? ` → ${finding.patternResolution.canonicalName}` : ""}{finding.patternResolution.candidates ? `: ${finding.patternResolution.candidates.join(" / ")}` : ""}</span></div>}
                 {finding.patternResolution?.kind === "contextual" && finding.patternResolution.candidates && <div className="candidate-actions"><span>Confirm the intended pattern:</span>{finding.patternResolution.candidates.map((candidate) => <button className="button" disabled={props.disabled || !props.canMutateDocument} key={candidate} onClick={() => props.onConfirmPattern(finding.id, candidate)}>{candidate}</button>)}</div>}
                 {checklist.length > 0 && <div className="checklist"><strong>UI Design Brain checklist (advisory)</strong><ul>{checklist.map((item) => <li key={item}>{item}</li>)}</ul></div>}
                 {finding.ruleId === "token.application.repeated-literal" && <TokenWizard disabled={props.disabled || !props.canMutateDocument} finding={finding} collections={props.collections} state={props.tokenWizard} onChange={props.onTokenWizard} onCreate={props.onCreateToken} />}
                 <div className="finding-actions">
-                  {finding.status === "waived" ? <button className="button subtle" disabled={props.disabled} onClick={() => props.onClearWaiver(finding.id)}>Remove waiver</button> : finding.status !== "pass" && finding.status !== "not-applicable" && props.waiverDraft?.findingId !== finding.id ? <button className="button subtle" disabled={props.disabled} onClick={() => props.onWaiverDraft({ findingId: finding.id, reason: "" })}>Waive with deduction</button> : null}
+                  {finding.status === "waived" ? <button className="button subtle" disabled={props.disabled} onClick={() => props.onClearWaiver(finding.id)}>Remove waiver</button> : (finding.category === undefined || finding.category === "requirement") && finding.status !== "pass" && finding.status !== "not-applicable" && props.waiverDraft?.findingId !== finding.id ? <button className="button subtle" disabled={props.disabled} onClick={() => props.onWaiverDraft({ findingId: finding.id, reason: "" })}>Waive with deduction</button> : null}
                 </div>
                 {props.waiverDraft?.findingId === finding.id && (
                   <div className="waiver-editor">

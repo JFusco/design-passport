@@ -1,6 +1,8 @@
 import { AXIS_LABELS } from "../../core/constants";
 import type { ReadinessReport, ScanScope } from "../../core/contracts";
 import type { PageOption, SelectionSummary } from "../../figma/adapter";
+import type { AuditRecheckRequest } from "../../plugin/messages";
+import { actionableIssueSummary } from "../operations/breakdown";
 import { BrandMark } from "../BrandMark";
 import { auditedTargetSummary, selectionEligibility } from "../operations/audit-scope";
 import { gradeClass } from "../operations/presentation";
@@ -17,6 +19,8 @@ export interface OverviewProps {
   pages?: PageOption[];
   fileKeyAvailable?: boolean;
   onReviewPages?: (pageIds: string[]) => void;
+  onRecheck?: (request: AuditRecheckRequest) => void;
+  recheckDisabled?: boolean;
   onScan: (scope: ScanScope, refresh?: boolean) => void;
   onCertify: () => void;
   onCertifyComponents: () => void;
@@ -28,6 +32,8 @@ export function Overview(props: OverviewProps) {
   const componentsReady = componentFrames.length > 0 && componentFrames.every((frame) => frame.ready);
   const eligibility = selectionEligibility(props.selectionSummary);
   const historicalExport = props.historical || props.stale;
+  const issues = props.report ? actionableIssueSummary(props.report) : undefined;
+  const recheckDisabled = props.recheckDisabled || props.actionsBlocked || props.scanning;
   const auditedTarget = props.report
     ? auditedTargetSummary(props.report.target.scope, props.report.frames.map((frame) => frame.rootName))
     : undefined;
@@ -73,13 +79,23 @@ export function Overview(props: OverviewProps) {
               {auditedTarget && auditedTarget.remainingCount > 0 ? <span>+{auditedTarget.remainingCount} more</span> : null}
             </div>
           </div>
+          {issues ? <div className="scope-card" aria-label="Issue summary">
+            <div><strong>{issues.actionableCount} actionable issue{issues.actionableCount === 1 ? "" : "s"}</strong><p>{issues.occurrenceCount} affected occurrence{issues.occurrenceCount === 1 ? "" : "s"}. {issues.relatedGroupCount > 0 ? `${issues.relatedGroupCount} related group${issues.relatedGroupCount === 1 ? " needs" : "s need"} individual review; a shared fix is unverified.` : props.report.schemaVersion === 2 ? "Verified common sources are counted once." : "Historical findings retain their original counts."}</p></div>
+          </div> : null}
+          {props.onRecheck ? <div className="scope-card">
+            <div><span className="section-label">Verify this audit</span><p>Refresh the audited target shown above. Rescan entire file rebuilds its supporting context and preserves that target.</p></div>
+            <div className="scope-actions">
+              <button className="button primary" disabled={recheckDisabled} onClick={() => props.onRecheck?.({ mode: "changes" })}>Recheck changes</button>
+              <button className="button" disabled={recheckDisabled} onClick={() => props.onRecheck?.({ mode: "full" })}>Rescan entire file</button>
+            </div>
+          </div> : null}
           {props.report.blockers.length > 0 && <div className="blocker-card"><strong>{props.report.blockers.length} hard blocker{props.report.blockers.length === 1 ? "" : "s"}</strong>{props.report.blockers.map((blocker) => <span key={blocker}>{blocker}</span>)}</div>}
           <div className="axis-grid">
             {props.report.axes.map((axis) => <div className="axis-row" key={axis.axis}><div><span>{AXIS_LABELS[axis.axis]}</span><strong>{axis.score.toFixed(1)}</strong></div><div className="score-track"><span style={{ width: `${axis.score}%` }} /></div></div>)}
           </div>
           <div className="footer-actions">
             {props.stale
-              ? <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan(props.report?.target.scope ?? "selection", true)}>Refresh audit to certify</button>
+              ? props.onRecheck ? <p>Recheck this audit before certifying.</p> : <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan(props.report?.target.scope ?? "selection", true)}>Refresh audit to certify</button>
               : <>
                 <button className="button primary" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !componentsReady} onClick={props.onCertifyComponents}>Certify components ({componentFrames.length})</button>
                 <button className="button" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !props.report.ready} onClick={props.onCertify}>Certify source frames</button>

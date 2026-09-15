@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { listVariableCollectionOptions } from "../src/figma/operations/collections";
 import { contextFragment, mapConcurrent, readContextFragment, restPageFingerprint } from "../src/figma/context-cache";
 import { buildReadinessReport } from "../src/core/report";
+import { buildChangePlans } from "../src/core/planner";
 import { node } from "./fixtures";
 import { contextFixture } from "./context-cache-fixtures";
 
@@ -10,6 +11,48 @@ const withoutTime = <T extends { builtAt: string }>(value: T) => { const { built
 afterEach(() => { Reflect.deleteProperty(globalThis, "figma"); });
 
 describe("validated persisted context", () => {
+  it("matches report groups, grades, readiness and exact repairs after a localized incremental edit", async () => {
+    const fixture = contextFixture(20, 4);
+    fixture.readinessProfile.tokenSourceCollectionKeys = [];
+    await build(fixture);
+    fixture.pages[0]!.children[0]!.name = "Review Card";
+    fixture.pages[0]!.children[0]!.children[0]!.letterSpacing = { unit: "PIXELS", value: 1.25 };
+    const incremental = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache, dirtyNodeIds: ["root:0", "text:0:0"] });
+    const full = await build(fixture, true);
+    expect(incremental.diagnostics).toMatchObject({ capturedFragments: 1, reusedFragments: 19, inferenceNodes: 5 });
+    expect(full.diagnostics.inferenceNodes).toBe(100);
+    const report = (graph: typeof full.graph) => buildReadinessReport({ graph, profile: fixture.readinessProfile, scope: "file", targetRootIds: graph.sourceFrameIds, now: new Date("2026-09-14T12:00:00Z") });
+    const incrementalReport = report(incremental.graph);
+    const fullReport = report(full.graph);
+    expect(incrementalReport.issueGroups?.length).toBeGreaterThan(0);
+    expect(incrementalReport).toEqual(fullReport);
+    expect(buildChangePlans(incrementalReport.findings)).toEqual(buildChangePlans(fullReport.findings));
+  });
+  it("refreshes only tracked in-session fragments and matches a forced full graph", async () => {
+    const fixture = contextFixture(20, 4);
+    fixture.readinessProfile.tokenSourceCollectionKeys = [];
+    const initial = await build(fixture);
+    const changed = fixture.pages[0]!.children[0]!;
+    changed.name = "Tracked card update";
+    const incremental = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, {
+      contextCache: fixture.cache,
+      dirtyNodeIds: [changed.id],
+      previousGraph: initial.graph,
+      previousCollections: initial.collections,
+    });
+    expect(incremental.diagnostics).toMatchObject({ capturedFragments: 1, capturedNodes: 5 });
+    expect(incremental.diagnostics.reusedNodes).toBe(95);
+    const full = await build(fixture, true);
+    expect(withoutTime(incremental.graph)).toEqual(withoutTime(full.graph));
+  });
+  it("treats v1 fragments as misses and refreshes rule-relevant source/style/render evidence live", () => {
+    const snapshot = node({ id: "one", text: { charactersLength: 4, contentHash: "text", backgroundResolvable: true, style: { status: "resolved", controlledFields: ["fontSize"], overriddenFields: [] } }, clipsContent: true, isMask: true, owningInstanceId: "instance", evidenceRole: "instance-descendant", cornerRadii: { topLeft: 1, topRight: 2, bottomLeft: 3, bottomRight: 4 } });
+    const fragment = contextFragment("fingerprint", [snapshot]);
+    expect(fragment.schemaVersion).toBe(2);
+    expect(fragment.nodes[0]?.text).not.toHaveProperty("style");
+    for (const property of ["clipsContent", "isMask", "owningInstanceId", "evidenceRole", "cornerRadii"]) expect(fragment.nodes[0]).not.toHaveProperty(property);
+    expect(readContextFragment({ ...fragment, schemaVersion: 1 }, "fingerprint", ["one"])).toBeUndefined();
+  });
   it("reuses a fragment after reopening while refreshing all inference and external evidence", async () => {
     const fixture = contextFixture();
     const first = await build(fixture);
@@ -24,6 +67,29 @@ describe("validated persisted context", () => {
     const restored = JSON.stringify([...fixture.cacheValues.values()]);
     expect(restored).not.toContain('"characters"');
     expect(restored).not.toContain('"content":"Heading"');
+  });
+
+  it("replaces persisted contrast colors and resolvability with live rendering evidence", async () => {
+    const fixture = contextFixture();
+    await build(fixture);
+    for (const [key, value] of fixture.cacheValues) {
+      const fragment = value as ReturnType<typeof contextFragment>;
+      const cachedText = fragment.nodes.find((candidate) => candidate.type === "TEXT")?.text;
+      expect(cachedText).toBeDefined();
+      cachedText!.textColor = { r: 1, g: 0, b: 0, a: 1 };
+      cachedText!.backgroundColor = { r: 0, g: 0, b: 0, a: 1 };
+      cachedText!.backgroundResolvable = false;
+      fixture.cacheValues.set(key, contextFragment(fragment.fingerprint, fragment.nodes));
+    }
+    const cached = await build(fixture);
+    const full = await build(fixture, true);
+    expect(cached.diagnostics.reusedFragments).toBe(1);
+    expect(withoutTime(cached.graph)).toEqual(withoutTime(full.graph));
+    expect(cached.graph.nodes["text:0:0"]?.text).toMatchObject({
+      textColor: { r: 1, g: 1, b: 1, a: 1 },
+      backgroundColor: { r: 1, g: 1, b: 1, a: 1 },
+      backgroundResolvable: true,
+    });
   });
 
   it.each(["name", "visible", "width", "text", "font", "fill", "effects", "annotation", "variant", "documentation", "bindings", "plugin-data"])("matches full capture after changing %s", async (change) => {

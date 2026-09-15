@@ -33,14 +33,15 @@ export function evaluateRules(
     const root = graph.nodes[rootId];
     if (!root) continue;
     const nodes = collectDescendants(graph, rootId);
+    const sourceNodes = nodes.filter((node) => node.evidenceRole !== "instance-descendant");
     findings.push(
-      ...evaluateTokenRules(graph, profile, root, nodes),
-      ...evaluateNamingRules(graph, root, nodes),
-      ...evaluateStructureRules(root, nodes),
-      ...evaluateComponentRules(graph, root, nodes),
+      ...evaluateTokenRules(graph, profile, root, sourceNodes),
+      ...evaluateNamingRules(graph, root, sourceNodes),
+      ...evaluateStructureRules(root, sourceNodes),
+      ...evaluateComponentRules(graph, root, sourceNodes),
       ...evaluateResponsiveRules(graph, profile, root),
       ...evaluateAccessibilityRules(graph, root, nodes),
-      ...evaluatePipelineRules(graph, profile, root, nodes),
+      ...evaluatePipelineRules(graph, profile, root, sourceNodes),
     );
   }
   return findings.sort(findingOrder);

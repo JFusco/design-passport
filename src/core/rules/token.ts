@@ -9,7 +9,8 @@ import type {
 import { collectDescendants } from "../operations/graph";
 import {
   bindingCoverage,
-  CODE_RELEVANT_FIELDS,
+  assessTokenProperty,
+  propertyBindingEvidence,
   eligibleTokenFields,
   isSemanticVariableName,
   rawFieldValue,
@@ -113,7 +114,7 @@ export function evaluateTokenRules(
     root,
     coverage.coverage >= 25 ? "pass" : "fail",
     "Basic token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) are bound; 25% marks a meaningful token baseline.`,
+    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) have variable or resolved text-style evidence; 25% marks a meaningful token baseline.`,
     { ...coverage, threshold: 25 },
   ));
   output.push(createFinding(
@@ -124,7 +125,7 @@ export function evaluateTokenRules(
     root,
     coverage.coverage >= 50 ? "pass" : "fail",
     "Substantial token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) are bound; the next progress band starts at 50%.`,
+    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) have variable or resolved text-style evidence; the next progress band starts at 50%.`,
     { ...coverage, threshold: 50 },
   ));
   output.push(createFinding(
@@ -135,7 +136,7 @@ export function evaluateTokenRules(
     root,
     coverage.coverage >= 70 ? "pass" : "fail",
     "Strong token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) are bound; the strong-coverage band starts at 70%.`,
+    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) have variable or resolved text-style evidence; the strong-coverage band starts at 70%.`,
     { ...coverage, threshold: 70 },
   ));
   output.push(createFinding(
@@ -146,7 +147,7 @@ export function evaluateTokenRules(
     root,
     coverage.coverage >= 80 ? "pass" : "fail",
     "Broad token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable code-relevant fields (${coverage.coverage.toFixed(1)}%) are variable-bound; 80% is the grade-B target.`,
+    `${coverage.bound} of ${coverage.eligible} measurable code-relevant fields (${coverage.coverage.toFixed(1)}%) have variable or resolved text-style evidence; 80% is the grade-B target.`,
     { ...coverage, threshold: 80 },
   ));
   output.push(createFinding(
@@ -157,15 +158,24 @@ export function evaluateTokenRules(
     root,
     coverage.coverage >= 95 ? "pass" : "fail",
     "Excellent token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) are bound; 95% is required for grade A.`,
+    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) have variable or resolved text-style evidence; 95% is required for grade A.`,
     { ...coverage, threshold: 95 },
   ));
+
+  for (const node of nodes) {
+    if (node.type !== "TEXT" || !node.text || node.evidenceRole === "instance-descendant" || !node.visible || node.renderVisible === false || node.opacity <= 0) continue;
+    if (node.text.style?.status === "unavailable" || node.text.style?.status === "mixed" || (node.text.mixedFields?.length ?? 0) > 0) {
+      output.push(createFinding("token.application.typography-review", "token-application", 1, root, node, "needs-review",
+        "Typography evidence needs review", "Inspect the text's mixed runs or unavailable style before choosing a semantic token; unresolved fields do not lower coverage.",
+        { styleStatus: node.text.style?.status ?? "none", styleId: node.text.style?.id ?? "", mixedFields: node.text.mixedFields ?? [] },
+        { scoreImpact: false }));
+    }
+  }
 
   const selectedVariablesById = new Map(variables.map((variable) => [variable.id, variable]));
   for (const node of nodes) {
     for (const [field, candidates] of Object.entries(node.inferredBindings) as Array<[BindableField, string[]]>) {
-      if (!CODE_RELEVANT_FIELDS.includes(field)) continue;
-      if (node.boundFields.includes(field)) continue;
+      if (!assessTokenProperty(node, field).repairable || propertyBindingEvidence(node, field)) continue;
       const compatible = candidates.filter((candidate) => {
         const variable = selectedVariablesById.get(candidate);
         return Boolean(variable && isPreciselyScopedVariableForField(variable, field));
@@ -208,7 +218,7 @@ export function evaluateTokenRules(
   const repeated = new Map<string, { field: BindableField; rawValue: JsonValue; nodeIds: string[] }>();
   for (const node of nodes) {
     for (const field of eligibleTokenFields(node)) {
-      if (node.boundFields.includes(field)) continue;
+      if (!assessTokenProperty(node, field).repairable || propertyBindingEvidence(node, field)) continue;
       const rawValue = rawFieldValue(node, field);
       if (rawValue === undefined) continue;
       const key = `${field}:${JSON.stringify(rawValue)}`;
@@ -270,7 +280,7 @@ export function evaluateTokenRules(
       "Machine-readable styling",
       coverage.bound === 0
         ? "All measurable code-relevant styling on this target is literal."
-        : "The target exposes variable-backed styling to downstream consumers.",
+        : "The target exposes reusable variable or text-style evidence to downstream consumers.",
       { ...coverage },
       coverage.bound === 0 ? { hardBlocker: true } : {},
     ));

@@ -1,4 +1,5 @@
 import { SOURCES } from "../constants";
+import { classifyFinding } from "../finding-policy";
 import type {
   Axis,
   Finding,
@@ -34,7 +35,7 @@ export function createFinding(
 ): Finding {
   const discriminator = options.discriminator ? `:${options.discriminator}` : "";
   const { discriminator: _ignored, ...rest } = options;
-  return {
+  return classifyFinding({
     ruleId,
     axis,
     severity,
@@ -50,5 +51,5 @@ export function createFinding(
     id: `${ruleId}:${root.id}:${node.id}${discriminator}`,
     sourceRefs: options.sourceRefs ?? [SOURCES.plugin],
     confidence: options.confidence ?? 1,
-  };
+  });
 }

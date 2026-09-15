@@ -1,4 +1,4 @@
-import { AXES, type Axis, type ChangePlan, type Grade, type KnowledgeInsight, type ReadinessProfile, type ReadinessReport } from "../core/contracts";
+import { AXES, type Axis, type ChangePlan, type FindingCategory, type Grade, type KnowledgeInsight, type ReadinessProfile, type ReadinessReport } from "../core/contracts";
 import { hashValue } from "../core/stable";
 import type { CapturedAuditTarget } from "../figma/adapter";
 import type { Tab } from "../ui/types";
@@ -9,6 +9,7 @@ export interface AuditViewState {
   activeTab: Tab;
   showPassing: boolean;
   axisFilter: Axis | "all";
+  categoryFilter?: FindingCategory | "all";
   pageFilter: string;
   rootFilter: string;
   variantFilter: string;
@@ -56,11 +57,12 @@ export function canonicalAuditTargetKey(target: CapturedAuditTarget): string {
 export function isAuditViewState(value: unknown): value is AuditViewState {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const view = value as Record<string, unknown>;
-  const allowed = new Set(["activeTab", "showPassing", "axisFilter", "pageFilter", "rootFilter", "variantFilter", "expanded"]);
+  const allowed = new Set(["activeTab", "showPassing", "axisFilter", "categoryFilter", "pageFilter", "rootFilter", "variantFilter", "expanded"]);
   return Object.keys(view).every((key) => allowed.has(key))
     && ["overview", "modules", "findings", "guidance", "cleanup", "context", "profile"].includes(String(view.activeTab))
     && typeof view.showPassing === "boolean"
     && (view.axisFilter === "all" || AXES.includes(view.axisFilter as Axis))
+    && (view.categoryFilter === undefined || ["all", "requirement", "recommendation", "governance"].includes(String(view.categoryFilter)))
     && [view.pageFilter, view.rootFilter, view.variantFilter].every((item) => typeof item === "string" && item.length <= 500)
     && (view.expanded === undefined || typeof view.expanded === "string" && view.expanded.length <= 1_000);
 }

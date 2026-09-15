@@ -13,7 +13,7 @@ import {
   buildMultiFileReviewReport,
   buildReferencePack,
   compileTeamKnowledgePack,
-  knowledgeDomainForContext,
+  projectGuidanceFact,
   generateCandidateDrafts,
   reviseKnowledgeCandidate,
 } from "../core/knowledge-loop";
@@ -232,15 +232,7 @@ async function rebuildKnowledge() {
       const decision = latest.get(candidate.candidateId);
       return candidate.projectScope === scope && decision?.action === "approve" && decision.scope === "project" && decision.candidateDigest === candidate.digest;
     });
-    const facts = approved.map((candidate) => ({
-      factId: candidate.candidateId,
-      domain: knowledgeDomainForContext(candidate.context),
-      label: "Approved project guidance",
-      guidance: candidate.wording,
-      matcher: { kind: "informational" },
-      provenance: "approved-project",
-      candidateDigest: candidate.digest,
-    }));
+    const facts = approved.map(projectGuidanceFact);
     const source = {
       schemaVersion: 1,
       sourceId: `project-guidance:${scope}`,

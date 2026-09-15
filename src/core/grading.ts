@@ -1,5 +1,6 @@
 import { AXES, type Axis, type AxisScore, type Finding, type FindingStatus, type Grade, type GradeLetter } from "./contracts";
 import { AXIS_MULTIPLIERS } from "./constants";
+import { affectsScore } from "./finding-policy";
 
 const STATUS_PRIORITY: Record<FindingStatus, number> = {
   fail: 5,
@@ -11,7 +12,7 @@ const STATUS_PRIORITY: Record<FindingStatus, number> = {
 
 function scoreGroups(findings: Finding[]): { passedWeight: number; applicableWeight: number } {
   const groups = new Map<string, Finding[]>();
-  for (const item of findings.filter((finding) => finding.scoreImpact !== false)) {
+  for (const item of findings.filter(affectsScore)) {
     const key = `${item.rootId}:${item.ruleId}`;
     groups.set(key, [...(groups.get(key) ?? []), item]);
   }

@@ -65,7 +65,7 @@ export function populateGraphMetrics(nodes: Record<string, NodeSnapshot>): void 
       type: node.type,
       name: node.name.replace(/\s*\/\s*[^/]+\s*\/\s*\d+(?:\.\d+)?\s*$/i, ""),
       text: node.text?.contentHash,
-      children: node.childIds.map((id) => contentSignatures.get(id) ?? "missing"),
+      children: node.childIds.filter((id) => nodes[id]?.evidenceRole !== "instance-descendant").map((id) => contentSignatures.get(id) ?? "missing"),
     });
     contentSignatures.set(node.id, node.contentSignature);
   }
@@ -83,6 +83,7 @@ export function sourceFrameIds(
   ]);
   return Object.values(graph.nodes)
     .filter((node) => {
+      if (node.evidenceRole === "instance-descendant") return false;
       const parent = graph.nodes[node.parentId ?? ""];
       const topLevel = !parent || (parent.type === "SECTION" && !graph.nodes[parent.parentId ?? ""]);
       if (screenPages.has(node.pageId)) return topLevel && ["FRAME", "COMPONENT", "COMPONENT_SET"].includes(node.type);

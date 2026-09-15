@@ -39,6 +39,20 @@ export interface AuditTargetSummary {
   selectionCount?: number;
 }
 
+export type AuditRecheckRequest =
+  | { mode: "changes" }
+  | { mode: "full" }
+  | { mode: "component"; componentId: string }
+  | { mode: "issue"; issueId: string };
+
+export interface AuditRefreshResult {
+  mode: "session" | "incremental" | "full";
+  reason: string;
+  requested: AuditRecheckRequest["mode"];
+  resolvedCount: number;
+  remainingCount: number;
+}
+
 export type UiToPluginMessage =
   | { type: "initialize" }
   | { type: "save-profile"; profile: ReadinessProfile }
@@ -49,6 +63,7 @@ export type UiToPluginMessage =
   | { type: "clear-file-cache" }
   | { type: "save-audit-view"; id: string; viewState: AuditViewState }
   | { type: "refresh-audit" }
+  | { type: "recheck-audit"; request: AuditRecheckRequest }
   | { type: "cancel-scan" }
   | { type: "navigate"; nodeId: string }
   | { type: "apply-plan"; planId: string; undoOnlyAcknowledged: boolean }
@@ -95,6 +110,7 @@ export type PluginToUiMessage =
     sessionReferenceCount: number;
     savedAuditId?: string;
     saveStatus?: AuditSaveStatus;
+    refresh?: AuditRefreshResult;
   }
   | { type: "knowledge-stale" }
   | { type: "selection"; summary: SelectionSummary }

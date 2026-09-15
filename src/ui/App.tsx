@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PRODUCT_NAME } from "../core/constants";
 import type {
   Axis,
+  FindingCategory,
   ChangePlan,
   KnowledgeInsight,
   ReadinessProfile,
@@ -11,7 +12,7 @@ import type {
   ScanScope,
 } from "../core/contracts";
 import type { SelectionSummary, VariableCollectionOption } from "../figma/adapter";
-import type { AuditTargetSummary, KnowledgeSummary, PluginToUiMessage, UiToPluginMessage } from "../plugin/messages";
+import type { AuditRecheckRequest, AuditTargetSummary, KnowledgeSummary, PluginToUiMessage, UiToPluginMessage } from "../plugin/messages";
 import type { AuditSaveStatus, AuditViewState, SavedAuditSummary } from "../plugin/audit-state";
 import { BrandMark } from "./BrandMark";
 import { Cleanup } from "./components/Cleanup";
@@ -29,6 +30,7 @@ import {
   isAuditInterruptible,
   scanInFlightAfter,
 } from "./operations/audit-scope";
+import { actionableIssueSummary } from "./operations/breakdown";
 import { findingsForReview } from "./operations/findings";
 import { certificationNotice, cloneProfile, formatDateTime } from "./operations/presentation";
 import { discardProfileDraft, profileDraftState } from "./operations/profile-state";
@@ -69,6 +71,7 @@ export function App() {
   const [stale, setStale] = useState(true);
   const [showPassing, setShowPassing] = useState(false);
   const [axisFilter, setAxisFilter] = useState<Axis | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<FindingCategory | "all">("all");
   const [pageFilter, setPageFilter] = useState("all");
   const [rootFilter, setRootFilter] = useState("all");
   const [variantFilter, setVariantFilter] = useState("all");
@@ -137,6 +140,7 @@ export function App() {
         setActiveTab(view.activeTab);
         setShowPassing(view.showPassing);
         setAxisFilter(view.axisFilter);
+        setCategoryFilter(view.categoryFilter ?? "all");
         setPageFilter(view.pageFilter);
         setRootFilter(view.rootFilter);
         setVariantFilter(view.variantFilter);
@@ -176,6 +180,7 @@ export function App() {
         if (targetIdentity !== lastReportTarget.current) {
           setShowPassing(false);
           setAxisFilter("all");
+          setCategoryFilter("all");
           setPageFilter("all");
           setRootFilter("all");
           setVariantFilter("all");
@@ -186,7 +191,7 @@ export function App() {
         setPageFilter((current) => current === "all" || message.report.frames.some((frame) => frame.pageId === current) ? current : "all");
         setRootFilter((current) => current === "all" || message.report.frames.some((frame) => frame.rootId === current) ? current : "all");
         setVariantFilter((current) => current === "all" || message.report.frames.some((frame) => frame.variantCoverage?.some((variant) => variant.variantId === current)) ? current : "all");
-        setExpanded((current) => message.report.findings.some((finding) => finding.id === current) ? current : undefined);
+        setExpanded((current) => (message.report.findings.some((finding) => finding.id === current) || message.report.issueGroups?.some((group) => group.id === current)) ? current : undefined);
         setPlans(message.plans);
         setKnowledge(message.knowledge);
         setCollections(message.collections);
@@ -198,7 +203,9 @@ export function App() {
         setScanInFlight(batchRunning.current);
         setStale(false);
         setError(undefined);
-        if (!batchRunning.current) setNotice(auditCompletionNotice(message.report.target.scope, message.report.grade.letter, message.report.ready));
+        if (!batchRunning.current) setNotice(message.refresh
+          ? `Recheck complete · ${message.refresh.resolvedCount} resolved · ${message.refresh.remainingCount} remaining. ${message.refresh.mode === "full" ? "Full rebuild" : "Verified context reuse"}. ${message.refresh.reason}`
+          : auditCompletionNotice(message.report.target.scope, message.report.grade.letter, message.report.ready));
       } else if (message.type === "knowledge-stale") {
         setStale(true);
       } else if (message.type === "selection") {
@@ -295,19 +302,20 @@ export function App() {
   useEffect(() => {
     if (!activeSavedId) return;
     const viewState: AuditViewState = {
-      activeTab, showPassing, axisFilter, pageFilter, rootFilter, variantFilter,
+      activeTab, showPassing, axisFilter, categoryFilter, pageFilter, rootFilter, variantFilter,
       ...(expanded === undefined ? {} : { expanded }),
     };
     const signature = JSON.stringify({ id: activeSavedId, viewState });
     if (lastPersistedView.current === signature) return;
     lastPersistedView.current = signature;
     send({ type: "save-audit-view", id: activeSavedId, viewState });
-  }, [activeSavedId, activeTab, showPassing, axisFilter, pageFilter, rootFilter, variantFilter, expanded]);
+  }, [activeSavedId, activeTab, showPassing, axisFilter, categoryFilter, pageFilter, rootFilter, variantFilter, expanded]);
 
   const visibleFindings = useMemo(
     () => {
       const frames = new Map((report?.frames ?? []).map((frame) => [frame.rootId, frame]));
       return findingsForReview(report?.findings ?? [], { showPassing, axis: axisFilter })
+        .filter((finding) => categoryFilter === "all" || finding.category === categoryFilter)
         .filter((finding) => pageFilter === "all" || frames.get(finding.rootId)?.pageId === pageFilter)
         .filter((finding) => rootFilter === "all" || finding.rootId === rootFilter)
         .filter((finding) => {
@@ -316,7 +324,7 @@ export function App() {
           return coverage?.findingIds.includes(finding.id) ?? false;
         });
     },
-    [report, showPassing, axisFilter, pageFilter, rootFilter, variantFilter],
+    [report, showPassing, axisFilter, categoryFilter, pageFilter, rootFilter, variantFilter],
   );
 
   const draftState = useMemo(
@@ -352,6 +360,19 @@ export function App() {
     setScanInFlight((current) => scanInFlightAfter(current, "local-scan"));
     if (refreshKnowledge && report) send({ type: "refresh-audit" });
     else send({ type: "scan", request: { scope, refreshKnowledge } });
+  };
+
+  const recheck = (request: AuditRecheckRequest) => {
+    if (!report || draftState.blocked || scanInFlight) return;
+    restoreRequest.current = null;
+    setError(undefined);
+    setNotice(undefined);
+    setContribution(undefined);
+    setTokenWizard(undefined);
+    setWaiverDraft(undefined);
+    setUndoAcknowledged(false);
+    setScanInFlight(true);
+    send({ type: "recheck-audit", request });
   };
 
   const reviewPages = (pageIds: string[]) => {
@@ -441,7 +462,7 @@ export function App() {
         {(["overview", "modules", "findings", "guidance", "cleanup", "context"] as Tab[]).map((tab) => (
           <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>
             {tab[0]?.toUpperCase()}{tab.slice(1)}
-            {tab === "findings" && report ? <span className="count">{report.findings.filter((item) => item.status !== "pass" && item.status !== "not-applicable").length}</span> : null}
+            {tab === "findings" && report ? <span className="count">{actionableIssueSummary(report).actionableCount}</span> : null}
           </button>
         ))}
       </nav>
@@ -481,6 +502,8 @@ export function App() {
             pages={bootstrap.data.pages}
             fileKeyAvailable={bootstrap.data.fileKeyAvailable}
             onReviewPages={reviewPages}
+            onRecheck={recheck}
+            recheckDisabled={draftState.blocked || scanInFlight}
             onScan={scan}
             onCertify={() => send({ type: "certify" })}
             onCertifyComponents={() => send({ type: "certify-components" })}
@@ -490,6 +513,11 @@ export function App() {
         {activeTab === "findings" && (
           <Findings
             findings={visibleFindings}
+            groups={report?.issueGroups ?? []}
+            categoryFilter={categoryFilter}
+            onCategoryFilter={setCategoryFilter}
+            onRecheckIssue={(issueId) => recheck({ mode: "issue", issueId })}
+            recheckDisabled={historical || draftState.blocked || scanInFlight}
             frames={report?.frames ?? []}
             showPassing={showPassing}
             axisFilter={axisFilter}
@@ -535,6 +563,8 @@ export function App() {
         {activeTab === "modules" && (
           <Modules
             report={report}
+            onRecheck={recheck}
+            recheckDisabled={historical || draftState.blocked || scanInFlight}
             onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
             onViewFindings={(rootId) => {
               const frame = report?.frames.find((candidate) => candidate.rootId === rootId);

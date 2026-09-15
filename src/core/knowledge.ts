@@ -1,4 +1,5 @@
 import type { DesignKnowledgeGraph, NodeSnapshot, ReadinessProfile, ResponsiveFamily } from "./contracts";
+import { eligibleTokenFields, propertyBindingEvidence } from "./operations/node-fields";
 import { hashValue } from "./stable";
 
 export interface ResponsiveName {
@@ -18,7 +19,7 @@ export function parseResponsiveName(name: string): ResponsiveName | undefined {
 }
 
 export function deriveResponsiveFamilies(nodes: Record<string, NodeSnapshot>, profile: ReadinessProfile): ResponsiveFamily[] {
-  const candidates = Object.values(nodes).filter((node) => ["FRAME", "COMPONENT", "COMPONENT_SET"].includes(node.type));
+  const candidates = Object.values(nodes).filter((node) => node.evidenceRole !== "instance-descendant" && ["FRAME", "COMPONENT", "COMPONENT_SET"].includes(node.type));
   const groups = new Map<string, Array<{ node: NodeSnapshot; parsed: ResponsiveName }>>();
   for (const node of candidates) {
     const parsed = parseResponsiveName(node.name);
@@ -67,11 +68,14 @@ function bindingSignature(nodes: Record<string, NodeSnapshot>, root: NodeSnapsho
     if (!entry || visited.has(entry.id)) continue;
     visited.add(entry.id);
     const node = nodes[entry.id];
-    if (!node) continue;
-    for (const [field, ids] of Object.entries(node.boundVariableIds).sort(([left], [right]) => left.localeCompare(right))) {
-      signature.push(`${entry.path}:${field}:${[...(ids ?? [])].sort().join(",")}`);
+    if (!node || node.evidenceRole === "instance-descendant") continue;
+    for (const field of eligibleTokenFields(node)) {
+      const evidence = propertyBindingEvidence(node, field);
+      if (evidence === "variable") signature.push(`${entry.path}:${field}:variable:${[...(node.boundVariableIds[field] ?? [])].sort().join(",")}`);
+      if (evidence === "text-style") signature.push(`${entry.path}:${field}:text-style:${node.text?.style?.key || node.text?.style?.id || "unresolved"}`);
     }
     node.effects.forEach((effect, index) => {
+      if (!node.visible || node.renderVisible === false || node.opacity <= 0 || !effect.visible || effect.boundFieldCount === 0) return;
       signature.push(`${entry.path}:effect:${index}:${effect.boundVariableIds.slice().sort().join(",")}`);
     });
     for (let index = node.childIds.length - 1; index >= 0; index -= 1) {
@@ -86,12 +90,12 @@ function bindingSignature(nodes: Record<string, NodeSnapshot>, root: NodeSnapsho
 export function deriveRepeatedStructures(nodes: Record<string, NodeSnapshot>): Array<{ signature: string; nodeIds: string[] }> {
   const groups = new Map<string, string[]>();
   for (const node of Object.values(nodes)) {
-    if (!node.structuralSignature || !["FRAME", "GROUP", "COMPONENT"].includes(node.type)) continue;
+    if (node.evidenceRole === "instance-descendant" || !node.structuralSignature || !["FRAME", "GROUP", "COMPONENT"].includes(node.type)) continue;
     groups.set(node.structuralSignature, [...(groups.get(node.structuralSignature) ?? []), node.id]);
   }
   return [...groups.entries()]
     .filter(([, nodeIds]) => nodeIds.length >= 3)
-    .map(([signature, nodeIds]) => ({ signature, nodeIds }))
+    .map(([signature, nodeIds]) => ({ signature, nodeIds: nodeIds.slice().sort() }))
     .sort((left, right) => right.nodeIds.length - left.nodeIds.length || left.signature.localeCompare(right.signature));
 }
 
@@ -100,6 +104,7 @@ export function finalizeKnowledgeGraph(graph: Omit<DesignKnowledgeGraph, "respon
   const repeatedStructureGroups = deriveRepeatedStructures(graph.nodes);
   const snapshotMaterial = {
     complete: graph.complete,
+    resourceFingerprint: graph.resourceFingerprint,
     profile,
     pages: graph.pages.map(({ id, name, role, loaded, nodeCount, rootNodeIds }) => ({ id, name, role, loaded, nodeCount, rootNodeIds })),
     nodes: Object.values(graph.nodes).map((node) => ({
@@ -107,6 +112,19 @@ export function finalizeKnowledgeGraph(graph: Omit<DesignKnowledgeGraph, "respon
       parentId: node.parentId,
       name: node.name,
       type: node.type,
+      visible: node.visible,
+      renderVisible: node.renderVisible,
+      evidenceRole: node.evidenceRole,
+      owningInstanceId: node.owningInstanceId,
+      absoluteBounds: node.absoluteBounds,
+      hasPointerInteraction: node.hasPointerInteraction,
+      interactionProperties: node.interactionProperties,
+      variantProperties: node.variantProperties,
+      clipsContent: node.clipsContent,
+      isMask: node.isMask,
+      cornerRadii: node.cornerRadii,
+      strokeWeights: node.strokeWeights,
+      boundGeometryFields: node.boundGeometryFields,
       width: node.width,
       height: node.height,
       x: node.x,
