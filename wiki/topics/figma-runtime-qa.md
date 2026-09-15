@@ -57,9 +57,15 @@ No pages or content were deleted or moved, structural conversions were not auto-
 
 ## Automated verification
 
-The release suite contains 27 Vitest files. It covers catalog resolution, grading boundaries, schemas and hostile input, committed/draft audit-setup state, automatic file classification, profile reconciliation, session/drift state, mutation planning and rollback constraints, token compatibility, UI operations, annotation migration and idempotency, cancellation feedback, inline waiver validation, project guidance, contribution sanitization, human-gated publication, knowledge-domain preservation, UTF-8 byte limits, copied-file protection, and exact inactive-component state handling for both definitions and placed instances. Performance fixtures exercise 10,000- and 50,000-node graphs.
+The published Version 3 release gate passed 30 Vitest files and 184 tests. It covers catalog resolution, grading boundaries, schemas and hostile input, committed/draft audit-setup state, automatic file classification, profile reconciliation, session/drift state, mutation planning and rollback constraints, token compatibility, UI operations, annotation migration and idempotency, cancellation feedback, inline waiver validation, project guidance, contribution sanitization, human-gated publication, knowledge-domain preservation, UTF-8 byte limits, copied-file protection, and exact inactive-component state handling for both definitions and placed instances. Performance fixtures exercise 10,000- and 50,000-node graphs.
 
 The release gate is `pnpm verify:ci`, followed by `git diff --check`; wiki integrity is included in that command.
+
+## Published-release documentation, 2026-09-11
+
+Version 3 was published privately to the Verndale Figma organization. Existing installations receive the update automatically; a user with an already-open plugin panel closes it and runs Design Passport again to load the new release.
+
+The six artifacts in [Glean project 17](https://app.glean.com/projects/17) now document the same runtime boundary. In their visible project order, they are `01 — Start Here`, `02 — Why Design Passport`, `03 — How to Use Design Passport`, `04 — Readiness Standard`, `05 — Technical Reference`, and `06 — Shared Design Passport Knowledge Loop`. The docs make clear that whole-file context is supporting context only: grades and findings remain scoped to selected components, the current page, or source frames. Their release evidence is the Version 3 gate of 30 test files and 184 passing tests.
 
 ## Profile-state recovery, 2026-09-11
 

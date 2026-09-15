@@ -2,11 +2,11 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 35,
-    "edges": 136,
+    "nodes": 36,
+    "edges": 142,
     "byType": {
       "index": 3,
-      "journal": 14,
+      "journal": 15,
       "plan": 11,
       "topic": 7
     }
@@ -32,8 +32,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.936235,
-      "y": 0.351375,
+      "x": 0.939693,
+      "y": 0.34202,
       "size": 8
     },
     {
@@ -44,8 +44,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.858449,
-      "y": 0.512899,
+      "x": 0.866025,
+      "y": 0.5,
       "size": 8
     },
     {
@@ -63,8 +63,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.753071,
-      "y": 0.657939,
+      "x": 0.766044,
+      "y": 0.642788,
       "size": 8
     },
     {
@@ -88,8 +88,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.62349,
-      "y": 0.781831,
+      "x": 0.642788,
+      "y": 0.766044,
       "size": 8
     },
     {
@@ -100,8 +100,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.473869,
-      "y": 0.880596,
+      "x": 0.5,
+      "y": 0.866025,
       "size": 8
     },
     {
@@ -125,8 +125,8 @@
       ],
       "bytes": 2518,
       "degree": 3,
-      "x": 0.309017,
-      "y": 0.951057,
+      "x": 0.34202,
+      "y": 0.939693,
       "size": 8
     },
     {
@@ -144,8 +144,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": 0.134233,
-      "y": 0.99095,
+      "x": 0.173648,
+      "y": 0.984808,
       "size": 8
     },
     {
@@ -163,8 +163,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": -0.044865,
-      "y": 0.998993,
+      "x": 0,
+      "y": 1,
       "size": 8
     },
     {
@@ -175,8 +175,8 @@
       "githubRefs": [],
       "bytes": 2328,
       "degree": 4,
-      "x": -0.222521,
-      "y": 0.974928,
+      "x": -0.173648,
+      "y": 0.984808,
       "size": 8
     },
     {
@@ -187,8 +187,20 @@
       "githubRefs": [],
       "bytes": 3438,
       "degree": 6,
-      "x": -0.393025,
-      "y": 0.919528,
+      "x": -0.34202,
+      "y": 0.939693,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
+      "label": "Glean release documentation and ordered artifacts",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2405,
+      "degree": 6,
+      "x": -0.5,
+      "y": 0.866025,
       "size": 8
     },
     {
@@ -206,8 +218,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": -0.550897,
-      "y": 0.834573,
+      "x": -0.642788,
+      "y": 0.766044,
       "size": 8
     },
     {
@@ -225,8 +237,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": -0.691063,
-      "y": 0.722795,
+      "x": -0.766044,
+      "y": 0.642788,
       "size": 8
     },
     {
@@ -244,8 +256,8 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": -0.809017,
-      "y": 0.587785,
+      "x": -0.866025,
+      "y": 0.5,
       "size": 8
     },
     {
@@ -263,8 +275,8 @@
       ],
       "bytes": 5503,
       "degree": 2,
-      "x": -0.900969,
-      "y": 0.433884,
+      "x": -0.939693,
+      "y": 0.34202,
       "size": 8
     },
     {
@@ -275,8 +287,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.98393,
-      "y": 0.178557,
+      "x": 0.984808,
+      "y": 0.173648,
       "size": 12
     },
     {
@@ -287,8 +299,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.963963,
-      "y": 0.266037,
+      "x": -0.984808,
+      "y": 0.173648,
       "size": 8
     },
     {
@@ -299,8 +311,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.995974,
-      "y": 0.089639,
+      "x": -1,
+      "y": 0,
       "size": 8
     },
     {
@@ -311,8 +323,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.995974,
-      "y": -0.089639,
+      "x": -0.984808,
+      "y": -0.173648,
       "size": 8
     },
     {
@@ -330,8 +342,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.963963,
-      "y": -0.266037,
+      "x": -0.939693,
+      "y": -0.34202,
       "size": 8
     },
     {
@@ -342,8 +354,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.900969,
-      "y": -0.433884,
+      "x": -0.866025,
+      "y": -0.5,
       "size": 8
     },
     {
@@ -354,8 +366,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.809017,
-      "y": -0.587785,
+      "x": -0.766044,
+      "y": -0.642788,
       "size": 8
     },
     {
@@ -366,8 +378,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.691063,
-      "y": -0.722795,
+      "x": -0.642788,
+      "y": -0.766044,
       "size": 8
     },
     {
@@ -378,8 +390,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.550897,
-      "y": -0.834573,
+      "x": -0.5,
+      "y": -0.866025,
       "size": 8
     },
     {
@@ -390,8 +402,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.393025,
-      "y": -0.919528,
+      "x": -0.34202,
+      "y": -0.939693,
       "size": 8
     },
     {
@@ -409,8 +421,8 @@
       ],
       "bytes": 6239,
       "degree": 3,
-      "x": -0.222521,
-      "y": -0.974928,
+      "x": -0.173648,
+      "y": -0.984808,
       "size": 8
     },
     {
@@ -421,8 +433,8 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.044865,
-      "y": -0.998993,
+      "x": 0,
+      "y": -1,
       "size": 8
     },
     {
@@ -446,8 +458,8 @@
       ],
       "bytes": 19167,
       "degree": 13,
-      "x": 0.134233,
-      "y": -0.99095,
+      "x": 0.173648,
+      "y": -0.984808,
       "size": 12
     },
     {
@@ -458,8 +470,8 @@
       "githubRefs": [],
       "bytes": 4240,
       "degree": 33,
-      "x": 0.309017,
-      "y": -0.951057,
+      "x": 0.34202,
+      "y": -0.939693,
       "size": 8
     },
     {
@@ -470,8 +482,8 @@
       "githubRefs": [],
       "bytes": 5450,
       "degree": 19,
-      "x": 0.473869,
-      "y": -0.880596,
+      "x": 0.5,
+      "y": -0.866025,
       "size": 8
     },
     {
@@ -480,10 +492,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 14564,
-      "degree": 34,
-      "x": 0.62349,
-      "y": -0.781831,
+      "bytes": 15485,
+      "degree": 36,
+      "x": 0.642788,
+      "y": -0.766044,
       "size": 8
     },
     {
@@ -494,8 +506,8 @@
       "githubRefs": [],
       "bytes": 5091,
       "degree": 20,
-      "x": 0.753071,
-      "y": -0.657939,
+      "x": 0.766044,
+      "y": -0.642788,
       "size": 8
     },
     {
@@ -513,8 +525,8 @@
       ],
       "bytes": 4457,
       "degree": 2,
-      "x": 0.858449,
-      "y": -0.512899,
+      "x": 0.866025,
+      "y": -0.5,
       "size": 8
     },
     {
@@ -524,9 +536,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 2812,
-      "degree": 12,
-      "x": 0.936235,
-      "y": -0.351375,
+      "degree": 14,
+      "x": 0.939693,
+      "y": -0.34202,
       "size": 8
     },
     {
@@ -536,9 +548,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 4946,
-      "degree": 25,
-      "x": 0.98393,
-      "y": -0.178557,
+      "degree": 27,
+      "x": 0.984808,
+      "y": -0.173648,
       "size": 8
     }
   ],
@@ -579,6 +591,13 @@
       "relation": "plan"
     },
     {
+      "id": "134a4631b11f90d5",
+      "source": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "15474f7784e6e3be",
       "source": "wiki/journal/2026-09-08-live-readiness-stress-test.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -589,6 +608,13 @@
       "id": "159be79659e8aff6",
       "source": "wiki/journal/2026-09-08-release-governance-and-team-docs.md",
       "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "162f765cd9cb3114",
+      "source": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -733,6 +759,13 @@
       "relation": "topic"
     },
     {
+      "id": "3f5083cf4750c2a3",
+      "source": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "3f69b4baef284f63",
       "source": "wiki/plans/2026-09-08-design-passport-ci-quality-gates-17bd086b3d.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -864,6 +897,13 @@
       "target": "wiki/topics/design-readiness-standard.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "6e57e7bfea718d3d",
+      "source": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "6ec6491e49d33649",
@@ -1069,6 +1109,13 @@
       "relation": "plan"
     },
     {
+      "id": "9e59ebf1d9717f0f",
+      "source": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "9fb9221ab02f37ff",
       "source": "wiki/plans/2026-09-11-make-scoped-audits-look-scoped-7be69504d6.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
@@ -1261,6 +1308,13 @@
       "id": "c4f463ba63916bbc",
       "source": "wiki/topics/design-readiness-standard.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "c743be424a746289",
+      "source": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
       "type": "topic",
       "relation": "topic"
     },
