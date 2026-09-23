@@ -6,6 +6,7 @@ import type {
 } from "./contracts";
 import { collectDescendants } from "./operations/graph";
 import { CODE_RELEVANT_FIELDS } from "./operations/node-fields";
+import { applyFindingPolicy, collapseDisabledPolicyFindings } from "./finding-policy";
 import { evaluateAccessibilityRules } from "./rules/accessibility";
 import { evaluateComponentRules } from "./rules/component";
 import { evaluateNamingRules } from "./rules/naming";
@@ -35,7 +36,7 @@ export function evaluateRules(
     const nodes = collectDescendants(graph, rootId);
     const sourceNodes = nodes.filter((node) => node.evidenceRole !== "instance-descendant");
     findings.push(
-      ...evaluateTokenRules(graph, profile, root, sourceNodes),
+      ...evaluateTokenRules(graph, profile, root, nodes),
       ...evaluateNamingRules(graph, root, sourceNodes),
       ...evaluateStructureRules(root, sourceNodes),
       ...evaluateComponentRules(graph, root, sourceNodes),
@@ -44,7 +45,7 @@ export function evaluateRules(
       ...evaluatePipelineRules(graph, profile, root, sourceNodes),
     );
   }
-  return findings.sort(findingOrder);
+  return collapseDisabledPolicyFindings(findings.map((finding) => applyFindingPolicy(finding, profile))).sort(findingOrder);
 }
 
 export function codeRelevantFields(): readonly BindableField[] {

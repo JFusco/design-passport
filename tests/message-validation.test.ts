@@ -62,6 +62,15 @@ describe("UI message validation", () => {
     expect(() => parseUiMessage({ type: "scan", request: { scope: "selection", profile: {}, refreshKnowledge: true } })).toThrow("scan request is invalid");
   });
 
+  it("accepts only bounded token-coverage evidence pages", () => {
+    const valid = { type: "token-coverage-page", request: { requestId: "coverage:1", reportHash: "hash", rootIds: ["root:1"], disposition: "missing", field: "fills", reason: "unbound", offset: 20, limit: 20 } };
+    expect(parseUiMessage(valid)).toEqual(valid);
+    expect(() => parseUiMessage({ ...valid, request: { ...valid.request, rootIds: ["root:1", "root:1"] } })).toThrow("distinct");
+    expect(() => parseUiMessage({ ...valid, request: { ...valid.request, disposition: "unknown" } })).toThrow("disposition");
+    expect(() => parseUiMessage({ ...valid, request: { ...valid.request, limit: 51 } })).toThrow("limit");
+    expect(() => parseUiMessage({ ...valid, request: { ...valid.request, offset: -1 } })).toThrow("offset");
+  });
+
   it("rejects malformed or unsafe token creation payloads", () => {
     const valid = { type: "create-token", collectionId: "collection:1", name: "semantic/space/gap", field: "itemSpacing", nodeIds: ["1", "2", "3"], rawValue: 16 };
     expect(parseUiMessage(valid)).toEqual(valid);

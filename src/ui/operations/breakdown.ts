@@ -12,7 +12,7 @@ export interface IssueSummary {
  * aid and retains each occurrence as an independently actionable issue. */
 export function actionableIssueSummary(report: ReadinessReport, findings: readonly Finding[] = report.findings): IssueSummary {
   const actionable = findings.filter(isActionableFinding);
-  const groups = groupsForFindings(actionable, report.schemaVersion === 2 ? report.issueGroups : undefined);
+  const groups = groupsForFindings(actionable, report.schemaVersion >= 2 ? report.issueGroups : undefined);
   return {
     actionableCount: groups.reduce((count, group) => count + (group.kind === "related" ? group.occurrenceCount : 1), 0),
     occurrenceCount: groups.reduce((count, group) => count + group.occurrenceCount, 0),

@@ -24,8 +24,8 @@ Mark intended source frames with a normal source annotation. Add named export as
 
 The primary designer journey is **choose a target → audit → review Findings → apply previewed cleanup → automatic rescan → resolve only the remaining human decisions in Figma → re-audit → certify when ready**. Audit setup is not a routine step in this journey.
 
-- Run the organization-published **Design Passport** from Figma Resources and confirm light/dark UI in both Design and Dev Mode.
-- Separately, import `manifest.json` only when smoke-testing an unreleased local build; confirm it launches from **Plugins → Development**.
+- Run the organization-published **Design Passport** from Figma Resources and confirm light/dark UI in both Design and Dev Mode. Confirm its footer identifies `Plugin 0.4.0 · Ruleset 1.0.0-beta.4 · <build SHA> · Production`.
+- Separately, import `development/manifest.json` when smoke-testing an unreleased local build; confirm **Design Passport (Development)** launches from **Plugins → Development**, shows its persistent warning, uses a distinct plugin ID, and identifies the Development channel. Its own manifest directory prevents Figma from deduplicating it with a root-manifest registration. Never import the production manifest for local development.
 - On first run with conventional page names, verify there is no Profile tab or setup gate and a Current page audit can start immediately. Confirm automatic classification does not move or rename a page.
 - Open the secondary **Audit setup** link and verify the status is Ready, manual choices are collapsed under Advanced, and Product/Library terminology is absent from the normal audit journey.
 - With an existing report, make one valid unsaved advanced setup edit and verify scans, context rebuild, cleanup, certification, learning contribution, and current-report exports remain disabled while the prior report stays readable. Restored historical reports remain exportable.
@@ -43,9 +43,16 @@ The primary designer journey is **choose a target → audit → review Findings 
 - Rerun the same selection while its complete graph is fresh; confirm the cached audit proceeds directly to target analysis, retains the captured selection, and does not rebuild file context.
 - After a selection or current-page report becomes stale, change the live selection or current page before choosing **Refresh audit to certify** or **Rebuild context**. Confirm the refreshed report still names and grades the previously captured target.
 - Inspect Context inventory for page roles, canonical/novel patterns, component use counts, responsive families, token collections, and repeated structures.
+- Inspect the token-coverage ledger and reconcile the score to `bound + inherited + missing`; verify ignored evidence is excluded, a zero denominator says **Not applicable**, persisted groups cap samples at 50, and a current result pages through every live match.
+- Verify invisible strokes, zero defaults, hidden layers, per-corner bindings, percentage/AUTO line height, percentage letter spacing, non-overridden instance values, and documentation scaffolding land in the expected ledger bucket.
+- Verify `padding/xs`, `stack/md`, and `layout/gutter` are accepted as semantic names while literal names remain findings.
+- On a mapped Components page, select an unmarked documentation wrapper and confirm the audit targets its nested top-level component sources with a scope notice. Confirm an `AI source frame` marker includes the wrapper and a product-screen selection remains exact.
+- Exercise every team-convention mode. Required may affect grade/readiness; Advisory and Off must not. Off emits one not-applicable summary. Locked rules remain configurable only by code.
+- Mark and clear an intentional standalone detachment; confirm acknowledgement is bound to that exact node ID. Verify token-bound, `FILL`, and growing empty spacers pass while a fixed unbound spacer is advisory. Missing external documentation links never create findings.
+- With available variable collections but no approved collection, verify the setup finding explains that approval is missing and opens Audit Setup.
 - Use every finding’s node link across multiple pages.
 - Confirm default-name percentages against a manual count.
-- Confirm B at 85% token coverage and A at 95%.
+- Confirm B at 80% token coverage and A at 95%.
 - Confirm each hard blocker prevents readiness.
 - Preview and apply low-risk cleanup; verify one undo group and idempotent rescan.
 - Apply inferred Auto Layout that stays within 0.5 px; verify success and clone cleanup.
@@ -126,3 +133,11 @@ Recorded evidence for issue [JFusco/design-passport#21](https://github.com/JFusc
 Run the golden fixture first, then one design-system file, one current product file, and one legacy file. Review false positives with the design-system owner before changing `RULESET_VERSION` from beta to `1.0.0`.
 
 Catalog upgrades require an explicit `package.json` version change, lockfile review, `pnpm catalog:sync`, and review of the generated catalog diff. Never add a runtime `latest` lookup.
+
+## Production release verification
+
+- Preserve the previous verified production bundle before rebuilding. Run `pnpm verify`, then `pnpm build:release`; record plugin/UI hashes and the exact embedded Git SHA.
+- Publish only through the existing organization plugin record. Do not publish **Design Passport (Development)**.
+- With two non-publisher organization accounts, launch **Design Passport** from Resources without reinstalling and verify the announced Production identity, ruleset, and build SHA. Close and reopen any plugin window that was already running.
+- Confirm a Development certificate is visibly non-production and cannot be mistaken for the published result. Restore report schemas 1–2, profile v1, and certificate v1 as historical evidence without rewriting them.
+- If a release regression is found, republish the preserved prior verified bundle to the same production record and announce the rollback identity.

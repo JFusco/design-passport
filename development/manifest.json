@@ -1,0 +1,22 @@
+{
+  "name": "Design Passport (Development)",
+  "id": "1684602858638290536",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/index.html",
+  "editorType": ["figma", "dev"],
+  "capabilities": ["inspect"],
+  "documentAccess": "dynamic-page",
+  "permissions": ["teamlibrary"],
+  "enablePrivatePluginApi": true,
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  },
+  "relaunchButtons": [
+    {
+      "command": "review-certification",
+      "name": "Review Design Passport certification",
+      "multipleSelection": true
+    }
+  ]
+}

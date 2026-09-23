@@ -4,6 +4,7 @@ import {
   AUDIT_CANCELLED_NOTICE,
   auditCompletionNotice,
   auditProgressPresentation,
+  auditRefreshNotice,
   auditedTargetSummary,
   isAuditInterruptible,
   scanInFlightAfter,
@@ -105,6 +106,23 @@ describe("scoped audit UI presentation", () => {
     expect(auditCompletionNotice("selection", "B", true)).toBe("Selection audit complete: B · ready");
     expect(auditCompletionNotice("page", "C", false)).toBe("Current-page audit complete: C · not ready");
     expect(auditCompletionNotice("file", "A", true)).toBe("Source-frame audit complete: A · ready");
+  });
+
+  it("presents refresh reasons without leaking internal lifecycle codes", () => {
+    expect(auditRefreshNotice({
+      mode: "incremental",
+      reason: "validated-fragments",
+      requested: "changes",
+      resolvedCount: 2,
+      remainingCount: 3,
+    })).toBe("Recheck complete · 2 resolved · 3 remaining. Verified context reuse. Validated stored context.");
+    expect(auditRefreshNotice({
+      mode: "full",
+      reason: "not-loaded",
+      requested: "changes",
+      resolvedCount: 0,
+      remainingCount: 1,
+    })).toBe("Recheck complete · 0 resolved · 1 remaining. Full rebuild. Context refreshed.");
   });
 
   it("does not imply that cancelling an audit rolls back prior cleanup", () => {

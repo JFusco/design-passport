@@ -1,4 +1,4 @@
-import type { ReadinessProfile } from "../../core/contracts";
+import { CONFIGURABLE_POLICY_IDS, type ConfigurablePolicyId, type ReadinessProfile, type RuleMode } from "../../core/contracts";
 import type { BootstrapData, VariableCollectionOption } from "../../figma/adapter";
 import { profileDomainErrors } from "../../core/profile-semantics";
 import { cloneProfile } from "../operations/presentation";
@@ -20,6 +20,18 @@ export interface ProfileEditorProps {
 }
 
 type PageRole = "foundations" | "components" | "screens" | "unmapped";
+
+const POLICY_LABELS: Record<ConfigurablePolicyId, { label: string; help: string }> = {
+  "layer-naming": { label: "Layer naming", help: "Figma defaults and whitespace normalization." },
+  "component-property-grammar": { label: "Property grammar", help: "Semantic lower-camel component property names." },
+  "component-value-grammar": { label: "Property values", help: "Readable variant values without team-specific abbreviations." },
+  "canonical-component-names": { label: "Canonical aliases", help: "Pinned catalog aliases and contextual component terms." },
+  "source-name-uniqueness": { label: "Source-name uniqueness", help: "Duplicate source names among sibling production targets." },
+  "catalog-vocabulary": { label: "Novel terms", help: "Project terms that are not yet in the pinned catalog." },
+  "component-descriptions": { label: "Component descriptions", help: "Descriptions are useful; external documentation links are never required." },
+  "detached-designs": { label: "Detached designs", help: "Per-layer intent reviews with standalone acknowledgements." },
+  "spacer-layers": { label: "Spacer layers", help: "Fixed unbound spacers; token-bound, FILL, and growing spacers are accepted." },
+};
 
 export function ProfileEditor(props: ProfileEditorProps) {
   const setRole = (pageId: string, role: PageRole) => {
@@ -84,7 +96,8 @@ export function ProfileEditor(props: ProfileEditorProps) {
           <fieldset><legend>External role sources (optional)</legend><label>Foundations library keys<input value={props.profile.pageRoles.foundations.externalLibraryKeys.join(", ")} onChange={(event) => setExternalKeys("foundations", event.target.value)} placeholder="comma-separated library keys" /></label><label>Components library keys<input value={props.profile.pageRoles.components.externalLibraryKeys.join(", ")} onChange={(event) => setExternalKeys("components", event.target.value)} placeholder="comma-separated library keys" /></label></fieldset>
           <fieldset><legend>Approved token collections</legend>{props.collections.length === 0 ? <p className="fine-print">No local or enabled-library variable collections are available.</p> : props.collections.map((collection) => <label className="collection-row" key={collection.id}><input type="checkbox" checked={props.profile.tokenSourceCollectionKeys.includes(collection.key)} onChange={(event) => { const next = cloneProfile(props.profile); next.tokenSourceCollectionKeys = event.target.checked ? [...new Set([...next.tokenSourceCollectionKeys, collection.key])] : next.tokenSourceCollectionKeys.filter((key) => key !== collection.key); props.onChange(next); }} /><span><strong>{collection.name}</strong><small>{collection.remote ? `Enabled library · ${collection.libraryName ?? "library"}` : `Local · ${collection.modeNames.join(", ") || "default mode"}`}</small></span></label>)}</fieldset>
           <fieldset><legend>Breakpoints</legend>{props.profile.breakpoints.map((breakpoint, index) => <div className="breakpoint-row" key={`${breakpoint.name}:${index}`}><input aria-label="Breakpoint name" value={breakpoint.name} onChange={(event) => { const next = cloneProfile(props.profile); const target = next.breakpoints[index]; if (target) target.name = event.target.value; props.onChange(next); }} /><input aria-label="Breakpoint width" type="number" min="1" value={breakpoint.width} onChange={(event) => { const next = cloneProfile(props.profile); const target = next.breakpoints[index]; if (target) target.width = Number(event.target.value); props.onChange(next); }} /><button className="icon-button" aria-label="Remove breakpoint" disabled={props.profile.breakpoints.length === 1} onClick={() => { const next = cloneProfile(props.profile); next.breakpoints.splice(index, 1); props.onChange(next); }}>×</button></div>)}<button className="button subtle" onClick={() => { const next = cloneProfile(props.profile); next.breakpoints.push({ name: "New", width: 1024 }); props.onChange(next); }}>Add breakpoint</button></fieldset>
-          <div className="banner info">Naming policy is fixed to <code>code-aligned-strict</code>. Contextual aliases are never resolved without designer confirmation.</div>
+          <fieldset><legend>Team-convention rules</legend><p className="fine-print">Required affects grade and readiness. Advisory creates review guidance only. Off records one not-applicable result and never affects the grade.</p>{CONFIGURABLE_POLICY_IDS.map((policyId) => <label className="policy-row" key={policyId}><span><strong>{POLICY_LABELS[policyId].label}</strong><small>{POLICY_LABELS[policyId].help}</small></span><select value={props.profile.ruleModes[policyId]} onChange={(event) => { const next = cloneProfile(props.profile); next.ruleModes[policyId] = event.target.value as RuleMode; props.onChange(next); }} aria-label={`${POLICY_LABELS[policyId].label} policy mode`}><option value="required">Required</option><option value="advisory">Advisory</option><option value="off">Off</option></select></label>)}</fieldset>
+          <div className="banner info">Accessibility, token correctness, evidence integrity, and certification safety are locked. Naming grammar remains <code>code-aligned-strict</code>; contextual aliases are never resolved without designer confirmation.</div>
           <p className="fine-print">Audits always use the last saved manual setup. Save confirms this draft and invalidates current verification; completed results remain available for browsing and historical export. Discard restores the last saved setup.</p>
           <div className="scope-actions">
             <button className="button primary large" disabled={!props.canPersist || props.semanticErrors.length > 0 || (props.configured && !props.dirty && props.issues.length === 0)} onClick={props.onSave}>{props.canPersist ? "Save manual setup" : "Save in Design mode"}</button>

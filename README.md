@@ -27,6 +27,9 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 - Complete JSON and escaped Markdown report exports.
 - Automatic compressed local audit recovery, historical exports, and a saved-audit picker with per-target view preferences.
 - Validated persisted context fragments and multi-page batches that retain each completed page report.
+- A reconcilable token-coverage ledger that separates bound, inherited, ignored, and missing evidence; only missing evidence lowers coverage.
+- Required, Advisory, and Off modes for team conventions while accessibility, token correctness, evidence integrity, and certification safety remain locked.
+- Versioned producer identity on live results, saved audits, exports, and certificates, with visibly separate production and development builds.
 - Project-scoped style-guide advisories, session-only references, and an explicit sanitized learning export that never changes grades.
 - A local Node companion for Figma REST ingestion and human-gated knowledge review.
 - No backend, telemetry, OAuth, or plugin network access. Only the separately run local companion fetches explicitly supplied Figma sources.
@@ -51,6 +54,8 @@ Design Passport is published to the Verndale organization. Organization members 
 4. Wait for the complete file-wide knowledge build, then review Overview and Findings. Completion shows whether the result was saved locally.
 5. Apply only reviewed cleanup, let the rescan complete, and certify only when Overview reports **ready**.
 6. Export current JSON for machine consumers or Markdown for people. Saved historical exports are explicitly labeled and do not establish current readiness.
+
+The footer and audit result identify the exact plugin version, ruleset, build SHA, and Production/Development channel. If an already-open plugin window does not show the announced identity, close it and launch the organization plugin again.
 
 ### Return to an audit
 
@@ -89,10 +94,20 @@ To test an unreleased local build in Figma Desktop:
 
 1. Run `pnpm build`.
 2. Open **Plugins → Development → Import plugin from manifest…**.
-3. Choose `manifest.json`.
-4. Run the development copy from **Plugins → Development**.
+3. Choose `development/manifest.json`.
+4. Run **Design Passport (Development)** from **Plugins → Development** and confirm the persistent Development warning and development channel in the footer.
 
-The committed manifest uses the organization-published plugin ID. Do not change that ID for ordinary development or user installation; only a release owner should change it when Figma assigns a replacement published-plugin record.
+`manifest.json` retains the existing organization-published production identity. `development/manifest.json` lives in its own directory because Figma registers one development plugin per manifest directory; it uses a separate identity so local client storage, reports, certificates, and launch menus cannot be mistaken for the published plugin. The build mirrors the exact generated controller/UI bytes into ignored `development/dist/` output because Figma confines a development plugin to its manifest directory. Both manifests remain offline and expose the same capabilities.
+
+### Release identity and freshness
+
+- `pnpm build` produces a Development-channel bundle; `pnpm build:release` produces the Production-channel bundle.
+- Every bundle embeds package version `0.4.0`, ruleset `1.0.0-beta.4`, the current 12-character Git SHA, and its channel. There is no remote version service or runtime “latest” lookup.
+- Production is published only to the existing organization plugin record in `manifest.json`. Figma distributes that record’s current published version to organization users; users do not import a manifest or choose an older published build.
+- Before publishing, preserve the last verified production `dist/` bundle outside tracked source for rollback. A rollback republishes those verified bytes to the same organization record.
+- Smoke-test the published plugin with two non-publisher organization accounts. Ask anyone with an already-open plugin window to close and relaunch **Design Passport** before validating the announced footer identity.
+
+See Figma’s [classic-plugin release guidance](https://help.figma.com/hc/en-us/articles/360042293714-Manage-classic-plugins-as-a-developer) and [development-plugin guidance](https://help.figma.com/hc/en-us/articles/360042786733-Create-a-classic-plugin-for-development).
 
 ### Project style guides and the local companion
 

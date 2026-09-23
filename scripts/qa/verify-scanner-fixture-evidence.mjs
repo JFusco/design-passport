@@ -25,8 +25,10 @@ assert(run, "No completed report targets the latest fixture roots");
 assert(run.handlerReturned === "fulfilled" && Number.isFinite(run.handlerCompleteElapsedMs), "The production handler did not finish cleanly");
 assert(run.knowledge?.complete === true && run.knowledge?.cancelled === false, "The supporting knowledge graph is incomplete");
 const report = run.report;
-assert(report.schemaVersion === 2, `Expected report schema 2, received ${report.schemaVersion}`);
-assert(report.rulesetVersion === "1.0.0-beta.3", `Expected ruleset 1.0.0-beta.3, received ${report.rulesetVersion}`);
+assert(report.schemaVersion === 3, `Expected report schema 3, received ${report.schemaVersion}`);
+assert(report.rulesetVersion === "1.0.0-beta.4", `Expected ruleset 1.0.0-beta.4, received ${report.rulesetVersion}`);
+assert(report.producer?.pluginVersion === "0.4.0" && report.producer?.rulesetVersion === "1.0.0-beta.4"
+  && report.producer?.buildSha && ["production", "development"].includes(report.producer.channel), "Report producer identity is incomplete");
 assert(report.target.scope === "page" && report.target.knowledgeComplete === true, "The captured page target is not complete");
 assert(same(report.target.rootIds, fixture.rootIds), "The report did not preserve the fixture's captured target");
 

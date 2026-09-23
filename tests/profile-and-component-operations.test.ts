@@ -78,7 +78,7 @@ describe("profile and component operations", () => {
     expect(canReadComponentPropertyDefinitions("COMPONENT_SET", "PAGE")).toBe(true);
   });
 
-  it("keeps intentional library sources while excluding published-source scaffolding", () => {
+  it("targets component sources rather than component-page documentation scaffolding", () => {
     const p = profile({
       artifactKind: "library",
       pageRoles: {
@@ -125,13 +125,8 @@ describe("profile and component operations", () => {
     const nodes = Object.fromEntries(values.map((value) => [value.id, value]));
 
     expect(sourceFrameIds({ pages: [], nodes }, p)).toEqual([
-      "certified-frame",
       "component-set",
-      "fallback-frame",
       "foundation",
-      "marked-frame",
-      "ready-frame",
-      "resource-frame",
       "screen",
       "standalone-component",
     ]);

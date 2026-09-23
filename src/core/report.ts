@@ -1,12 +1,14 @@
 import { CATALOG_DIGEST, CATALOG_VERSION } from "./catalog";
 import { RULESET_VERSION } from "./constants";
+import { PRODUCER_IDENTITY } from "./build-info";
 import { AXES, type ChangePlan, type DesignKnowledgeGraph, type Finding, type FrameResult, type ReadinessProfile, type ReadinessReport, type ScanScope, type VariantCoverage } from "./contracts";
 import { collectDescendants } from "./operations/graph";
+import { documentationScaffoldNodeIds, tokenCoverageSummary } from "./operations/node-fields";
 import { axisScores, capGradeForTokenCoverage, gradeFromAxes, isAtLeastB, worstAxisScores } from "./grading";
 import { evaluateRules } from "./rules";
 import { assertContract } from "./schema";
 import { hashValue } from "./stable";
-import { affectsScore, blocksReadiness, classifyFinding } from "./finding-policy";
+import { affectsScore, applyFindingPolicy, blocksReadiness, collapseDisabledPolicyFindings } from "./finding-policy";
 import { attachFindingProvenance, buildFindingGroups } from "./finding-groups";
 
 export interface BuildReportInput {
@@ -17,6 +19,7 @@ export interface BuildReportInput {
   appliedChanges?: ChangePlan[];
   findings?: Finding[];
   now?: Date;
+  targetResolution?: ReadinessReport["target"]["resolution"];
 }
 
 function blockers(findings: Finding[]): Finding[] {
@@ -60,8 +63,8 @@ function variantCoverage(
 export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
   const targetRootIds = [...new Set(input.targetRootIds)];
   if (targetRootIds.length === 0) throw new Error("A report requires at least one source frame");
-  const findings = (input.findings ?? evaluateRules(input.graph, input.profile, targetRootIds))
-    .map(classifyFinding).map((finding) => attachFindingProvenance(finding, input.graph));
+  const findings = collapseDisabledPolicyFindings((input.findings ?? evaluateRules(input.graph, input.profile, targetRootIds))
+    .map((finding) => applyFindingPolicy(finding, input.profile))).map((finding) => attachFindingProvenance(finding, input.graph));
   const targetSet = new Set(targetRootIds);
   const foreignFinding = findings.find((finding) => !targetSet.has(finding.rootId));
   if (foreignFinding) throw new Error(`Finding ${foreignFinding.id} does not belong to an in-scope source frame`);
@@ -99,6 +102,9 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
       blockerIds: frameBlockers.map((item) => item.id),
       axisScores: scores,
       variantCoverage: variantCoverage(input.graph, rootId, frameFindings),
+      tokenCoverage: tokenCoverageSummary(collectDescendants(input.graph, rootId), {
+        documentationScaffoldNodeIds: documentationScaffoldNodeIds(input.graph, root, collectDescendants(input.graph, rootId)),
+      }),
     };
   });
   const worstFrame = [...frames].sort((left, right) => left.grade.score - right.grade.score || left.rootId.localeCompare(right.rootId))[0];
@@ -107,7 +113,8 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
   const blockerFindings = blockers(findings);
   const generatedAt = (input.now ?? new Date()).toISOString();
   const report: ReadinessReport = {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    producer: { ...PRODUCER_IDENTITY },
     rulesetVersion: RULESET_VERSION,
     catalogVersion: CATALOG_VERSION,
     catalogDigest: CATALOG_DIGEST,
@@ -117,6 +124,7 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
       rootIds: targetRootIds,
       knowledgeSnapshotHash: input.graph.snapshotHash,
       knowledgeComplete,
+      ...(input.targetResolution ? { resolution: input.targetResolution } : {}),
     },
     axes: reportAxes,
     frames,

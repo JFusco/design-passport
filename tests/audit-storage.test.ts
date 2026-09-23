@@ -151,7 +151,7 @@ describe("durable audit storage", () => {
     expect(await reopened.listAudits("other-file")).toEqual([]);
   });
 
-  it("keeps historical report v1 provenance while newly saved v2 reports carry categorized groups", async () => {
+  it("keeps historical report v1 provenance while newly saved v3 reports carry categorized groups and producer evidence", async () => {
     const storage = new AuditStorage(new MemoryStorage());
     const legacy = input();
     legacy.report.schemaVersion = 1;
@@ -167,7 +167,7 @@ describe("durable audit storage", () => {
     const current = input({ target: { scope: "file" } });
     const next = await storage.saveAudit(current);
     expect(next.status.state).toBe("saved");
-    expect((await storage.loadAudit(current.fileKey, next.audit.id))?.report.schemaVersion).toBe(2);
+    expect((await storage.loadAudit(current.fileKey, next.audit.id))?.report).toMatchObject({ schemaVersion: 3, producer: { pluginVersion: "0.4.0", rulesetVersion: "1.0.0-beta.4" } });
   });
 
   it.each(["changed", "cancelled"])("retains the predecessor when replacement becomes %s during its durable write", async (reason) => {
@@ -370,6 +370,7 @@ describe("durable audit storage", () => {
   it("restores supported reports with original versions instead of requiring the current ruleset", async () => {
     const original = input();
     original.report.rulesetVersion = "archived-ruleset-v0";
+    original.report.producer = { ...original.report.producer!, rulesetVersion: "archived-ruleset-v0" };
     original.report.catalogVersion = "archived-catalog-v0";
     original.provenance = { pluginVersion: "0.0.1", knowledgeVersion: "archived-knowledge-v0" };
     const port = new MemoryStorage();

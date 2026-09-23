@@ -108,7 +108,7 @@ describe("guidance and learning compatibility after scanner changes", () => {
 
   it("does not double-count presentation groups or leak provenance into sanitized learning", () => {
     const readiness = report();
-    expect(readiness.schemaVersion).toBe(2);
+    expect(readiness.schemaVersion).toBe(3);
     expect(readiness.issueGroups?.length).toBeGreaterThan(0);
     const withoutGroups = structuredClone(readiness); delete withoutGroups.issueGroups;
     const make = (value: typeof readiness) => buildLearningEnvelope({ projectScope: "project:ui-library", report: value, pluginVersion: "1", knowledgeVersion: "1", now: new Date("2026-09-14T12:00:00Z") });
@@ -126,7 +126,7 @@ describe("guidance and learning compatibility after scanner changes", () => {
     historical.findings.forEach((finding) => { delete finding.category; delete finding.provenance; });
     const source = (sourceId: string) => ({ schemaVersion: 1 as const, sourceId, projectScope: "project:ui-library", role: "target" as const, contentDigest: hashValue(sourceId), completeness: { complete: true, availableDomains: ["layout" as const], warnings: [] } });
     const wrapper = buildMultiFileReviewReport({ projectScope: "project:ui-library", targets: [{ source: source("target:historical"), report: historical }, { source: source("target:current"), report: current }] });
-    expect(wrapper.targets.map((target) => target.report.schemaVersion)).toEqual([2, 1]);
+    expect(wrapper.targets.map((target) => target.report.schemaVersion)).toEqual([3, 1]);
     expect(wrapper.targets[1]!.report.generatedAt).toBe(historical.generatedAt);
     expect(wrapper.certificationEligible).toBe(false);
   });

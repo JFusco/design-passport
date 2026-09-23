@@ -1,6 +1,6 @@
-import type { JsonValue, ReadinessProfile } from "../core/contracts";
+import type { JsonValue, ReadinessProfile, TokenCoverageDisposition, TokenCoverageField, TokenCoverageReason } from "../core/contracts";
 import { isBindableField } from "../core/operations/planning";
-import { validateContract } from "../core/schema";
+import { normalizeReadinessProfile } from "../core/profile";
 import { utf8ByteLength } from "../core/stable";
 import type { UiToPluginMessage } from "./messages";
 import { isAuditViewState } from "./audit-state";
@@ -15,9 +15,9 @@ function text(value: unknown, field: string, maximum = 500): string {
 }
 
 function profile(value: unknown): ReadinessProfile {
-  const validation = validateContract("readiness-profile", value);
-  if (!validation.valid) throw new Error(`profile is invalid: ${validation.errors.join("; ")}`);
-  return value as ReadinessProfile;
+  const normalized = normalizeReadinessProfile(value);
+  if (!normalized) throw new Error("profile is invalid");
+  return normalized;
 }
 
 function jsonValue(value: unknown, depth = 0, ancestors = new Set<object>()): value is JsonValue {
@@ -31,6 +31,12 @@ function jsonValue(value: unknown, depth = 0, ancestors = new Set<object>()): va
   ancestors.delete(value);
   return valid;
 }
+
+const TOKEN_COVERAGE_DISPOSITIONS = new Set<TokenCoverageDisposition>(["bound", "inherited", "ignored", "missing"]);
+const TOKEN_COVERAGE_REASONS = new Set<TokenCoverageReason>([
+  "variable", "text-style", "component-instance", "not-rendered", "inert-default", "not-owner",
+  "unresolved-style", "mixed", "unsupported-unit", "documentation-scaffold", "unbound",
+]);
 
 export function parseUiMessage(value: unknown): UiToPluginMessage {
   const message = record(value);
@@ -71,6 +77,33 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
     return { type: "scan", request: { scope: request.scope as "selection" | "page" | "file", refreshKnowledge: request.refreshKnowledge } };
   }
   if (message.type === "navigate") return { type: message.type, nodeId: text(message.nodeId, "nodeId", 200) };
+  if (message.type === "token-coverage-page") {
+    const request = record(message.request);
+    if (!request || Object.keys(request).some((key) => !["requestId", "reportHash", "rootIds", "disposition", "field", "reason", "offset", "limit"].includes(key))) {
+      throw new Error("token coverage page request is invalid");
+    }
+    if (!Array.isArray(request.rootIds) || request.rootIds.length === 0 || request.rootIds.length > 1_000) throw new Error("token coverage rootIds are invalid");
+    const rootIds = request.rootIds.map((id) => text(id, "rootId", 200));
+    if (new Set(rootIds).size !== rootIds.length) throw new Error("token coverage rootIds must be distinct");
+    if (!TOKEN_COVERAGE_DISPOSITIONS.has(request.disposition as TokenCoverageDisposition)) throw new Error("token coverage disposition is invalid");
+    if (!(request.field === "effects" || isBindableField(request.field))) throw new Error("token coverage field is invalid");
+    if (!TOKEN_COVERAGE_REASONS.has(request.reason as TokenCoverageReason)) throw new Error("token coverage reason is invalid");
+    if (!Number.isInteger(request.offset) || Number(request.offset) < 0 || Number(request.offset) > 10_000_000) throw new Error("token coverage offset is invalid");
+    if (!Number.isInteger(request.limit) || Number(request.limit) < 1 || Number(request.limit) > 50) throw new Error("token coverage limit is invalid");
+    return {
+      type: message.type,
+      request: {
+        requestId: text(request.requestId, "requestId", 500),
+        reportHash: text(request.reportHash, "reportHash", 200),
+        rootIds,
+        disposition: request.disposition as TokenCoverageDisposition,
+        field: request.field as TokenCoverageField,
+        reason: request.reason as TokenCoverageReason,
+        offset: Number(request.offset),
+        limit: Number(request.limit),
+      },
+    };
+  }
   if (message.type === "apply-plan") {
     if (typeof message.undoOnlyAcknowledged !== "boolean") throw new Error("undoOnlyAcknowledged must be boolean");
     return { type: message.type, planId: text(message.planId, "planId", 300), undoOnlyAcknowledged: message.undoOnlyAcknowledged };
@@ -94,7 +127,7 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
     return { type: message.type, format: message.format };
   }
   if (message.type === "waive") return { type: message.type, findingId: text(message.findingId, "findingId", 500), reason: text(message.reason, "reason", 500) };
-  if (message.type === "clear-waiver") return { type: message.type, findingId: text(message.findingId, "findingId", 500) };
+  if (message.type === "clear-waiver" || message.type === "acknowledge-detachment" || message.type === "clear-detachment-acknowledgement") return { type: message.type, findingId: text(message.findingId, "findingId", 500) };
   if (message.type === "confirm-pattern") return { type: message.type, findingId: text(message.findingId, "findingId", 500), canonicalName: text(message.canonicalName, "canonicalName", 200) };
   if (message.type === "create-token") {
     if (!isBindableField(message.field)) throw new Error("token field is invalid");

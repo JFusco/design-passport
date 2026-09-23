@@ -9,12 +9,14 @@ import type {
 import { collectDescendants } from "../operations/graph";
 import {
   bindingCoverage,
+  documentationScaffoldNodeIds,
   assessTokenProperty,
   propertyBindingEvidence,
   eligibleTokenFields,
   isSemanticVariableName,
   rawFieldValue,
   selectedVariables,
+  tokenCoverageSummary,
 } from "../operations/node-fields";
 import { isPreciselyScopedVariableForField } from "../operations/variable-compatibility";
 import { createFinding } from "./finding";
@@ -27,18 +29,29 @@ export function evaluateTokenRules(
 ): Finding[] {
   const output: Finding[] = [];
   const variables = selectedVariables(graph, profile);
+  const availableCollections = [...new Map(graph.variables.map((variable) => [variable.collectionKey, variable.collectionName])).entries()];
+  const sourceConfigured = profile.tokenSourceCollectionKeys.length > 0;
   output.push(createFinding(
     "token.foundation.sources",
     "token-foundation",
     4,
     root,
     root,
-    variables.length > 0 ? "pass" : "needs-review",
+    variables.length > 0 ? "pass" : availableCollections.length === 0 ? "not-applicable" : "needs-review",
     "Approved token source",
     variables.length > 0
       ? `${variables.length} variables are available from designer-approved local or enabled-library collections.`
-      : "No token collection is approved in this file profile.",
-    { variableCount: variables.length, selectedCollectionCount: profile.tokenSourceCollectionKeys.length },
+      : availableCollections.length === 0
+        ? "No inspectable variable collections are available in this file."
+        : sourceConfigured
+          ? "The approved collection keys no longer resolve. Open Audit Setup and choose an available token collection."
+          : "Variables exist, but no collection is approved. Open Audit Setup to choose the source designers intend this audit to trust.",
+    {
+      variableCount: variables.length,
+      selectedCollectionCount: profile.tokenSourceCollectionKeys.length,
+      availableCollectionCount: availableCollections.length,
+      availableCollectionNames: availableCollections.map(([, name]) => name),
+    },
   ));
 
   const semanticCount = variables.filter((variable) => variable.semantic || isSemanticVariableName(variable.name)).length;
@@ -105,17 +118,28 @@ export function evaluateTokenRules(
     },
   ));
 
-  const coverage = bindingCoverage(nodes);
+  const ledger = tokenCoverageSummary(nodes, { documentationScaffoldNodeIds: documentationScaffoldNodeIds(graph, root, nodes) });
+  const coverage = {
+    eligible: ledger.applicable,
+    bound: ledger.counts.bound + ledger.counts.inherited,
+    coverage: ledger.coverage ?? 100,
+  };
+  const coverageStatus = (threshold: number): "pass" | "fail" | "not-applicable" => ledger.coverage === null
+    ? "not-applicable"
+    : ledger.coverage >= threshold ? "pass" : "fail";
+  const coverageMessage = (threshold: number, label: string) => ledger.coverage === null
+    ? `Token coverage is not applicable: every measured value is ignored or outside the source-owned, tokenizable denominator.`
+    : `${ledger.counts.bound} bound + ${ledger.counts.inherited} inherited of ${ledger.applicable} applicable fields (${ledger.coverage.toFixed(1)}%); ${ledger.counts.missing} are missing and ${ledger.counts.ignored} are ignored. ${label} starts at ${threshold}%.`;
   output.push(createFinding(
     "token.application.started",
     "token-application",
     1,
     root,
     root,
-    coverage.coverage >= 25 ? "pass" : "fail",
+    coverageStatus(25),
     "Basic token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) have variable or resolved text-style evidence; 25% marks a meaningful token baseline.`,
-    { ...coverage, threshold: 25 },
+    coverageMessage(25, "A meaningful token baseline"),
+    { ...coverage, ...ledger.counts, threshold: 25 },
   ));
   output.push(createFinding(
     "token.application.substantial",
@@ -123,10 +147,10 @@ export function evaluateTokenRules(
     1,
     root,
     root,
-    coverage.coverage >= 50 ? "pass" : "fail",
+    coverageStatus(50),
     "Substantial token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) have variable or resolved text-style evidence; the next progress band starts at 50%.`,
-    { ...coverage, threshold: 50 },
+    coverageMessage(50, "The substantial-coverage band"),
+    { ...coverage, ...ledger.counts, threshold: 50 },
   ));
   output.push(createFinding(
     "token.application.strong",
@@ -134,10 +158,10 @@ export function evaluateTokenRules(
     2,
     root,
     root,
-    coverage.coverage >= 70 ? "pass" : "fail",
+    coverageStatus(70),
     "Strong token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) have variable or resolved text-style evidence; the strong-coverage band starts at 70%.`,
-    { ...coverage, threshold: 70 },
+    coverageMessage(70, "The strong-coverage band"),
+    { ...coverage, ...ledger.counts, threshold: 70 },
   ));
   output.push(createFinding(
     "token.application.minimum",
@@ -145,10 +169,10 @@ export function evaluateTokenRules(
     4,
     root,
     root,
-    coverage.coverage >= 80 ? "pass" : "fail",
+    coverageStatus(80),
     "Broad token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable code-relevant fields (${coverage.coverage.toFixed(1)}%) have variable or resolved text-style evidence; 80% is the grade-B target.`,
-    { ...coverage, threshold: 80 },
+    coverageMessage(80, "The grade-B target"),
+    { ...coverage, ...ledger.counts, threshold: 80 },
   ));
   output.push(createFinding(
     "token.application.excellent",
@@ -156,10 +180,10 @@ export function evaluateTokenRules(
     1,
     root,
     root,
-    coverage.coverage >= 95 ? "pass" : "fail",
+    coverageStatus(95),
     "Excellent token binding coverage",
-    `${coverage.bound} of ${coverage.eligible} measurable fields (${coverage.coverage.toFixed(1)}%) have variable or resolved text-style evidence; 95% is required for grade A.`,
-    { ...coverage, threshold: 95 },
+    coverageMessage(95, "The grade-A target"),
+    { ...coverage, ...ledger.counts, threshold: 95 },
   ));
 
   for (const node of nodes) {

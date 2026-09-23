@@ -3,7 +3,7 @@ import { finalizeKnowledgeGraph } from "../src/core/knowledge";
 import { evaluateComponentRules } from "../src/core/rules/component";
 import { healthyGraph, node, profile } from "./fixtures";
 
-function componentDocumentationFinding(nodes: ReturnType<typeof node>[]) {
+function componentDescriptionFinding(nodes: ReturnType<typeof node>[]) {
   const source = healthyGraph(profile());
   const graph = finalizeKnowledgeGraph({
     ...source,
@@ -14,11 +14,11 @@ function componentDocumentationFinding(nodes: ReturnType<typeof node>[]) {
   }, profile());
   const root = graph.nodes["root:desktop"]!;
   return evaluateComponentRules(graph, root, Object.values(graph.nodes))
-    .find((finding) => finding.ruleId === "component.documentation");
+    .find((finding) => finding.ruleId === "component.description");
 }
 
-describe("component documentation rule", () => {
-  it("inherits documentation from a documented component set for its variants", () => {
+describe("component description rule", () => {
+  it("inherits descriptions from a described component set for its variants", () => {
     const root = node({ id: "root:desktop", rootId: "root:desktop", childIds: ["set:button"] });
     const componentSet = node({
       id: "set:button",
@@ -46,9 +46,9 @@ describe("component documentation rule", () => {
       component: { kind: "component", descriptionLength: 0, documentationLinkCount: 0, propertyDefinitions: [] },
     });
 
-    expect(componentDocumentationFinding([root, componentSet, primary, secondary])).toMatchObject({
+    expect(componentDescriptionFinding([root, componentSet, primary, secondary])).toMatchObject({
       status: "pass",
-      evidence: { measured: { componentCount: 3, undocumentedCount: 0 } },
+      evidence: { measured: { componentCount: 3, undescribedCount: 0 } },
     });
   });
 
@@ -70,9 +70,9 @@ describe("component documentation rule", () => {
       component: { kind: "component", descriptionLength: 0, documentationLinkCount: 0, propertyDefinitions: [] },
     });
 
-    expect(componentDocumentationFinding([root, componentSet, primary])).toMatchObject({
+    expect(componentDescriptionFinding([root, componentSet, primary])).toMatchObject({
       status: "fail",
-      evidence: { measured: { componentCount: 2, undocumentedCount: 2 } },
+      evidence: { measured: { componentCount: 2, undescribedCount: 2 } },
     });
   });
 
@@ -86,9 +86,9 @@ describe("component documentation rule", () => {
       component: { kind: "component", descriptionLength: 0, documentationLinkCount: 0, propertyDefinitions: [] },
     });
 
-    expect(componentDocumentationFinding([root, standalone])).toMatchObject({
+    expect(componentDescriptionFinding([root, standalone])).toMatchObject({
       status: "fail",
-      evidence: { measured: { componentCount: 1, undocumentedCount: 1 } },
+      evidence: { measured: { componentCount: 1, undescribedCount: 1 } },
     });
   });
 });

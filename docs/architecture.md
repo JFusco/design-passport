@@ -44,6 +44,7 @@ flowchart LR
 - page roles and coverage;
 - normalized nodes and parent/child relationships;
 - component definitions, instances, and main-component relationships;
+- live per-descendant component-instance override and sizing evidence;
 - approved local and enabled-library variable descriptors;
 - inferred and applied variable bindings;
 - responsive specimen families;
@@ -65,6 +66,8 @@ The sandbox owns the profile used for an audit. On a conventional file with no s
 
 The secondary Audit setup surface keeps committed and draft values separately, validates the draft against current page IDs, and gates profile-dependent actions only when a manual draft is unresolved or safe inference is impossible. The adapter reconciles deleted page mappings during bootstrap and immediately before profile-dependent work; a typed invalidation response opens recovery with the repaired draft and requires explicit confirmation.
 
+Profile schema v2 adds per-convention `ruleModes`. Stored profile-v1 data is read and migrated in memory to the v2 defaults; it is not rewritten until the designer explicitly saves setup.
+
 ### Advisory boundary
 
 `src/core/knowledge-loop.ts` evaluates project, one-off reference, and shared knowledge only after the deterministic report has been built. None of those inputs enter `evaluateRules`, `buildReadinessReport`, certification, or mutation planning. Given an unchanged graph, profile, catalog, and ruleset, every legacy finding, score, blocker, grade, readiness field, and certificate remains unchanged regardless of advisory packs.
@@ -80,6 +83,8 @@ Repository-owned `knowledge/` stores sanitized observations, current drafts, app
 ### Grading and report builder
 
 `src/core/grading.ts` groups findings by rule and source root, applies severity weights, computes all eight axis scores, and applies axis multipliers. `src/core/report.ts` grades every source independently and uses the limiting frame for the file result.
+
+Report schema v3 adds immutable producer identity, target-resolution evidence, and per-frame token-coverage ledgers. Readers continue to restore report schemas 1–2 as historical evidence. Current live evidence can be paged from the verified graph, while persisted groups retain exact counts and bounded samples.
 
 ### Mutation planner and executor
 
@@ -99,6 +104,12 @@ A graph is fresh only when it is complete and no older than 15 minutes. Any docu
 - no blockers;
 - no unresolved severity-4 reviews.
 
-Certificate metadata stores the graph hash, report hash, ruleset version, catalog version, and timestamp. A later scan compares existing certificates with the rebuilt graph and reports stale metadata.
+Certificate schema v2 stores plugin version, ruleset, build SHA, channel, graph hash, report hash, catalog version, and timestamp. Certificate-v1 records remain readable as historical evidence. A later scan compares existing certificates with the rebuilt graph and reports stale metadata.
+
+## Build identity and distribution
+
+The production manifest keeps the existing organization-published Figma plugin ID. A second `development/manifest.json` identity is named **Design Passport (Development)** and always shows a persistent warning. Its separate directory avoids Figma's one-development-plugin-per-manifest-directory deduplication. The build mirrors the exact generated UI/controller bytes into ignored `development/dist/` output because Figma confines a development plugin to its manifest directory. The default build embeds a Development channel; `pnpm build:release` embeds Production. Plugin version `0.4.0`, ruleset `1.0.0-beta.4`, the Git build SHA, and channel appear in bootstrap state, the footer, report-v3 data, exports, and certificate-v2 data.
+
+No runtime network access or version service is introduced. Freshness is established by the identity embedded in the published bundle and the single current organization plugin record. Historical results are preserved with their original producer identity instead of being silently upgraded.
 
 Component sets are certified only at the root. Their concise canvas annotation includes the aggregate grade and direct-variant count; variant coverage and descendant findings remain report data. Re-certification removes only child annotations with the exact legacy Design Passport coverage prefix, preserves unrelated annotations, and returns the deletion count to the UI. Published effect styles count as machine-readable token evidence for their visible effect fields; unstyled effects still require explicit variable bindings.

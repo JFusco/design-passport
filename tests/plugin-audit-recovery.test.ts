@@ -272,7 +272,7 @@ describe("plugin audit recovery integration", () => {
     const exported = reopened.events.at(-1);
     expect(exported?.type === "export-result" && JSON.parse(exported.content)).toMatchObject({ kind: "historical-audit", report: legacy.report, savedAt: storedLegacy.audit.savedAt, provenance: { pluginVersion: "0.2.0" } });
     await reopened.send({ type: "recheck-audit", request: { mode: "changes" } });
-    expect(reopened.events.filter((event) => event.type === "scan-result").at(-1)).toMatchObject({ report: { schemaVersion: 2, rulesetVersion: "1.0.0-beta.3" } });
+    expect(reopened.events.filter((event) => event.type === "scan-result").at(-1)).toMatchObject({ report: { schemaVersion: 3, rulesetVersion: "1.0.0-beta.4", producer: { pluginVersion: "0.4.0" } } });
   });
 
   it("keeps grading and repairs identical across advisory packs, incremental refresh, and saved restoration", async () => {

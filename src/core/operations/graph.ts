@@ -92,19 +92,9 @@ export function sourceFrameIds(
       if (node.type === "COMPONENT") return parent?.type !== "COMPONENT_SET";
       if (!topLevel || node.type !== "FRAME") return false;
       if (foundationPages.has(node.pageId)) return true;
-      if (node.certification) return true;
-      const parentIsPublishedScaffolding = parent?.type === "SECTION"
-        && /^Published source(?:\s*\/|$)/i.test(parent.name.trim());
-      if (parentIsPublishedScaffolding) return false;
-      if (node.sourceMarked) return true;
-      if (node.devResourceCount > 0) return true;
-      const readyForDev = node.devStatus === "READY_FOR_DEV"
-        || node.devStatus === "COMPLETED"
-        || parent?.devStatus === "READY_FOR_DEV"
-        || parent?.devStatus === "COMPLETED";
-      if (readyForDev) return true;
-      return parent?.type === "SECTION"
-        && /^(?:✅\s*)?Ready for Dev(?:\s*\/|$)/i.test(parent.name.trim());
+      // Component-page frames are documentation scaffolding. They can be
+      // audited only through an explicit marked-wrapper selection.
+      return false;
     })
     .map((node) => node.id)
     .sort();
@@ -116,15 +106,70 @@ export function targetRootIds(
   currentPageId: string,
   selectionIds: readonly string[],
 ): string[] {
+  return resolveTargetRoots(scope, graph, currentPageId, selectionIds).rootIds;
+}
+
+export interface TargetRootResolution {
+  rootIds: string[];
+  mode: "exact" | "component-sources";
+  requestedNodeIds: string[];
+  excludedNodeIds: string[];
+}
+
+function nestedComponentSources(graph: DesignKnowledgeGraph, wrapperId: string): string[] {
+  const wrapper = graph.nodes[wrapperId];
+  if (!wrapper) return [];
+  const isNestedUnderWrapper = (node: NodeSnapshot): boolean => {
+    const visited = new Set<string>();
+    let parentId = node.parentId;
+    while (parentId && !visited.has(parentId)) {
+      if (parentId === wrapperId) return true;
+      visited.add(parentId);
+      parentId = graph.nodes[parentId]?.parentId;
+    }
+    return false;
+  };
+  // Cached page fragments can preserve a child's parentId without repeating
+  // that child in the wrapper fragment's childIds. Follow parent ancestry so
+  // documentation-scope normalization is stable across live and cached builds.
+  const descendants = Object.values(graph.nodes).filter((node) => node.pageId === wrapper.pageId
+    && node.id !== wrapperId && isNestedUnderWrapper(node));
+  const sourceIds = new Set(descendants.filter((node) => node.type === "COMPONENT_SET"
+    || node.type === "COMPONENT" && graph.nodes[node.parentId ?? ""]?.type !== "COMPONENT_SET").map((node) => node.id));
+  return [...sourceIds].filter((id) => {
+    let parentId = graph.nodes[id]?.parentId;
+    while (parentId && parentId !== wrapperId) {
+      if (sourceIds.has(parentId)) return false;
+      parentId = graph.nodes[parentId]?.parentId;
+    }
+    return true;
+  }).sort();
+}
+
+export function resolveTargetRoots(
+  scope: ScanScope,
+  graph: DesignKnowledgeGraph,
+  currentPageId: string,
+  selectionIds: readonly string[],
+): TargetRootResolution {
   if (scope === "selection") {
-    return [...new Set(selectionIds)].filter((id) => {
+    const requestedNodeIds = [...new Set(selectionIds)];
+    const rootIds = requestedNodeIds.flatMap((id) => {
       const node = graph.nodes[id];
-      return node ? isAuditTargetNodeType(node.type) : false;
+      if (!node || !isAuditTargetNodeType(node.type)) return [];
+      const page = graph.pages.find((candidate) => candidate.id === node.pageId);
+      if (page?.role !== "components" || node.type !== "FRAME" || node.sourceMarked) return [id];
+      return nestedComponentSources(graph, id);
     });
+    const uniqueRoots = [...new Set(rootIds)];
+    const excludedNodeIds = requestedNodeIds.filter((id) => !uniqueRoots.includes(id));
+    return { rootIds: uniqueRoots, mode: excludedNodeIds.length > 0 ? "component-sources" : "exact", requestedNodeIds, excludedNodeIds };
   }
-  if (scope === "file") return [...new Set(graph.sourceFrameIds)];
+  if (scope === "file") return { rootIds: [...new Set(graph.sourceFrameIds)], mode: "exact", requestedNodeIds: [], excludedNodeIds: [] };
   const page = graph.pages.find((candidate) => candidate.id === currentPageId);
-  return [...new Set((page?.rootNodeIds ?? []).flatMap((id) => {
+  const rootIds = page?.role === "components"
+    ? graph.sourceFrameIds.filter((id) => graph.nodes[id]?.pageId === currentPageId)
+    : (page?.rootNodeIds ?? []).flatMap((id) => {
     const node = graph.nodes[id];
     if (!node) return [];
     if (isAuditTargetNodeType(node.type)) return [id];
@@ -133,5 +178,6 @@ export function targetRootIds(
       return child && isAuditTargetNodeType(child.type);
     });
     return [];
-  }))];
+  });
+  return { rootIds: [...new Set(rootIds)], mode: "exact", requestedNodeIds: [], excludedNodeIds: [] };
 }

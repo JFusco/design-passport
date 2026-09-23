@@ -12,6 +12,8 @@ Every rule returns `pass`, `fail`, `needs-review`, `waived`, or `not-applicable`
 
 Axis score is `passed applicable weight / total applicable weight`. Token application, Layer naming, and Pipeline readiness have a 2× rollup multiplier.
 
+Team-convention rules have three profile-v2 modes. `required` retains grading and readiness behavior, `advisory` produces review guidance without affecting grade or readiness, and `off` produces one transparent not-applicable summary per source. Layer naming, property/value grammar, canonical aliases, and source-name uniqueness default to Required. Novel terms, component descriptions, detached designs, and spacer layers default to Advisory. Accessibility, token correctness, evidence integrity, and certification safety are locked and cannot be disabled.
+
 | Grade | Score |
 | --- | ---: |
 | A | ≥ 90 |
@@ -46,8 +48,16 @@ Local token systems are valid. An enabled library is reported as a fact, never t
 
 ### Token application
 
-- Binding coverage across fills, strokes, radii, spacing, padding, dimensions, and typography.
-- ≥85% is the B threshold; ≥95% is the A threshold.
+- Binding coverage across fills, strokes, radii, spacing, padding, dimensions, effects, and typography is reconciled through four evidence buckets:
+  - `bound` — direct variable bindings;
+  - `inherited` — resolved text styles and non-overridden component-instance evidence;
+  - `ignored` — hidden/non-rendered values, zero defaults, documentation scaffolding, unsupported units, and other non-applicable values;
+  - `missing` — rendered, source-owned properties that can meaningfully be tokenized but lack evidence.
+- Coverage is `(bound + inherited) / (bound + inherited + missing)`. A zero denominator displays **Not applicable**. Only `missing` lowers coverage.
+- Saved report-v3 groups retain exact counts and at most 50 navigable samples per evidence group. A current audit can page through all live matches without expanding persisted storage.
+- Individual corner and stroke-side bindings satisfy the aggregate property when every rendered non-zero side is bound. Invisible strokes are not eligible.
+- Percentage/AUTO line height and percentage letter spacing are ignored because a Figma variable binding cannot preserve those units.
+- ≥80% is the B threshold; ≥95% is the A threshold.
 - Responsive tier parity and wholly unbound-tier blocker.
 - Unique compatible Figma inference becomes a guarded operation.
 - Multiple matches require a designer choice.
@@ -62,17 +72,19 @@ Local token systems are valid. An enabled library is reported as a fact, never t
 - Component roots resolve against the pinned 80-pattern catalog.
 - Contextual aliases always require designer confirmation.
 - Unknown terms are recorded as novel.
+- Semantic token paths accept category-plus-purpose forms such as `padding/xs`, `stack/md`, and `layout/gutter`; raw literals remain non-semantic.
 
 ### Structure / Auto Layout
 
 - Multi-child Auto Layout coverage.
-- Spacer layers, opaque groups, clipping, and fixed-layout review.
+- Empty non-interactive spacers are accepted when their relevant dimension is token-bound, `FILL`, or layout-growing. Other fixed spacers are advisory by default.
+- Opaque groups, clipping, and fixed-layout review.
 - Inferred Auto Layout is guarded and clone-tested.
 
 ### Component hygiene
 
-- Detached instance ancestry.
-- Component descriptions or documentation links.
+- Detached designs are per-node intent reviews and advisory by default. Designers can store a node-ID-bound **Mark intentional standalone design** acknowledgement and clear it later.
+- Missing component descriptions are advisory by default. External documentation links are never required and never create findings.
 - Lower-camel properties and lowercase full-word values.
 - Whole-file repeated structural candidates, excluding responsive siblings in one family.
 - UI Design Brain checklist shown for resolved patterns as advisory guidance.
@@ -102,6 +114,12 @@ Local token systems are valid. An enabled library is reported as a fact, never t
 - Stable export names.
 - Machine-readable styling.
 - Existing certificate freshness.
+
+## Audit target normalization
+
+On a mapped Components page, page/file scans grade top-level component sets and standalone components rather than surrounding documentation frames. Selecting an unmarked documentation wrapper resolves to those nested component sources and shows a scope notice. An intentionally auditable wrapper must carry the existing `AI source frame` annotation. Product-screen selections remain exact.
+
+When variable collections exist but none is approved, the token-source rule explains that approval—not variable existence—is missing and links directly to Audit Setup.
 
 ## Source authority
 

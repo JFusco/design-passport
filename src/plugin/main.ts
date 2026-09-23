@@ -1,6 +1,7 @@
 import { CATALOG_DIGEST, CATALOG_VERSION } from "../core/catalog";
 import { PRODUCT_NAME } from "../core/constants";
 import { RULESET_VERSION } from "../core/constants";
+import { PRODUCER_IDENTITY } from "../core/build-info";
 import type {
   ChangePlan,
   DesignKnowledgeGraph,
@@ -22,6 +23,7 @@ import {
 import type { TeamKnowledgePackV1 } from "../core/contracts";
 import teamKnowledgePackJson from "../generated/team-knowledge.pack.json";
 import { reportToMarkdown } from "../core/markdown";
+import { tokenCoverageGroupPage } from "../core/operations/node-fields";
 import { buildChangePlans } from "../core/planner";
 import { buildReadinessReport } from "../core/report";
 import { evaluateRules } from "../core/rules";
@@ -388,9 +390,14 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
       graph = result.graph;
       collections = result.collections;
       graphProfileHash = hashValue(profile);
+      const refreshMode = !forceFull && (previousGraph || result.diagnostics.reusedFragments > 0) ? "incremental" : "full";
+      const recordedBuildReason = changeJournal.fullBuildReason === "not-loaded" ? undefined : changeJournal.fullBuildReason;
+      const detectedBuildReason = rebuildReason === "not-loaded" ? undefined : rebuildReason;
       lastRefresh = {
-        mode: !forceFull && (previousGraph || result.diagnostics.reusedFragments > 0) ? "incremental" : "full",
-        reason: forceFullCapture ? "requested-full-rescan" : changeJournal.fullBuildReason ?? rebuildReason ?? "validated-fragments",
+        mode: refreshMode,
+        reason: forceFullCapture
+          ? "requested-full-rescan"
+          : recordedBuildReason ?? detectedBuildReason ?? (refreshMode === "incremental" ? "validated-fragments" : "initial-full-build"),
       };
       // Exact annotation signatures remain safe after a build: a delayed event
       // with different live output still invalidates, regardless of its node ID.
@@ -434,7 +441,14 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
   if (cancellable) assertScanNotCancelled();
   await assertVerifiedKnowledge();
   const findings = applyWaivers(rawFindings, waivers);
-  const nextReport = buildReadinessReport({ graph, profile, scope, targetRootIds: rootIds, appliedChanges, findings });
+  const requestedNodeIds = capturedTarget.scope === "selection" ? [...new Set(capturedTarget.nodeIds)] : [];
+  const excludedNodeIds = requestedNodeIds.filter((id) => !rootIds.includes(id));
+  const targetResolution: NonNullable<ReadinessReport["target"]["resolution"]> = {
+    mode: excludedNodeIds.length > 0 ? "component-sources" : "exact",
+    requestedNodeIds,
+    excludedNodeIds,
+  };
+  const nextReport = buildReadinessReport({ graph, profile, scope, targetRootIds: rootIds, appliedChanges, findings, targetResolution });
   const nextPlans = buildChangePlans(findings);
   const projectPack = activeProjectStyleGuidePack();
   const insights = buildKnowledgeInsights({
@@ -670,6 +684,15 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       await runScan(target, true, message.type === "recheck-audit" ? message.request : { mode: "changes" });
     } else if (message.type === "navigate") {
       await adapter.navigate(message.nodeId);
+    } else if (message.type === "token-coverage-page") {
+      const current = await assertCurrentReport("paging token coverage evidence");
+      if (message.request.reportHash !== current.report.snapshotHash) throw new Error("The coverage evidence is stale; refresh the audit before paging it");
+      const allowedRoots = new Set(current.report.target.rootIds);
+      if (message.request.rootIds.some((rootId) => !allowedRoots.has(rootId))) throw new Error("The coverage page requests a source outside the current audit");
+      post({
+        type: "token-coverage-page",
+        result: { ...message.request, ...tokenCoverageGroupPage(current.graph, message.request) },
+      });
     } else if (message.type === "apply-plan") {
       if (invalidateProfileIfNeeded()) return;
       await assertCurrentReport("applying cleanup");
@@ -752,7 +775,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         throw new Error("Certification requires grade B or better with no blockers or unresolved critical reviews");
       }
       const summaryBase = {
-        schemaVersion: 1 as const,
+        schemaVersion: 2 as const,
         grade: current.report.grade.letter,
         score: current.report.grade.score,
         rulesetVersion: current.report.rulesetVersion,
@@ -760,6 +783,9 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         certifiedAt: new Date().toISOString(),
         snapshotHash: current.report.snapshotHash,
         knowledgeSnapshotHash: current.graph.snapshotHash,
+        pluginVersion: PRODUCER_IDENTITY.pluginVersion,
+        buildSha: PRODUCER_IDENTITY.buildSha,
+        channel: PRODUCER_IDENTITY.channel,
       };
       const certificationNodeIds = certificationFrames.flatMap((frame) => [
         frame.rootId,
@@ -874,8 +900,12 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       if (invalidateProfileIfNeeded()) return;
       const current = await assertCurrentReport("resolving a contextual alias");
       const finding = current.report.findings.find((candidate) => candidate.id === message.findingId);
-      if (!finding || finding.ruleId !== "naming.pattern-contextual" || !finding.patternResolution?.candidates?.includes(message.canonicalName)) {
-        throw new Error("The contextual alias choice is stale or invalid; rescan before renaming");
+      const contextual = finding?.ruleId === "naming.pattern-contextual"
+        && finding.patternResolution?.candidates?.includes(message.canonicalName);
+      const novelSourceName = finding?.patternResolution?.input.split("/")[0]?.trim() ?? finding?.patternResolution?.input.trim();
+      const novel = finding?.ruleId === "naming.pattern-novel" && novelSourceName === message.canonicalName;
+      if (!finding || (!contextual && !novel) || !finding.patternResolution) {
+        throw new Error("The pattern decision is stale or invalid; rescan before confirming it");
       }
       const name = finding.patternResolution.qualifier ? `${message.canonicalName} / ${finding.patternResolution.qualifier}` : message.canonicalName;
       const sourceName = finding.patternResolution.input.split("/")[0]?.trim() ?? finding.patternResolution.input.trim();
@@ -895,7 +925,27 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       };
       await runDocumentMutation(plan.operations.map((operation) => operation.nodeId), () => applyChangePlan(plan, { undoOnlyAcknowledged: false }));
       appliedChanges.push(plan);
-      post({ type: "mutation-result", message: `Renamed the contextual alias to ${name}. Rescanning the complete file…` });
+      post({ type: "mutation-result", message: contextual ? `Renamed the contextual alias to ${name}. Rescanning the complete file…` : `Accepted ${name} as an intentional project term. Rescanning the complete file…` });
+      await rescanActiveTarget(true);
+    } else if (message.type === "acknowledge-detachment" || message.type === "clear-detachment-acknowledgement") {
+      if (invalidateProfileIfNeeded()) return;
+      const current = await assertCurrentReport("reviewing a detached design");
+      const finding = current.report.findings.find((candidate) => candidate.id === message.findingId);
+      if (!finding || finding.ruleId !== "component.detached-design") throw new Error("The detached-design review is stale; rescan before updating it");
+      const operation: ChangePlan["operations"][number] = message.type === "acknowledge-detachment"
+        ? { kind: "acknowledge-detachment", nodeId: finding.nodeId, value: { nodeId: finding.nodeId, acknowledgedAt: new Date().toISOString() } }
+        : { kind: "clear-detachment-acknowledgement", nodeId: finding.nodeId };
+      const plan: ChangePlan = {
+        id: `plan:${operation.kind}:${finding.id}`,
+        findingIds: [finding.id],
+        risk: "low",
+        operations: [operation],
+        expectedPostconditions: [`${operation.nodeId}:${operation.kind}`],
+        rollbackBoundary: "risk-group",
+      };
+      await runDocumentMutation([finding.nodeId], () => applyChangePlan(plan, { undoOnlyAcknowledged: false }));
+      appliedChanges.push(plan);
+      post({ type: "mutation-result", message: message.type === "acknowledge-detachment" ? "Marked the detached layer as an intentional standalone design. Rescanning…" : "Cleared the standalone-design acknowledgement. Rescanning…" });
       await rescanActiveTarget(true);
     } else if (message.type === "create-token") {
       if (invalidateProfileIfNeeded()) return;
@@ -958,7 +1008,7 @@ figma.ui.onmessage = async (rawMessage: unknown) => {
     }
     // Captured targets are immutable; browsing a historical result must remain
     // possible while a new audit verifies the file in the background.
-    if (message.type === "navigate" || message.type === "export" && report) {
+    if (message.type === "navigate" || message.type === "token-coverage-page" || message.type === "export" && report) {
       nonTerminal = commandGate.active;
       await handleMessage(message);
       return;
