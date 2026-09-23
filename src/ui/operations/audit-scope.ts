@@ -1,6 +1,6 @@
 import type { GradeLetter, ScanProgress, ScanScope } from "../../core/contracts";
 import type { SelectionSummary } from "../../figma/adapter";
-import type { AuditTargetSummary } from "../../plugin/messages";
+import type { AuditRefreshResult, AuditTargetSummary } from "../../plugin/messages";
 
 export const AUDIT_CANCELLED_NOTICE = "Audit cancelled. Any completed cleanup remains applied.";
 
@@ -113,4 +113,25 @@ export function auditedTargetSummary(scope: ScanScope, rootNames: readonly strin
 export function auditCompletionNotice(scope: ScanScope, grade: GradeLetter, ready: boolean): string {
   const target = scope === "selection" ? "Selection" : scope === "page" ? "Current-page" : "Source-frame";
   return `${target} audit complete: ${grade} · ${ready ? "ready" : "not ready"}`;
+}
+
+const REFRESH_REASON_LABELS: Readonly<Record<string, string>> = {
+  "document-changed": "Document changes detected",
+  expired: "Stored context expired",
+  "initial-full-build": "Initial context build",
+  "page-topology-changed": "Page structure changed",
+  "profile-changed": "Audit setup changed",
+  "requested-full-rescan": "Requested full rebuild",
+  "requested-refresh": "Requested refresh",
+  "structural-mutation": "Structural cleanup applied",
+  "unknown-change": "Unclassified document change detected",
+  "validated-fragments": "Validated stored context",
+  "variable-environment-changed": "Token environment changed",
+  "verified-current-session": "Verified current-session context",
+};
+
+export function auditRefreshNotice(refresh: AuditRefreshResult): string {
+  const reuse = refresh.mode === "full" ? "Full rebuild" : "Verified context reuse";
+  const reason = REFRESH_REASON_LABELS[refresh.reason] ?? "Context refreshed";
+  return `Recheck complete · ${refresh.resolvedCount} resolved · ${refresh.remainingCount} remaining. ${reuse}. ${reason}.`;
 }

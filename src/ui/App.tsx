@@ -28,6 +28,7 @@ import {
   AUDIT_CANCELLED_NOTICE,
   auditCompletionNotice,
   auditProgressPresentation,
+  auditRefreshNotice,
   isAuditInterruptible,
   scanInFlightAfter,
 } from "./operations/audit-scope";
@@ -208,7 +209,7 @@ export function App() {
         setStale(false);
         setError(undefined);
         if (!batchRunning.current) setNotice(message.refresh
-          ? `Recheck complete · ${message.refresh.resolvedCount} resolved · ${message.refresh.remainingCount} remaining. ${message.refresh.mode === "full" ? "Full rebuild" : "Verified context reuse"}. ${message.refresh.reason}`
+          ? auditRefreshNotice(message.refresh)
           : auditCompletionNotice(message.report.target.scope, message.report.grade.letter, message.report.ready));
       } else if (message.type === "token-coverage-page") {
         setCoveragePages((current) => ({ ...current, [message.result.requestId]: message.result }));

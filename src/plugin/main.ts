@@ -390,9 +390,14 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
       graph = result.graph;
       collections = result.collections;
       graphProfileHash = hashValue(profile);
+      const refreshMode = !forceFull && (previousGraph || result.diagnostics.reusedFragments > 0) ? "incremental" : "full";
+      const recordedBuildReason = changeJournal.fullBuildReason === "not-loaded" ? undefined : changeJournal.fullBuildReason;
+      const detectedBuildReason = rebuildReason === "not-loaded" ? undefined : rebuildReason;
       lastRefresh = {
-        mode: !forceFull && (previousGraph || result.diagnostics.reusedFragments > 0) ? "incremental" : "full",
-        reason: forceFullCapture ? "requested-full-rescan" : changeJournal.fullBuildReason ?? rebuildReason ?? "validated-fragments",
+        mode: refreshMode,
+        reason: forceFullCapture
+          ? "requested-full-rescan"
+          : recordedBuildReason ?? detectedBuildReason ?? (refreshMode === "incremental" ? "validated-fragments" : "initial-full-build"),
       };
       // Exact annotation signatures remain safe after a build: a delayed event
       // with different live output still invalidates, regardless of its node ID.
