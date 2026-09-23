@@ -22,6 +22,12 @@ describe("release tooling contract", () => {
     expect(packageJson.scripts.prepare).toBe("husky");
   });
 
+  it("keeps production builds out of the development manifest directory", () => {
+    expect(packageJson.scripts["build"]).toBe("pnpm build:artifacts && pnpm build:development-bundle");
+    expect(packageJson.scripts["build:release"]).toBe("DESIGN_PASSPORT_CHANNEL=production pnpm build:artifacts");
+    expect(packageJson.scripts["build:release"]).not.toContain("build:development-bundle");
+  });
+
   it("exposes the governed commit and pull-request entry points", () => {
     expect(packageJson.scripts.commit).toBe("ai-commit run");
     expect(packageJson.scripts["pr:create"]).toBe("ai-pr");

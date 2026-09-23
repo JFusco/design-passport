@@ -13,7 +13,7 @@ Tracking: [JFusco/design-passport#27](https://github.com/JFusco/design-passport/
 
 ## Automated evidence
 
-The candidate passed TypeScript checking, `git diff --check`, and 455 Vitest cases in 46 files. New regressions cover rendered strokes, inert zeros, hidden values, individual corners, unsupported typography units, style and component-instance inheritance, semantic token paths, wrapper normalization, policy modes, profile migration, historical report/certificate behavior, typed detachment acknowledgement, spacer sizing, token-source remediation, report-v3 validation, bounded samples, live evidence pagination, and refresh-notice presentation.
+The candidate passed TypeScript checking, `git diff --check`, and 456 Vitest cases in 46 files. New regressions cover rendered strokes, inert zeros, hidden values, individual corners, unsupported typography units, style and component-instance inheritance, semantic token paths, wrapper normalization, policy modes, profile migration, historical report/certificate behavior, typed detachment acknowledgement, spacer sizing, token-source remediation, report-v3 validation, bounded samples, live evidence pagination, refresh-notice presentation, and release-channel isolation.
 
 ## Native Figma evidence
 
@@ -31,4 +31,6 @@ The final recheck scanned all 65 supporting pages, retained the exact audited ta
 
 ## Production publication
 
-Pending merged-main production build, existing-record publication, organization-user smoke checks, and rollout communication. Preserve the prior verified bundle before publishing and record its recovery location plus the new production hashes here.
+The first merged-main release dry run exposed that the shared `build` script also mirrored Production-stamped controller/UI bytes into `development/dist/`. The release scripts were split so `pnpm build` alone refreshes the Development copy and `pnpm build:release` writes only root `dist/`. A two-channel build check confirmed the release command leaves both Development hashes unchanged while root output carries the Production channel.
+
+Existing-record publication, organization-user smoke checks, and rollout communication remain pending. Preserve the prior verified bundle before publishing and record its recovery location plus the final merged-main production hashes here.

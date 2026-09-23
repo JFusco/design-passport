@@ -12,7 +12,9 @@ Production and development now have separate Figma IDs and manifest directories.
 
 The final native candidate at `8ad23c1` passed in the 65-page disposable persistence file. Figma showed the development warning and exact `0.4.0` / `1.0.0-beta.4` / `8ad23c18d7e9` identity, restored the preceding build's saved audit as historical, scoped the Components-page audit to `Passport QA Button`, and rejected an unmarked documentation wrapper with source-frame remediation. The live ledger reconciled to 16 bound, 0 inherited, 17 ignored, and 10 missing entries. Recheck preserved the C/74.0 result and 13 findings while reporting `Validated stored context`; no internal cache-state text remained.
 
-Native QA also established two durable runtime constraints. Production and development manifests must live in separate directories because Figma deduplicates development imports by manifest location, and wrapper resolution must accept parent-link ancestry from cached fragments even when a wrapper's own `childIds` are absent. The release build mirrors exact root bundle bytes into `development/dist` and automated regressions protect both behaviors.
+Native QA also established two durable runtime constraints. Production and development manifests must live in separate directories because Figma deduplicates development imports by manifest location, and wrapper resolution must accept parent-link ancestry from cached fragments even when a wrapper's own `childIds` are absent. The default Development build mirrors exact root bundle bytes into `development/dist` and automated regressions protect both behaviors.
+
+The merged-main release dry run tightened that first constraint: only a Development-channel build may mirror bytes into `development/dist/`. `pnpm build:release` now compiles Production artifacts exclusively into root `dist/`, and a sequential channel check compares the development controller/UI hashes before and after the release command to prevent cross-channel contamination.
 
 ## Scanner maintenance verification, 2026-09-14
 

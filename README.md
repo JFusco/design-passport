@@ -101,7 +101,7 @@ To test an unreleased local build in Figma Desktop:
 
 ### Release identity and freshness
 
-- `pnpm build` produces a Development-channel bundle; `pnpm build:release` produces the Production-channel bundle.
+- `pnpm build` produces a Development-channel bundle and mirrors its controller/UI into `development/dist/`; `pnpm build:release` produces only the Production-channel bundle in `dist/` and deliberately leaves the development copy untouched.
 - Every bundle embeds package version `0.4.0`, ruleset `1.0.0-beta.4`, the current 12-character Git SHA, and its channel. There is no remote version service or runtime “latest” lookup.
 - Production is published only to the existing organization plugin record in `manifest.json`. Figma distributes that record’s current published version to organization users; users do not import a manifest or choose an older published build.
 - Before publishing, preserve the last verified production `dist/` bundle outside tracked source for rollback. A rollback republishes those verified bytes to the same organization record.
