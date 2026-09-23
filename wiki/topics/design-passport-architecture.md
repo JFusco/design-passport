@@ -42,7 +42,7 @@ Plugin `0.4.0` and ruleset `1.0.0-beta.4` make audit evidence reconcilable witho
 
 Profile schema v2 makes team conventions Required, Advisory, or Off. Advisory and Off modes cannot affect grade or readiness; accessibility, token correctness, evidence integrity, and certification safety remain locked. Profile-v1, report schemas 1–2, and certificate-v1 continue as historical input and are never silently rewritten.
 
-The production manifest retains the organization-published plugin ID. `manifest.dev.json` has a separate Figma-assigned identity and a persistent Development warning. Both bundles embed plugin version, ruleset, Git SHA, and channel; report v3, certificate v2, bootstrap, UI, and exports retain the producer identity that actually created them. This preserves the no-network boundary while making stale, historical, development, and current production evidence distinguishable.
+The production manifest retains the organization-published plugin ID. `development/manifest.json` has a separate Figma-assigned identity, its own manifest directory, and a persistent Development warning. The separate directory avoids Figma's one-development-plugin-per-directory deduplication; the build mirrors the exact generated UI/controller bytes into ignored `development/dist/` output because Figma confines each development plugin to its manifest directory. Both bundles embed plugin version, ruleset, Git SHA, and channel; report v3, certificate v2, bootstrap, UI, and exports retain the producer identity that actually created them. This preserves the no-network boundary while making stale, historical, development, and current production evidence distinguishable.
 
 ## Consequences
 

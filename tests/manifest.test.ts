@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import manifest from "../manifest.json";
-import developmentManifest from "../manifest.dev.json";
+import developmentManifest from "../development/manifest.json";
 
 describe("Figma manifest", () => {
   it("supports Design and Dev Mode with the required private-plugin capabilities", () => {
@@ -22,8 +22,6 @@ describe("Figma manifest", () => {
     expect(developmentManifest.id).not.toBe(manifest.id);
     expect(developmentManifest).toMatchObject({
       api: manifest.api,
-      main: manifest.main,
-      ui: manifest.ui,
       editorType: manifest.editorType,
       capabilities: manifest.capabilities,
       documentAccess: manifest.documentAccess,
@@ -32,5 +30,7 @@ describe("Figma manifest", () => {
       networkAccess: manifest.networkAccess,
       relaunchButtons: manifest.relaunchButtons,
     });
+    expect(developmentManifest.main).toBe(manifest.main);
+    expect(developmentManifest.ui).toBe(manifest.ui);
   });
 });

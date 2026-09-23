@@ -506,7 +506,7 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 5564,
+      "bytes": 5863,
       "degree": 35,
       "x": 0.401695,
       "y": -0.915773,
@@ -537,7 +537,7 @@
           "url": "https://github.com/jfusco/design-passport/issues/27"
         }
       ],
-      "bytes": 16613,
+      "bytes": 16646,
       "degree": 38,
       "x": 0.677282,
       "y": -0.735724,

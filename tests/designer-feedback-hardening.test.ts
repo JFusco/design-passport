@@ -95,6 +95,8 @@ describe("designer-feedback hardening", () => {
     };
     graph.sourceFrameIds = ["set", "standalone"];
     expect(resolveTargetRoots("selection", graph, "", ["wrapper"])).toEqual({ rootIds: ["set", "standalone"], mode: "component-sources", requestedNodeIds: ["wrapper"], excludedNodeIds: ["wrapper"] });
+    graph.nodes.wrapper!.childIds = ["visual"];
+    expect(resolveTargetRoots("selection", graph, "", ["wrapper"])).toEqual({ rootIds: ["set", "standalone"], mode: "component-sources", requestedNodeIds: ["wrapper"], excludedNodeIds: ["wrapper"] });
     graph.nodes.wrapper!.sourceMarked = true;
     expect(resolveTargetRoots("selection", graph, "", ["wrapper"]).rootIds).toEqual(["wrapper"]);
     expect(resolveTargetRoots("page", graph, "page:components", []).rootIds).toEqual(["set", "standalone"]);

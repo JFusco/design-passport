@@ -117,7 +117,23 @@ export interface TargetRootResolution {
 }
 
 function nestedComponentSources(graph: DesignKnowledgeGraph, wrapperId: string): string[] {
-  const descendants = collectDescendants(graph, wrapperId).filter((node) => node.id !== wrapperId);
+  const wrapper = graph.nodes[wrapperId];
+  if (!wrapper) return [];
+  const isNestedUnderWrapper = (node: NodeSnapshot): boolean => {
+    const visited = new Set<string>();
+    let parentId = node.parentId;
+    while (parentId && !visited.has(parentId)) {
+      if (parentId === wrapperId) return true;
+      visited.add(parentId);
+      parentId = graph.nodes[parentId]?.parentId;
+    }
+    return false;
+  };
+  // Cached page fragments can preserve a child's parentId without repeating
+  // that child in the wrapper fragment's childIds. Follow parent ancestry so
+  // documentation-scope normalization is stable across live and cached builds.
+  const descendants = Object.values(graph.nodes).filter((node) => node.pageId === wrapper.pageId
+    && node.id !== wrapperId && isNestedUnderWrapper(node));
   const sourceIds = new Set(descendants.filter((node) => node.type === "COMPONENT_SET"
     || node.type === "COMPONENT" && graph.nodes[node.parentId ?? ""]?.type !== "COMPONENT_SET").map((node) => node.id));
   return [...sourceIds].filter((id) => {

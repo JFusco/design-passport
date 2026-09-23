@@ -94,10 +94,10 @@ To test an unreleased local build in Figma Desktop:
 
 1. Run `pnpm build`.
 2. Open **Plugins → Development → Import plugin from manifest…**.
-3. Choose `manifest.dev.json`.
+3. Choose `development/manifest.json`.
 4. Run **Design Passport (Development)** from **Plugins → Development** and confirm the persistent Development warning and development channel in the footer.
 
-`manifest.json` retains the existing organization-published production identity. `manifest.dev.json` uses a separate Figma development identity so local client storage, reports, certificates, and launch menus cannot be mistaken for the published plugin. Both manifests remain offline and expose the same capabilities.
+`manifest.json` retains the existing organization-published production identity. `development/manifest.json` lives in its own directory because Figma registers one development plugin per manifest directory; it uses a separate identity so local client storage, reports, certificates, and launch menus cannot be mistaken for the published plugin. The build mirrors the exact generated controller/UI bytes into ignored `development/dist/` output because Figma confines a development plugin to its manifest directory. Both manifests remain offline and expose the same capabilities.
 
 ### Release identity and freshness
 
