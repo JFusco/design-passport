@@ -24,4 +24,18 @@ The companion deduplicates timestamp-independent learning envelopes and groups o
 
 Every publication requires an append-only maintainer decision bound to the exact candidate digest. Editing a candidate makes the earlier approval stale. Current project approvals compile only into that project pack; explicitly shared, client-neutral approvals compile into the pinned team pack for repository review and a later normal release. Runtime never fetches an unpinned latest pack.
 
+## Local companion application, 2026-09-23
+
+The maintainer journey now runs in a repository-owned Next.js application started by `pnpm companion knowledge review`. The process binds to `127.0.0.1`, creates a fresh capability, exchanges it for an HttpOnly, SameSite cookie, and authorizes every protected page and mutation. The Figma token remains server-only.
+
+Reference-pack generation, per-file learning import, draft revision, decision recording, and rebuilding share the existing versioned contracts. Reads never rebuild or write. Mutations use one workspace lock, atomic private files, and stale-digest checks inside the lock. A failed rebuild leaves a durable retry marker after preserving the accepted input.
+
+## Review and delivery invariants, 2026-09-23
+
+New evidence may revise counts and the candidate digest, but it must not overwrite reviewed wording, scope, or exceptions. The exact-digest decision becomes stale and its rationale stays visible for the next human review. Unsaved browser edits are isolated by candidate and revision; they are restored within the browser session and can never be approved until the editorial changes are saved.
+
+Contribution identity belongs to the audited design snapshot and target, not plugin-version metadata. Re-exporting the same audit does not create a new contribution, while an independently audited snapshot can contribute even when aggregate finding counts match. Supporting and contradictory observations with the same rule and context remain one neutral candidate with separate directional counts.
+
+Project approvals form a replaceable `approved-project` layer inside the connected style-guide pack. Updating that layer preserves the original Figma-derived facts and validates the combined pack before storage changes. Approved project packs are downloadable immediately from an authorized companion session. Shared approvals enter the pinned team pack only and reach designers through the normal reviewed plugin-release process.
+
 See [Design Passport architecture](./design-passport-architecture.md), [whole-file design knowledge](./whole-file-design-knowledge.md), and [Figma runtime and release QA](./figma-runtime-qa.md).

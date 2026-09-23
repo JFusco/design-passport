@@ -42,7 +42,7 @@ export function Modules(props: ModulesProps) {
                     </div>
                   </details>
                 )}
-                {props.onRecheck ? <button className="button subtle" disabled={props.recheckDisabled} onClick={() => props.onRecheck?.({ mode: "component", componentId: module.rootId })}>Recheck this component</button> : null}
+                {props.onRecheck ? <button className="button subtle" disabled={props.recheckDisabled} onClick={() => props.onRecheck?.({ mode: "component", componentId: module.rootId })}>Refresh this module</button> : null}
                 <button className="button subtle" onClick={() => props.onViewFindings(module.rootId)}>View issues</button>
               </article>
             ))}

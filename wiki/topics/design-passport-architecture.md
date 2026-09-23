@@ -46,6 +46,12 @@ The production manifest retains the organization-published plugin ID. `developme
 
 Post-review hardening makes the graph digest cover every rule-relevant ownership, layout, detachment, instance, and structural input while deliberately excluding the certificate that refers back to that digest. Production builds fail on a dirty checkout; Development build identities carry a dirty-content suffix. Generated controller/UI hashes and channel metadata are validated before copying into the Development manifest directory, and development certificates identify their channel both on the canvas and in relaunch data.
 
+## Local companion boundary, 2026-09-23
+
+The companion is a pnpm workspace application under `apps/companion`. Next.js owns routing, server rendering, and the browser interface; typed services under `src/companion` own Figma transport, persistence, safe errors, and review projections. The CLI remains the only launcher and passes the explicit repository root, loopback origin, and per-process capability to the production server.
+
+The browser receives only bounded view models and sanitized downloads. Figma credentials, raw workspace paths, envelope digests, and filesystem operations stay in Node-only modules. All writes are serialized and atomic. Production browser tests use temporary real workspaces and replace only the fixed-origin Figma transport with deterministic fixtures.
+
 ## Consequences
 
 - Pure TypeScript operations can be unit tested without Figma.

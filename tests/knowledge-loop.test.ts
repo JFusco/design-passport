@@ -8,6 +8,7 @@ import {
   buildMultiFileReviewReport,
   buildProjectStyleGuideBinding,
   buildReferencePack,
+  combineProjectStyleGuidePacks,
   compileTeamKnowledgePack,
   generateCandidateDrafts,
   knowledgeDomainForContext,
@@ -90,6 +91,19 @@ describe("project-scoped advisory packs", () => {
     expect(insights.some((insight) => insight.origin === "reference")).toBe(true);
     expect(before).toEqual(frozen);
   });
+
+  it("marks unrelated informational guidance as optional when audit evidence establishes relevance", () => {
+    const graph = healthyGraph();
+    const readiness = report();
+    const accessibilityFinding = readiness.findings.find((finding) => finding.axis === "accessibility")!;
+    const informational = pack("style-guide", [
+      { factId: "fact:a11y", domain: "accessibility", label: "Accessible behavior", guidance: "Review accessible behavior.", matcher: { kind: "informational" }, provenance: "approved-project" },
+      { factId: "fact:layout", domain: "layout", label: "Layout convention", guidance: "Review layout conventions.", matcher: { kind: "informational" }, provenance: "approved-project" },
+    ]);
+    const insights = buildKnowledgeInsights({ graph, targetRootIds: ["root:desktop"], projectPack: informational, findings: [accessibilityFinding], operations: [] });
+    expect(insights.find((insight) => insight.factId === "fact:a11y")?.applicable).toBe(true);
+    expect(insights.find((insight) => insight.factId === "fact:layout")?.applicable).toBe(false);
+  });
 });
 
 describe("guidance and learning compatibility after scanner changes", () => {
@@ -143,17 +157,23 @@ describe("human-gated knowledge loop", () => {
     expect(JSON.stringify(candidates)).not.toMatch(/corroborated|conflicted|confidence|eligible/i);
     expect(candidates.every((candidate) => !candidate.wording.includes("axis:") && !candidate.wording.includes("component."))).toBe(true);
     for (const uniqueCount of [1, 2, 100]) {
-      const unique = Array.from({ length: uniqueCount }, (_, index) => buildLearningEnvelope({
-        projectScope: "project:ui-library",
-        report: report(),
-        pluginVersion: `1.${index}`,
-        knowledgeVersion: "1",
-        now: new Date("2026-09-10T12:00:00Z"),
-      }));
+      const unique = Array.from({ length: uniqueCount }, (_, index) => {
+        const readiness = report();
+        readiness.target.knowledgeSnapshotHash = hashValue(`audit:${index}`);
+        return buildLearningEnvelope({
+          projectScope: "project:ui-library",
+          report: readiness,
+          pluginVersion: `1.${index}`,
+          knowledgeVersion: "1",
+          now: new Date("2026-09-10T12:00:00Z"),
+        });
+      });
       const draft = generateCandidateDrafts(unique)[0]!;
       expect(draft.evidenceEnvelopeDigests).toHaveLength(uniqueCount);
       expect(draft.supportCount + draft.contradictCount).toBe(uniqueCount);
     }
+    const repeatedWithDifferentProducer = buildLearningEnvelope({ projectScope: "project:ui-library", report: report(), pluginVersion: "2", knowledgeVersion: "2" });
+    expect(generateCandidateDrafts([first, repeatedWithDifferentProducer])[0]!.evidenceEnvelopeDigests).toHaveLength(1);
   });
 
   it("contributes actionable findings without turning passing checks or untouched grades into drafts", () => {
@@ -174,10 +194,34 @@ describe("human-gated knowledge loop", () => {
     delete material.digest;
     delete material.generatedAt;
     second.digest = hashValue(material);
-    const candidate = generateCandidateDrafts([first, second]).find((item) => item.groupKey.includes("h53:"));
+    const candidate = generateCandidateDrafts([first, second]).find((item) => item.observationKey === observation.observationKey);
     expect(candidate).toBeDefined();
-    expect((candidate!.supportCount + candidate!.contradictCount)).toBeGreaterThan(0);
+    expect(candidate).toMatchObject({ supportCount: 1, contradictCount: 1 });
+    expect(candidate!.evidenceEnvelopeDigests).toHaveLength(1);
     expect(candidate).not.toHaveProperty("state");
+  });
+
+  it("keeps the connected style guide when approved project guidance is updated", () => {
+    const connected = pack("style-guide");
+    const learned = pack("style-guide", [{
+      factId: "fact:approved",
+      domain: "layout",
+      label: "Approved spacing",
+      guidance: "Use the reviewed project spacing convention.",
+      matcher: { kind: "informational" },
+      provenance: "approved-project",
+    }]);
+    const combined = combineProjectStyleGuidePacks(connected, learned, new Date("2026-09-11T12:00:00Z"));
+    expect(combined.facts.map((fact) => fact.factId)).toEqual(["fact:approved", "fact:spacing"]);
+    const refreshedGuidance = structuredClone(learned.facts);
+    refreshedGuidance[0]!.guidance = "Use the newly reviewed spacing convention.";
+    const refreshed = combineProjectStyleGuidePacks(combined, buildReferencePack({
+      packVersion: learned.packVersion,
+      source: learned.source,
+      facts: refreshedGuidance,
+    }, new Date("2026-09-12T12:00:00Z")));
+    expect(refreshed.facts.find((fact) => fact.factId === "fact:spacing")).toEqual(connected.facts[0]);
+    expect(refreshed.facts.find((fact) => fact.factId === "fact:approved")?.guidance).toContain("newly reviewed");
   });
 
   it("publishes only a human-approved current shared candidate digest", () => {

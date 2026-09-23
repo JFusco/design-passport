@@ -2,24 +2,153 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 40,
-    "edges": 155,
+    "nodes": 57,
+    "edges": 190,
     "byType": {
-      "index": 3,
-      "journal": 17,
-      "plan": 13,
+      "index": 18,
+      "journal": 18,
+      "plan": 14,
       "topic": 7
     }
   },
   "nodes": [
+    {
+      "id": "wiki/benchmarks/INDEX.md",
+      "label": "Benchmark evidence",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 162,
+      "degree": 3,
+      "x": 0.975796,
+      "y": 0.218681,
+      "size": 12
+    },
+    {
+      "id": "wiki/benchmarks/persistent-audits-acceptance.md",
+      "label": "Persistent audit acceptance evidence",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 21,
+          "url": "https://github.com/jfusco/design-passport/issues/21"
+        }
+      ],
+      "bytes": 6250,
+      "degree": 3,
+      "x": 0.945817,
+      "y": 0.324699,
+      "size": 12
+    },
+    {
+      "id": "wiki/benchmarks/persistent-audits.md",
+      "label": "Persistent audit runtime validation",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 21,
+          "url": "https://github.com/jfusco/design-passport/issues/21"
+        }
+      ],
+      "bytes": 10158,
+      "degree": 3,
+      "x": 0.904357,
+      "y": 0.426776,
+      "size": 12
+    },
+    {
+      "id": "wiki/guides/architecture.md",
+      "label": "Architecture",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 9443,
+      "degree": 1,
+      "x": 0.789141,
+      "y": 0.614213,
+      "size": 12
+    },
+    {
+      "id": "wiki/guides/INDEX.md",
+      "label": "Current guides",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 260,
+      "degree": 7,
+      "x": 0.851919,
+      "y": 0.523673,
+      "size": 12
+    },
+    {
+      "id": "wiki/guides/knowledge-loop.md",
+      "label": "Shared Design Passport knowledge loop",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 5586,
+      "degree": 2,
+      "x": 0.716783,
+      "y": 0.697297,
+      "size": 12
+    },
+    {
+      "id": "wiki/guides/manual-qa.md",
+      "label": "Golden fixture and rollout QA",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 21,
+          "url": "https://github.com/jfusco/design-passport/issues/21"
+        }
+      ],
+      "bytes": 19151,
+      "degree": 4,
+      "x": 0.635724,
+      "y": 0.771917,
+      "size": 12
+    },
+    {
+      "id": "wiki/guides/ruleset.md",
+      "label": "Ruleset 1.0.0 beta reference",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 6801,
+      "degree": 1,
+      "x": 0.546948,
+      "y": 0.837166,
+      "size": 12
+    },
+    {
+      "id": "wiki/guides/security.md",
+      "label": "Security and privacy model",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2899,
+      "degree": 1,
+      "x": 0.451533,
+      "y": 0.892254,
+      "size": 12
+    },
     {
       "id": "wiki/INDEX.md",
       "label": "Context wiki",
       "type": "index",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 1361,
-      "degree": 2,
+      "bytes": 1666,
+      "degree": 6,
       "x": 1,
       "y": 0,
       "size": 12
@@ -32,8 +161,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.951057,
-      "y": 0.309017,
+      "x": 0.350638,
+      "y": 0.936511,
       "size": 8
     },
     {
@@ -44,8 +173,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.891007,
-      "y": 0.45399,
+      "x": 0.245485,
+      "y": 0.9694,
       "size": 8
     },
     {
@@ -63,8 +192,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.809017,
-      "y": 0.587785,
+      "x": 0.137354,
+      "y": 0.990522,
       "size": 8
     },
     {
@@ -88,8 +217,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.707107,
-      "y": 0.707107,
+      "x": 0.027554,
+      "y": 0.99962,
       "size": 8
     },
     {
@@ -100,8 +229,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.587785,
-      "y": 0.809017,
+      "x": -0.082579,
+      "y": 0.996584,
       "size": 8
     },
     {
@@ -125,8 +254,8 @@
       ],
       "bytes": 2518,
       "degree": 3,
-      "x": 0.45399,
-      "y": 0.891007,
+      "x": -0.191711,
+      "y": 0.981451,
       "size": 8
     },
     {
@@ -144,8 +273,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": 0.309017,
-      "y": 0.951057,
+      "x": -0.298515,
+      "y": 0.954405,
       "size": 8
     },
     {
@@ -163,8 +292,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": 0.156434,
-      "y": 0.987688,
+      "x": -0.401695,
+      "y": 0.915773,
       "size": 8
     },
     {
@@ -173,10 +302,10 @@
       "type": "journal",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2328,
-      "degree": 4,
-      "x": 0,
-      "y": 1,
+      "bytes": 2327,
+      "degree": 5,
+      "x": -0.5,
+      "y": 0.866025,
       "size": 8
     },
     {
@@ -185,10 +314,10 @@
       "type": "journal",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 3438,
-      "degree": 6,
-      "x": -0.156434,
-      "y": 0.987688,
+      "bytes": 3437,
+      "degree": 7,
+      "x": -0.592235,
+      "y": 0.805765,
       "size": 8
     },
     {
@@ -199,8 +328,8 @@
       "githubRefs": [],
       "bytes": 2405,
       "degree": 6,
-      "x": -0.309017,
-      "y": 0.951057,
+      "x": -0.677282,
+      "y": 0.735724,
       "size": 8
     },
     {
@@ -218,8 +347,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": -0.45399,
-      "y": 0.891007,
+      "x": -0.754107,
+      "y": 0.656752,
       "size": 8
     },
     {
@@ -237,8 +366,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": -0.587785,
-      "y": 0.809017,
+      "x": -0.821778,
+      "y": 0.569808,
       "size": 8
     },
     {
@@ -256,8 +385,8 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": -0.707107,
-      "y": 0.707107,
+      "x": -0.879474,
+      "y": 0.475947,
       "size": 8
     },
     {
@@ -273,10 +402,29 @@
           "url": "https://github.com/jfusco/design-passport/issues/24"
         }
       ],
-      "bytes": 5503,
-      "degree": 2,
-      "x": -0.809017,
-      "y": 0.587785,
+      "bytes": 5487,
+      "degree": 4,
+      "x": -0.926494,
+      "y": 0.376309,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-23-design-passport-companion.md",
+      "label": "Design Passport local companion application",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 33,
+          "url": "https://github.com/jfusco/design-passport/issues/33"
+        }
+      ],
+      "bytes": 5249,
+      "degree": 6,
+      "x": -0.962268,
+      "y": 0.272103,
       "size": 8
     },
     {
@@ -292,10 +440,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/27"
         }
       ],
-      "bytes": 3873,
-      "degree": 3,
-      "x": -0.891007,
-      "y": 0.45399,
+      "bytes": 3865,
+      "degree": 4,
+      "x": -0.986361,
+      "y": 0.164595,
       "size": 8
     },
     {
@@ -313,8 +461,8 @@
       ],
       "bytes": 2962,
       "degree": 5,
-      "x": -0.951057,
-      "y": 0.309017,
+      "x": -0.998482,
+      "y": 0.055088,
       "size": 8
     },
     {
@@ -325,8 +473,8 @@
       "githubRefs": [],
       "bytes": 2907,
       "degree": 2,
-      "x": 0.987688,
-      "y": 0.156434,
+      "x": 0.993931,
+      "y": 0.110008,
       "size": 12
     },
     {
@@ -337,8 +485,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.987688,
-      "y": 0.156434,
+      "x": -0.998482,
+      "y": -0.055088,
       "size": 8
     },
     {
@@ -349,8 +497,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -1,
-      "y": 0,
+      "x": -0.986361,
+      "y": -0.164595,
       "size": 8
     },
     {
@@ -361,8 +509,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.987688,
-      "y": -0.156434,
+      "x": -0.962268,
+      "y": -0.272103,
       "size": 8
     },
     {
@@ -380,8 +528,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.951057,
-      "y": -0.309017,
+      "x": -0.926494,
+      "y": -0.376309,
       "size": 8
     },
     {
@@ -392,8 +540,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.891007,
-      "y": -0.45399,
+      "x": -0.879474,
+      "y": -0.475947,
       "size": 8
     },
     {
@@ -404,8 +552,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.809017,
-      "y": -0.587785,
+      "x": -0.821778,
+      "y": -0.569808,
       "size": 8
     },
     {
@@ -416,8 +564,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.707107,
-      "y": -0.707107,
+      "x": -0.754107,
+      "y": -0.656752,
       "size": 8
     },
     {
@@ -428,8 +576,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.587785,
-      "y": -0.809017,
+      "x": -0.677282,
+      "y": -0.735724,
       "size": 8
     },
     {
@@ -440,8 +588,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.45399,
-      "y": -0.891007,
+      "x": -0.592235,
+      "y": -0.805765,
       "size": 8
     },
     {
@@ -459,8 +607,8 @@
       ],
       "bytes": 6239,
       "degree": 3,
-      "x": -0.309017,
-      "y": -0.951057,
+      "x": -0.5,
+      "y": -0.866025,
       "size": 8
     },
     {
@@ -471,8 +619,20 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.156434,
-      "y": -0.987688,
+      "x": -0.401695,
+      "y": -0.915773,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-23-design-passport-companion-revised-plan-022d44ed88.md",
+      "label": "Design Passport companion: revised plan",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 11833,
+      "degree": 5,
+      "x": -0.298515,
+      "y": -0.954405,
       "size": 8
     },
     {
@@ -488,10 +648,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/27"
         }
       ],
-      "bytes": 2161,
+      "bytes": 2158,
       "degree": 4,
-      "x": 0,
-      "y": -1,
+      "x": -0.191711,
+      "y": -0.981451,
       "size": 8
     },
     {
@@ -502,8 +662,8 @@
       "githubRefs": [],
       "bytes": 1840,
       "degree": 3,
-      "x": 0.156434,
-      "y": -0.987688,
+      "x": -0.082579,
+      "y": -0.996584,
       "size": 8
     },
     {
@@ -525,10 +685,96 @@
           "url": "https://github.com/jfusco/design-passport/issues/38"
         }
       ],
-      "bytes": 19915,
-      "degree": 15,
-      "x": 0.309017,
-      "y": -0.951057,
+      "bytes": 20420,
+      "degree": 16,
+      "x": 0.027554,
+      "y": -0.99962,
+      "size": 12
+    },
+    {
+      "id": "wiki/proposals/INDEX.md",
+      "label": "Open proposals",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 211,
+      "degree": 2,
+      "x": 0.137354,
+      "y": -0.990522,
+      "size": 12
+    },
+    {
+      "id": "wiki/proposals/wilmerhale-scanner-feedback.md",
+      "label": "Plan: make the scanner useful during design-system maintenance",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 21674,
+      "degree": 1,
+      "x": 0.245485,
+      "y": -0.9694,
+      "size": 12
+    },
+    {
+      "id": "wiki/qa/ai-readiness-scanner-maintenance.md",
+      "label": "Scanner maintenance verification record",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 24,
+          "url": "https://github.com/jfusco/design-passport/issues/24"
+        }
+      ],
+      "bytes": 13899,
+      "degree": 4,
+      "x": 0.451533,
+      "y": -0.892254,
+      "size": 12
+    },
+    {
+      "id": "wiki/qa/designer-feedback-hardening.md",
+      "label": "Designer-feedback hardening verification",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 27,
+          "url": "https://github.com/jfusco/design-passport/issues/27"
+        }
+      ],
+      "bytes": 5995,
+      "degree": 3,
+      "x": 0.546948,
+      "y": -0.837166,
+      "size": 12
+    },
+    {
+      "id": "wiki/qa/INDEX.md",
+      "label": "QA evidence",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 264,
+      "degree": 5,
+      "x": 0.350638,
+      "y": -0.936511,
+      "size": 12
+    },
+    {
+      "id": "wiki/qa/scanner-guidance-companion-verification.md",
+      "label": "Scanner guidance and companion verification",
+      "type": "index",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 7744,
+      "degree": 3,
+      "x": 0.635724,
+      "y": -0.771917,
       "size": 12
     },
     {
@@ -537,10 +783,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 6393,
-      "degree": 37,
-      "x": 0.45399,
-      "y": -0.891007,
+      "bytes": 7180,
+      "degree": 39,
+      "x": 0.716783,
+      "y": -0.697297,
       "size": 8
     },
     {
@@ -551,8 +797,8 @@
       "githubRefs": [],
       "bytes": 5450,
       "degree": 19,
-      "x": 0.587785,
-      "y": -0.809017,
+      "x": 0.789141,
+      "y": -0.614213,
       "size": 8
     },
     {
@@ -568,10 +814,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/27"
         }
       ],
-      "bytes": 18101,
-      "degree": 39,
-      "x": 0.707107,
-      "y": -0.707107,
+      "bytes": 19159,
+      "degree": 41,
+      "x": 0.851919,
+      "y": -0.523673,
       "size": 8
     },
     {
@@ -582,8 +828,8 @@
       "githubRefs": [],
       "bytes": 5091,
       "degree": 21,
-      "x": 0.809017,
-      "y": -0.587785,
+      "x": 0.904357,
+      "y": -0.426776,
       "size": 8
     },
     {
@@ -601,8 +847,8 @@
       ],
       "bytes": 4457,
       "degree": 2,
-      "x": 0.891007,
-      "y": -0.45399,
+      "x": 0.945817,
+      "y": -0.324699,
       "size": 8
     },
     {
@@ -611,10 +857,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2812,
-      "degree": 14,
-      "x": 0.951057,
-      "y": -0.309017,
+      "bytes": 4803,
+      "degree": 16,
+      "x": 0.975796,
+      "y": -0.218681,
       "size": 8
     },
     {
@@ -625,8 +871,8 @@
       "githubRefs": [],
       "bytes": 4946,
       "degree": 28,
-      "x": 0.987688,
-      "y": -0.156434,
+      "x": 0.993931,
+      "y": -0.110008,
       "size": 8
     }
   ],
@@ -646,6 +892,13 @@
       "relation": "link"
     },
     {
+      "id": "0b98d7235ee47284",
+      "source": "wiki/journal/2026-09-14-scanner-maintenance-verification.md",
+      "target": "wiki/qa/ai-readiness-scanner-maintenance.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "0d772cb612aff47a",
       "source": "wiki/journal/2026-09-23-designer-feedback-hardening.md",
       "target": "wiki/plans/2026-09-23-designer-feedback-hardening-and-stale-build-prevention-859c045c42.md",
@@ -658,6 +911,13 @@
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "12d01feede285ba3",
+      "source": "wiki/guides/INDEX.md",
+      "target": "wiki/guides/security.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "12d7d385ae315a2b",
@@ -716,6 +976,20 @@
       "relation": "topic"
     },
     {
+      "id": "1899652cb0d896ef",
+      "source": "wiki/INDEX.md",
+      "target": "wiki/guides/INDEX.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "19531dca69e13412",
+      "source": "wiki/journal/2026-09-23-design-passport-companion.md",
+      "target": "wiki/guides/INDEX.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "1ccc5eadccdce4dc",
       "source": "wiki/journal/2026-09-11-scoped-audit-clarity.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
@@ -772,6 +1046,13 @@
       "relation": "link"
     },
     {
+      "id": "28685776450495fc",
+      "source": "wiki/qa/INDEX.md",
+      "target": "wiki/qa/designer-feedback-hardening.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "28d855327edc8c35",
       "source": "wiki/journal/2026-09-23-designer-feedback-review-remediation.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -812,6 +1093,13 @@
       "target": "wiki/topics/mutation-certification-safety.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "2f221f5b5f58c117",
+      "source": "wiki/journal/2026-09-23-designer-feedback-hardening.md",
+      "target": "wiki/qa/designer-feedback-hardening.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "2ffcf328a04bfcae",
@@ -856,6 +1144,27 @@
       "relation": "topic"
     },
     {
+      "id": "36f645653dad6a94",
+      "source": "wiki/guides/INDEX.md",
+      "target": "wiki/guides/knowledge-loop.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "3757aa5f870098e9",
+      "source": "wiki/journal/2026-09-23-design-passport-companion.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "3dfcfa168f554b52",
+      "source": "wiki/INDEX.md",
+      "target": "wiki/benchmarks/INDEX.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "3f5083cf4750c2a3",
       "source": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
       "target": "wiki/topics/project-scoped-knowledge-loop.md",
@@ -875,6 +1184,13 @@
       "target": "wiki/topics/design-readiness-standard.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "44a70b3b30422185",
+      "source": "wiki/proposals/INDEX.md",
+      "target": "wiki/proposals/wilmerhale-scanner-feedback.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "4652ec7de18c0e70",
@@ -905,6 +1221,20 @@
       "relation": "topic"
     },
     {
+      "id": "4ec3bc51f5aff46c",
+      "source": "wiki/journal/2026-09-23-design-passport-companion.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "4fca0d56f6e7e88b",
+      "source": "wiki/journal/2026-09-23-design-passport-companion.md",
+      "target": "wiki/plans/2026-09-23-design-passport-companion-revised-plan-022d44ed88.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "4fde3160fb5884f6",
       "source": "wiki/journal/2026-09-08-design-passport-v1.md",
       "target": "wiki/topics/design-readiness-standard.md",
@@ -926,11 +1256,25 @@
       "relation": "topic"
     },
     {
+      "id": "512a6de9812aa53d",
+      "source": "wiki/guides/manual-qa.md",
+      "target": "wiki/benchmarks/persistent-audits-acceptance.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "5194f7b164c016f4",
       "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
       "target": "wiki/topics/mutation-certification-safety.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "527f59ebd315bed9",
+      "source": "wiki/qa/INDEX.md",
+      "target": "wiki/qa/scanner-guidance-companion-verification.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "52d9234dfdfa4df0",
@@ -945,6 +1289,13 @@
       "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "5875dc450e45f811",
+      "source": "wiki/topics/figma-runtime-qa.md",
+      "target": "wiki/qa/ai-readiness-scanner-maintenance.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "5894e14fde9b9769",
@@ -968,6 +1319,13 @@
       "relation": "plan"
     },
     {
+      "id": "5cfc1395d29abaa8",
+      "source": "wiki/journal/2026-09-23-design-passport-companion.md",
+      "target": "wiki/qa/INDEX.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "6054eb89bc06ebe2",
       "source": "wiki/INDEX.md",
       "target": "wiki/plans/INDEX.md",
@@ -978,6 +1336,13 @@
       "id": "641b6572d27eafef",
       "source": "wiki/plans/INDEX.md",
       "target": "wiki/plans/2026-09-08-figma-ai-ready-plugin-b69ce15884.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "65e8bca949ceccd9",
+      "source": "wiki/guides/INDEX.md",
+      "target": "wiki/guides/manual-qa.md",
       "type": "link",
       "relation": "link"
     },
@@ -994,6 +1359,13 @@
       "target": "wiki/topics/design-readiness-standard.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "6774a87a08ee04e0",
+      "source": "wiki/benchmarks/persistent-audits-acceptance.md",
+      "target": "wiki/benchmarks/persistent-audits.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "6e57e7bfea718d3d",
@@ -1029,6 +1401,20 @@
       "target": "wiki/topics/figma-runtime-qa.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "72ff9ee576c2ee9b",
+      "source": "wiki/plans/2026-09-23-design-passport-companion-revised-plan-022d44ed88.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "76365b112cf93ad5",
+      "source": "wiki/qa/ai-readiness-scanner-maintenance.md",
+      "target": "wiki/qa/scanner-guidance-companion-verification.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "7688e3da699b11a9",
@@ -1083,6 +1469,13 @@
       "id": "7ee3b68069c442b9",
       "source": "wiki/plans/INDEX.md",
       "target": "wiki/plans/2026-09-23-designer-feedback-hardening-and-stale-build-prevention-859c045c42.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "800145d0fc4e4137",
+      "source": "wiki/journal/2026-09-10-project-scoped-knowledge-loop.md",
+      "target": "wiki/guides/knowledge-loop.md",
       "type": "link",
       "relation": "link"
     },
@@ -1255,6 +1648,13 @@
       "relation": "link"
     },
     {
+      "id": "a0c11d618c7eccbb",
+      "source": "wiki/guides/manual-qa.md",
+      "target": "wiki/benchmarks/persistent-audits.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "a18601fe1cea6af0",
       "source": "wiki/topics/design-readiness-standard.md",
       "target": "wiki/topics/mutation-certification-safety.md",
@@ -1318,6 +1718,13 @@
       "relation": "link"
     },
     {
+      "id": "acf0cc5c23321f4f",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-23-design-passport-companion-revised-plan-022d44ed88.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "ad590d060e242784",
       "source": "wiki/plans/2026-09-11-profile-state-fix-and-code-connect-removal-80d06ac784.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -1334,6 +1741,13 @@
     {
       "id": "afe53ef7ea52f797",
       "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "b11a4065c94577d0",
+      "source": "wiki/plans/2026-09-23-design-passport-companion-revised-plan-022d44ed88.md",
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "topic",
       "relation": "topic"
@@ -1367,6 +1781,13 @@
       "relation": "topic"
     },
     {
+      "id": "b46e48a979799fee",
+      "source": "wiki/guides/INDEX.md",
+      "target": "wiki/guides/architecture.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "b538f4392fd0b512",
       "source": "wiki/topics/design-readiness-standard.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
@@ -1377,6 +1798,13 @@
       "id": "b56ec3bf44536886",
       "source": "wiki/topics/design-passport-architecture.md",
       "target": "wiki/topics/design-readiness-standard.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "b632eb066ae7e1b6",
+      "source": "wiki/journal/2026-09-14-scanner-maintenance-verification.md",
+      "target": "wiki/qa/scanner-guidance-companion-verification.md",
       "type": "link",
       "relation": "link"
     },
@@ -1521,6 +1949,13 @@
       "relation": "plan"
     },
     {
+      "id": "d19d9544dded058d",
+      "source": "wiki/qa/INDEX.md",
+      "target": "wiki/qa/ai-readiness-scanner-maintenance.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "d3559bd8fc30defc",
       "source": "wiki/topics/project-scoped-knowledge-loop.md",
       "target": "wiki/topics/design-passport-architecture.md",
@@ -1549,11 +1984,32 @@
       "relation": "topic"
     },
     {
+      "id": "dc1fabff42dd8c0c",
+      "source": "wiki/journal/2026-09-10-organization-published-plugin.md",
+      "target": "wiki/guides/manual-qa.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "de2e381aaa3a7706",
+      "source": "wiki/guides/INDEX.md",
+      "target": "wiki/guides/ruleset.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "dea5c52a8e426887",
       "source": "wiki/journal/2026-09-14-scanner-maintenance-verification.md",
       "target": "wiki/topics/figma-runtime-qa.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "df4af8892efa1f3e",
+      "source": "wiki/INDEX.md",
+      "target": "wiki/proposals/INDEX.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "e02a9b05029235af",
@@ -1605,9 +2061,23 @@
       "relation": "topic"
     },
     {
+      "id": "e9f4f1ed6f0567ba",
+      "source": "wiki/INDEX.md",
+      "target": "wiki/qa/INDEX.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "ea0332e7cae4876c",
       "source": "wiki/plans/INDEX.md",
       "target": "wiki/plans/2026-09-14-persistent-audits-and-faster-repeat-reviews-898685bc09.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "ea13132f547b4d3e",
+      "source": "wiki/benchmarks/INDEX.md",
+      "target": "wiki/benchmarks/persistent-audits.md",
       "type": "link",
       "relation": "link"
     },
@@ -1624,6 +2094,20 @@
       "target": "wiki/topics/design-readiness-standard.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "ef494bb81439d34b",
+      "source": "wiki/topics/figma-runtime-qa.md",
+      "target": "wiki/qa/designer-feedback-hardening.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "ef777ff64f5a50ae",
+      "source": "wiki/benchmarks/INDEX.md",
+      "target": "wiki/benchmarks/persistent-audits-acceptance.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "f1a0ce53079876e0",
@@ -1645,6 +2129,13 @@
       "target": "wiki/plans/2026-09-14-make-the-ai-readiness-scanner-faster-and-easier-to-act-on-a3b4d3365c.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "f5e39de166a800af",
+      "source": "wiki/journal/2026-09-23-design-passport-companion.md",
+      "target": "wiki/plans/2026-09-23-design-passport-companion-revised-plan-022d44ed88.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "f60dd861e053e651",

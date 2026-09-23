@@ -87,10 +87,9 @@ export function Overview(props: OverviewProps) {
             <div><strong>{issues.actionableCount} actionable issue{issues.actionableCount === 1 ? "" : "s"}</strong><p>{issues.occurrenceCount} affected occurrence{issues.occurrenceCount === 1 ? "" : "s"}. {issues.relatedGroupCount > 0 ? `${issues.relatedGroupCount} related group${issues.relatedGroupCount === 1 ? " needs" : "s need"} individual review; a shared fix is unverified.` : props.report.schemaVersion >= 2 ? "Verified common sources are counted once." : "Historical findings retain their original counts."}</p></div>
           </div> : null}
           {props.onRecheck ? <div className="scope-card">
-            <div><span className="section-label">Verify this audit</span><p>Refresh the audited target shown above. Rescan entire file rebuilds its supporting context and preserves that target.</p></div>
+            <div><span className="section-label">Verify this audit</span><p>Refresh the audited target shown above. Design Passport reuses safe context and rebuilds it automatically when needed.</p></div>
             <div className="scope-actions">
-              <button className="button primary" disabled={recheckDisabled} onClick={() => props.onRecheck?.({ mode: "changes" })}>Recheck changes</button>
-              <button className="button" disabled={recheckDisabled} onClick={() => props.onRecheck?.({ mode: "full" })}>Rescan entire file</button>
+              <button className="button primary" disabled={recheckDisabled} onClick={() => props.onRecheck?.({ mode: "changes" })}>Refresh audit</button>
             </div>
           </div> : null}
           {props.report.blockers.length > 0 && <div className="blocker-card"><strong>{props.report.blockers.length} hard blocker{props.report.blockers.length === 1 ? "" : "s"}</strong>{props.report.blockers.map((blocker) => <span key={blocker}>{blocker}</span>)}</div>}
@@ -99,7 +98,7 @@ export function Overview(props: OverviewProps) {
           </div>
           <div className="footer-actions">
             {props.stale
-              ? props.onRecheck ? <p>Recheck this audit before certifying.</p> : <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan(props.report?.target.scope ?? "selection", true)}>Refresh audit to certify</button>
+              ? props.onRecheck ? <p>Refresh this audit before certifying.</p> : <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan(props.report?.target.scope ?? "selection", true)}>Refresh audit to certify</button>
               : <>
                 <button className="button primary" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !componentsReady} onClick={props.onCertifyComponents}>Certify components ({componentFrames.length})</button>
                 <button className="button" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !props.report.ready} onClick={props.onCertify}>Certify source frames</button>

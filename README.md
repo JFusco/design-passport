@@ -71,9 +71,9 @@ Choose **Review pages** to select several pages or all pages. A batch prepares c
 
 Within a fresh unchanged session, audits reuse whole-file knowledge. After reopening or an explicit refresh, Passport validates saved base fragments against bulk page exports and Plugin API metadata, then captures changed fragments. Inferred variables, relevant variable/alias evidence, component relationships, and documentation resources are refreshed; an unverified saved graph never enables cleanup or certification. If exports or dependencies cannot establish a match, capture falls back conservatively.
 
-Diagnostic timings and cache counts appear only in the local plugin console. `node scripts/benchmark-context-cache.mjs 65 30` runs a synthetic cache/parity benchmark; it excludes the real Figma bridge and cannot establish a user-facing speedup. See [runtime and performance QA](docs/manual-qa.md) for the cold, reopen, component-edit, next-page, and batch measurement procedure.
+Diagnostic timings and cache counts appear only in the local plugin console. `node scripts/benchmark-context-cache.mjs 65 30` runs a synthetic cache/parity benchmark; it excludes the real Figma bridge and cannot establish a user-facing speedup. See [runtime and performance QA](wiki/guides/manual-qa.md) for the cold, reopen, component-edit, next-page, and batch measurement procedure.
 
-Use the in-product guidance and [manual rollout QA](docs/manual-qa.md) for detailed operating and recovery steps. The published plugin is private to the Verndale organization; people outside it need an organization administrator to grant the appropriate Figma access before it can appear in Resources.
+Use the in-product guidance and [manual rollout QA](wiki/guides/manual-qa.md) for detailed operating and recovery steps. The published plugin is private to the Verndale organization; people outside it need an organization administrator to grant the appropriate Figma access before it can appear in Resources.
 
 ## Develop locally
 
@@ -114,8 +114,8 @@ See Figma’s [classic-plugin release guidance](https://help.figma.com/hc/en-us/
 Project leads can generate an advisory pack from a project-specific Figma style guide without exposing a Figma token to the plugin:
 
 ```bash
-FIGMA_TOKEN=... pnpm companion pack create \
-  --url "https://www.figma.com/design/..." \
+FIGMA_TOKEN=your_figma_personal_access_token pnpm companion pack create \
+  --url "https://www.figma.com/design/your_file_key/your_file_name" \
   --source-id style-guide:v1 \
   --project-scope project:opaque-id \
   --role style-guide \
@@ -127,11 +127,14 @@ Choose the generated pack file in **Context → Style guide and references** whi
 After an audit, **Guidance → Contribute learnings** shows a plain-language preview of the sanitized observations and everything that is excluded. Exporting is optional and is the only way scanning data leaves the plugin. Import and review the machine-readable file locally:
 
 ```bash
+pnpm companion:build
 pnpm companion learning import path/to/review.design-passport-learning.json
-pnpm companion knowledge review
+FIGMA_TOKEN=your_figma_personal_access_token pnpm companion knowledge review
 ```
 
-The review screen generates draft wording automatically. A maintainer may edit it and must explicitly approve, reject, or defer it. Scope defaults to project-only; shared scope is an explicit client-neutral choice. See [the knowledge-loop guide](docs/knowledge-loop.md).
+The review command starts the production companion on `127.0.0.1` and prints its private session URL. The dashboard creates downloadable reference packs, imports up to 10 learning files per batch, and opens the decision queue. Each file may be up to 1 MB, with a 5 MB combined limit. The browser never receives `FIGMA_TOKEN`.
+
+The review screen generates draft wording automatically. A maintainer may edit it and must explicitly approve, reject, or defer it. Scope defaults to project-only; shared scope is an explicit client-neutral choice. See [the knowledge-loop guide](wiki/guides/knowledge-loop.md).
 
 ## Deterministic generated inputs
 
@@ -198,4 +201,4 @@ Re-certification removes legacy child notes whose text begins with the exact `[D
 - High-risk component conversion and variant grouping stay individually scoped.
 - The Figma Plugin API does not provide a lossless “reattach this detached frame” operation. Detached nodes are therefore diagnosed and left manual instead of being destructively replaced.
 
-See [architecture](docs/architecture.md), [ruleset](docs/ruleset.md), [security model](docs/security.md), and [manual rollout QA](docs/manual-qa.md).
+See [architecture](wiki/guides/architecture.md), [ruleset](wiki/guides/ruleset.md), [security model](wiki/guides/security.md), and [manual rollout QA](wiki/guides/manual-qa.md).

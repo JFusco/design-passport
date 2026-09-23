@@ -14,12 +14,7 @@ export function buildChangePlans(findings: Finding[]): ChangePlan[] {
   const plans: ChangePlan[] = [];
   for (const risk of ["low", "guarded", "structural"] as const) {
     const members = grouped.get(risk) ?? [];
-    if (members.length === 0) continue;
-    if (risk === "structural") {
-      for (const member of members) plans.push(makePlan(risk, [member]));
-    } else {
-      plans.push(makePlan(risk, members));
-    }
+    for (const member of members) plans.push(makePlan(risk, [member]));
   }
   return plans;
 }
@@ -31,7 +26,7 @@ function makePlan(risk: ChangePlan["risk"], members: Array<{ finding: Finding; o
     risk,
     operations: members.map((member) => member.operation),
     expectedPostconditions: members.map((member) => `${member.operation.nodeId}:${member.operation.kind}`),
-    rollbackBoundary: "risk-group",
+    rollbackBoundary: "operation",
   };
   assertContract("change-plan", plan);
   return plan;

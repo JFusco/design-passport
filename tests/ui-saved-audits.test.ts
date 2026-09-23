@@ -91,9 +91,9 @@ describe("persistent audit presentation", () => {
     expect(markup).toContain("2026");
     expect(markup).toContain('value="saved:1" selected=""');
     expect(markup).toContain("Saved on this device");
-    expect(button(markup, "Forget result")).not.toContain("disabled");
-    expect(markup).toContain("Clear this file’s cache");
-    expect(markup).toContain("Older reports may be removed");
+    expect(button(markup, "Delete saved report")).not.toContain("disabled");
+    expect(markup).toContain("Clear rebuildable context");
+    expect(markup).toContain("keeps saved reports and view preferences");
   });
 
   it("offers all 65 pages for a batch and requires a page selection before starting", () => {

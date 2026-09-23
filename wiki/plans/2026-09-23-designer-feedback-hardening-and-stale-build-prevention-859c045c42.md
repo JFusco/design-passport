@@ -1,7 +1,7 @@
 ---
 status: "implemented"
 executed: true
-evidence: ["JFusco/design-passport#27", "pnpm test: 454 tests in 46 files", "docs/plans/designer-feedback-hardening.md"]
+evidence: ["JFusco/design-passport#27", "pnpm test: 454 tests in 46 files", "wiki/qa/designer-feedback-hardening.md"]
 source_tool: "repository"
 source: "/Users/joe.fusco/Projects/design-passport/docs/plans/designer-feedback-hardening.md"
 topics: ["design-passport-architecture", "figma-runtime-qa"]

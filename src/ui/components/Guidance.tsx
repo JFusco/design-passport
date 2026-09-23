@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { KnowledgeInsight, ReviewLearningEnvelopeV1 } from "../../core/contracts";
 import type { ProjectStyleGuideStatus } from "../../figma/adapter";
 import { formatDateTime, friendlyReference, humanizeIdentifier } from "../operations/presentation";
@@ -22,7 +23,11 @@ function originLabel(origin: KnowledgeInsight["origin"]): string {
 }
 
 export function Guidance(props: GuidanceProps) {
+  const [showAllGuidance, setShowAllGuidance] = useState(false);
   const contributionSummary = props.contribution ? summarizeContribution(props.contribution.envelope) : [];
+  const relevantInsights = props.insights.filter((insight) => insight.applicable !== false);
+  const visibleInsights = showAllGuidance ? props.insights : relevantInsights;
+  const hiddenCount = props.insights.length - relevantInsights.length;
   return (
     <section className="panel stack">
       <div>
@@ -33,8 +38,9 @@ export function Guidance(props: GuidanceProps) {
       {props.historical ? <p className="fine-print">Saved guidance reflects the packs available during the original audit. Refresh the audit before contributing learnings.</p> : null}
       {!props.historical && props.projectStyleGuide.state === "active" ? <div className="binding-card"><strong>{props.projectStyleGuide.persistent ? "Active project pack" : "Session project pack"} · v{props.projectStyleGuide.packVersion}</strong><span>Pack reference {friendlyReference(props.projectStyleGuide.digest)}</span></div> : null}
       {!props.hasReport ? <div className="empty-state compact">Run an audit to evaluate project, reference, and shared guidance.</div> : null}
-      {props.hasReport && props.insights.length === 0 ? <div className="empty-state compact">No advisory guidance matched this review.</div> : null}
-      {props.insights.map((insight) => (
+      {props.hasReport && relevantInsights.length === 0 ? <div className="empty-state compact">No advisory guidance matched this review.</div> : null}
+      {hiddenCount > 0 ? <button className="button subtle guidance-toggle" type="button" aria-pressed={showAllGuidance} onClick={() => setShowAllGuidance((current) => !current)}>{showAllGuidance ? "Show relevant guidance" : `Show all guidance (${props.insights.length})`}</button> : null}
+      {visibleInsights.map((insight) => (
         <article className={`guidance-card ${insight.origin}`} key={insight.id}>
           <div className="guidance-meta"><span>{originLabel(insight.origin)}</span><code>{insight.domain}</code></div>
           <h3>{insight.title.replace(/^.*? · /, "")}</h3>

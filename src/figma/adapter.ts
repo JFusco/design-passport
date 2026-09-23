@@ -23,6 +23,7 @@ import { assessTokenProperty, eligibleTokenFields, propertyBindingEvidence } fro
 import { isSemanticVariableName } from "../core/operations/semantic-variable";
 import {
   buildProjectStyleGuideBinding,
+  combineProjectStyleGuidePacks,
   parseProjectStyleGuideBinding,
   parseReferencePack,
 } from "../core/knowledge-loop";
@@ -1196,7 +1197,8 @@ export class FigmaAdapter {
   importProjectStyleGuide(raw: string): ProjectStyleGuideBindingV1 {
     if (figma.editorType !== "figma") throw new Error("Switch to Design mode to import or replace a project style guide");
     if (!figma.fileKey) throw new Error("A stable Figma file key is required to bind project guidance. This pack can only be used as a session reference");
-    const pack = parseReferencePack(raw, "style-guide");
+    const incoming = parseReferencePack(raw, "style-guide");
+    const pack = combineProjectStyleGuidePacks(this.getProjectStyleGuideBinding()?.pack, incoming);
     const binding = buildProjectStyleGuideBinding(pack, figma.fileKey);
     // Validate the complete replacement before touching the existing valid value.
     const serialized = JSON.stringify(binding);

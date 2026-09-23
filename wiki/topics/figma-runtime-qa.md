@@ -4,11 +4,19 @@ topics: [design-passport-architecture, whole-file-design-knowledge, mutation-cer
 
 # Figma runtime and release QA
 
+## Post-review interaction constraints, 2026-09-23
+
+Saved reports and rebuildable graph context are separate retention classes. “Clear rebuildable context” removes only disposable context fragments; deleting a saved report is a distinct, confirmed action that also removes only that report's view state. Tests protect this boundary.
+
+Refresh has one primary designer-facing action. The runtime may still choose validated incremental context or a full rebuild, and forced rebuild remains a troubleshooting control. Per-module refresh accepts every audited module root, including ordinary screen frames, while rejecting text descendants and roots outside the displayed audit.
+
+Every cleanup plan is independently applicable and displays a plain-language current/proposed comparison. Safe and guarded fixes may still be applied as a batch of isolated plans; structural fixes require individual confirmation. Module-to-Findings navigation resets every conflicting filter so the selected module's issues are actually visible.
+
 ## Designer-feedback hardening candidate, 2026-09-23
 
 Issue [JFusco/design-passport#27](https://github.com/JFusco/design-passport/issues/27) advances the scanner to plugin `0.4.0`, ruleset `1.0.0-beta.4`, report schema 3, profile schema 2, and certificate schema 2. The regression suite preserves beta.3 protections and adds four-bucket coverage reconciliation, unsupported typography units, non-overridden instance evidence, semantic category paths, component-page wrapper normalization, every convention mode, typed detachment acknowledgement, spacer sizing, bounded persistence, and live evidence pagination.
 
-Production and development now have separate Figma IDs and manifest directories. Native candidate verification must launch **Design Passport (Development)** from `development/manifest.json`, inspect the persistent channel warning and embedded build SHA, reproduce the four designer-feedback cases, and leave the production record untouched. Final production smoke must use the merged-main SHA and the existing organization plugin record. The sanitized outcome belongs in `docs/qa/designer-feedback-hardening.md`; raw client content remains local.
+Production and development now have separate Figma IDs and manifest directories. Native candidate verification must launch **Design Passport (Development)** from `development/manifest.json`, inspect the persistent channel warning and embedded build SHA, reproduce the four designer-feedback cases, and leave the production record untouched. Final production smoke must use the merged-main SHA and the existing organization plugin record. The sanitized outcome belongs in [`wiki/qa/designer-feedback-hardening.md`](../qa/designer-feedback-hardening.md); raw client content remains local.
 
 The final native candidate at `8ad23c1` passed in the 65-page disposable persistence file. Figma showed the development warning and exact `0.4.0` / `1.0.0-beta.4` / `8ad23c18d7e9` identity, restored the preceding build's saved audit as historical, scoped the Components-page audit to `Passport QA Button`, and rejected an unmarked documentation wrapper with source-frame remediation. The live ledger reconciled to 16 bound, 0 inherited, 17 ignored, and 10 missing entries. Recheck preserved the C/74.0 result and 13 findings while reporting `Validated stored context`; no internal cache-state text remained.
 
@@ -30,7 +38,7 @@ Native candidate verification passed on the WilmerHale private copy, the disposa
 
 The complete repository gate passes with 443 tests in 45 files plus catalog, schema, knowledge, wiki, TypeScript, and all production builds. The rebuilt plugin and UI bytes match the native-tested hashes, and the final companion bundle restored the isolated review store in a browser smoke test.
 
-The independent Colliers source is view-only, disables development plugins, and explicitly prevents exporting or copying. Its permitted local-copy attempt ended at the same owner restriction. The maintainer removed Colliers from this release matrix on 2026-09-15; the [maintenance verification record](../../docs/qa/ai-readiness-scanner-maintenance.md) claims no result for that file. All remaining native and local gates pass, and the GitHub release workflow follows.
+The independent Colliers source is view-only, disables development plugins, and explicitly prevents exporting or copying. Its permitted local-copy attempt ended at the same owner restriction. The maintainer removed Colliers from this release matrix on 2026-09-15; the [maintenance verification record](../qa/ai-readiness-scanner-maintenance.md) claims no result for that file. All remaining native and local gates pass, and the GitHub release workflow follows.
 
 ## Runtime fixes found in Desktop
 

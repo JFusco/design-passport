@@ -29,6 +29,8 @@ export function captureRecheckFindings(
     return { request, findingIds: current.filter((finding) => findingIds.includes(finding.id)).map((finding) => finding.id) };
   }
   const component = graph?.nodes[request.componentId];
+  const displayedModule = report.frames.some((frame) => frame.rootId === request.componentId)
+    || component?.type === "COMPONENT" || component?.type === "COMPONENT_SET";
   const withinAuditTarget = (id: string): boolean => {
     const seen = new Set<string>();
     let current: string | undefined = id;
@@ -39,8 +41,8 @@ export function captureRecheckFindings(
     }
     return false;
   };
-  if (!component || !["COMPONENT", "COMPONENT_SET"].includes(component.type)
-    || !withinAuditTarget(component.id)) throw new Error("This component is stale or does not belong to the displayed audit");
+  if (!component || !displayedModule
+    || !withinAuditTarget(component.id)) throw new Error("This module is stale or does not belong to the displayed audit");
   const nodeIds = new Set<string>();
   const pending = [component.id];
   while (pending.length) {

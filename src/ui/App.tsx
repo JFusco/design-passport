@@ -15,7 +15,7 @@ import type {
 import type { SelectionSummary, VariableCollectionOption } from "../figma/adapter";
 import type { AuditRecheckRequest, AuditTargetSummary, KnowledgeSummary, PluginToUiMessage, TokenCoveragePageRequest, TokenCoveragePageResult, UiToPluginMessage } from "../plugin/messages";
 import type { AuditSaveStatus, AuditViewState, SavedAuditSummary } from "../plugin/audit-state";
-import { BrandMark } from "./BrandMark";
+import { CumulativeLogo } from "./CumulativeLogo";
 import { Cleanup } from "./components/Cleanup";
 import { ContextPanel } from "./components/ContextPanel";
 import { Findings } from "./components/Findings";
@@ -442,11 +442,8 @@ export function App() {
     <main className="app-shell">
       <header className="app-header">
         <div className="brand-lockup">
-          <BrandMark className="brand-mark" />
-          <div>
-            <div className="brand-name">Cumulative</div>
-            <h1>{PRODUCT_NAME}</h1>
-          </div>
+          <CumulativeLogo className="cumulative-logo" title="Cumulative" />
+          <h1>{PRODUCT_NAME}</h1>
         </div>
         <div className="catalog-lock" title={bootstrap.catalogDigest}>Catalog {bootstrap.catalogVersion}</div>
       </header>
@@ -471,7 +468,7 @@ export function App() {
         disabled={scanInFlight}
         onOpen={(id) => { restoreRequest.current = { id }; setLoadingSavedAudit(true); setScanInFlight(true); send({ type: "open-saved-audit", id }); }}
         onForget={(id) => { send({ type: "forget-saved-audit", id }); if (id === activeSavedId) forgetDisplayedResult(); }}
-        onClear={() => { send({ type: "clear-file-cache" }); forgetDisplayedResult(); }}
+        onClear={() => send({ type: "clear-file-cache" })}
       />
 
       <nav className="tabs" aria-label="Plugin sections">
@@ -591,16 +588,24 @@ export function App() {
             onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
             onViewFindings={(rootId) => {
               const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
+              setShowPassing(false);
+              setAxisFilter("all");
+              setCategoryFilter("all");
               setPageFilter(frame?.pageId ?? "all");
               setRootFilter(rootId);
               setVariantFilter("all");
+              setExpanded(undefined);
               setActiveTab("findings");
             }}
             onViewVariantFindings={(rootId, variantId) => {
               const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
+              setShowPassing(false);
+              setAxisFilter("all");
+              setCategoryFilter("all");
               setPageFilter(frame?.pageId ?? "all");
               setRootFilter(rootId);
               setVariantFilter(variantId);
+              setExpanded(undefined);
               setActiveTab("findings");
             }}
           />

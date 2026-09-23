@@ -7,6 +7,8 @@ import { Findings, type FindingsProps } from "../src/ui/components/Findings";
 import { buildFindingGroups } from "../src/core/finding-groups";
 import { Modules } from "../src/ui/components/Modules";
 import { Overview, type OverviewProps } from "../src/ui/components/Overview";
+import { Cleanup } from "../src/ui/components/Cleanup";
+import { buildChangePlans } from "../src/core/planner";
 import { actionableIssueSummary, reportBreakdown } from "../src/ui/operations/breakdown";
 import { healthyGraph, profile, syntheticFinding } from "./fixtures";
 
@@ -131,20 +133,19 @@ describe("source issue presentation and historical compatibility", () => {
 });
 
 describe("captured-target verification controls", () => {
-  it("rechecks captured changes or the full context without resubmitting the current selection", () => {
+  it("refreshes the captured audit without exposing internal refresh modes", () => {
     const props = overviewProps();
     const onRecheck = vi.fn();
     const tree = Overview({ ...props, onRecheck });
-    click(tree, "Recheck changes");
-    click(tree, "Rescan entire file");
-    expect(onRecheck.mock.calls).toEqual([[{ mode: "changes" }], [{ mode: "full" }]]);
+    click(tree, "Refresh audit");
+    expect(onRecheck.mock.calls).toEqual([[{ mode: "changes" }]]);
     expect(props.onScan).not.toHaveBeenCalled();
   });
 
   it("disables verification while blocked and keeps historical export available", () => {
     const markup = renderToStaticMarkup(createElement(Overview, { ...overviewProps(), onRecheck: vi.fn(), recheckDisabled: true, historical: true, stale: true }));
-    expect(markup).toMatch(/<button[^>]+disabled=""[^>]*>Recheck changes<\/button>/);
-    expect(markup).toMatch(/<button[^>]+disabled=""[^>]*>Rescan entire file<\/button>/);
+    expect(markup).toMatch(/<button[^>]+disabled=""[^>]*>Refresh audit<\/button>/);
+    expect(markup).not.toContain("Rescan entire file");
     expect(markup).toMatch(/<button class="button">Export historical JSON<\/button>/);
     expect(markup).toContain("related group needs individual review");
     expect(markup).toContain("3 actionable issues");
@@ -155,11 +156,40 @@ describe("captured-target verification controls", () => {
     const report = reportFixture();
     report.frames = report.frames.filter((frame) => frame.rootId === "root:desktop");
     const props = { report, onRecheck, recheckDisabled: false, onNavigate: vi.fn(), onViewFindings: vi.fn(), onViewVariantFindings: vi.fn() };
-    click(Modules(props), "Recheck this component");
+    click(Modules(props), "Refresh this module");
     expect(onRecheck).toHaveBeenCalledExactlyOnceWith({ mode: "component", componentId: "root:desktop" });
     const markup = renderToStaticMarkup(createElement(Modules, { ...props, recheckDisabled: true }));
-    expect(markup).toMatch(/<button[^>]+disabled=""[^>]*>Recheck this component<\/button>/);
+    expect(markup).toMatch(/<button[^>]+disabled=""[^>]*>Refresh this module<\/button>/);
     expect(markup).toContain("affected occurrences");
     expect(markup).toContain("shared fix is unverified");
+  });
+});
+
+describe("cleanup preview", () => {
+  it("shows current and proposed values and keeps each fix independently actionable", () => {
+    const finding = syntheticFinding({
+      id: "rename",
+      nodeId: "layer:1",
+      nodePath: "Page / Old button",
+      ruleId: "naming.pattern-alias",
+      status: "fail",
+      fixability: "automatic",
+      suggestedValue: { name: "Button / Primary" },
+      evidence: { summary: "Layer name does not match the approved pattern.", measured: { currentName: "Old button" } },
+    });
+    const markup = renderToStaticMarkup(createElement(Cleanup, {
+      disabled: false,
+      plans: buildChangePlans([finding]),
+      findings: [finding],
+      undoAcknowledged: false,
+      onAcknowledge: vi.fn(),
+      onApply: vi.fn(),
+      onApplyAll: vi.fn(),
+    }));
+    expect(markup).toContain("Current");
+    expect(markup).toContain("Old button");
+    expect(markup).toContain("Proposed");
+    expect(markup).toContain("Button / Primary");
+    expect(markup).toContain("Apply this fix");
   });
 });

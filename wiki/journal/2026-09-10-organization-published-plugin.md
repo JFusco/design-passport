@@ -18,7 +18,7 @@ The committed manifest now carries the Figma-assigned published plugin ID. Telli
 
 - `manifest.json` uses Figma plugin ID `1679932628975716363`.
 - [README](../../README.md) documents the organization-user and local-development paths separately.
-- [Manual rollout QA](../../docs/manual-qa.md) exercises the published plugin before the development-copy smoke test.
+- [Manual rollout QA](../guides/manual-qa.md) exercises the published plugin before the development-copy smoke test.
 - [Glean project 17](https://app.glean.com/projects/17) presents artifacts 01–05 in numbered grid order and references the canonical published manifest.
 
 ## Durable decision
