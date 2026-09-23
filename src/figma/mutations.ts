@@ -327,10 +327,12 @@ export function setCertification(node: SceneNode, summary: CertificationSummary,
     throw new Error("Certification summary is invalid");
   }
   node.setSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY, JSON.stringify(summary));
-  node.setRelaunchData({ "review-certification": `Review ${summary.grade} certification from ${summary.certifiedAt}` });
+  const channelLabel = summary.channel === "development" ? "development " : "";
+  node.setRelaunchData({ "review-certification": `Review ${channelLabel}${summary.grade} certification from ${summary.certifiedAt}` });
   if ("annotations" in node) {
     const coverage = coveredVariantCount > 0 ? ` · ${coveredVariantCount} variants scanned as one component set.` : ".";
-    const annotation = `${CERTIFICATION_ANNOTATION_PREFIX} Grade ${summary.grade} (${summary.score.toFixed(1)})${coverage}`;
+    const development = summary.channel === "development" ? " Development ·" : "";
+    const annotation = `${CERTIFICATION_ANNOTATION_PREFIX}${development} Grade ${summary.grade} (${summary.score.toFixed(1)})${coverage}`;
     const existing = preservedAnnotations(node.annotations, [
       CERTIFICATION_ANNOTATION_PREFIX,
       LEGACY_CERTIFICATION_ANNOTATION_PREFIX,

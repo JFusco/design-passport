@@ -144,7 +144,7 @@ function normalizedField(value: string): string {
 const SCALE_SENSITIVE_FIELDS = new Set<TokenCoverageField>([
   "cornerRadius", "itemSpacing", "counterAxisSpacing", "gridRowGap", "gridColumnGap",
   "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "strokeWeight",
-  "fontSize", "letterSpacing", "lineHeight", "paragraphSpacing", "paragraphIndent",
+  "fontSize", "letterSpacing", "lineHeight", "paragraphSpacing", "paragraphIndent", "effects",
 ]);
 
 function overrideAffectsField(overrides: readonly string[], field: TokenCoverageField): boolean {
@@ -155,7 +155,9 @@ function overrideAffectsField(overrides: readonly string[], field: TokenCoverage
       : field === "effects" ? ["effects", "effectstyleid"]
         : field === "cornerRadius" ? ["cornerradius", "topleftradius", "toprightradius", "bottomleftradius", "bottomrightradius"]
           : field === "strokeWeight" ? ["strokeweight", "stroketopweight", "strokerightweight", "strokebottomweight", "strokeleftweight"]
-            : TYPOGRAPHY_FIELDS.includes(field as BindableField) ? [normalizedField(field), "textstyleid"]
+            : field === "fontFamily" || field === "fontStyle" || field === "fontWeight"
+              ? [normalizedField(field), "fontname", "textstyleid"]
+              : TYPOGRAPHY_FIELDS.includes(field as BindableField) ? [normalizedField(field), "textstyleid"]
               : [normalizedField(field)];
   return related.some((candidate) => normalized.has(candidate));
 }

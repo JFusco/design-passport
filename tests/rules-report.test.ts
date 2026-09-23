@@ -227,6 +227,28 @@ describe("rule engine and report", () => {
     expect(findings.filter((finding) => finding.ruleId === "naming.component-value").map((finding) => finding.status)).toEqual(["pass", "pass"]);
   });
 
+  it("scores catalog vocabulary at the component-set identity instead of variant syntax", () => {
+    const base = profile();
+    const p = profile({ ruleModes: { ...base.ruleModes, "catalog-vocabulary": "required" } });
+    const graph = healthyGraph(p);
+    const set = graph.nodes["root:desktop"]!;
+    const variant = graph.nodes["button:1"]!;
+    Object.assign(set, {
+      name: "Button",
+      type: "COMPONENT_SET",
+      component: { kind: "component-set", descriptionLength: 20, documentationLinkCount: 0, propertyDefinitions: [{ name: "state", type: "VARIANT", values: ["Enabled"] }] },
+    });
+    Object.assign(variant, {
+      name: "state=Enabled",
+      type: "COMPONENT",
+      component: { kind: "component", descriptionLength: 20, documentationLinkCount: 0, propertyDefinitions: [] },
+      variantProperties: { state: "Enabled" },
+    });
+    const findings = evaluateRules(graph, p, [set.id]);
+    expect(findings.some((finding) => finding.ruleId === "naming.pattern-novel" && finding.nodeId === variant.id)).toBe(false);
+    expect(findings).toContainEqual(expect.objectContaining({ ruleId: "naming.component-value", nodeId: set.id, status: "pass" }));
+  });
+
   it("keeps unresolved transparent-surface contrast visible without treating it as a failure", () => {
     const p = profile();
     const graph = healthyGraph(p);

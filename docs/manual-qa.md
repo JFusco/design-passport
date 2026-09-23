@@ -136,7 +136,7 @@ Catalog upgrades require an explicit `package.json` version change, lockfile rev
 
 ## Production release verification
 
-- Preserve the previous verified production bundle before rebuilding. Run `pnpm verify`, then `pnpm build:release`; record plugin/UI hashes and the exact embedded Git SHA.
+- Preserve the previous verified production bundle before rebuilding. Run `pnpm verify`, record the Development controller/UI hashes, then run `pnpm build:release`; record production hashes and the exact embedded Git SHA, and confirm the files under `development/dist/` were not changed by the release build.
 - Publish only through the existing organization plugin record. Do not publish **Design Passport (Development)**.
 - With two non-publisher organization accounts, launch **Design Passport** from Resources without reinstalling and verify the announced Production identity, ruleset, and build SHA. Close and reopen any plugin window that was already running.
 - Confirm a Development certificate is visibly non-production and cannot be mistaken for the published result. Restore report schemas 1–2, profile v1, and certificate v1 as historical evidence without rewriting them.

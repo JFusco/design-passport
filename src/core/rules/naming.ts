@@ -52,7 +52,9 @@ export function evaluateNamingRules(
     ));
   }
 
-  for (const node of nodes.filter((candidate) => candidate.component)) {
+  for (const node of nodes.filter((candidate) => candidate.component
+    && !(candidate.component.kind === "component" && candidate.parentId
+      && graph.nodes[candidate.parentId]?.component?.kind === "component-set"))) {
     const resolution = resolvePattern(node.name);
     const normalized = canonicalPatternName(resolution);
     if (resolution.kind === "contextual") {

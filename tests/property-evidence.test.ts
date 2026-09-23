@@ -171,6 +171,57 @@ describe("live adapter to typography rules", () => {
     expect(await f.adapter.matchesVariableEnvironment()).toBe(false);
   });
 
+  it("maps Figma fontName overrides to every native typography field", async () => {
+    const f = contextFixture(1, 1);
+    const instance = f.pages[0]!.children[0]!;
+    const child = instance.children[0]!;
+    instance.type = "INSTANCE";
+    instance.overrides = [{ id: child.id, overriddenFields: ["fontName"] }];
+    instance.scaleFactor = 1;
+    const { graph } = await f.adapter.buildKnowledge(f.readinessProfile, () => undefined);
+    const occurrence = graph.nodes[child.id]!;
+    const coverage = tokenCoverageSummary([occurrence]);
+    expect(occurrence.instanceEvidence?.directOverrideFields).toEqual(["fontName"]);
+    expect(coverage.groups).toEqual(expect.arrayContaining([
+      expect.objectContaining({ disposition: "missing", field: "fontFamily", reason: "unbound" }),
+      expect.objectContaining({ disposition: "missing", field: "fontStyle", reason: "unbound" }),
+      expect.objectContaining({ disposition: "missing", field: "fontWeight", reason: "unbound" }),
+    ]));
+  });
+
+  it("does not inherit unbound effect dimensions through a scaled instance", async () => {
+    const f = contextFixture(1, 1);
+    const instance = f.pages[0]!.children[0]!;
+    const child = instance.children[0]!;
+    instance.type = "INSTANCE";
+    instance.overrides = [];
+    instance.scaleFactor = 2;
+    child.effects = [{
+      type: "DROP_SHADOW", visible: true, blendMode: "NORMAL",
+      color: { r: 0, g: 0, b: 0, a: 0.25 }, offset: { x: 0, y: 4 }, radius: 8, spread: 0,
+    }];
+    const { graph } = await f.adapter.buildKnowledge(f.readinessProfile, () => undefined);
+    const occurrence = graph.nodes[child.id]!;
+    expect(occurrence.instanceEvidence?.scaleFactor).toBe(2);
+    expect(tokenCoverageSummary([occurrence]).groups).toContainEqual(expect.objectContaining({
+      disposition: "missing", field: "effects", reason: "unbound", count: 5,
+    }));
+  });
+
+  it("attributes nested instance descendants to their nearest instance owner", async () => {
+    const f = contextFixture(1, 1);
+    const outer = f.pages[0]!.children[0]!;
+    const inner = outer.children[0]!;
+    const nestedText = { ...inner, id: "text:nested", type: "TEXT", name: "Nested label", children: [] };
+    nestedText.parent = inner;
+    outer.type = "INSTANCE"; outer.overrides = []; outer.scaleFactor = 1;
+    inner.type = "INSTANCE"; inner.overrides = []; inner.scaleFactor = 1; inner.children = [nestedText];
+    const { graph } = await f.adapter.buildKnowledge(f.readinessProfile, () => undefined);
+    expect(graph.nodes[inner.id]).toMatchObject({ evidenceRole: "instance-descendant", owningInstanceId: outer.id, parentId: outer.id });
+    expect(graph.nodes[nestedText.id]).toMatchObject({ evidenceRole: "instance-descendant", owningInstanceId: inner.id, parentId: inner.id, instanceEvidence: { overridesKnown: true, scaleFactor: 1 } });
+    expect(tokenCoverageSummary([graph.nodes[nestedText.id]!]).counts).toMatchObject({ inherited: expect.any(Number), missing: 0 });
+  });
+
 
   it("avoids inference bridge reads for rendering-only instance occurrences", async () => {
     const f = contextFixture(1, 10);

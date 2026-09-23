@@ -29,6 +29,7 @@ const CONFIGURABLE_RULES: Readonly<Record<string, ConfigurablePolicyId>> = {
   "naming.default-healthy": "layer-naming",
   "naming.default-node": "layer-naming",
   "naming.whitespace": "layer-naming",
+  "pipeline.export-names": "layer-naming",
   "naming.component-property": "component-property-grammar",
   "naming.component-value": "component-value-grammar",
   "naming.pattern-alias": "canonical-component-names",
