@@ -83,6 +83,23 @@ describe("designer-feedback hardening", () => {
     expect(offFindings.find((finding) => finding.ruleId === "accessibility.target-minimum")?.category).toBe("requirement");
   });
 
+  it("applies the layer-naming mode to exported asset names without hidden score changes", () => {
+    const required = profile();
+    const advisory = profile({ ruleModes: { ...required.ruleModes, "layer-naming": "advisory" } });
+    const off = profile({ ruleModes: { ...required.ruleModes, "layer-naming": "off" } });
+    const score = (p: ReturnType<typeof profile>, name: string) => {
+      const graph = healthyGraph(p);
+      graph.nodes["text:1"]!.exportSettings = [{ format: "SVG", suffix: "" }];
+      graph.nodes["text:1"]!.name = name;
+      return buildReadinessReport({ graph, profile: p, scope: "selection", targetRootIds: ["root:desktop"] }).grade.score;
+    };
+    expect(score(required, "Text 1")).toBeLessThan(score(required, "Heading"));
+    expect(score(advisory, "Text 1")).toBe(score(advisory, "Heading"));
+    expect(score(off, "Text 1")).toBe(score(off, "Heading"));
+    expect(evaluateRules(healthyGraph(off), off, ["root:desktop"])
+      .some((finding) => finding.ruleId === "pipeline.export-names" && finding.evidence.measured.policyMode !== "off")).toBe(false);
+  });
+
   it("targets nested component sources instead of an unmarked documentation wrapper", () => {
     const p = profile({ artifactKind: "library", pageRoles: { foundations: { pageIds: [], externalLibraryKeys: [] }, components: { pageIds: ["page:components"], externalLibraryKeys: [] }, screens: { pageIds: [], externalLibraryKeys: [] } } });
     const graph = healthyGraph(p);

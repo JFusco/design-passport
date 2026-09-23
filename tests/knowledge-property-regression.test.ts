@@ -53,6 +53,12 @@ describe("source evidence and derived knowledge indexes", () => {
     ["variant state", { variantProperties: { State: "disabled" } }],
     ["interaction", { hasPointerInteraction: true }],
     ["bounds", { absoluteBounds: { x: 1, y: 1, width: 24, height: 24 } }],
+    ["page ownership", { pageId: "page:2" }],
+    ["source ownership", { rootId: "root:other" }],
+    ["structural signature", { structuralSignature: "structure:changed" }],
+    ["layout item sizing", { layoutItem: { verticalSizing: "FIXED" } }],
+    ["intentional detachment", { intentionalDetachment: { nodeId: "root:desktop", acknowledgedAt: "2026-09-23T12:00:00.000Z" } }],
+    ["instance inheritance", { instanceEvidence: { overridesKnown: true, directOverrideFields: ["fontName"], scaleFactor: 2 } }],
   ] satisfies Array<[string, Partial<NodeSnapshot>]>)("hashes rule-relevant %s changes", (_label, changes) => {
     const p = profile(); const before = healthyGraph(p); const rootId = Object.keys(before.nodes)[0]!;
     const changed = structuredClone(before); Object.assign(changed.nodes[rootId]!, changes);

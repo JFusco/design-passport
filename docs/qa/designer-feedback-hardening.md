@@ -34,3 +34,17 @@ The final recheck scanned all 65 supporting pages, retained the exact audited ta
 The first merged-main release dry run exposed that the shared `build` script also mirrored Production-stamped controller/UI bytes into `development/dist/`. The release scripts were split so `pnpm build` alone refreshes the Development copy and `pnpm build:release` writes only root `dist/`. A two-channel build check confirmed the release command leaves both Development hashes unchanged while root output carries the Production channel.
 
 Existing-record publication, organization-user smoke checks, and rollout communication remain pending. Preserve the prior verified bundle before publishing and record its recovery location plus the final merged-main production hashes here.
+
+## Post-review corrective evidence
+
+Review of `aec7cf7..7e4c543` found eight release-blocking gaps in certificate freshness, native inheritance classification, policy scoring, certificate labeling, and build identity. The corrective implementation hashes all rule-relevant ownership and structural evidence; recognizes native `fontName` overrides; protects scaled effect dimensions; applies Layer naming policy to export names; excludes child variant syntax from catalog vocabulary; marks development certificates on canvas and relaunch surfaces; validates development copies against channel-and-byte metadata; rejects dirty production builds; and gives dirty development builds a content-derived identity suffix.
+
+Automated regressions exercise direct native override names, scaled effects, nested instance ownership, certificate invalidation inputs, Advisory/Off score preservation, component-set vocabulary, development certificate labels, dirty production rejection, and development-copy channel/hash validation. `pnpm test`, `pnpm build`, a deliberately rejected dirty `pnpm build:release`, and the full repository verifier are the code-level gates for this correction. Native Figma inheritance evidence and both non-publisher organization-account checks remain rollout blockers; they are not replaced by adapter tests.
+
+The rollback-hash discrepancy is resolved. The two preserved `aec7cf7` archives differed only because one esbuild run recorded 13 machine-specific `../../../Users/joe.fusco/Projects/design-passport/` source-comment prefixes from a symlinked dependency tree. Removing that non-executable comment prefix makes its controller and companion bytes identical to the reproducible archive; the UI was already byte-identical. The authoritative rollback bundle is `.design-passport-local/releases/0.3.0-beta.3-aec7cf7-exact/` with SHA-256 hashes:
+
+- `dist/code.js`: `1e6cac46d52bfe89d304e1c2b810f71a70b296bd49f523d4f52182744a0bc16e`
+- `dist/index.html`: `103b383ed819ef8ec9a4b106e769c6ce059b73f9cb35bde2aa881d155a8ee2e6`
+- `dist/companion.mjs`: `e7d07169252684803bdd47273261a1f7f30af2c795c531d94b8ca7ccbd59d55f`
+
+Publication and the rollout announcement remain on hold until the remaining native and non-publisher acceptance is recorded in an open follow-up to #27.

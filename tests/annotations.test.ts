@@ -43,8 +43,9 @@ describe("annotation safety", () => {
     });
     expect((node as SceneNode & { annotations: Annotation[] }).annotations.map(annotationText)).toEqual([
       "AI source frame",
-      "[Design Passport] Grade B (82.3).",
+      "[Design Passport] Development · Grade B (82.3).",
     ]);
+    expect(node.setRelaunchData).toHaveBeenCalledWith({ "review-certification": "Review development B certification from 2026-09-09T11:00:00.000Z" });
   });
 
   it("summarizes component-set coverage on the certified root", () => {
@@ -64,12 +65,13 @@ describe("annotation safety", () => {
       knowledgeSnapshotHash: "knowledge",
       pluginVersion: "0.4.0",
       buildSha: "test-build",
-      channel: "development",
+      channel: "production",
     }, 18);
     expect((node as SceneNode & { annotations: Annotation[] }).annotations.map(annotationText)).toEqual([
       "AI source frame",
       "[Design Passport] Grade A (94.9) · 18 variants scanned as one component set.",
     ]);
+    expect(node.setRelaunchData).toHaveBeenCalledWith({ "review-certification": "Review A certification from 2026-09-09T11:00:00.000Z" });
   });
 
   it("clears legacy coverage notes while preserving designer annotations", () => {
