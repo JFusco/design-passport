@@ -1,4 +1,5 @@
 import { AXIS_LABELS } from "../../core/constants";
+import { producerLabel } from "../../core/build-info";
 import type { ReadinessReport, ScanScope } from "../../core/contracts";
 import type { PageOption, SelectionSummary } from "../../figma/adapter";
 import type { AuditRecheckRequest } from "../../plugin/messages";
@@ -7,6 +8,7 @@ import { BrandMark } from "../BrandMark";
 import { auditedTargetSummary, selectionEligibility } from "../operations/audit-scope";
 import { gradeClass } from "../operations/presentation";
 import { PageBatch } from "./PageBatch";
+import { TokenCoverage } from "./TokenCoverage";
 
 export interface OverviewProps {
   report: ReadinessReport | undefined;
@@ -67,7 +69,7 @@ export function Overview(props: OverviewProps) {
         <>
           <div className="result-hero">
             <div className={gradeClass(props.report.grade.letter)}>{props.report.grade.letter}</div>
-            <div><span className="section-label">{historicalExport ? "Historical readiness" : "Overall readiness"}</span><h2>{props.report.grade.score.toFixed(1)} / 100</h2><p className={props.stale ? "needs-refresh" : props.report.ready ? "ready" : "not-ready"}>{status}</p>{props.report.grade.capReason && <small>{props.report.grade.capReason}</small>}</div>
+            <div><span className="section-label">{historicalExport ? "Historical readiness" : "Overall readiness"}</span><h2>{props.report.grade.score.toFixed(1)} / 100</h2><p className={props.stale ? "needs-refresh" : props.report.ready ? "ready" : "not-ready"}>{status}</p><small>{props.report.producer ? `Audit producer: ${producerLabel(props.report.producer)}` : `Historical pre-v3 report · Ruleset ${props.report.rulesetVersion}`}</small>{props.report.grade.capReason && <small>{props.report.grade.capReason}</small>}</div>
           </div>
           <div className="audited-target-summary">
             <div>
@@ -79,8 +81,10 @@ export function Overview(props: OverviewProps) {
               {auditedTarget && auditedTarget.remainingCount > 0 ? <span>+{auditedTarget.remainingCount} more</span> : null}
             </div>
           </div>
+          {props.report.target.resolution?.mode === "component-sources" ? <div className="banner info" role="status">The selected documentation wrapper was excluded. This audit targets its nested top-level component sets and standalone components.</div> : null}
+          <TokenCoverage frames={props.report.frames} />
           {issues ? <div className="scope-card" aria-label="Issue summary">
-            <div><strong>{issues.actionableCount} actionable issue{issues.actionableCount === 1 ? "" : "s"}</strong><p>{issues.occurrenceCount} affected occurrence{issues.occurrenceCount === 1 ? "" : "s"}. {issues.relatedGroupCount > 0 ? `${issues.relatedGroupCount} related group${issues.relatedGroupCount === 1 ? " needs" : "s need"} individual review; a shared fix is unverified.` : props.report.schemaVersion === 2 ? "Verified common sources are counted once." : "Historical findings retain their original counts."}</p></div>
+            <div><strong>{issues.actionableCount} actionable issue{issues.actionableCount === 1 ? "" : "s"}</strong><p>{issues.occurrenceCount} affected occurrence{issues.occurrenceCount === 1 ? "" : "s"}. {issues.relatedGroupCount > 0 ? `${issues.relatedGroupCount} related group${issues.relatedGroupCount === 1 ? " needs" : "s need"} individual review; a shared fix is unverified.` : props.report.schemaVersion >= 2 ? "Verified common sources are counted once." : "Historical findings retain their original counts."}</p></div>
           </div> : null}
           {props.onRecheck ? <div className="scope-card">
             <div><span className="section-label">Verify this audit</span><p>Refresh the audited target shown above. Rescan entire file rebuilds its supporting context and preserves that target.</p></div>

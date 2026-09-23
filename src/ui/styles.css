@@ -266,6 +266,26 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .profile-suggestion strong { font-size: 11px; }
 .profile-suggestion p { margin: 3px 0 0; color: var(--muted-ink); font-size: 10px; line-height: 1.45; }
 .profile-suggestion .button { flex: 0 0 auto; }
+.policy-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.policy-row:last-child { border-bottom: 0; }
+.policy-row > span { display: grid; gap: 2px; }
+.policy-row small { color: var(--muted-ink); font-size: 9px; line-height: 1.35; }
+.policy-row select { width: 110px; flex: 0 0 auto; }
+.coverage-ledger { display: grid; gap: 9px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.coverage-heading { display: flex; justify-content: space-between; align-items: end; gap: 12px; }
+.coverage-heading > div { display: grid; gap: 2px; }
+.coverage-heading > div > strong { font-size: 19px; }
+.coverage-heading small { color: var(--muted-ink); text-align: right; }
+.coverage-counts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.coverage-counts > div { display: grid; gap: 2px; padding: 7px; border-radius: 7px; background: var(--surface); }
+.coverage-counts span { color: var(--muted-ink); font-size: 8px; text-transform: uppercase; }
+.coverage-counts strong { font-family: "Fragment Mono", ui-monospace, monospace; font-size: 13px; }
+.coverage-groups { display: grid; gap: 5px; margin-top: 8px; }
+.coverage-groups details { padding: 7px; border: 1px solid var(--border); border-radius: 7px; }
+.coverage-groups summary { display: flex; justify-content: space-between; gap: 8px; cursor: pointer; }
+.coverage-groups ul { max-height: 180px; overflow: auto; margin: 7px 0; padding-left: 15px; }
+.coverage-pagination { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 7px 0; }
+.coverage-pagination span { color: var(--muted-ink); font-size: 8px; }
 .profile-kind-help { margin-top: -5px; }
 .advanced-setup { border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
 .advanced-setup > summary { padding: 11px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }

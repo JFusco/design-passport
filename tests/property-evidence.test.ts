@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { FigmaAdapter, tokenPropertySnapshot } from "../src/figma/adapter";
 import { createSemanticTokenAndBind } from "../src/figma/mutations";
-import { assessTokenProperty, bindingCoverage, eligibleTokenFields, propertyBindingEvidence } from "../src/core/operations/node-fields";
+import { assessTokenProperty, bindingCoverage, eligibleTokenFields, propertyBindingEvidence, tokenCoverageSummary } from "../src/core/operations/node-fields";
 import { evaluateTokenRules } from "../src/core/rules/token";
 import { evaluateStructureRules } from "../src/core/rules/structure";
 import { contextFixture } from "./context-cache-fixtures";
@@ -57,7 +57,7 @@ describe("rendered property assessment", () => {
     const fakeText = { fontSize: 18, letterSpacingPx: 1, charactersLength: 1, contentHash: "text", backgroundResolvable: false };
     expect(assessTokenProperty(node({ text: fakeText }), "letterSpacing")).toMatchObject({ eligible: false, reason: "not-owner" });
     expect(assessTokenProperty(node({ type: "TEXT", text: { ...fakeText, mixedFields: ["fontSize"] } }), "fontSize")).toMatchObject({ eligible: false, reason: "mixed" });
-    expect(assessTokenProperty(node({ type: "TEXT", text: { ...fakeText, letterSpacing: { unit: "PERCENT", value: 5 } } }), "letterSpacing")).toMatchObject({ eligible: true, repairable: false, reason: "unsupported-unit" });
+    expect(assessTokenProperty(node({ type: "TEXT", text: { ...fakeText, letterSpacing: { unit: "PERCENT", value: 5 } } }), "letterSpacing")).toMatchObject({ eligible: false, repairable: false, reason: "unsupported-unit" });
   });
 });
 
@@ -149,8 +149,26 @@ describe("live adapter to typography rules", () => {
     expect(child.parentId).toBe(instance.id);
     expect(graph.nodes[instance.id]?.childIds).toEqual(instance.children.slice(1).map((node) => node.id));
     expect(graph.nodes[decorative.id]).toBeUndefined();
-    expect(bindingCoverage([child])).toEqual({ eligible: 0, bound: 0, coverage: 100 });
+    expect(bindingCoverage([child])).toEqual({ eligible: 6, bound: 6, coverage: 100 });
+    expect(child.instanceEvidence).toEqual({ overridesKnown: true, scaleFactor: 1 });
     expect(graph.nodes[instance.id]?.instance).toMatchObject({ mainComponentId: "main:1", overridesKnown: true, directOverrideFields: ["fills"], scaleFactor: 1 });
+  });
+
+  it("counts only non-overridden instance-descendant values as inherited evidence", async () => {
+    const f = contextFixture(1, 1);
+    const instance = f.pages[0]!.children[0]!;
+    const child = instance.children[0]!;
+    instance.type = "INSTANCE";
+    instance.overrides = [{ id: child.id, overriddenFields: ["fills"] }];
+    instance.scaleFactor = 1;
+    const { graph } = await f.adapter.buildKnowledge(f.readinessProfile, () => undefined);
+    const occurrence = graph.nodes[child.id]!;
+    expect(occurrence.instanceEvidence).toEqual({ overridesKnown: true, directOverrideFields: ["fills"], scaleFactor: 1 });
+    const coverage = tokenCoverageSummary([occurrence]);
+    expect(coverage.groups).toContainEqual(expect.objectContaining({ disposition: "missing", field: "fills", reason: "unbound" }));
+    expect(coverage.groups).toContainEqual(expect.objectContaining({ disposition: "inherited", field: "fontSize", reason: "component-instance" }));
+    instance.overrides = [];
+    expect(await f.adapter.matchesVariableEnvironment()).toBe(false);
   });
 
 

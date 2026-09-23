@@ -12,7 +12,26 @@ import type {
   ScanProgress,
   ScanRequest,
   ScanScope,
+  TokenCoverageDisposition,
+  TokenCoverageField,
+  TokenCoverageReason,
 } from "../core/contracts";
+
+export interface TokenCoveragePageRequest {
+  requestId: string;
+  reportHash: string;
+  rootIds: string[];
+  disposition: TokenCoverageDisposition;
+  field: TokenCoverageField;
+  reason: TokenCoverageReason;
+  offset: number;
+  limit: number;
+}
+
+export interface TokenCoveragePageResult extends TokenCoveragePageRequest {
+  totalSamples: number;
+  samples: Array<{ nodeId: string; nodePath: string }>;
+}
 
 export interface KnowledgeSummary {
   complete: boolean;
@@ -66,6 +85,7 @@ export type UiToPluginMessage =
   | { type: "recheck-audit"; request: AuditRecheckRequest }
   | { type: "cancel-scan" }
   | { type: "navigate"; nodeId: string }
+  | { type: "token-coverage-page"; request: TokenCoveragePageRequest }
   | { type: "apply-plan"; planId: string; undoOnlyAcknowledged: boolean }
   | { type: "apply-all"; planIds: string[]; undoOnlyAcknowledged: boolean }
   | { type: "certify" }
@@ -80,6 +100,8 @@ export type UiToPluginMessage =
   | { type: "waive"; findingId: string; reason: string }
   | { type: "clear-waiver"; findingId: string }
   | { type: "confirm-pattern"; findingId: string; canonicalName: string }
+  | { type: "acknowledge-detachment"; findingId: string }
+  | { type: "clear-detachment-acknowledgement"; findingId: string }
   | {
     type: "create-token";
     collectionId: string;
@@ -99,6 +121,7 @@ export type PluginToUiMessage =
   | { type: "audit-save-status"; status: AuditSaveStatus }
   | { type: "batch-progress"; completed: number; total: number; skipped: number; pageName?: string }
   | { type: "batch-complete"; completed: number; total: number; skipped: number; cancelled: boolean }
+  | { type: "token-coverage-page"; result: TokenCoveragePageResult }
   | {
     type: "scan-result";
     report: ReadinessReport;

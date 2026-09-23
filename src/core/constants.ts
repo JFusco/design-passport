@@ -1,6 +1,6 @@
 import type { Axis, ReadinessProfile, SourceRef } from "./contracts";
 
-export const RULESET_VERSION = "1.0.0-beta.3";
+export const RULESET_VERSION = "1.0.0-beta.4";
 export const PRODUCT_NAME = "Design Passport";
 export const AI_SOURCE_FRAME_ANNOTATION = "AI source frame";
 export const CERTIFICATION_ANNOTATION_PREFIX = "[Design Passport]";
@@ -8,7 +8,9 @@ export const VARIANT_COVERAGE_ANNOTATION_PREFIX = "[Design Passport] Covered by"
 export const LEGACY_CERTIFICATION_ANNOTATION_PREFIX = "[Figma AI Ready]";
 export const SHARED_PLUGIN_DATA_NAMESPACE = "verndaleAiReady";
 export const PROFILE_DATA_KEY = "profile-v1";
+export const PROFILE_DATA_KEY_V2 = "profile-v2";
 export const CERTIFICATION_DATA_KEY = "certification-v1";
+export const DETACHMENT_INTENT_DATA_KEY = "detachment-intent-v1";
 
 export const AXIS_LABELS: Record<Axis, string> = {
   "token-foundation": "Token foundation",
@@ -75,7 +77,7 @@ export const SOURCES = {
 } satisfies Record<string, SourceRef>;
 
 export const DEFAULT_PROFILE: ReadinessProfile = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   profileId: "verndale-web-v1",
   artifactKind: "product",
   pageRoles: {
@@ -90,4 +92,15 @@ export const DEFAULT_PROFILE: ReadinessProfile = {
   ],
   tokenSourceCollectionKeys: [],
   namingPolicy: "code-aligned-strict",
+  ruleModes: {
+    "layer-naming": "required",
+    "component-property-grammar": "required",
+    "component-value-grammar": "required",
+    "canonical-component-names": "required",
+    "source-name-uniqueness": "required",
+    "catalog-vocabulary": "advisory",
+    "component-descriptions": "advisory",
+    "detached-designs": "advisory",
+    "spacer-layers": "advisory",
+  },
 };

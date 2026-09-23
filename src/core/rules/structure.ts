@@ -9,6 +9,24 @@ function isMeasurableLayoutContainer(node: NodeSnapshot, nodesById: ReadonlyMap<
   return children.length > 0 && !children.every((child) => GEOMETRY_NODE_TYPES.has(child.type));
 }
 
+function isEmptyNonInteractiveSpacer(node: NodeSnapshot): boolean {
+  const renderedPaint = [...node.fills, ...node.strokes].some((paint) => paint.visible && paint.opacity > 0);
+  const renderedEffect = node.effects.some((effect) => effect.visible && effect.eligibleFieldCount > 0);
+  return node.childIds.length === 0 && node.type !== "TEXT" && !renderedPaint && !renderedEffect && node.hasPointerInteraction !== true;
+}
+
+function spacerSizingEvidence(node: NodeSnapshot, parent: NodeSnapshot | undefined): { relevantDimension: "width" | "height"; accepted: boolean; reason: string } {
+  const relevantDimension = parent?.layout?.mode === "HORIZONTAL" ? "width" : "height";
+  const bound = node.boundFields.includes(relevantDimension) || (node.boundVariableIds[relevantDimension]?.length ?? 0) > 0;
+  const fill = relevantDimension === "width" ? node.layoutItem?.horizontalSizing === "FILL" : node.layoutItem?.verticalSizing === "FILL";
+  const growing = (node.layoutItem?.grow ?? 0) > 0;
+  return {
+    relevantDimension,
+    accepted: bound || fill || growing,
+    reason: bound ? "token-bound" : fill ? "fill" : growing ? "layout-growing" : "fixed-unbound",
+  };
+}
+
 export function evaluateStructureRules(root: NodeSnapshot, nodes: NodeSnapshot[]): Finding[] {
   const output: Finding[] = [];
   const nodesById = new Map(nodes.map((node) => [node.id, node]));
@@ -61,16 +79,20 @@ export function evaluateStructureRules(root: NodeSnapshot, nodes: NodeSnapshot[]
     ));
   }
   for (const node of nodes.filter((candidate) => /(?:^|[\s/_-])spacer(?:$|[\s/_-])/i.test(candidate.name))) {
+    const sizing = spacerSizingEvidence(node, node.parentId ? nodesById.get(node.parentId) : undefined);
+    const valid = isEmptyNonInteractiveSpacer(node) && sizing.accepted;
     output.push(createFinding(
       "structure.spacer-layer",
       "structure-auto-layout",
       2,
       root,
       node,
-      "fail",
+      valid ? "pass" : "fail",
       "Spacer layer",
-      "Use Auto Layout gap or padding instead of a spacer layer.",
-      { width: node.width, height: node.height },
+      valid
+        ? `This empty, non-interactive spacer uses ${sizing.reason} ${sizing.relevantDimension} sizing and preserves intentional layout structure.`
+        : `Review this spacer. Empty spacers are acceptable when their ${sizing.relevantDimension} is token-bound, FILL, or layout-growing.`,
+      { width: node.width, height: node.height, relevantDimension: sizing.relevantDimension, sizingReason: sizing.reason, emptyNonInteractive: isEmptyNonInteractiveSpacer(node) },
       { discriminator: node.id },
     ));
   }

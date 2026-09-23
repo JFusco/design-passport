@@ -29,7 +29,7 @@ describe("annotation safety", () => {
       setRelaunchData: vi.fn(),
     } as unknown as SceneNode;
     setCertification(node, {
-      schemaVersion: 1,
+      schemaVersion: 2,
       grade: "B",
       score: 82.3,
       rulesetVersion: "1.0.0-beta.1",
@@ -37,6 +37,9 @@ describe("annotation safety", () => {
       certifiedAt: "2026-09-09T11:00:00.000Z",
       snapshotHash: "report",
       knowledgeSnapshotHash: "knowledge",
+      pluginVersion: "0.4.0",
+      buildSha: "test-build",
+      channel: "development",
     });
     expect((node as SceneNode & { annotations: Annotation[] }).annotations.map(annotationText)).toEqual([
       "AI source frame",
@@ -51,7 +54,7 @@ describe("annotation safety", () => {
       setRelaunchData: vi.fn(),
     } as unknown as SceneNode;
     setCertification(node, {
-      schemaVersion: 1,
+      schemaVersion: 2,
       grade: "A",
       score: 94.9,
       rulesetVersion: "1.0.0-beta.1",
@@ -59,6 +62,9 @@ describe("annotation safety", () => {
       certifiedAt: "2026-09-09T11:00:00.000Z",
       snapshotHash: "report",
       knowledgeSnapshotHash: "knowledge",
+      pluginVersion: "0.4.0",
+      buildSha: "test-build",
+      channel: "development",
     }, 18);
     expect((node as SceneNode & { annotations: Annotation[] }).annotations.map(annotationText)).toEqual([
       "AI source frame",

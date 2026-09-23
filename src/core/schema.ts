@@ -74,6 +74,24 @@ export function assertContract(name: ContractName, value: unknown): void {
 function reportRelationshipErrors(report: ReadinessReport): string[] {
   if (report.schemaVersion === 1) return [];
   const errors: string[] = [];
+  if (report.schemaVersion === 3) {
+    if (!report.producer || report.producer.rulesetVersion !== report.rulesetVersion) errors.push("/producer rulesetVersion must match the report");
+    for (const frame of report.frames) {
+      const coverage = frame.tokenCoverage;
+      if (!coverage) { errors.push(`/frames/${frame.rootId} token coverage is required`); continue; }
+      const applicable = coverage.counts.bound + coverage.counts.inherited + coverage.counts.missing;
+      if (coverage.applicable !== applicable) errors.push(`/frames/${frame.rootId}/tokenCoverage applicable count does not reconcile`);
+      const expected = applicable === 0 ? null : ((coverage.counts.bound + coverage.counts.inherited) / applicable) * 100;
+      if (expected === null ? coverage.coverage !== null : coverage.coverage === null || Math.abs(coverage.coverage - expected) > 0.000001) {
+        errors.push(`/frames/${frame.rootId}/tokenCoverage percentage does not reconcile`);
+      }
+      for (const disposition of ["bound", "inherited", "ignored", "missing"] as const) {
+        const grouped = coverage.groups.filter((group) => group.disposition === disposition).reduce((sum, group) => sum + group.count, 0);
+        if (grouped !== coverage.counts[disposition]) errors.push(`/frames/${frame.rootId}/tokenCoverage ${disposition} groups do not reconcile`);
+      }
+      if (coverage.groups.some((group) => group.samples.length > group.count || group.samples.length > 50)) errors.push(`/frames/${frame.rootId}/tokenCoverage samples exceed their evidence count`);
+    }
+  }
   const findings = new Map(report.findings.map((finding) => [finding.id, finding]));
   if (findings.size !== report.findings.length) errors.push("/findings IDs must be unique");
   for (const finding of report.findings) {

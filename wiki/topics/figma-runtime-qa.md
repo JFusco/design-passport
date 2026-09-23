@@ -4,6 +4,12 @@ topics: [design-passport-architecture, whole-file-design-knowledge, mutation-cer
 
 # Figma runtime and release QA
 
+## Designer-feedback hardening candidate, 2026-09-23
+
+Issue [JFusco/design-passport#27](https://github.com/JFusco/design-passport/issues/27) advances the scanner to plugin `0.4.0`, ruleset `1.0.0-beta.4`, report schema 3, profile schema 2, and certificate schema 2. The regression suite preserves beta.3 protections and adds four-bucket coverage reconciliation, unsupported typography units, non-overridden instance evidence, semantic category paths, component-page wrapper normalization, every convention mode, typed detachment acknowledgement, spacer sizing, bounded persistence, and live evidence pagination.
+
+Production and development now have separate Figma IDs. Native candidate verification must launch **Design Passport (Development)** from `manifest.dev.json`, inspect the persistent channel warning and embedded build SHA, reproduce the four designer-feedback cases, and leave the production record untouched. Final production smoke must use the merged-main SHA and the existing organization plugin record. The sanitized outcome belongs in `docs/qa/designer-feedback-hardening.md`; raw client content remains local.
+
 ## Scanner maintenance verification, 2026-09-14
 
 The maintenance implementation uses shared rendered-property eligibility, text-style field control, explicit finding categories and occurrence-backed source groups. Optional guidance and vocabulary governance cannot score or independently block readiness. Supported text contrast resolves evidenced solid-paint stacks and explicit disabled state; unknown rendering remains review. Visible instance descendants supply rendering evidence without duplicating definition-based token or structural debt.

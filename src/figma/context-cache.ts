@@ -61,6 +61,7 @@ export function baseSnapshot(snapshot: NodeSnapshot): NodeSnapshot {
   delete clone.evidenceRole;
   delete clone.renderVisible;
   delete clone.owningInstanceId;
+  delete clone.instanceEvidence;
   delete clone.absoluteBounds;
   delete clone.hasPointerInteraction;
   delete clone.interactionProperties;
@@ -69,6 +70,8 @@ export function baseSnapshot(snapshot: NodeSnapshot): NodeSnapshot {
   delete clone.cornerRadii;
   delete clone.strokeWeights;
   delete clone.boundGeometryFields;
+  delete clone.layoutItem;
+  delete clone.intentionalDetachment;
   return clone;
 }
 

@@ -16,9 +16,10 @@ Layer names, annotations, Markdown, component descriptions, and dev-resource URL
 
 Shared plugin data uses namespace `verndaleAiReady` and stores only:
 
-- `profile-v1` — file role, breakpoint, and approved token-source configuration.
-- `certification-v1` — compact grade, versions, timestamp, and snapshot hashes.
+- `profile-v2` — file role, breakpoint, approved token-source configuration, and team-convention modes. Legacy `profile-v1` remains read-only migration input.
+- `certification-v1` storage key — compact certificate-v1 historical data or the current certificate-v2 payload with plugin version, ruleset, build SHA, channel, timestamp, and snapshot hashes.
 - `pattern-resolution-v1` — the canonical pattern explicitly selected for an otherwise contextual node label.
+- `detachment-intent-v1` — a typed node-ID-bound acknowledgement that a detached design is intentionally standalone.
 
 Full findings, raw text, snapshots, and dev-resource URLs are not stored there. Waivers use Figma client storage scoped by private file key or document ID.
 

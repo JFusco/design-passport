@@ -1,4 +1,5 @@
 import { CATALOG_VERSION } from "../catalog";
+import { PRODUCER_IDENTITY } from "../build-info";
 import { AI_SOURCE_FRAME_ANNOTATION, RULESET_VERSION } from "../constants";
 import type { DesignKnowledgeGraph, Finding, NodeSnapshot, ReadinessProfile } from "../contracts";
 import { createFinding } from "./finding";
@@ -93,9 +94,13 @@ export function evaluatePipelineRules(
   const certification = root.certification;
   const certificationCurrent = Boolean(
     certification
+    && certification.schemaVersion === 2
     && certification.knowledgeSnapshotHash === graph.snapshotHash
     && certification.rulesetVersion === RULESET_VERSION
-    && certification.catalogVersion === CATALOG_VERSION,
+    && certification.catalogVersion === CATALOG_VERSION
+    && certification.pluginVersion === PRODUCER_IDENTITY.pluginVersion
+    && certification.buildSha === PRODUCER_IDENTITY.buildSha
+    && certification.channel === PRODUCER_IDENTITY.channel,
   );
   output.push(createFinding(
     "pipeline.certification-freshness",
@@ -108,9 +113,16 @@ export function evaluatePipelineRules(
     !certification
       ? "This target has not previously been certified."
       : certificationCurrent
-        ? "The existing certificate matches the current knowledge snapshot and ruleset."
-        : "The existing certificate is stale because the design snapshot, ruleset, or catalog changed.",
-    { hasCertification: Boolean(certification), certificationCurrent },
+        ? "The existing certificate matches the current design, plugin build, channel, ruleset, and catalog."
+        : "The existing certificate is historical or stale because its design, plugin build, channel, ruleset, or catalog differs.",
+    {
+      hasCertification: Boolean(certification),
+      certificationCurrent,
+      certificateSchemaVersion: certification?.schemaVersion ?? 0,
+      certificatePluginVersion: certification?.pluginVersion ?? "historical",
+      certificateBuildSha: certification?.buildSha ?? "historical",
+      certificateChannel: certification?.channel ?? "historical",
+    },
   ));
   return output;
 }

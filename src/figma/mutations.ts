@@ -2,6 +2,7 @@ import {
   AI_SOURCE_FRAME_ANNOTATION,
   CERTIFICATION_ANNOTATION_PREFIX,
   CERTIFICATION_DATA_KEY,
+  DETACHMENT_INTENT_DATA_KEY,
   LEGACY_CERTIFICATION_ANNOTATION_PREFIX,
   PRODUCT_NAME,
   SHARED_PLUGIN_DATA_NAMESPACE,
@@ -16,7 +17,7 @@ import { stableStringify } from "../core/stable";
 import { readBindableRawValue, sameBindableValue } from "./operations/bindable-value";
 import { assessGeometryChange, type Bounds } from "./operations/geometry";
 import { annotationText, preservedAnnotations } from "./operations/annotations";
-import { parseCertificationSummary, parsePatternConfirmation } from "./operations/shared-data";
+import { parseCertificationSummary, parseDetachmentIntent, parsePatternConfirmation } from "./operations/shared-data";
 import { normalizeSemanticTokenName, toVariableValue, variableScopesForField, variableTypeForField, webCodeSyntaxForTokenName } from "./operations/token-value";
 
 export { assessGeometryChange } from "./operations/geometry";
@@ -245,6 +246,11 @@ async function applyOperation(operation: ChangeOperation, prevalidatedNodeIds: R
     figma.combineAsVariants(componentNodes, parent);
   } else if (operation.kind === "set-certification") {
     setCertification(base, operation.value);
+  } else if (operation.kind === "acknowledge-detachment") {
+    if (operation.value.nodeId !== base.id || !("detachedInfo" in base) || base.detachedInfo === null) throw new Error("Detachment acknowledgement no longer matches a detached design");
+    base.setSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, DETACHMENT_INTENT_DATA_KEY, JSON.stringify(operation.value));
+  } else if (operation.kind === "clear-detachment-acknowledgement") {
+    base.setSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, DETACHMENT_INTENT_DATA_KEY, "");
   }
 }
 
@@ -262,6 +268,12 @@ async function verifyOperation(operation: ChangeOperation): Promise<boolean> {
   if (operation.kind === "set-certification") {
     const stored = parseCertificationSummary(node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY));
     return stableStringify(stored) === stableStringify(operation.value);
+  }
+  if (operation.kind === "acknowledge-detachment") {
+    return stableStringify(parseDetachmentIntent(node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, DETACHMENT_INTENT_DATA_KEY), node.id)) === stableStringify(operation.value);
+  }
+  if (operation.kind === "clear-detachment-acknowledgement") {
+    return node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, DETACHMENT_INTENT_DATA_KEY) === "";
   }
   if (operation.kind === "convert-to-component") return node.type === "COMPONENT" && node.name === operation.value.name;
   if (operation.kind === "group-variants") {
@@ -310,7 +322,8 @@ export async function applyChangePlan(plan: ChangePlan, options: ApplyPlanOption
 
 export function setCertification(node: SceneNode, summary: CertificationSummary, coveredVariantCount = 0): void {
   if (!["A", "B", "C", "D", "F"].includes(summary.grade) || !Number.isFinite(summary.score) || summary.score < 0 || summary.score > 100
-    || !Number.isFinite(Date.parse(summary.certifiedAt)) || !summary.rulesetVersion || !summary.catalogVersion || !summary.snapshotHash || !summary.knowledgeSnapshotHash) {
+    || !Number.isFinite(Date.parse(summary.certifiedAt)) || !summary.rulesetVersion || !summary.catalogVersion || !summary.snapshotHash || !summary.knowledgeSnapshotHash
+    || summary.schemaVersion !== 2 || !summary.pluginVersion || !summary.buildSha || !summary.channel) {
     throw new Error("Certification summary is invalid");
   }
   node.setSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY, JSON.stringify(summary));

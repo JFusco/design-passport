@@ -16,7 +16,7 @@
         "type": "object",
         "required": ["kind", "nodeId"],
         "properties": {
-          "kind": { "type": "string", "enum": ["rename-node", "confirm-pattern", "set-annotation", "normalize-export-name", "bind-variable", "apply-inferred-auto-layout", "reconnect-instance", "convert-to-component", "group-variants", "set-certification"] },
+          "kind": { "type": "string", "enum": ["rename-node", "confirm-pattern", "set-annotation", "normalize-export-name", "bind-variable", "apply-inferred-auto-layout", "reconnect-instance", "convert-to-component", "group-variants", "acknowledge-detachment", "clear-detachment-acknowledgement", "set-certification"] },
           "nodeId": { "type": "string", "minLength": 1 },
           "value": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/jsonValue" }
         },

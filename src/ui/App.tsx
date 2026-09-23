@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PRODUCT_NAME } from "../core/constants";
+import { producerLabel } from "../core/build-info";
 import type {
   Axis,
   FindingCategory,
@@ -12,7 +13,7 @@ import type {
   ScanScope,
 } from "../core/contracts";
 import type { SelectionSummary, VariableCollectionOption } from "../figma/adapter";
-import type { AuditRecheckRequest, AuditTargetSummary, KnowledgeSummary, PluginToUiMessage, UiToPluginMessage } from "../plugin/messages";
+import type { AuditRecheckRequest, AuditTargetSummary, KnowledgeSummary, PluginToUiMessage, TokenCoveragePageRequest, TokenCoveragePageResult, UiToPluginMessage } from "../plugin/messages";
 import type { AuditSaveStatus, AuditViewState, SavedAuditSummary } from "../plugin/audit-state";
 import { BrandMark } from "./BrandMark";
 import { Cleanup } from "./components/Cleanup";
@@ -58,6 +59,7 @@ export function App() {
   const [committedProfile, setCommittedProfile] = useState<ReadinessProfile>();
   const [profile, setProfile] = useState<ReadinessProfile>();
   const [report, setReport] = useState<ReadinessReport>();
+  const [coveragePages, setCoveragePages] = useState<Record<string, TokenCoveragePageResult>>({});
   const [plans, setPlans] = useState<ChangePlan[]>([]);
   const [knowledge, setKnowledge] = useState<KnowledgeSummary>();
   const [collections, setCollections] = useState<VariableCollectionOption[]>([]);
@@ -129,6 +131,7 @@ export function App() {
         const view = audit.viewState ?? defaultAuditView();
         lastPersistedView.current = JSON.stringify({ id: audit.id, viewState: view });
         setReport(audit.report);
+        setCoveragePages({});
         setPlans(audit.plans);
         setKnowledge(audit.knowledge);
         setInsights(audit.insights);
@@ -188,6 +191,7 @@ export function App() {
         }
         lastReportTarget.current = targetIdentity;
         setReport(message.report);
+        setCoveragePages({});
         setPageFilter((current) => current === "all" || message.report.frames.some((frame) => frame.pageId === current) ? current : "all");
         setRootFilter((current) => current === "all" || message.report.frames.some((frame) => frame.rootId === current) ? current : "all");
         setVariantFilter((current) => current === "all" || message.report.frames.some((frame) => frame.variantCoverage?.some((variant) => variant.variantId === current)) ? current : "all");
@@ -206,7 +210,10 @@ export function App() {
         if (!batchRunning.current) setNotice(message.refresh
           ? `Recheck complete · ${message.refresh.resolvedCount} resolved · ${message.refresh.remainingCount} remaining. ${message.refresh.mode === "full" ? "Full rebuild" : "Verified context reuse"}. ${message.refresh.reason}`
           : auditCompletionNotice(message.report.target.scope, message.report.grade.letter, message.report.ready));
+      } else if (message.type === "token-coverage-page") {
+        setCoveragePages((current) => ({ ...current, [message.result.requestId]: message.result }));
       } else if (message.type === "knowledge-stale") {
+        setCoveragePages({});
         setStale(true);
       } else if (message.type === "selection") {
         setSelectionSummary(message.summary);
@@ -216,6 +223,7 @@ export function App() {
         setBootstrap((current) => current ? { ...current, data: message.data } : current);
         setCommittedProfile(cloneProfile(message.data.profile));
         setProfile(cloneProfile(message.data.profile));
+        setCoveragePages({});
         setContribution(undefined);
         setProgress(undefined);
         setBatchProgress(undefined);
@@ -234,6 +242,7 @@ export function App() {
         setBootstrap((current) => current ? { ...current, data: message.data } : current);
         setCommittedProfile(cloneProfile(message.data.profile));
         setProfile(cloneProfile(message.data.profile));
+        setCoveragePages({});
         setContribution(undefined);
         setProgress(undefined);
         setBatchProgress(undefined);
@@ -354,6 +363,7 @@ export function App() {
     setError(undefined);
     setNotice(undefined);
     setContribution(undefined);
+    setCoveragePages({});
     setTokenWizard(undefined);
     setWaiverDraft(undefined);
     setUndoAcknowledged(false);
@@ -368,6 +378,7 @@ export function App() {
     setError(undefined);
     setNotice(undefined);
     setContribution(undefined);
+    setCoveragePages({});
     setTokenWizard(undefined);
     setWaiverDraft(undefined);
     setUndoAcknowledged(false);
@@ -384,6 +395,7 @@ export function App() {
     setError(undefined);
     setNotice(undefined);
     setContribution(undefined);
+    setCoveragePages({});
     setTokenWizard(undefined);
     setWaiverDraft(undefined);
     setUndoAcknowledged(false);
@@ -395,6 +407,7 @@ export function App() {
     setActiveSavedId(undefined);
     if (historical) {
       setReport(undefined);
+      setCoveragePages({});
       setPlans([]);
       setKnowledge(undefined);
       setInsights([]);
@@ -416,6 +429,7 @@ export function App() {
   const saveFailure = saveStatus && saveStatus.state !== "saved";
   const panelLocked = scanInFlight && (!report || activeTab === "profile" || activeTab === "context");
   const hasNotifications = draftState.blocked
+    || bootstrap.data.producer.channel === "development"
     || !bootstrap.data.canMutateDocument
     || showStaleNotification
     || historical
@@ -437,6 +451,7 @@ export function App() {
       </header>
 
       <div className={`notification-stack${hasNotifications ? " has-notifications" : ""}`}>
+        {bootstrap.data.producer.channel === "development" ? <div className="banner warning" role="status"><strong>Development build</strong> · Results and certificates from this plugin are visibly marked and should not be treated as production evidence.</div> : null}
         {draftState.blocked ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true"><span>{profileGateMessage}</span><button className="button subtle" onClick={() => setActiveTab("profile")}>Fix audit setup</button></div> : null}
         {!bootstrap.data.canMutateDocument ? <div className="banner info">Dev Mode is audit-only. Switch to Design mode to save the profile, clean up findings, or certify frames.</div> : null}
         {historical && report ? <div className="banner info" role="status"><span><strong>Saved result · {formatDateTime(report.generatedAt)}</strong><br />Browse, navigate, and export now. Refresh to verify the current design before applying fixes or certifying.</span></div> : null}
@@ -545,6 +560,13 @@ export function App() {
             }}
             onClearWaiver={(findingId) => send({ type: "clear-waiver", findingId })}
             onConfirmPattern={(findingId, canonicalName) => send({ type: "confirm-pattern", findingId, canonicalName })}
+            onAcknowledgeDetachment={(findingId) => send({ type: "acknowledge-detachment", findingId })}
+            onClearDetachmentAcknowledgement={(findingId) => send({ type: "clear-detachment-acknowledgement", findingId })}
+            onOpenAuditSetup={() => setActiveTab("profile")}
+            coverageCurrent={!historical && !stale}
+            {...(report?.snapshotHash ? { coverageReportHash: report.snapshotHash } : {})}
+            coveragePages={coveragePages}
+            onRequestCoveragePage={(request: TokenCoveragePageRequest) => send({ type: "token-coverage-page", request })}
             onTokenWizard={setTokenWizard}
             onCreateToken={() => {
               if (!tokenWizard) return;
@@ -654,7 +676,7 @@ export function App() {
       </div>
 
       <footer className="app-footer">
-        <span>Ruleset {bootstrap.rulesetVersion}</span>
+        <span title={producerLabel(bootstrap.data.producer)}>{producerLabel(bootstrap.data.producer)}</span>
         <span>·</span>
         <span>{bootstrap.data.fileName}</span>
         <button className="footer-link" onClick={() => setActiveTab("profile")}>Audit setup</button>

@@ -12,13 +12,15 @@ import type {
   ScanScope,
   VariableCandidate,
 } from "../core/contracts";
-import { AI_SOURCE_FRAME_ANNOTATION, CERTIFICATION_ANNOTATION_PREFIX, LEGACY_CERTIFICATION_ANNOTATION_PREFIX } from "../core/constants";
+import { AI_SOURCE_FRAME_ANNOTATION, CERTIFICATION_ANNOTATION_PREFIX, DETACHMENT_INTENT_DATA_KEY, LEGACY_CERTIFICATION_ANNOTATION_PREFIX, SHARED_PLUGIN_DATA_NAMESPACE } from "../core/constants";
+import { PRODUCER_IDENTITY } from "../core/build-info";
 import { finalizeKnowledgeGraph } from "../core/knowledge";
 import { isAuditTargetNodeType, populateGraphMetrics, sourceFrameIds, targetRootIds } from "../core/operations/graph";
 import { assertProfileSemantics, profileSemanticErrors, reconcileProfilePages } from "../core/profile";
 import { inferProfileFromPages } from "../core/profile-inference";
 import { hashValue } from "../core/stable";
 import { assessTokenProperty, eligibleTokenFields, propertyBindingEvidence } from "../core/operations/node-fields";
+import { isSemanticVariableName } from "../core/operations/semantic-variable";
 import {
   buildProjectStyleGuideBinding,
   parseProjectStyleGuideBinding,
@@ -27,7 +29,7 @@ import {
 import { canReadComponentPropertyDefinitions } from "./operations/component";
 import { annotationText } from "./operations/annotations";
 import { listVariableCollectionOptions, type VariableCollectionOption } from "./operations/collections";
-import { parseCertificationSummary, parsePatternConfirmation, parseStoredProfile } from "./operations/shared-data";
+import { parseCertificationSummary, parseDetachmentIntent, parsePatternConfirmation, parseStoredProfile } from "./operations/shared-data";
 import { resolveTextBackground } from "./operations/background";
 import { interactionPropertiesSnapshot } from "./operations/interaction-state";
 import { mixedTypographyFields, TextStyleEvidenceReader } from "./operations/text-style";
@@ -76,6 +78,7 @@ export interface BootstrapData {
   profileIssues: string[];
   selectionSummary: SelectionSummary;
   projectStyleGuide: ProjectStyleGuideStatus;
+  producer: typeof PRODUCER_IDENTITY;
 }
 
 export type ProjectStyleGuideStatus =
@@ -276,6 +279,17 @@ function layoutSnapshot(node: SceneNode): NodeSnapshot["layout"] {
   };
 }
 
+function layoutItemSnapshot(node: SceneNode): NodeSnapshot["layoutItem"] {
+  const item = node as unknown as Partial<LayoutMixin & AutoLayoutChildrenMixin>;
+  if (!("layoutSizingHorizontal" in item) && !("layoutSizingVertical" in item) && !("layoutGrow" in item) && !("layoutPositioning" in item)) return undefined;
+  return {
+    ...(typeof item.layoutSizingHorizontal === "string" ? { horizontalSizing: item.layoutSizingHorizontal } : {}),
+    ...(typeof item.layoutSizingVertical === "string" ? { verticalSizing: item.layoutSizingVertical } : {}),
+    ...(typeof item.layoutGrow === "number" && Number.isFinite(item.layoutGrow) ? { grow: item.layoutGrow } : {}),
+    ...(typeof item.layoutPositioning === "string" ? { positioning: item.layoutPositioning } : {}),
+  };
+}
+
 export function textSnapshot(node: SceneNode): NodeSnapshot["text"] {
   if (node.type !== "TEXT") return undefined;
   const fillsValue = paints(node.fills);
@@ -363,6 +377,10 @@ function confirmedPattern(node: SceneNode): NodeSnapshot["confirmedPattern"] {
   return parsePatternConfirmation(node.getSharedPluginData("verndaleAiReady", "pattern-resolution-v1"));
 }
 
+function intentionalDetachment(node: SceneNode): NodeSnapshot["intentionalDetachment"] {
+  return parseDetachmentIntent(node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, DETACHMENT_INTENT_DATA_KEY), node.id);
+}
+
 function devStatusSnapshot(node: SceneNode): NodeSnapshot["devStatus"] {
   try {
     if (!("devStatus" in node)) return undefined;
@@ -425,14 +443,53 @@ export async function tokenPropertySnapshot(node: SceneNode): Promise<NodeSnapsh
   };
 }
 
-function instanceProvenance(node: InstanceNode): Pick<NonNullable<NodeSnapshot["instance"]>, "overridesKnown" | "directOverrideFields" | "scaleFactor"> {
+type InstanceProvenance = Pick<NonNullable<NodeSnapshot["instance"]>, "overridesKnown" | "directOverrideFields" | "scaleFactor">;
+
+interface CapturedInstanceEvidence {
+  provenance: InstanceProvenance;
+  fieldsByNodeId: ReadonlyMap<string, readonly string[]>;
+}
+
+function captureInstanceEvidence(node: InstanceNode): CapturedInstanceEvidence {
   try {
     const overridesKnown = Array.isArray(node.overrides);
-    return { overridesKnown,
-      ...(overridesKnown ? { directOverrideFields: node.overrides.filter((entry) => entry.id === node.id).flatMap((entry) => entry.overriddenFields) } : {}),
-      ...(Number.isFinite(node.scaleFactor) ? { scaleFactor: node.scaleFactor } : {}),
+    const fieldsByNodeId = new Map<string, string[]>();
+    if (overridesKnown) {
+      for (const entry of node.overrides) {
+        const fields = fieldsByNodeId.get(entry.id) ?? [];
+        fields.push(...entry.overriddenFields);
+        fieldsByNodeId.set(entry.id, [...new Set(fields)].sort());
+      }
+    }
+    return {
+      provenance: {
+        overridesKnown,
+        ...(overridesKnown ? { directOverrideFields: [...(fieldsByNodeId.get(node.id) ?? [])] } : {}),
+        ...(Number.isFinite(node.scaleFactor) ? { scaleFactor: node.scaleFactor } : {}),
+      },
+      fieldsByNodeId,
     };
-  } catch { return { overridesKnown: false }; }
+  } catch { return { provenance: { overridesKnown: false }, fieldsByNodeId: new Map() }; }
+}
+
+function instanceProvenance(node: InstanceNode): InstanceProvenance {
+  return captureInstanceEvidence(node).provenance;
+}
+
+function annotateInstanceDescendants(
+  snapshots: Iterable<NodeSnapshot>,
+  ownerId: string,
+  evidence: CapturedInstanceEvidence,
+): void {
+  for (const snapshot of snapshots) {
+    if (snapshot.owningInstanceId !== ownerId) continue;
+    const directOverrideFields = evidence.fieldsByNodeId.get(snapshot.id);
+    snapshot.instanceEvidence = {
+      overridesKnown: evidence.provenance.overridesKnown ?? false,
+      ...(directOverrideFields ? { directOverrideFields: [...directOverrideFields] } : {}),
+      ...(evidence.provenance.scaleFactor !== undefined ? { scaleFactor: evidence.provenance.scaleFactor } : {}),
+    };
+  }
 }
 
 function pointerInteraction(node: SceneNode): boolean | undefined {
@@ -458,6 +515,7 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
   const signature = structuralSignature(node);
   const certification = certificationSummary(node);
   const patternConfirmation = confirmedPattern(node);
+  const detachmentIntent = intentionalDetachment(node);
   const annotationTexts = "annotations" in node ? node.annotations.map(annotationText) : [];
   const devStatus = devStatusSnapshot(node);
   return {
@@ -482,6 +540,7 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
     childIds: children,
     descendantCount: 0,
     ...(layout ? { layout } : {}),
+    ...((value) => value ? { layoutItem: value } : {})(layoutItemSnapshot(node)),
     fills: fillData,
     strokes: strokeData,
     effects: effectData,
@@ -505,6 +564,7 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
     ...(signature ? { structuralSignature: signature } : {}),
     ...(certification ? { certification } : {}),
     ...(patternConfirmation ? { confirmedPattern: patternConfirmation } : {}),
+    ...(detachmentIntent ? { intentionalDetachment: detachmentIntent } : {}),
   };
 }
 
@@ -624,6 +684,7 @@ function captureSupplement(node: SceneNode, raw: Record<string, unknown> | undef
     rotation: "rotation" in node ? node.rotation : 0,
     opacity: "opacity" in node ? node.opacity : 1,
     layout: layoutSnapshot(node),
+    layoutItem: layoutItemSnapshot(node),
     boundVariables: node.boundVariables,
     explicitVariableModes: node.explicitVariableModes,
     resolvedVariableModes: node.resolvedVariableModes,
@@ -661,6 +722,7 @@ function captureSupplement(node: SceneNode, raw: Record<string, unknown> | undef
     devStatus: devStatusSnapshot(node),
     certification: node.getSharedPluginData("verndaleAiReady", "certification-v1"),
     confirmation: node.getSharedPluginData("verndaleAiReady", "pattern-resolution-v1"),
+    detachmentIntent: node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, DETACHMENT_INTENT_DATA_KEY),
   };
 }
 
@@ -668,6 +730,12 @@ function enrichLiveEvidence(node: SceneNode, snapshot: NodeSnapshot): void {
   for (const field of ["cornerRadii", "strokeWeights", "clipsContent", "isMask", "absoluteBounds", "boundGeometryFields"] as const) delete snapshot[field];
   snapshot.renderVisible = renderVisible(node);
   Object.assign(snapshot, geometryEvidence(node));
+  const item = layoutItemSnapshot(node);
+  if (item) snapshot.layoutItem = item;
+  else delete snapshot.layoutItem;
+  const detachmentIntent = intentionalDetachment(node);
+  if (detachmentIntent) snapshot.intentionalDetachment = detachmentIntent;
+  else delete snapshot.intentionalDetachment;
   const pointer = pointerInteraction(node);
   if (pointer === undefined) delete snapshot.hasPointerInteraction;
   else snapshot.hasPointerInteraction = pointer;
@@ -703,13 +771,19 @@ function enrichInferences(node: SceneNode, snapshot: NodeSnapshot, tokenFields: 
 }
 
 function bindingSignature(node: SceneNode): string {
+  const instanceCapture = node.type === "INSTANCE" ? captureInstanceEvidence(node) : undefined;
   return hashValue({ boundVariables: node.boundVariables, explicitModes: node.explicitVariableModes,
     resolvedModes: node.resolvedVariableModes,
     paintBindings: { fills: "fills" in node ? paints(node.fills).map((paint) => paint.type === "SOLID" ? paint.boundVariables : undefined) : [],
       strokes: "strokes" in node ? paints(node.strokes).map((paint) => paint.type === "SOLID" ? paint.boundVariables : undefined) : [] },
     textStyleId: node.type === "TEXT" ? node.textStyleId === figma.mixed ? "mixed" : node.textStyleId : undefined,
     effectStyleId: "effectStyleId" in node ? node.effectStyleId : undefined,
-    patternResolution: node.getSharedPluginData("verndaleAiReady", "pattern-resolution-v1") });
+    instanceOverrides: instanceCapture?.provenance.overridesKnown
+      ? [...instanceCapture.fieldsByNodeId.entries()].map(([id, fields]) => ({ id, fields: [...fields] })).sort((left, right) => left.id.localeCompare(right.id))
+      : instanceCapture ? "unavailable" : undefined,
+    instanceScaleFactor: node.type === "INSTANCE" && Number.isFinite(node.scaleFactor) ? node.scaleFactor : undefined,
+    patternResolution: node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, "pattern-resolution-v1"),
+    detachmentIntent: node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, DETACHMENT_INTENT_DATA_KEY) });
 }
 
 function variableAliases(value: unknown, output = new Set<string>()): Set<string> {
@@ -899,8 +973,7 @@ async function variableCandidates(
   recordLibrary?: (key: string, variables: LibraryVariable[] | undefined) => void,
 ): Promise<VariableCandidate[]> {
   const isSemanticVariable = (name: string, collectionName: string): boolean => (
-    /^semantic(?:\s|$)/i.test(collectionName.trim())
-    || /(?:^|\/)(?:semantic|text|surface|background|border|action|button|input|content|space|radius|type)(?:\/|$)/i.test(name)
+    /^semantic(?:\s|$)/i.test(collectionName.trim()) || isSemanticVariableName(name)
   );
   const localCollections = new Map((await figma.variables.getLocalVariableCollectionsAsync()).map((collection) => [collection.id, collection]));
   const localVariables = await figma.variables.getLocalVariablesAsync();
@@ -1034,7 +1107,8 @@ export class FigmaAdapter {
   async getBootstrap(): Promise<BootstrapData> {
     const pages = figma.root.children;
     const collections = await this.getCollectionOptions(false);
-    const stored = figma.root.getSharedPluginData("verndaleAiReady", "profile-v1");
+    const stored = figma.root.getSharedPluginData("verndaleAiReady", "profile-v2")
+      || figma.root.getSharedPluginData("verndaleAiReady", "profile-v1");
     const profileSuggestion = inferProfileFromPages(pages, collections);
     let profile = profileSuggestion;
     let profileConfigured = profileSemanticErrors(profileSuggestion, new Set(pages.map((page) => page.id))).length === 0;
@@ -1065,6 +1139,7 @@ export class FigmaAdapter {
       profileIssues,
       selectionSummary,
       projectStyleGuide: this.getProjectStyleGuideStatus(),
+      producer: { ...PRODUCER_IDENTITY },
     };
   }
 
@@ -1137,7 +1212,7 @@ export class FigmaAdapter {
 
   async saveProfile(profile: ReadinessProfile): Promise<void> {
     assertProfileSemantics(profile, new Set(figma.root.children.map((page) => page.id)));
-    figma.root.setSharedPluginData("verndaleAiReady", "profile-v1", JSON.stringify(profile));
+    figma.root.setSharedPluginData("verndaleAiReady", "profile-v2", JSON.stringify(profile));
   }
 
   reconcileProfile(
@@ -1330,10 +1405,13 @@ export class FigmaAdapter {
         }
         diagnostics.inferenceMs += Date.now() - stageStarted;
         stageStarted = Date.now();
+        const snapshotsById = new Map(snapshots.map((candidate) => [candidate.id, candidate]));
         await mapConcurrent(instances, 16, async ({ scene, snapshot }) => {
           const main = await scene.getMainComponentAsync().catch(() => null);
-          snapshot.instance = { detached: false, ...instanceProvenance(scene),
+          const evidence = captureInstanceEvidence(scene);
+          snapshot.instance = { detached: false, ...evidence.provenance,
             ...(main ? { mainComponentId: main.id, mainComponentName: main.name, ...(main.key ? { mainComponentKey: main.key } : {}) } : {}) };
+          annotateInstanceDescendants(snapshot.childIds.map((id) => snapshotsById.get(id)).filter((candidate): candidate is NodeSnapshot => Boolean(candidate)), scene.id, evidence);
         }, () => this.cancelled);
         diagnostics.componentsMs += Date.now() - stageStarted;
         stageStarted = Date.now();
@@ -1591,11 +1669,13 @@ export class FigmaAdapter {
     let stageStarted = Date.now();
     await mapConcurrent(instances, 16, async ({ scene, snapshot }) => {
       const main = await scene.getMainComponentAsync().catch(() => null);
+      const evidence = captureInstanceEvidence(scene);
       snapshot.instance = {
         detached: false,
-        ...instanceProvenance(scene),
+        ...evidence.provenance,
         ...(main ? { mainComponentId: main.id, mainComponentName: main.name, ...(main.key ? { mainComponentKey: main.key } : {}) } : {}),
       };
+      annotateInstanceDescendants(snapshot.childIds.map((id) => nodes[id]).filter((candidate): candidate is NodeSnapshot => Boolean(candidate)), scene.id, evidence);
     }, () => this.cancelled);
     diagnostics.componentsMs = Date.now() - stageStarted;
 
@@ -1700,7 +1780,11 @@ export class FigmaAdapter {
       if (missingIds.length > 0) {
         throw new Error("The captured audit selection changed or no longer exists. Select the intended frames, components, or component sets and run the audit again");
       }
-      return targetRootIds(target.scope, graph, "", target.nodeIds);
+      const roots = targetRootIds(target.scope, graph, "", target.nodeIds);
+      if (roots.length === 0) {
+        throw new Error(`The selected Components-page wrapper contains no component set or standalone component. Add the “${AI_SOURCE_FRAME_ANNOTATION}” annotation to audit the wrapper itself.`);
+      }
+      return roots;
     }
     if (target.scope === "page") return targetRootIds(target.scope, graph, target.pageId, []);
     return targetRootIds(target.scope, graph, "", []);

@@ -42,7 +42,7 @@ export function operationForFinding(item: Finding): ChangeOperation | undefined 
 }
 
 export function riskForOperation(operation: ChangeOperation): ChangePlan["risk"] {
-  if (["rename-node", "confirm-pattern", "set-annotation", "normalize-export-name", "set-certification"].includes(operation.kind)) return "low";
+  if (["rename-node", "confirm-pattern", "set-annotation", "normalize-export-name", "acknowledge-detachment", "clear-detachment-acknowledgement", "set-certification"].includes(operation.kind)) return "low";
   if (["bind-variable", "reconnect-instance"].includes(operation.kind)) return "guarded";
   return "structural";
 }
@@ -71,7 +71,9 @@ function operationOrder(operation: ChangeOperation): number {
     "apply-inferred-auto-layout": 70,
     "convert-to-component": 80,
     "group-variants": 90,
-    "set-certification": 100,
+    "acknowledge-detachment": 100,
+    "clear-detachment-acknowledgement": 110,
+    "set-certification": 120,
   };
   return order[operation.kind];
 }

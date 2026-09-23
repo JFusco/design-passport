@@ -17,7 +17,7 @@ function selectRun(input, number) {
     return { ...run, build };
   }
   if (number !== undefined) throw new Error("Run numbers apply only to native harness exports");
-  if (![1, 2].includes(input?.schemaVersion) || !input.target || !Array.isArray(input.findings)) throw new Error("Expected a report or native harness export");
+  if (![1, 2, 3].includes(input?.schemaVersion) || !input.target || !Array.isArray(input.findings)) throw new Error("Expected a report or native harness export");
   return { report: input };
 }
 

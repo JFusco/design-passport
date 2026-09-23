@@ -82,17 +82,26 @@ export function evaluateNamingRules(
         { patternResolution: confirmedResolution },
       ));
     } else if (resolution.kind === "novel") {
+      const currentRootName = node.name.split("/")[0]?.trim() ?? node.name.trim();
+      const confirmed = Boolean(
+        node.confirmedPattern
+        && node.confirmedPattern.catalogVersion === CATALOG_VERSION
+        && node.confirmedPattern.sourceName.toLocaleLowerCase("en-US") === currentRootName.toLocaleLowerCase("en-US")
+        && node.confirmedPattern.canonicalName.toLocaleLowerCase("en-US") === currentRootName.toLocaleLowerCase("en-US"),
+      );
       output.push(createFinding(
         "naming.pattern-novel",
         "layer-naming",
         1,
         root,
         node,
-        "needs-review",
+        confirmed ? "pass" : "needs-review",
         "Novel component term",
-        `“${node.name}” is not in the pinned catalog and is recorded without guessing.`,
-        { currentName: node.name },
-        { patternResolution: resolution },
+        confirmed
+          ? `“${node.name}” is confirmed as an intentional project term.`
+          : `“${node.name}” is not in the pinned catalog and is recorded without guessing.`,
+        { currentName: node.name, confirmedProjectTerm: confirmed },
+        { patternResolution: confirmed ? { ...resolution, canonicalName: currentRootName, requiresConfirmation: false } : resolution },
       ));
     } else if (resolution.kind === "alias" && normalized) {
       output.push(createFinding(
