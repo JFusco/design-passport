@@ -17,6 +17,13 @@ describe("mutation planning and geometry safety", () => {
     expect(first.flatMap((plan) => plan.operations.map((operation) => operation.kind))).toEqual(["rename-node", "bind-variable", "apply-inferred-auto-layout"]);
   });
 
+  it("keeps every proposed fix independently applicable", () => {
+    const findings = ["first", "second"].map((id) => syntheticFinding({ id, nodeId: id, ruleId: "naming.pattern-alias", status: "fail", fixability: "automatic", suggestedValue: { name: `Button / ${id}` } }));
+    const plans = buildChangePlans(findings);
+    expect(plans).toHaveLength(2);
+    expect(plans.every((plan) => plan.operations.length === 1 && plan.rollbackBoundary === "operation")).toBe(true);
+  });
+
   it("accepts the exact 0.5px geometry boundary and rejects 0.51px", () => {
     const before = [{ x: 0, y: 0, width: 20, height: 20 }];
     expect(assessGeometryChange(before, [{ x: 0.5, y: 0, width: 20, height: 20 }], { width: 100, height: 100 }, 0.5).valid).toBe(true);

@@ -19,3 +19,9 @@ Use `wiki/` as this repository's durable record of executed plans, decisions, an
 
 This managed block was installed for Codex, Cursor, and Claude (via `@AGENTS.md` in `CLAUDE.md`).
 <!-- wiki-skill:end -->
+
+## Repository-local development skills
+
+Canonical skill sources live under `.agents/skills`; `.claude/skills` contains links to the same files. Use `next-dev-loop` while changing the companion, `playwright-cli` for browser exploration, the Vercel React/composition and web-design guidance for UI review, `writing-guidelines` for user-facing copy, and `design-passport-security-review` for credential, local-access, upload, persistence, or knowledge-decision changes.
+
+`skills-lock.json` records the copied QA Operations snapshot, known upstream metadata, license evidence, and deterministic folder hashes. Run `pnpm skills:check` after modifying any skill. The check is offline and does not pin content fetched later by the web or writing guideline skills.

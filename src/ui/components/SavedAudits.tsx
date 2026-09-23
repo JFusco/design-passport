@@ -27,10 +27,10 @@ export function SavedAudits(props: SavedAuditsProps) {
         </>
       ) : <p className="fine-print">Completed audits save automatically on this device. Reopen Passport to pick up where you left off.</p>}
       <div className="saved-audits-actions">
-        {props.audits.length > 0 ? <button className="button subtle" disabled={props.disabled || !props.activeId} onClick={() => { if (props.activeId) props.onForget(props.activeId); }}>Forget result</button> : null}
-        <button className="button subtle" disabled={props.disabled} onClick={props.onClear}>Clear this file’s cache</button>
+        {props.audits.length > 0 ? <button className="button subtle" disabled={props.disabled || !props.activeId} onClick={() => { if (props.activeId && window.confirm("Delete this saved report and its view preferences? This cannot be undone.")) props.onForget(props.activeId); }}>Delete saved report</button> : null}
+        <button className="button subtle" disabled={props.disabled} onClick={props.onClear}>Clear rebuildable context</button>
       </div>
-      <p className="fine-print">Local space is limited. Older reports may be removed when it fills up; export results you need to keep.</p>
+      <p className="fine-print">Clearing context keeps saved reports and view preferences. Local space is limited; export reports you need to keep.</p>
     </section>
   );
 }

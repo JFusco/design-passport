@@ -575,6 +575,8 @@ export interface KnowledgeInsight {
   message: string;
   factId: string;
   targetNodeId?: string;
+  /** False when shown only through the optional all-guidance view. */
+  applicable?: boolean;
 }
 
 export type LearningObservationKindV1 =

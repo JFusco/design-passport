@@ -205,6 +205,7 @@ export function evaluateTokenRules(
         return Boolean(variable && isPreciselyScopedVariableForField(variable, field));
       });
       if (compatible.length === 1) {
+        const inferredVariable = selectedVariablesById.get(compatible[0] ?? "");
         output.push(createFinding(
           "token.application.unique-inference",
           "token-application",
@@ -214,7 +215,7 @@ export function evaluateTokenRules(
           "fail",
           "Unique inferred variable is available",
           `Figma inferred one approved compatible variable for ${field}; it can be bound with guarded confirmation.`,
-          { field, variableId: compatible[0] ?? "", candidateCount: compatible.length },
+          { field, variableId: compatible[0] ?? "", variableName: inferredVariable?.name ?? "Approved variable", candidateCount: compatible.length },
           {
             fixability: "guarded",
             suggestedValue: { field, variableId: compatible[0] ?? "" },

@@ -454,6 +454,8 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
   const insights = buildKnowledgeInsights({
     graph,
     targetRootIds: rootIds,
+    findings,
+    operations: nextPlans.flatMap((plan) => plan.operations),
     ...(projectPack ? { projectPack } : {}),
     referencePacks: sessionReferencePacks,
     teamPack: TEAM_KNOWLEDGE_PACK,
@@ -631,11 +633,17 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
     await postSavedAudits();
     return;
   }
-  if (message.type === "forget-saved-audit" || message.type === "clear-file-cache") {
+  if (message.type === "clear-file-cache") {
     if (!figma.fileKey) return;
-    if (message.type === "clear-file-cache") await auditStorage.clearFile(figma.fileKey);
-    else await auditStorage.forgetAudit(figma.fileKey, message.id);
-    if (message.type === "clear-file-cache" || activeSavedAuditId === message.id) {
+    await auditStorage.clearFile(figma.fileKey);
+    post({ type: "mutation-result", message: "Rebuildable audit context cleared. Saved reports and view preferences were kept." });
+    await postSavedAudits();
+    return;
+  }
+  if (message.type === "forget-saved-audit") {
+    if (!figma.fileKey) return;
+    await auditStorage.forgetAudit(figma.fileKey, message.id);
+    if (activeSavedAuditId === message.id) {
       activeSavedAuditId = undefined;
       activeViewState = undefined;
       if (historicalAudit) {

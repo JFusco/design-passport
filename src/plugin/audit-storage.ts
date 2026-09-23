@@ -516,7 +516,7 @@ export class AuditStorage {
 
   clearFile(fileKey: string): Promise<void> {
     return this.enqueue(async () => {
-      const prefixes = [AUDIT_PREFIX, CONTEXT_PREFIX, VIEW_PREFIX].map((prefix) => filePrefix(prefix, fileKey));
+      const prefixes = [CONTEXT_PREFIX].map((prefix) => filePrefix(prefix, fileKey));
       for (const key of await this.storage.keysAsync()) if (prefixes.some((prefix) => key.startsWith(prefix))) await this.storage.deleteAsync(key);
     });
   }

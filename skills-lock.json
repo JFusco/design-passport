@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "sourceSnapshot": "5b5b368d756d15ba70042ad394b67c7c056670fb",
+  "skills": {
+    "design-passport-security-review": {
+      "source": "JFusco/qa-operations",
+      "sourcePath": ".agents/skills/qa-security-review",
+      "adaptedFor": "Design Passport local companion",
+      "license": "UNLICENSED internal guidance",
+      "computedHash": "524e74f060a5f9a916453b55d8d358efc69dd31b2abfa90b0408fb0841e2b746"
+    },
+    "next-dev-loop": {
+      "source": "JFusco/qa-operations",
+      "sourcePath": ".agents/skills/next-dev-loop",
+      "license": "MIT",
+      "licenseEvidence": ".agents/skills/next-dev-loop/LICENSE.md",
+      "computedHash": "a2c863102b125590ddb25a5ed04fe48d2ee7441dd2a38852b348383887c5a0b9"
+    },
+    "playwright-cli": {
+      "source": "JFusco/qa-operations",
+      "sourcePath": ".agents/skills/playwright-cli",
+      "upstream": "microsoft/playwright-cli",
+      "ref": "v0.1.21",
+      "license": "Apache-2.0",
+      "licenseEvidence": "https://github.com/microsoft/playwright-cli/blob/v0.1.21/package.json",
+      "computedHash": "1e6cef0264b72fbf47618ccb82644b9a72934b2eeb35186842332928492a3cd2"
+    },
+    "vercel-composition-patterns": {
+      "source": "JFusco/qa-operations",
+      "sourcePath": ".agents/skills/vercel-composition-patterns",
+      "upstream": "vercel-labs/agent-skills",
+      "version": "1.0.0",
+      "license": "MIT",
+      "licenseEvidence": "https://github.com/vercel-labs/agent-skills/blob/main/README.md",
+      "computedHash": "f98931159fa9c7fed043bcd18a891a46dcf89ababa38df13a4c5b7b30dc0ce07"
+    },
+    "vercel-react-best-practices": {
+      "source": "JFusco/qa-operations",
+      "sourcePath": ".agents/skills/vercel-react-best-practices",
+      "upstream": "vercel-labs/agent-skills",
+      "ref": "063bee94c3f4df8453406c830b0a7df0f2860278",
+      "version": "1.0.0",
+      "license": "MIT",
+      "computedHash": "3219a1944e404ffc14d1d9d6aef6dd2e3855b81387ee0a044ccbfe14d34c2357"
+    },
+    "web-design-guidelines": {
+      "source": "JFusco/qa-operations",
+      "sourcePath": ".agents/skills/web-design-guidelines",
+      "upstream": "vercel-labs/agent-skills",
+      "version": "1.0.0",
+      "license": "MIT",
+      "licenseEvidence": "https://github.com/vercel-labs/agent-skills/blob/main/README.md",
+      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    },
+    "writing-guidelines": {
+      "source": "JFusco/qa-operations",
+      "sourcePath": ".agents/skills/writing-guidelines",
+      "upstream": "vercel-labs/agent-skills",
+      "version": "1.0.0",
+      "license": "MIT",
+      "licenseEvidence": "https://github.com/vercel-labs/agent-skills/blob/main/README.md",
+      "computedHash": "e90462d4f801d823603b12c345ad0ff91a7489415274432681d21c7129123c26"
+    }
+  }
+}

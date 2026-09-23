@@ -32,7 +32,7 @@ export function ContextPanel(props: ContextPanelProps) {
 
   return (
     <section className="panel stack">
-      <div className="section-heading"><div><span className="section-label">Whole-file design knowledge</span><h2>{props.knowledge?.complete ? "Complete" : "Not built"}</h2></div><button className="button" disabled={props.actionsBlocked} onClick={props.onRefresh}>Rebuild context</button></div>
+      <div className="section-heading"><div><span className="section-label">Whole-file design knowledge</span><h2>{props.knowledge?.complete ? "Complete" : "Not built"}</h2></div></div>
       {props.knowledge && <>
         <div className="context-grid">
           <Metric label="Pages loaded" value={`${props.knowledge.loadedPageCount} / ${props.knowledge.pageCount}`} />
@@ -56,6 +56,7 @@ export function ContextPanel(props: ContextPanelProps) {
           {props.knowledge.tokenCollections.map((collection) => <div className="inventory-row" key={`${collection.remote}:${collection.name}`}><span><strong>{collection.name}</strong><small>{collection.remote ? "enabled library" : "local"}</small></span><b>{collection.variableCount.toLocaleString()} variables</b></div>)}
         </ContextList>
       </>}
+      <details className="context-list troubleshooting"><summary>Troubleshooting<span>1</span></summary><div><p className="fine-print">Force a full context rebuild only when a normal audit refresh cannot recover from stale supporting data.</p><button className="button" disabled={props.actionsBlocked} onClick={props.onRefresh}>Rebuild audit context</button></div></details>
       <div className="divider" />
       <div><span className="section-label">Project-scoped guidance</span><h2>Style guide and references</h2><p className="fine-print">A project style guide is bound privately to this Figma file. One-off references stay in this plugin session.</p></div>
       {props.projectStyleGuide.state === "active" ? (

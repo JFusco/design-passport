@@ -104,9 +104,9 @@ button:disabled { cursor: not-allowed; opacity: .46; }
   border-bottom: 3px solid var(--brand);
 }
 
-.brand-lockup { min-width: 0; display: flex; align-items: center; gap: 12px; }
-.brand-mark { width: 31px; height: 31px; flex: 0 0 auto; color: var(--brand); }
-.brand-name, .eyebrow, .section-label {
+.brand-lockup { min-width: 0; display: flex; align-items: center; gap: 13px; }
+.cumulative-logo { width: 134px; height: auto; flex: 0 0 auto; color: #f5f3ec; }
+.eyebrow, .section-label {
   display: block;
   font-family: "Fragment Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 9px;
@@ -114,10 +114,11 @@ button:disabled { cursor: not-allowed; opacity: .46; }
   letter-spacing: .13em;
   text-transform: uppercase;
 }
-.brand-name { margin-bottom: 3px; color: #a7a28a; }
 .section-label, .eyebrow { color: var(--muted-ink); }
 .app-header h1 {
   margin: 0;
+  padding-left: 13px;
+  border-left: 1px solid #5a574b;
   font-family: Aeonik, "Host Grotesk", Inter, sans-serif;
   font-size: 21px;
   font-weight: 500;
@@ -317,6 +318,7 @@ button:disabled { cursor: not-allowed; opacity: .46; }
 .guidance-card h3 { font-size: 13px; }
 .guidance-card p { color: var(--muted-ink); font-size: 11px; line-height: 1.45; }
 .guidance-meta { display: flex; justify-content: space-between; gap: 8px; color: var(--muted-ink); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.guidance-toggle { justify-self: start; }
 .file-picker { display: grid; justify-items: start; gap: 6px; padding: 12px; border: 1px dashed var(--control-border); border-radius: 10px; background: var(--muted); }
 .file-picker input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
 .file-picker small, .file-summary span, .contribution-summary span, .privacy-summary span { color: var(--muted-ink); font-size: 10px; line-height: 1.45; }
@@ -458,9 +460,12 @@ dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .fix-all-card small { color: var(--muted-ink); font-size: 9px; line-height: 1.35; }
 .plan-heading, .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .plan-card ul { margin: 10px 0; padding: 0; display: grid; gap: 5px; list-style: none; }
-.plan-card li { min-width: 0; display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: start; gap: 10px; color: var(--muted-ink); font-size: 10px; }
+.plan-card li { min-width: 0; padding: 9px; display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: start; gap: 4px 10px; color: var(--muted-ink); background: var(--muted); border: 1px solid var(--border); border-radius: 8px; font-size: 10px; }
 .plan-card li code { white-space: nowrap; }
 .plan-card li span { min-width: 0; overflow-wrap: anywhere; line-height: 1.35; }
+.plan-card li dl { grid-column: 1 / -1; margin: 4px 0 0; display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 3px 8px; }
+.plan-card li dt { color: var(--muted-ink); font-size: 8px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; }
+.plan-card li dd { min-width: 0; margin: 0; color: var(--ink); overflow-wrap: anywhere; }
 code { font-family: "Fragment Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .95em; }
 .fine-print { color: var(--muted-ink); font-size: 10px; line-height: 1.45; }
 .acknowledgement { padding: 10px; align-items: flex-start; background: color-mix(in srgb, var(--card) 82%, transparent); border: 1px solid var(--border); border-radius: 8px; }

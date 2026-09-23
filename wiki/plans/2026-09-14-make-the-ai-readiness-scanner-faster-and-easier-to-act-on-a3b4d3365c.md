@@ -1,7 +1,7 @@
 ---
 status: "implemented"
 executed: true
-evidence: ["docs/qa/ai-readiness-scanner-maintenance.md", "https://github.com/JFusco/design-passport/issues/24"]
+evidence: ["wiki/qa/ai-readiness-scanner-maintenance.md", "https://github.com/JFusco/design-passport/issues/24"]
 source_tool: "codex"
 source: "docs/plans/ai-readiness-scanner-maintenance.md"
 topics: ["figma-runtime-qa"]

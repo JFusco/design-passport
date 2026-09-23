@@ -493,7 +493,7 @@ describe("durable audit storage", () => {
     expect(repaired.status.state).toBe("saved");
   });
 
-  it("forgets one saved result or one file without removing waivers or another file", async () => {
+  it("clears rebuildable context without removing reports, view state, waivers, or another file", async () => {
     const port = new MemoryStorage();
     const storage = new AuditStorage(port);
     const first = await storage.saveAudit(input());
@@ -501,14 +501,14 @@ describe("durable audit storage", () => {
     await storage.saveContext("file-one", "context", { hello: true });
     await storage.updateView("file-one", first.audit.id, view);
     await port.setAsync("waivers:file-one", { keep: true });
-    await storage.forgetAudit("file-one", first.audit.id);
-    await storage.updateView("file-one", first.audit.id, view);
-    expect(await storage.listAudits("file-one")).toEqual([]);
-    expect(await storage.loadContext("file-one", "context")).toEqual({ hello: true });
     await storage.clearFile("file-one");
     expect(await storage.loadContext("file-one", "context")).toBeUndefined();
+    expect(await storage.listAudits("file-one")).toHaveLength(1);
+    expect((await storage.loadAudit("file-one", first.audit.id))?.viewState).toEqual(view);
     expect(await storage.listAudits("file-two")).toHaveLength(1);
     expect(await port.getAsync("waivers:file-one")).toEqual({ keep: true });
+    await storage.forgetAudit("file-one", first.audit.id);
+    expect(await storage.listAudits("file-one")).toEqual([]);
   });
 
   it("does not persist malformed reports or unsafe presentation state", async () => {

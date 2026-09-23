@@ -1,6 +1,8 @@
 import type {
+  ChangeOperation,
   DesignKnowledgeGraph,
   DesignReferencePackV1,
+  Finding,
   KnowledgeCandidateV1,
   KnowledgeDecisionV1,
   KnowledgeInsight,
@@ -44,7 +46,7 @@ function assertNoUnsafeStrings(value: unknown, path = "$"): void {
   }
 }
 
-function sortedUnique(values: readonly string[]): string[] {
+function sortedUnique<T extends string>(values: readonly T[]): T[] {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right));
 }
 
@@ -161,6 +163,41 @@ export function buildProjectStyleGuideBinding(
   return binding;
 }
 
+/** Keep a connected design-system guide and replace only its approved-project layer. */
+export function combineProjectStyleGuidePacks(
+  current: DesignReferencePackV1 | undefined,
+  incoming: DesignReferencePackV1,
+  now = new Date(),
+): DesignReferencePackV1 {
+  assertReferencePack(incoming, "style-guide");
+  if (!current) return incoming;
+  assertReferencePack(current, "style-guide");
+  if (current.source.projectScope !== incoming.source.projectScope) {
+    throw new Error("Approved guidance and the connected style guide must use the same project scope");
+  }
+  const incomingIsApproved = incoming.facts.every((fact) => fact.provenance === "approved-project");
+  const preserved = current.facts.filter((fact) => incomingIsApproved
+    ? fact.provenance !== "approved-project"
+    : fact.provenance === "approved-project");
+  const incomingIds = new Set(incoming.facts.map((fact) => fact.factId));
+  const facts = [...preserved.filter((fact) => !incomingIds.has(fact.factId)), ...incoming.facts]
+    .sort((left, right) => left.factId.localeCompare(right.factId));
+  const primary = incomingIsApproved && current.facts.some((fact) => fact.provenance !== "approved-project") ? current : incoming;
+  return buildReferencePack({
+    packVersion: incoming.packVersion,
+    source: {
+      ...primary.source,
+      contentDigest: hashValue({ current: current.digest, incoming: incoming.digest }),
+      completeness: {
+        complete: current.source.completeness.complete && incoming.source.completeness.complete,
+        availableDomains: sortedUnique(facts.map((fact) => fact.domain)),
+        warnings: sortedUnique([...current.source.completeness.warnings, ...incoming.source.completeness.warnings]),
+      },
+    },
+    facts,
+  }, now);
+}
+
 export function assertProjectStyleGuideBinding(value: unknown, fileKey?: string): asserts value is ProjectStyleGuideBindingV1 {
   assertContract("project-style-guide-binding", value);
   const binding = value as ProjectStyleGuideBindingV1;
@@ -230,6 +267,8 @@ export function buildKnowledgeInsights(input: {
   projectPack?: DesignReferencePackV1;
   referencePacks?: DesignReferencePackV1[];
   teamPack?: TeamKnowledgePackV1;
+  findings?: Finding[];
+  operations?: ChangeOperation[];
 }): KnowledgeInsight[] {
   const targetRoots = new Set(input.targetRootIds);
   const inScope = Object.values(input.graph.nodes).filter((node) => targetRoots.has(node.rootId) && node.evidenceRole !== "instance-descendant");
@@ -238,6 +277,20 @@ export function buildKnowledgeInsights(input: {
     ...(input.referencePacks ?? []).map((pack) => ({ origin: "reference" as const, pack })),
   ];
   const insights: KnowledgeInsight[] = [];
+  const applicabilityKnown = Boolean(input.findings || input.operations);
+  const relevantContexts = new Set<string>();
+  const relevantDomains = new Set<ReferenceDomainV1>();
+  for (const finding of input.findings ?? []) {
+    if (finding.status === "pass" || finding.status === "not-applicable") continue;
+    const context = `axis:${finding.axis}`;
+    relevantContexts.add(context);
+    relevantDomains.add(knowledgeDomainForContext(context));
+  }
+  for (const operation of input.operations ?? []) {
+    const context = `operation:${operation.kind}`;
+    relevantContexts.add(context);
+    relevantDomains.add(knowledgeDomainForContext(context));
+  }
 
   for (const { origin, pack } of packs) {
     for (const fact of pack.facts) {
@@ -250,6 +303,7 @@ export function buildKnowledgeInsights(input: {
           title: `${labelForOrigin(origin)} · ${fact.label}`,
           message: guidanceWithExceptions(fact.guidance, fact.exceptions),
           factId: fact.factId,
+          applicable: !applicabilityKnown || relevantDomains.has(fact.domain),
         });
         continue;
       }
@@ -287,6 +341,7 @@ export function buildKnowledgeInsights(input: {
       title: "Shared guidance",
       message: guidanceWithExceptions(entry.wording, entry.exceptions),
       factId: entry.candidateId,
+      applicable: !applicabilityKnown || entry.contexts.some((context) => relevantContexts.has(context)) || relevantDomains.has(entry.domain),
     });
   }
   return insights.sort((left, right) => left.origin.localeCompare(right.origin)
@@ -297,6 +352,11 @@ export function buildKnowledgeInsights(input: {
 
 function reportIdentityMaterial(report: ReadinessReport): unknown {
   return {
+    auditIdentity: hashValue({
+      knowledgeSnapshotHash: report.target.knowledgeSnapshotHash,
+      scope: report.target.scope,
+      targetRootIds: [...report.target.rootIds].sort(),
+    }),
     rulesetVersion: report.rulesetVersion,
     catalogVersion: report.catalogVersion,
     catalogDigest: report.catalogDigest,
@@ -336,10 +396,10 @@ export function buildLearningEnvelope(input: {
     const kind = finding.status === "waived" ? "waiver-applied" : "repeated-finding";
     const direction = finding.status === "waived" ? "contradict" : "support";
     const context = `axis:${finding.axis}`;
-    const key = `${kind}:${finding.ruleId}:${context}:${direction}`;
+    const key = `finding:${finding.ruleId}:${context}:${direction}`;
     const existing = groups.get(key);
     groups.set(key, {
-      observationKey: hashValue({ kind, ruleId: finding.ruleId, context, direction }),
+      observationKey: hashValue({ ruleId: finding.ruleId, context }),
       kind,
       context,
       direction,
@@ -449,17 +509,27 @@ function humanizeMachineLabel(value: string): string {
 }
 
 export function generateCandidateDrafts(envelopes: ReviewLearningEnvelopeV1[], now = new Date()): KnowledgeCandidateV1[] {
-  const groups = new Map<string, { observation: LearningObservationV1; projectScope: string; envelopes: Set<string>; support: number; contradict: number }>();
+  const groups = new Map<string, {
+    observation: LearningObservationV1;
+    projectScope: string;
+    envelopes: Set<string>;
+    supportEnvelopes: Set<string>;
+    contradictEnvelopes: Set<string>;
+  }>();
   for (const envelope of envelopes) {
     assertLearningEnvelope(envelope);
     for (const observation of envelope.observations) {
       const groupKey = hashValue({ projectScope: envelope.projectScope, observationKey: observation.observationKey, context: observation.context });
-      const existing = groups.get(groupKey) ?? { observation, projectScope: envelope.projectScope, envelopes: new Set<string>(), support: 0, contradict: 0 };
-      if (!existing.envelopes.has(envelope.digest)) {
-        existing.envelopes.add(envelope.digest);
-        if (observation.direction === "support") existing.support += 1;
-        else existing.contradict += 1;
-      }
+      const existing = groups.get(groupKey) ?? {
+        observation,
+        projectScope: envelope.projectScope,
+        envelopes: new Set<string>(),
+        supportEnvelopes: new Set<string>(),
+        contradictEnvelopes: new Set<string>(),
+      };
+      existing.envelopes.add(envelope.reportDigest);
+      if (observation.direction === "support") existing.supportEnvelopes.add(envelope.reportDigest);
+      else existing.contradictEnvelopes.add(envelope.reportDigest);
       groups.set(groupKey, existing);
     }
   }
@@ -476,8 +546,8 @@ export function generateCandidateDrafts(envelopes: ReviewLearningEnvelopeV1[], n
       proposedScope: "project" as const,
       exceptions: [],
       evidenceEnvelopeDigests: [...group.envelopes].sort(),
-      supportCount: group.support,
-      contradictCount: group.contradict,
+      supportCount: group.supportEnvelopes.size,
+      contradictCount: group.contradictEnvelopes.size,
     };
     const candidate: KnowledgeCandidateV1 = {
       ...base,

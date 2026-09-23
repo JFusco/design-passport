@@ -1,7 +1,7 @@
 ---
 status: "implemented"
 executed: true
-evidence: ["JFusco/design-passport#21; branch codex/persistent-audits-and-faster-repeat-reviews; src/plugin/audit-storage.ts; src/plugin/main.ts; src/figma/context-cache.ts; 294 tests across 35 files; pnpm verify; native 64-page/32,038-node parity and full batch; native 65-page editable-fixture acceptance; docs/benchmarks/persistent-audits-acceptance.md"]
+evidence: ["JFusco/design-passport#21; branch codex/persistent-audits-and-faster-repeat-reviews; src/plugin/audit-storage.ts; src/plugin/main.ts; src/figma/context-cache.ts; 294 tests across 35 files; pnpm verify; native 64-page/32,038-node parity and full batch; native 65-page editable-fixture acceptance; wiki/benchmarks/persistent-audits-acceptance.md"]
 source_tool: "codex"
 source: "codex:/Users/joe.fusco/.codex/sessions/2026/09/14/rollout-2026-09-14T13-19-23-01a0a0ee-3da9-7101-9c6f-3e991fdd368b.jsonl, codex:/Users/joe.fusco/.codex/sessions/2026/09/14/rollout-2026-09-14T13-44-24-01a0a105-2438-7b23-80c0-c7a0e0d39d97.jsonl"
 topics: ["persistent-audits"]

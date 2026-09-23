@@ -27,7 +27,7 @@ Established-project, new/no-guide, session reference, Design/Dev Mode, invalid r
 - [Local companion](../../src/companion/main.ts)
 - [Designer context UI](../../src/ui/components/ContextPanel.tsx)
 - [Designer guidance UI](../../src/ui/components/Guidance.tsx)
-- [Knowledge-loop documentation](../../docs/knowledge-loop.md)
+- [Knowledge-loop documentation](../guides/knowledge-loop.md)
 - `pnpm typecheck`
 - 27 Vitest files and 157 tests
 - Live Figma target `gXT4bIDrkgva2uSzY763oG`

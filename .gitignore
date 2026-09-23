@@ -7,3 +7,9 @@ coverage/
 .env*
 !.env.example
 .design-passport-local/
+.next/
+apps/*/.next/
+playwright-report/
+test-results/
+.playwright-cli/
+*.tsbuildinfo

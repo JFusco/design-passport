@@ -52,5 +52,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Run complete non-fixing quality gate
         run: pnpm run verify:ci

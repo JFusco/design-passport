@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "projectScope": "project:companion-e2e",
+  "producer": {
+    "pluginVersion": "e2e",
+    "rulesetVersion": "1.0.0-beta.4",
+    "catalogVersion": "1.17.0",
+    "knowledgeVersion": "1.0.0"
+  },
+  "reportDigest": "h53:1b26232c70f137",
+  "observations": [
+    {
+      "observationKey": "h53:03ff1402f65091",
+      "kind": "repeated-finding",
+      "context": "axis:responsive-completeness",
+      "direction": "support",
+      "ruleId": "responsive.binding-parity",
+      "canonicalLabel": "Responsive token parity",
+      "count": 1
+    },
+    {
+      "observationKey": "h53:0b4c952fb2ac5e",
+      "kind": "repeated-finding",
+      "context": "axis:accessibility",
+      "direction": "support",
+      "ruleId": "accessibility.target-minimum",
+      "canonicalLabel": "Minimum target size",
+      "count": 1
+    },
+    {
+      "observationKey": "h53:13472d90961c74",
+      "kind": "repeated-finding",
+      "context": "axis:accessibility",
+      "direction": "support",
+      "ruleId": "accessibility.behavior-review",
+      "canonicalLabel": "Keyboard, focus, and semantic behavior",
+      "count": 1
+    }
+  ],
+  "generatedAt": "2026-09-23T12:00:00.000Z",
+  "digest": "h53:1321c94d79d114"
+}
