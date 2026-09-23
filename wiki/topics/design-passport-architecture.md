@@ -44,6 +44,8 @@ Profile schema v2 makes team conventions Required, Advisory, or Off. Advisory an
 
 The production manifest retains the organization-published plugin ID. `development/manifest.json` has a separate Figma-assigned identity, its own manifest directory, and a persistent Development warning. The separate directory avoids Figma's one-development-plugin-per-directory deduplication; the build mirrors the exact generated UI/controller bytes into ignored `development/dist/` output because Figma confines each development plugin to its manifest directory. Both bundles embed plugin version, ruleset, Git SHA, and channel; report v3, certificate v2, bootstrap, UI, and exports retain the producer identity that actually created them. This preserves the no-network boundary while making stale, historical, development, and current production evidence distinguishable.
 
+Post-review hardening makes the graph digest cover every rule-relevant ownership, layout, detachment, instance, and structural input while deliberately excluding the certificate that refers back to that digest. Production builds fail on a dirty checkout; Development build identities carry a dirty-content suffix. Generated controller/UI hashes and channel metadata are validated before copying into the Development manifest directory, and development certificates identify their channel both on the canvas and in relaunch data.
+
 ## Consequences
 
 - Pure TypeScript operations can be unit tested without Figma.
