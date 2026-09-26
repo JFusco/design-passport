@@ -476,9 +476,15 @@
           "kind": "issue",
           "number": 35,
           "url": "https://github.com/jfusco/design-passport/issues/35"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "pull-request",
+          "number": 36,
+          "url": "https://github.com/jfusco/design-passport/pull/36"
         }
       ],
-      "bytes": 668,
+      "bytes": 710,
       "degree": 2,
       "x": -0.998583,
       "y": 0.053222,
