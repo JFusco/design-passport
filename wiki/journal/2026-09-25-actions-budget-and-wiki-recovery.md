@@ -2,8 +2,9 @@
 date: 2026-09-25
 topics: [persistent-audits]
 plans: [2026-09-26-reduce-actions-usage-and-recover-wiki-synchronization-a7e32708e7.md]
-issue: https://github.com/JFusco/design-passport/issues/35
+issue: "https://github.com/jfusco/design-passport/issues/35"
 pr: https://github.com/JFusco/design-passport/pull/36
+issues: ["https://github.com/jfusco/design-passport/issues/35"]
 ---
 # Reduce Actions work and add wiki recovery
 
