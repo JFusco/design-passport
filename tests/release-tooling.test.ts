@@ -74,8 +74,8 @@ describe("release tooling contract", () => {
     expect(pnpmWorkspace).toContain('- "@commitlint/cli"');
   });
 
-  it("does not create ordinary PRs for wiki automation branches", () => {
-    expect(prWorkflow).toContain('"bot/wiki-**"');
-    expect(prWorkflow).toContain("!startsWith(github.ref_name, 'bot/wiki-')");
+  it("creates pull requests only when manually dispatched", () => {
+    expect(prWorkflow).toContain("workflow_dispatch:");
+    expect(prWorkflow).not.toContain("\n  push:");
   });
 });
