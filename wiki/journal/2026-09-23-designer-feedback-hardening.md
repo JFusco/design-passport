@@ -1,8 +1,8 @@
 ---
 topics: [design-passport-architecture, figma-runtime-qa]
 plans: [2026-09-23-designer-feedback-hardening-and-stale-build-prevention-859c045c42.md]
-issue: "https://github.com/JFusco/design-passport/issues/27"
-issues: ["https://github.com/JFusco/design-passport/issues/27", "https://github.com/jfusco/design-passport/issues/27"]
+issue: "https://github.com/jfusco/design-passport/issues/27"
+issues: ["https://github.com/jfusco/design-passport/issues/27"]
 ---
 
 # Designer-feedback hardening and stale-build prevention
