@@ -31,3 +31,7 @@ Native Figma testing on 36- and 64-page libraries confirmed automatic saving and
 The 65-page editable fixture completed 63 eligible pages and skipped two. Variable/component edits produced identical cached and forced-full reports; a component-only edit rebuilt two dependent fragments while reusing 62. Editing during validation prevented publication. Forget and file-specific Clear preserved another file's saved report, and all fixture mutations were restored. Synthetic timing excludes Figma property/API bridge costs and does not justify an overall speedup claim. The manual QA document links the acceptance matrix and runtime measurements.
 
 False-positive rubric changes are outside this change until concrete designer examples are provided.
+
+## Repository automation
+
+Since 2026-09-25, drafts and changes limited to wiki content or its generated graph use lightweight validation while ready product, workflow, script, documentation, and skill changes retain the full browser-backed suite. Wiki maintenance runs Mondays, audits missed merges in batches, updates bot pull requests through REST, and rejects duplicate or malformed frontmatter across the full wiki before writing history ([issue #35](https://github.com/JFusco/design-passport/issues/35)).

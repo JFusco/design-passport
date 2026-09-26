@@ -2,12 +2,12 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 57,
-    "edges": 190,
+    "nodes": 59,
+    "edges": 194,
     "byType": {
       "index": 18,
-      "journal": 18,
-      "plan": 14,
+      "journal": 19,
+      "plan": 15,
       "topic": 7
     }
   },
@@ -20,8 +20,8 @@
       "githubRefs": [],
       "bytes": 162,
       "degree": 3,
-      "x": 0.975796,
-      "y": 0.218681,
+      "x": 0.977403,
+      "y": 0.211383,
       "size": 12
     },
     {
@@ -39,8 +39,8 @@
       ],
       "bytes": 6250,
       "degree": 3,
-      "x": 0.945817,
-      "y": 0.324699,
+      "x": 0.949398,
+      "y": 0.314077,
       "size": 12
     },
     {
@@ -58,8 +58,8 @@
       ],
       "bytes": 10158,
       "degree": 3,
-      "x": 0.904357,
-      "y": 0.426776,
+      "x": 0.910635,
+      "y": 0.413212,
       "size": 12
     },
     {
@@ -70,8 +70,8 @@
       "githubRefs": [],
       "bytes": 9443,
       "degree": 1,
-      "x": 0.789141,
-      "y": 0.614213,
+      "x": 0.802712,
+      "y": 0.596367,
       "size": 12
     },
     {
@@ -82,8 +82,8 @@
       "githubRefs": [],
       "bytes": 260,
       "degree": 7,
-      "x": 0.851919,
-      "y": 0.523673,
+      "x": 0.861554,
+      "y": 0.507666,
       "size": 12
     },
     {
@@ -94,8 +94,8 @@
       "githubRefs": [],
       "bytes": 5586,
       "degree": 2,
-      "x": 0.716783,
-      "y": 0.697297,
+      "x": 0.734774,
+      "y": 0.678312,
       "size": 12
     },
     {
@@ -113,8 +113,8 @@
       ],
       "bytes": 19151,
       "degree": 4,
-      "x": 0.635724,
-      "y": 0.771917,
+      "x": 0.658511,
+      "y": 0.752571,
       "size": 12
     },
     {
@@ -125,8 +125,8 @@
       "githubRefs": [],
       "bytes": 6801,
       "degree": 1,
-      "x": 0.546948,
-      "y": 0.837166,
+      "x": 0.574787,
+      "y": 0.818303,
       "size": 12
     },
     {
@@ -137,8 +137,8 @@
       "githubRefs": [],
       "bytes": 2899,
       "degree": 1,
-      "x": 0.451533,
-      "y": 0.892254,
+      "x": 0.484551,
+      "y": 0.874763,
       "size": 12
     },
     {
@@ -161,8 +161,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.350638,
-      "y": 0.936511,
+      "x": 0.388824,
+      "y": 0.921312,
       "size": 8
     },
     {
@@ -173,8 +173,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.245485,
-      "y": 0.9694,
+      "x": 0.288692,
+      "y": 0.957422,
       "size": 8
     },
     {
@@ -192,8 +192,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.137354,
-      "y": 0.990522,
+      "x": 0.185289,
+      "y": 0.982684,
       "size": 8
     },
     {
@@ -217,8 +217,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.027554,
-      "y": 0.99962,
+      "x": 0.079786,
+      "y": 0.996812,
       "size": 8
     },
     {
@@ -229,8 +229,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": -0.082579,
-      "y": 0.996584,
+      "x": -0.026621,
+      "y": 0.999646,
       "size": 8
     },
     {
@@ -254,8 +254,8 @@
       ],
       "bytes": 2518,
       "degree": 3,
-      "x": -0.191711,
-      "y": 0.981451,
+      "x": -0.132726,
+      "y": 0.991153,
       "size": 8
     },
     {
@@ -273,8 +273,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": -0.298515,
-      "y": 0.954405,
+      "x": -0.237327,
+      "y": 0.97143,
       "size": 8
     },
     {
@@ -292,8 +292,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": -0.401695,
-      "y": 0.915773,
+      "x": -0.339239,
+      "y": 0.9407,
       "size": 8
     },
     {
@@ -304,8 +304,8 @@
       "githubRefs": [],
       "bytes": 2327,
       "degree": 5,
-      "x": -0.5,
-      "y": 0.866025,
+      "x": -0.437307,
+      "y": 0.899312,
       "size": 8
     },
     {
@@ -316,8 +316,8 @@
       "githubRefs": [],
       "bytes": 3437,
       "degree": 7,
-      "x": -0.592235,
-      "y": 0.805765,
+      "x": -0.530421,
+      "y": 0.847734,
       "size": 8
     },
     {
@@ -328,8 +328,8 @@
       "githubRefs": [],
       "bytes": 2405,
       "degree": 6,
-      "x": -0.677282,
-      "y": 0.735724,
+      "x": -0.617525,
+      "y": 0.786552,
       "size": 8
     },
     {
@@ -347,8 +347,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": -0.754107,
-      "y": 0.656752,
+      "x": -0.697632,
+      "y": 0.716457,
       "size": 8
     },
     {
@@ -366,8 +366,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": -0.821778,
-      "y": 0.569808,
+      "x": -0.769834,
+      "y": 0.638244,
       "size": 8
     },
     {
@@ -385,8 +385,8 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": -0.879474,
-      "y": 0.475947,
+      "x": -0.833314,
+      "y": 0.5528,
       "size": 8
     },
     {
@@ -404,8 +404,8 @@
       ],
       "bytes": 5487,
       "degree": 4,
-      "x": -0.926494,
-      "y": 0.376309,
+      "x": -0.887352,
+      "y": 0.461093,
       "size": 8
     },
     {
@@ -423,8 +423,8 @@
       ],
       "bytes": 5249,
       "degree": 6,
-      "x": -0.962268,
-      "y": 0.272103,
+      "x": -0.931336,
+      "y": 0.364161,
       "size": 8
     },
     {
@@ -442,8 +442,8 @@
       ],
       "bytes": 3865,
       "degree": 4,
-      "x": -0.986361,
-      "y": 0.164595,
+      "x": -0.964768,
+      "y": 0.263103,
       "size": 8
     },
     {
@@ -461,8 +461,33 @@
       ],
       "bytes": 2962,
       "degree": 5,
-      "x": -0.998482,
-      "y": 0.055088,
+      "x": -0.987268,
+      "y": 0.159063,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-25-actions-budget-and-wiki-recovery.md",
+      "label": "Reduce Actions work and add wiki recovery",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 35,
+          "url": "https://github.com/jfusco/design-passport/issues/35"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "pull-request",
+          "number": 36,
+          "url": "https://github.com/jfusco/design-passport/pull/36"
+        }
+      ],
+      "bytes": 710,
+      "degree": 2,
+      "x": -0.998583,
+      "y": 0.053222,
       "size": 8
     },
     {
@@ -471,10 +496,10 @@
       "type": "index",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2907,
+      "bytes": 3129,
       "degree": 2,
-      "x": 0.993931,
-      "y": 0.110008,
+      "x": 0.994335,
+      "y": 0.106293,
       "size": 12
     },
     {
@@ -485,8 +510,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.998482,
-      "y": -0.055088,
+      "x": -0.998583,
+      "y": -0.053222,
       "size": 8
     },
     {
@@ -497,8 +522,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.986361,
-      "y": -0.164595,
+      "x": -0.987268,
+      "y": -0.159063,
       "size": 8
     },
     {
@@ -509,8 +534,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.962268,
-      "y": -0.272103,
+      "x": -0.964768,
+      "y": -0.263103,
       "size": 8
     },
     {
@@ -528,8 +553,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.926494,
-      "y": -0.376309,
+      "x": -0.931336,
+      "y": -0.364161,
       "size": 8
     },
     {
@@ -540,8 +565,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.879474,
-      "y": -0.475947,
+      "x": -0.887352,
+      "y": -0.461093,
       "size": 8
     },
     {
@@ -552,8 +577,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.821778,
-      "y": -0.569808,
+      "x": -0.833314,
+      "y": -0.5528,
       "size": 8
     },
     {
@@ -564,8 +589,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.754107,
-      "y": -0.656752,
+      "x": -0.769834,
+      "y": -0.638244,
       "size": 8
     },
     {
@@ -576,8 +601,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.677282,
-      "y": -0.735724,
+      "x": -0.697632,
+      "y": -0.716457,
       "size": 8
     },
     {
@@ -588,8 +613,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.592235,
-      "y": -0.805765,
+      "x": -0.617525,
+      "y": -0.786552,
       "size": 8
     },
     {
@@ -607,8 +632,8 @@
       ],
       "bytes": 6239,
       "degree": 3,
-      "x": -0.5,
-      "y": -0.866025,
+      "x": -0.530421,
+      "y": -0.847734,
       "size": 8
     },
     {
@@ -619,8 +644,8 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.401695,
-      "y": -0.915773,
+      "x": -0.437307,
+      "y": -0.899312,
       "size": 8
     },
     {
@@ -631,8 +656,8 @@
       "githubRefs": [],
       "bytes": 11833,
       "degree": 5,
-      "x": -0.298515,
-      "y": -0.954405,
+      "x": -0.339239,
+      "y": -0.9407,
       "size": 8
     },
     {
@@ -650,8 +675,8 @@
       ],
       "bytes": 2158,
       "degree": 4,
-      "x": -0.191711,
-      "y": -0.981451,
+      "x": -0.237327,
+      "y": -0.97143,
       "size": 8
     },
     {
@@ -662,8 +687,27 @@
       "githubRefs": [],
       "bytes": 1840,
       "degree": 3,
-      "x": -0.082579,
-      "y": -0.996584,
+      "x": -0.132726,
+      "y": -0.991153,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-26-reduce-actions-usage-and-recover-wiki-synchronization-a7e32708e7.md",
+      "label": "Reduce Actions usage and recover wiki synchronization",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 35,
+          "url": "https://github.com/jfusco/design-passport/issues/35"
+        }
+      ],
+      "bytes": 1410,
+      "degree": 3,
+      "x": -0.026621,
+      "y": -0.999646,
       "size": 8
     },
     {
@@ -681,14 +725,20 @@
         {
           "repository": "jfusco/design-passport",
           "kind": "issue",
+          "number": 35,
+          "url": "https://github.com/jfusco/design-passport/issues/35"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
           "number": 38,
           "url": "https://github.com/jfusco/design-passport/issues/38"
         }
       ],
-      "bytes": 20420,
-      "degree": 16,
-      "x": 0.027554,
-      "y": -0.99962,
+      "bytes": 20808,
+      "degree": 17,
+      "x": 0.079786,
+      "y": -0.996812,
       "size": 12
     },
     {
@@ -699,8 +749,8 @@
       "githubRefs": [],
       "bytes": 211,
       "degree": 2,
-      "x": 0.137354,
-      "y": -0.990522,
+      "x": 0.185289,
+      "y": -0.982684,
       "size": 12
     },
     {
@@ -711,8 +761,8 @@
       "githubRefs": [],
       "bytes": 21674,
       "degree": 1,
-      "x": 0.245485,
-      "y": -0.9694,
+      "x": 0.288692,
+      "y": -0.957422,
       "size": 12
     },
     {
@@ -730,8 +780,8 @@
       ],
       "bytes": 13899,
       "degree": 4,
-      "x": 0.451533,
-      "y": -0.892254,
+      "x": 0.484551,
+      "y": -0.874763,
       "size": 12
     },
     {
@@ -749,8 +799,8 @@
       ],
       "bytes": 5995,
       "degree": 3,
-      "x": 0.546948,
-      "y": -0.837166,
+      "x": 0.574787,
+      "y": -0.818303,
       "size": 12
     },
     {
@@ -761,8 +811,8 @@
       "githubRefs": [],
       "bytes": 264,
       "degree": 5,
-      "x": 0.350638,
-      "y": -0.936511,
+      "x": 0.388824,
+      "y": -0.921312,
       "size": 12
     },
     {
@@ -773,8 +823,8 @@
       "githubRefs": [],
       "bytes": 7744,
       "degree": 3,
-      "x": 0.635724,
-      "y": -0.771917,
+      "x": 0.658511,
+      "y": -0.752571,
       "size": 12
     },
     {
@@ -785,8 +835,8 @@
       "githubRefs": [],
       "bytes": 7180,
       "degree": 39,
-      "x": 0.716783,
-      "y": -0.697297,
+      "x": 0.734774,
+      "y": -0.678312,
       "size": 8
     },
     {
@@ -797,8 +847,8 @@
       "githubRefs": [],
       "bytes": 5450,
       "degree": 19,
-      "x": 0.789141,
-      "y": -0.614213,
+      "x": 0.802712,
+      "y": -0.596367,
       "size": 8
     },
     {
@@ -816,8 +866,8 @@
       ],
       "bytes": 19159,
       "degree": 41,
-      "x": 0.851919,
-      "y": -0.523673,
+      "x": 0.861554,
+      "y": -0.507666,
       "size": 8
     },
     {
@@ -828,8 +878,8 @@
       "githubRefs": [],
       "bytes": 5091,
       "degree": 21,
-      "x": 0.904357,
-      "y": -0.426776,
+      "x": 0.910635,
+      "y": -0.413212,
       "size": 8
     },
     {
@@ -843,12 +893,18 @@
           "kind": "issue",
           "number": 21,
           "url": "https://github.com/jfusco/design-passport/issues/21"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 35,
+          "url": "https://github.com/jfusco/design-passport/issues/35"
         }
       ],
-      "bytes": 4457,
-      "degree": 2,
-      "x": 0.945817,
-      "y": -0.324699,
+      "bytes": 4968,
+      "degree": 4,
+      "x": 0.949398,
+      "y": -0.314077,
       "size": 8
     },
     {
@@ -859,8 +915,8 @@
       "githubRefs": [],
       "bytes": 4803,
       "degree": 16,
-      "x": 0.975796,
-      "y": -0.218681,
+      "x": 0.977403,
+      "y": -0.211383,
       "size": 8
     },
     {
@@ -871,8 +927,8 @@
       "githubRefs": [],
       "bytes": 4946,
       "degree": 28,
-      "x": 0.993931,
-      "y": -0.110008,
+      "x": 0.994335,
+      "y": -0.106293,
       "size": 8
     }
   ],
@@ -967,6 +1023,13 @@
       "target": "wiki/topics/figma-runtime-qa.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "168a94a66bf8f4a6",
+      "source": "wiki/journal/2026-09-25-actions-budget-and-wiki-recovery.md",
+      "target": "wiki/plans/2026-09-26-reduce-actions-usage-and-recover-wiki-synchronization-a7e32708e7.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "16e08e3bd93759b8",
@@ -1121,6 +1184,13 @@
       "target": "wiki/plans/2026-09-09-clean-up-certification-annotations-eab120d954.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "353b0252dead04b6",
+      "source": "wiki/plans/2026-09-26-reduce-actions-usage-and-recover-wiki-synchronization-a7e32708e7.md",
+      "target": "wiki/topics/persistent-audits.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "355573979dad7dc2",
@@ -1555,6 +1625,13 @@
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "92b44b6774bfe829",
+      "source": "wiki/journal/2026-09-25-actions-budget-and-wiki-recovery.md",
+      "target": "wiki/topics/persistent-audits.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "930a1585a923d454",
@@ -2094,6 +2171,13 @@
       "target": "wiki/topics/design-readiness-standard.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "ee4038fa373cd0dc",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-26-reduce-actions-usage-and-recover-wiki-synchronization-a7e32708e7.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "ef494bb81439d34b",

@@ -11,10 +11,6 @@ on:
         description: "Create PR as draft"
         required: true
         default: "true"
-  push:
-    branches-ignore:
-      - main
-      - "bot/wiki-**"
 
 permissions:
   contents: read
@@ -31,7 +27,6 @@ env:
 jobs:
   pr:
     name: pr
-    if: ${{ !startsWith(github.ref_name, 'bot/wiki-') }}
     runs-on: ubuntu-latest
 
     steps:
