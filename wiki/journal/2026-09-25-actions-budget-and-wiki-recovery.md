@@ -7,4 +7,6 @@ pr: https://github.com/JFusco/design-passport/pull/36
 ---
 # Reduce Actions work and add wiki recovery
 
+Hosted merge testing showed that API authentication did not configure Git after checkout. Both wiki bot workflows now give `actions/checkout` the validated `PR_BOT_TOKEN`, so review branches can be pushed without expanding workflow permissions.
+
 Weekly maintenance replaces the daily wiki schedule. Merge sync now supports single and dated batch replay, defaults to 90 days, updates review PRs through REST, and runs without application or browser dependencies. Quality keeps the full browser-backed suite for ready substantive changes while drafts and wiki-only changes receive lightweight checks. Strict frontmatter validation now covers every wiki page.
