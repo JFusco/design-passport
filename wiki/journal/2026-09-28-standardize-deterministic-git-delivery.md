@@ -1,7 +1,8 @@
 ---
 topics: [design-passport-architecture]
 plans: [2026-09-28-standardize-deterministic-git-delivery-d9459693bc.md]
-issue: "https://github.com/JFusco/design-passport/issues/44"
+issue: 'https://github.com/jfusco/design-passport/issues/44'
+issues: ['https://github.com/jfusco/design-passport/issues/44']
 ---
 
 # Standardize deterministic Git delivery
