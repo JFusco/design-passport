@@ -4,17 +4,16 @@ import packageJson from "../package.json";
 import commitlintConfig from "../commitlint.config.cjs?raw";
 import commitlintWorkflow from "../.github/workflows/commitlint.yml?raw";
 import pnpmWorkspace from "../pnpm-workspace.yaml?raw";
-import prWorkflow from "../.github/workflows/pr.yml?raw";
 import qualityWorkflow from "../.github/workflows/quality.yml?raw";
 import { buildMetadata } from "../scripts/build-metadata.mjs";
 import { validateDevelopmentBundle } from "../scripts/sync-development-bundle.mjs";
 
 describe("release tooling contract", () => {
-  it("pins the governed commit and pull-request tools", () => {
-    expect(packageJson.devDependencies["@verndale/ai-commit"]).toBe("2.7.0");
-    expect(packageJson.devDependencies["@verndale/ai-pr"]).toBe("1.3.5");
+  it("pins standalone Commitlint without automated prose helpers", () => {
+    expect(packageJson.devDependencies["@commitlint/cli"]).toBe("20.5.3");
+    expect(packageJson.devDependencies["@commitlint/config-conventional"]).toBe("20.5.3");
     expect(packageJson.devDependencies.husky).toBe("9.1.7");
-    expect(packageJson.devDependencies.dotenv).toBe("16.6.1");
+    expect("dotenv" in packageJson.devDependencies).toBe(false);
   });
 
   it("keeps the push quality gate equivalent to the canonical verifier", () => {
@@ -53,9 +52,9 @@ describe("release tooling contract", () => {
     expect(() => validateDevelopmentBundle(metadata, { code, ui })).not.toThrow();
   });
 
-  it("exposes the governed commit and pull-request entry points", () => {
-    expect(packageJson.scripts.commit).toBe("ai-commit run");
-    expect(packageJson.scripts["pr:create"]).toBe("ai-pr");
+  it("exposes only the governed commit lint entry point", () => {
+    expect("commit" in packageJson.scripts).toBe(false);
+    expect("pr:create" in packageJson.scripts).toBe(false);
     expect(packageJson.scripts["lint:commit"]).toBe("commitlint --config commitlint.config.cjs");
   });
 
@@ -66,16 +65,12 @@ describe("release tooling contract", () => {
   });
 
   it("lints the PR title and every commit in the PR range", () => {
-    expect(commitlintConfig.trim()).toBe('module.exports = require("@verndale/ai-commit");');
+    expect(commitlintConfig).toContain("@commitlint/config-conventional");
     expect(commitlintWorkflow).toContain("github.event.pull_request.title");
     expect(commitlintWorkflow).toContain("github.event.pull_request.base.sha");
     expect(commitlintWorkflow).toContain("github.event.pull_request.head.sha");
     expect(commitlintWorkflow).toContain("--config commitlint.config.cjs");
-    expect(pnpmWorkspace).toContain('- "@commitlint/cli"');
-  });
-
-  it("creates pull requests only when manually dispatched", () => {
-    expect(prWorkflow).toContain("workflow_dispatch:");
-    expect(prWorkflow).not.toContain("\n  push:");
+    expect(commitlintWorkflow).toContain("pnpm run lint:pr");
+    expect(pnpmWorkspace).not.toContain("publicHoistPattern");
   });
 });
