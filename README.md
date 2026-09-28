@@ -154,12 +154,10 @@ pnpm schemas:check
 The repository uses the same guarded Git lifecycle as `@verndale/ui-design-library`:
 
 - `.husky/pre-commit` runs the advisory context-wiki lifecycle without hiding an earlier blocking hook failure.
-- `.husky/prepare-commit-msg` can prepare a message through `@verndale/ai-commit`.
-- `.husky/commit-msg` enforces the shared commit-message policy.
+- `.husky/commit-msg` invokes standalone Commitlint with the repository policy.
 - `.husky/pre-push` runs `pnpm verify:push`, which is the complete catalog, schema, wiki, TypeScript, unit-test, and production-build gate.
-- `.github/workflows/commitlint.yml` validates the PR title and every commit in the PR range through the shared `@verndale/ai-commit` configuration.
+- `.github/workflows/commitlint.yml` validates the PR body, title, and every commit in the PR range.
 - `.github/workflows/quality.yml` runs the complete non-fixing `pnpm verify:ci` gate for pull requests into `main`.
-- `.github/workflows/pr.yml` creates or updates a branch pull request through `@verndale/ai-pr`.
 
 The setup commands have already been applied to the repository. A fresh checkout only needs the normal dependency install, which activates Husky through the `prepare` script:
 
@@ -167,14 +165,10 @@ The setup commands have already been applied to the repository. A fresh checkout
 pnpm install --frozen-lockfile
 ```
 
-Use the governed helpers when you want an assisted commit or pull request:
-
-```bash
-pnpm commit
-pnpm pr:create
-```
-
-Copy `.env.example` to `.env` only for local credentials or optional model settings. `.env` is ignored and must never be committed. The pull-request workflow expects the repository secret `PR_BOT_TOKEN`; optional AI-generated PR summaries additionally use the variables and secret documented in `.env.example`.
+Use ordinary Git and GitHub commands for delivery, following the issue, branch,
+commit, push, and PR sequence in `AGENTS.md`. Copy `.env.example` to `.env`
+only for the local Figma credential. `.env` is ignored and must never be
+committed. Wiki writer workflows require the repository secret `BOT_TOKEN`.
 
 ## Automatic audit setup
 

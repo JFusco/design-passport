@@ -50,6 +50,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate PR body
+        if: ${{ !startsWith(github.event.pull_request.head.ref, 'bot/wiki-') }}
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: pnpm run lint:pr
+
       - name: Lint PR title (squash merge becomes the commit on main)
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}

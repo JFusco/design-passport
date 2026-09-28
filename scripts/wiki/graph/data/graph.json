@@ -2,12 +2,12 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 60,
-    "edges": 194,
+    "nodes": 62,
+    "edges": 198,
     "byType": {
       "index": 18,
-      "journal": 20,
-      "plan": 15,
+      "journal": 21,
+      "plan": 16,
       "topic": 7
     }
   },
@@ -20,8 +20,8 @@
       "githubRefs": [],
       "bytes": 162,
       "degree": 3,
-      "x": 0.978148,
-      "y": 0.207912,
+      "x": 0.97953,
+      "y": 0.201299,
       "size": 12
     },
     {
@@ -39,8 +39,8 @@
       ],
       "bytes": 6250,
       "degree": 3,
-      "x": 0.951057,
-      "y": 0.309017,
+      "x": 0.954139,
+      "y": 0.299363,
       "size": 12
     },
     {
@@ -58,8 +58,8 @@
       ],
       "bytes": 10158,
       "degree": 3,
-      "x": 0.913545,
-      "y": 0.406737,
+      "x": 0.918958,
+      "y": 0.394356,
       "size": 12
     },
     {
@@ -70,8 +70,8 @@
       "githubRefs": [],
       "bytes": 9443,
       "degree": 1,
-      "x": 0.809017,
-      "y": 0.587785,
+      "x": 0.820763,
+      "y": 0.571268,
       "size": 12
     },
     {
@@ -82,8 +82,8 @@
       "githubRefs": [],
       "bytes": 260,
       "degree": 7,
-      "x": 0.866025,
-      "y": 0.5,
+      "x": 0.874347,
+      "y": 0.485302,
       "size": 12
     },
     {
@@ -94,8 +94,8 @@
       "githubRefs": [],
       "bytes": 5586,
       "degree": 2,
-      "x": 0.743145,
-      "y": 0.669131,
+      "x": 0.758758,
+      "y": 0.651372,
       "size": 12
     },
     {
@@ -113,8 +113,8 @@
       ],
       "bytes": 19151,
       "degree": 4,
-      "x": 0.669131,
-      "y": 0.743145,
+      "x": 0.688967,
+      "y": 0.724793,
       "size": 12
     },
     {
@@ -125,8 +125,8 @@
       "githubRefs": [],
       "bytes": 6801,
       "degree": 1,
-      "x": 0.587785,
-      "y": 0.809017,
+      "x": 0.612106,
+      "y": 0.790776,
       "size": 12
     },
     {
@@ -137,8 +137,8 @@
       "githubRefs": [],
       "bytes": 2899,
       "degree": 1,
-      "x": 0.5,
-      "y": 0.866025,
+      "x": 0.528964,
+      "y": 0.848644,
       "size": 12
     },
     {
@@ -161,8 +161,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.406737,
-      "y": 0.913545,
+      "x": 0.440394,
+      "y": 0.897805,
       "size": 8
     },
     {
@@ -173,8 +173,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.309017,
-      "y": 0.951057,
+      "x": 0.347305,
+      "y": 0.937752,
       "size": 8
     },
     {
@@ -192,8 +192,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.207912,
-      "y": 0.978148,
+      "x": 0.250653,
+      "y": 0.968077,
       "size": 8
     },
     {
@@ -217,8 +217,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.104528,
-      "y": 0.994522,
+      "x": 0.151428,
+      "y": 0.988468,
       "size": 8
     },
     {
@@ -229,8 +229,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0,
-      "y": 1,
+      "x": 0.050649,
+      "y": 0.998717,
       "size": 8
     },
     {
@@ -254,8 +254,8 @@
       ],
       "bytes": 2463,
       "degree": 3,
-      "x": -0.104528,
-      "y": 0.994522,
+      "x": -0.050649,
+      "y": 0.998717,
       "size": 8
     },
     {
@@ -273,8 +273,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": -0.207912,
-      "y": 0.978148,
+      "x": -0.151428,
+      "y": 0.988468,
       "size": 8
     },
     {
@@ -292,8 +292,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": -0.309017,
-      "y": 0.951057,
+      "x": -0.250653,
+      "y": 0.968077,
       "size": 8
     },
     {
@@ -304,8 +304,8 @@
       "githubRefs": [],
       "bytes": 2327,
       "degree": 5,
-      "x": -0.406737,
-      "y": 0.913545,
+      "x": -0.347305,
+      "y": 0.937752,
       "size": 8
     },
     {
@@ -316,8 +316,8 @@
       "githubRefs": [],
       "bytes": 3437,
       "degree": 7,
-      "x": -0.5,
-      "y": 0.866025,
+      "x": -0.440394,
+      "y": 0.897805,
       "size": 8
     },
     {
@@ -328,8 +328,8 @@
       "githubRefs": [],
       "bytes": 2405,
       "degree": 6,
-      "x": -0.587785,
-      "y": 0.809017,
+      "x": -0.528964,
+      "y": 0.848644,
       "size": 8
     },
     {
@@ -347,8 +347,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": -0.669131,
-      "y": 0.743145,
+      "x": -0.612106,
+      "y": 0.790776,
       "size": 8
     },
     {
@@ -366,8 +366,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": -0.743145,
-      "y": 0.669131,
+      "x": -0.688967,
+      "y": 0.724793,
       "size": 8
     },
     {
@@ -385,8 +385,8 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": -0.809017,
-      "y": 0.587785,
+      "x": -0.758758,
+      "y": 0.651372,
       "size": 8
     },
     {
@@ -404,8 +404,8 @@
       ],
       "bytes": 5487,
       "degree": 4,
-      "x": -0.866025,
-      "y": 0.5,
+      "x": -0.820763,
+      "y": 0.571268,
       "size": 8
     },
     {
@@ -423,8 +423,8 @@
       ],
       "bytes": 5249,
       "degree": 6,
-      "x": -0.913545,
-      "y": 0.406737,
+      "x": -0.874347,
+      "y": 0.485302,
       "size": 8
     },
     {
@@ -442,8 +442,8 @@
       ],
       "bytes": 3810,
       "degree": 4,
-      "x": -0.951057,
-      "y": 0.309017,
+      "x": -0.918958,
+      "y": 0.394356,
       "size": 8
     },
     {
@@ -461,8 +461,8 @@
       ],
       "bytes": 2962,
       "degree": 5,
-      "x": -0.978148,
-      "y": 0.207912,
+      "x": -0.954139,
+      "y": 0.299363,
       "size": 8
     },
     {
@@ -486,8 +486,8 @@
       ],
       "bytes": 1022,
       "degree": 2,
-      "x": -0.994522,
-      "y": 0.104528,
+      "x": -0.97953,
+      "y": 0.201299,
       "size": 8
     },
     {
@@ -505,6 +505,25 @@
       ],
       "bytes": 418,
       "degree": 0,
+      "x": -0.994869,
+      "y": 0.101168,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-28-standardize-deterministic-git-delivery.md",
+      "label": "Standardize deterministic Git delivery",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 44,
+          "url": "https://github.com/jfusco/design-passport/issues/44"
+        }
+      ],
+      "bytes": 1408,
+      "degree": 2,
       "x": -1,
       "y": 0,
       "size": 8
@@ -515,10 +534,10 @@
       "type": "index",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 3129,
+      "bytes": 3126,
       "degree": 2,
-      "x": 0.994522,
-      "y": 0.104528,
+      "x": 0.994869,
+      "y": 0.101168,
       "size": 12
     },
     {
@@ -529,8 +548,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.994522,
-      "y": -0.104528,
+      "x": -0.994869,
+      "y": -0.101168,
       "size": 8
     },
     {
@@ -541,8 +560,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.978148,
-      "y": -0.207912,
+      "x": -0.97953,
+      "y": -0.201299,
       "size": 8
     },
     {
@@ -553,8 +572,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.951057,
-      "y": -0.309017,
+      "x": -0.954139,
+      "y": -0.299363,
       "size": 8
     },
     {
@@ -572,8 +591,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.913545,
-      "y": -0.406737,
+      "x": -0.918958,
+      "y": -0.394356,
       "size": 8
     },
     {
@@ -584,8 +603,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.866025,
-      "y": -0.5,
+      "x": -0.874347,
+      "y": -0.485302,
       "size": 8
     },
     {
@@ -596,8 +615,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.809017,
-      "y": -0.587785,
+      "x": -0.820763,
+      "y": -0.571268,
       "size": 8
     },
     {
@@ -608,8 +627,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.743145,
-      "y": -0.669131,
+      "x": -0.758758,
+      "y": -0.651372,
       "size": 8
     },
     {
@@ -620,8 +639,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.669131,
-      "y": -0.743145,
+      "x": -0.688967,
+      "y": -0.724793,
       "size": 8
     },
     {
@@ -632,8 +651,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.587785,
-      "y": -0.809017,
+      "x": -0.612106,
+      "y": -0.790776,
       "size": 8
     },
     {
@@ -651,8 +670,8 @@
       ],
       "bytes": 6239,
       "degree": 3,
-      "x": -0.5,
-      "y": -0.866025,
+      "x": -0.528964,
+      "y": -0.848644,
       "size": 8
     },
     {
@@ -663,8 +682,8 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.406737,
-      "y": -0.913545,
+      "x": -0.440394,
+      "y": -0.897805,
       "size": 8
     },
     {
@@ -675,8 +694,8 @@
       "githubRefs": [],
       "bytes": 11833,
       "degree": 5,
-      "x": -0.309017,
-      "y": -0.951057,
+      "x": -0.347305,
+      "y": -0.937752,
       "size": 8
     },
     {
@@ -694,8 +713,8 @@
       ],
       "bytes": 2158,
       "degree": 4,
-      "x": -0.207912,
-      "y": -0.978148,
+      "x": -0.250653,
+      "y": -0.968077,
       "size": 8
     },
     {
@@ -706,8 +725,8 @@
       "githubRefs": [],
       "bytes": 1840,
       "degree": 3,
-      "x": -0.104528,
-      "y": -0.994522,
+      "x": -0.151428,
+      "y": -0.988468,
       "size": 8
     },
     {
@@ -725,8 +744,27 @@
       ],
       "bytes": 1410,
       "degree": 3,
-      "x": 0,
-      "y": -1,
+      "x": -0.050649,
+      "y": -0.998717,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-28-standardize-deterministic-git-delivery-d9459693bc.md",
+      "label": "Standardize deterministic Git delivery",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 44,
+          "url": "https://github.com/jfusco/design-passport/issues/44"
+        }
+      ],
+      "bytes": 1654,
+      "degree": 3,
+      "x": 0.050649,
+      "y": -0.998717,
       "size": 8
     },
     {
@@ -752,12 +790,18 @@
           "kind": "issue",
           "number": 38,
           "url": "https://github.com/jfusco/design-passport/issues/38"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 44,
+          "url": "https://github.com/jfusco/design-passport/issues/44"
         }
       ],
-      "bytes": 20808,
-      "degree": 17,
-      "x": 0.104528,
-      "y": -0.994522,
+      "bytes": 21152,
+      "degree": 18,
+      "x": 0.151428,
+      "y": -0.988468,
       "size": 12
     },
     {
@@ -768,8 +812,8 @@
       "githubRefs": [],
       "bytes": 211,
       "degree": 2,
-      "x": 0.207912,
-      "y": -0.978148,
+      "x": 0.250653,
+      "y": -0.968077,
       "size": 12
     },
     {
@@ -780,8 +824,8 @@
       "githubRefs": [],
       "bytes": 21674,
       "degree": 1,
-      "x": 0.309017,
-      "y": -0.951057,
+      "x": 0.347305,
+      "y": -0.937752,
       "size": 12
     },
     {
@@ -799,8 +843,8 @@
       ],
       "bytes": 13899,
       "degree": 4,
-      "x": 0.5,
-      "y": -0.866025,
+      "x": 0.528964,
+      "y": -0.848644,
       "size": 12
     },
     {
@@ -818,8 +862,8 @@
       ],
       "bytes": 5995,
       "degree": 3,
-      "x": 0.587785,
-      "y": -0.809017,
+      "x": 0.612106,
+      "y": -0.790776,
       "size": 12
     },
     {
@@ -830,8 +874,8 @@
       "githubRefs": [],
       "bytes": 264,
       "degree": 5,
-      "x": 0.406737,
-      "y": -0.913545,
+      "x": 0.440394,
+      "y": -0.897805,
       "size": 12
     },
     {
@@ -842,8 +886,8 @@
       "githubRefs": [],
       "bytes": 7744,
       "degree": 3,
-      "x": 0.669131,
-      "y": -0.743145,
+      "x": 0.688967,
+      "y": -0.724793,
       "size": 12
     },
     {
@@ -851,11 +895,18 @@
       "label": "Design Passport architecture",
       "type": "topic",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 7180,
-      "degree": 39,
-      "x": 0.743145,
-      "y": -0.669131,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 44,
+          "url": "https://github.com/jfusco/design-passport/issues/44"
+        }
+      ],
+      "bytes": 7225,
+      "degree": 41,
+      "x": 0.758758,
+      "y": -0.651372,
       "size": 8
     },
     {
@@ -866,8 +917,8 @@
       "githubRefs": [],
       "bytes": 5450,
       "degree": 19,
-      "x": 0.809017,
-      "y": -0.587785,
+      "x": 0.820763,
+      "y": -0.571268,
       "size": 8
     },
     {
@@ -885,8 +936,8 @@
       ],
       "bytes": 19159,
       "degree": 41,
-      "x": 0.866025,
-      "y": -0.5,
+      "x": 0.874347,
+      "y": -0.485302,
       "size": 8
     },
     {
@@ -897,8 +948,8 @@
       "githubRefs": [],
       "bytes": 5091,
       "degree": 21,
-      "x": 0.913545,
-      "y": -0.406737,
+      "x": 0.918958,
+      "y": -0.394356,
       "size": 8
     },
     {
@@ -922,8 +973,8 @@
       ],
       "bytes": 4968,
       "degree": 4,
-      "x": 0.951057,
-      "y": -0.309017,
+      "x": 0.954139,
+      "y": -0.299363,
       "size": 8
     },
     {
@@ -934,8 +985,8 @@
       "githubRefs": [],
       "bytes": 4803,
       "degree": 16,
-      "x": 0.978148,
-      "y": -0.207912,
+      "x": 0.97953,
+      "y": -0.201299,
       "size": 8
     },
     {
@@ -946,8 +997,8 @@
       "githubRefs": [],
       "bytes": 4946,
       "degree": 28,
-      "x": 0.994522,
-      "y": -0.104528,
+      "x": 0.994869,
+      "y": -0.101168,
       "size": 8
     }
   ],
@@ -1296,6 +1347,13 @@
       "relation": "topic"
     },
     {
+      "id": "4dc761ab53f6b4e5",
+      "source": "wiki/journal/2026-09-28-standardize-deterministic-git-delivery.md",
+      "target": "wiki/plans/2026-09-28-standardize-deterministic-git-delivery-d9459693bc.md",
+      "type": "plan",
+      "relation": "plan"
+    },
+    {
       "id": "4e3e8279d2f00027",
       "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -1455,6 +1513,13 @@
       "target": "wiki/benchmarks/persistent-audits.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "6b1bf59272acdcbd",
+      "source": "wiki/journal/2026-09-28-standardize-deterministic-git-delivery.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "6e57e7bfea718d3d",
@@ -1961,6 +2026,13 @@
       "relation": "link"
     },
     {
+      "id": "c484a2f63bd7652d",
+      "source": "wiki/plans/2026-09-28-standardize-deterministic-git-delivery-d9459693bc.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "c4f463ba63916bbc",
       "source": "wiki/topics/design-readiness-standard.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
@@ -2293,6 +2365,13 @@
       "id": "fd37b7c5b67ebcce",
       "source": "wiki/topics/mutation-certification-safety.md",
       "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "fd87a0f0192d9bef",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-28-standardize-deterministic-git-delivery-d9459693bc.md",
       "type": "link",
       "relation": "link"
     },
