@@ -227,3 +227,14 @@ Re-certification removes legacy child notes whose text begins with the exact `[D
 - The Figma Plugin API does not provide a lossless “reattach this detached frame” operation. Detached nodes are therefore diagnosed and left manual instead of being destructively replaced.
 
 See [architecture](wiki/guides/architecture.md), [ruleset](wiki/guides/ruleset.md), [security model](wiki/guides/security.md), and [manual rollout QA](wiki/guides/manual-qa.md).
+
+## Commit messages
+
+Use a specific scoped Conventional Commit, for example
+`fix(auth): reject expired reset tokens`. Begin the subject with an action verb
+and keep the subject at most 50 characters. Leave a blank line before an
+optional body; explain the reason, impact, or tradeoff when the diff alone does
+not make it clear. Wrap body and footer lines at 72 characters. Mark breaking
+changes with `!` or a `BREAKING CHANGE:` footer. Follow the repository's
+commitlint rules for allowed types and scopes. Avoid vague or ticket-only
+subjects.

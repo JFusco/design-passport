@@ -1,3 +1,12 @@
+## Commit message standard
+
+Use a specific `type(scope): action` subject with an action verb and a subject
+of at most 50 characters. Leave a blank line before a body when the reason,
+impact, or tradeoff is not clear from the diff; wrap body and footer lines at
+72 characters. Mark breaking changes with `!` or a `BREAKING CHANGE:` footer.
+Follow this repository's commitlint configuration for allowed types, scopes,
+and other enforced rules. Avoid vague or ticket-only subjects.
+
 ## Git delivery flow
 
 For repository changes that include delivery, complete this sequence:

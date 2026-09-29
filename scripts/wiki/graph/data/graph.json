@@ -2,13 +2,13 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 65,
-    "edges": 206,
+    "nodes": 68,
+    "edges": 214,
     "byType": {
       "index": 18,
-      "journal": 22,
-      "plan": 17,
-      "topic": 8
+      "journal": 23,
+      "plan": 18,
+      "topic": 9
     }
   },
   "nodes": [
@@ -20,8 +20,8 @@
       "githubRefs": [],
       "bytes": 162,
       "degree": 3,
-      "x": 0.98137,
-      "y": 0.192127,
+      "x": 0.982973,
+      "y": 0.18375,
       "size": 12
     },
     {
@@ -39,8 +39,8 @@
       ],
       "bytes": 6250,
       "degree": 3,
-      "x": 0.958246,
-      "y": 0.285946,
+      "x": 0.961826,
+      "y": 0.273663,
       "size": 12
     },
     {
@@ -58,8 +58,8 @@
       ],
       "bytes": 10158,
       "degree": 3,
-      "x": 0.926175,
-      "y": 0.377095,
+      "x": 0.932472,
+      "y": 0.361242,
       "size": 12
     },
     {
@@ -70,8 +70,8 @@
       "githubRefs": [],
       "bytes": 9443,
       "degree": 1,
-      "x": 0.83647,
-      "y": 0.548013,
+      "x": 0.850217,
+      "y": 0.526432,
       "size": 12
     },
     {
@@ -82,8 +82,8 @@
       "githubRefs": [],
       "bytes": 260,
       "degree": 7,
-      "x": 0.885456,
-      "y": 0.464723,
+      "x": 0.895163,
+      "y": 0.445738,
       "size": 12
     },
     {
@@ -94,8 +94,8 @@
       "githubRefs": [],
       "bytes": 5586,
       "degree": 2,
-      "x": 0.779674,
-      "y": 0.626185,
+      "x": 0.798017,
+      "y": 0.602635,
       "size": 12
     },
     {
@@ -113,8 +113,8 @@
       ],
       "bytes": 19151,
       "degree": 4,
-      "x": 0.715599,
-      "y": 0.698511,
+      "x": 0.739009,
+      "y": 0.673696,
       "size": 12
     },
     {
@@ -125,8 +125,8 @@
       "githubRefs": [],
       "bytes": 6801,
       "degree": 1,
-      "x": 0.644842,
-      "y": 0.764316,
+      "x": 0.673696,
+      "y": 0.739009,
       "size": 12
     },
     {
@@ -137,8 +137,8 @@
       "githubRefs": [],
       "bytes": 2899,
       "degree": 1,
-      "x": 0.568065,
-      "y": 0.822984,
+      "x": 0.602635,
+      "y": 0.798017,
       "size": 12
     },
     {
@@ -147,8 +147,8 @@
       "type": "index",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 1666,
-      "degree": 6,
+      "bytes": 1780,
+      "degree": 7,
       "x": 1,
       "y": 0,
       "size": 12
@@ -161,8 +161,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.485983,
-      "y": 0.873968,
+      "x": 0.526432,
+      "y": 0.850217,
       "size": 8
     },
     {
@@ -173,8 +173,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.399365,
-      "y": 0.916792,
+      "x": 0.445738,
+      "y": 0.895163,
       "size": 8
     },
     {
@@ -192,8 +192,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.309017,
-      "y": 0.951057,
+      "x": 0.361242,
+      "y": 0.932472,
       "size": 8
     },
     {
@@ -217,8 +217,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.215784,
-      "y": 0.976441,
+      "x": 0.273663,
+      "y": 0.961826,
       "size": 8
     },
     {
@@ -229,8 +229,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.120537,
-      "y": 0.992709,
+      "x": 0.18375,
+      "y": 0.982973,
       "size": 8
     },
     {
@@ -254,8 +254,8 @@
       ],
       "bytes": 2463,
       "degree": 3,
-      "x": 0.024164,
-      "y": 0.999708,
+      "x": 0.092268,
+      "y": 0.995734,
       "size": 8
     },
     {
@@ -273,8 +273,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": -0.072435,
-      "y": 0.997373,
+      "x": 0,
+      "y": 1,
       "size": 8
     },
     {
@@ -292,8 +292,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": -0.168357,
-      "y": 0.985726,
+      "x": -0.092268,
+      "y": 0.995734,
       "size": 8
     },
     {
@@ -304,8 +304,8 @@
       "githubRefs": [],
       "bytes": 2327,
       "degree": 5,
-      "x": -0.262707,
-      "y": 0.964876,
+      "x": -0.18375,
+      "y": 0.982973,
       "size": 8
     },
     {
@@ -316,8 +316,8 @@
       "githubRefs": [],
       "bytes": 3437,
       "degree": 7,
-      "x": -0.354605,
-      "y": 0.935016,
+      "x": -0.273663,
+      "y": 0.961826,
       "size": 8
     },
     {
@@ -328,8 +328,8 @@
       "githubRefs": [],
       "bytes": 2405,
       "degree": 6,
-      "x": -0.443192,
-      "y": 0.896427,
+      "x": -0.361242,
+      "y": 0.932472,
       "size": 8
     },
     {
@@ -347,8 +347,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": -0.52764,
-      "y": 0.849468,
+      "x": -0.445738,
+      "y": 0.895163,
       "size": 8
     },
     {
@@ -366,8 +366,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": -0.607163,
-      "y": 0.794578,
+      "x": -0.526432,
+      "y": 0.850217,
       "size": 8
     },
     {
@@ -385,8 +385,8 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": -0.681016,
-      "y": 0.732269,
+      "x": -0.602635,
+      "y": 0.798017,
       "size": 8
     },
     {
@@ -404,8 +404,8 @@
       ],
       "bytes": 5487,
       "degree": 4,
-      "x": -0.748511,
-      "y": 0.663123,
+      "x": -0.673696,
+      "y": 0.739009,
       "size": 8
     },
     {
@@ -423,8 +423,8 @@
       ],
       "bytes": 5249,
       "degree": 6,
-      "x": -0.809017,
-      "y": 0.587785,
+      "x": -0.739009,
+      "y": 0.673696,
       "size": 8
     },
     {
@@ -442,8 +442,8 @@
       ],
       "bytes": 3810,
       "degree": 4,
-      "x": -0.86197,
-      "y": 0.50696,
+      "x": -0.798017,
+      "y": 0.602635,
       "size": 8
     },
     {
@@ -461,8 +461,8 @@
       ],
       "bytes": 2962,
       "degree": 5,
-      "x": -0.906874,
-      "y": 0.421401,
+      "x": -0.850217,
+      "y": 0.526432,
       "size": 8
     },
     {
@@ -486,8 +486,8 @@
       ],
       "bytes": 1022,
       "degree": 2,
-      "x": -0.943312,
-      "y": 0.331908,
+      "x": -0.895163,
+      "y": 0.445738,
       "size": 8
     },
     {
@@ -505,8 +505,8 @@
       ],
       "bytes": 418,
       "degree": 0,
-      "x": -0.970942,
-      "y": 0.239316,
+      "x": -0.932472,
+      "y": 0.361242,
       "size": 8
     },
     {
@@ -524,8 +524,27 @@
       ],
       "bytes": 1472,
       "degree": 2,
-      "x": -0.989506,
-      "y": 0.144489,
+      "x": -0.961826,
+      "y": 0.273663,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-09-29-commit-message-standard.md",
+      "label": "Commit message standard",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 50,
+          "url": "https://github.com/jfusco/design-passport/issues/50"
+        }
+      ],
+      "bytes": 818,
+      "degree": 4,
+      "x": -0.982973,
+      "y": 0.18375,
       "size": 8
     },
     {
@@ -543,8 +562,8 @@
       ],
       "bytes": 1924,
       "degree": 4,
-      "x": -0.998832,
-      "y": 0.048313,
+      "x": -0.995734,
+      "y": 0.092268,
       "size": 8
     },
     {
@@ -555,8 +574,8 @@
       "githubRefs": [],
       "bytes": 3126,
       "degree": 2,
-      "x": 0.995332,
-      "y": 0.096514,
+      "x": 0.995734,
+      "y": 0.092268,
       "size": 12
     },
     {
@@ -567,8 +586,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.998832,
-      "y": -0.048313,
+      "x": -1,
+      "y": 0,
       "size": 8
     },
     {
@@ -579,8 +598,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.989506,
-      "y": -0.144489,
+      "x": -0.995734,
+      "y": -0.092268,
       "size": 8
     },
     {
@@ -591,8 +610,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.970942,
-      "y": -0.239316,
+      "x": -0.982973,
+      "y": -0.18375,
       "size": 8
     },
     {
@@ -610,8 +629,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.943312,
-      "y": -0.331908,
+      "x": -0.961826,
+      "y": -0.273663,
       "size": 8
     },
     {
@@ -622,8 +641,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.906874,
-      "y": -0.421401,
+      "x": -0.932472,
+      "y": -0.361242,
       "size": 8
     },
     {
@@ -634,8 +653,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.86197,
-      "y": -0.50696,
+      "x": -0.895163,
+      "y": -0.445738,
       "size": 8
     },
     {
@@ -646,8 +665,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.809017,
-      "y": -0.587785,
+      "x": -0.850217,
+      "y": -0.526432,
       "size": 8
     },
     {
@@ -658,8 +677,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.748511,
-      "y": -0.663123,
+      "x": -0.798017,
+      "y": -0.602635,
       "size": 8
     },
     {
@@ -670,8 +689,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.681016,
-      "y": -0.732269,
+      "x": -0.739009,
+      "y": -0.673696,
       "size": 8
     },
     {
@@ -689,8 +708,8 @@
       ],
       "bytes": 6239,
       "degree": 3,
-      "x": -0.607163,
-      "y": -0.794578,
+      "x": -0.673696,
+      "y": -0.739009,
       "size": 8
     },
     {
@@ -701,8 +720,8 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.52764,
-      "y": -0.849468,
+      "x": -0.602635,
+      "y": -0.798017,
       "size": 8
     },
     {
@@ -713,8 +732,8 @@
       "githubRefs": [],
       "bytes": 11833,
       "degree": 5,
-      "x": -0.443192,
-      "y": -0.896427,
+      "x": -0.526432,
+      "y": -0.850217,
       "size": 8
     },
     {
@@ -732,8 +751,8 @@
       ],
       "bytes": 2158,
       "degree": 4,
-      "x": -0.354605,
-      "y": -0.935016,
+      "x": -0.445738,
+      "y": -0.895163,
       "size": 8
     },
     {
@@ -744,8 +763,8 @@
       "githubRefs": [],
       "bytes": 1840,
       "degree": 3,
-      "x": -0.262707,
-      "y": -0.964876,
+      "x": -0.361242,
+      "y": -0.932472,
       "size": 8
     },
     {
@@ -763,8 +782,8 @@
       ],
       "bytes": 1410,
       "degree": 3,
-      "x": -0.168357,
-      "y": -0.985726,
+      "x": -0.273663,
+      "y": -0.961826,
       "size": 8
     },
     {
@@ -782,8 +801,8 @@
       ],
       "bytes": 1654,
       "degree": 3,
-      "x": -0.072435,
-      "y": -0.997373,
+      "x": -0.18375,
+      "y": -0.982973,
       "size": 8
     },
     {
@@ -794,8 +813,20 @@
       "githubRefs": [],
       "bytes": 3932,
       "degree": 5,
-      "x": 0.024164,
-      "y": -0.999708,
+      "x": -0.092268,
+      "y": -0.995734,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-09-29-standardize-commit-messages-and-graphify-across-eight-repositories-e4b953bbda.md",
+      "label": "Standardize commit messages and Graphify across eight repositories",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2203,
+      "degree": 4,
+      "x": 0,
+      "y": -1,
       "size": 8
     },
     {
@@ -829,10 +860,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/44"
         }
       ],
-      "bytes": 21537,
-      "degree": 19,
-      "x": 0.120537,
-      "y": -0.992709,
+      "bytes": 21879,
+      "degree": 20,
+      "x": 0.092268,
+      "y": -0.995734,
       "size": 12
     },
     {
@@ -843,8 +874,8 @@
       "githubRefs": [],
       "bytes": 211,
       "degree": 2,
-      "x": 0.215784,
-      "y": -0.976441,
+      "x": 0.18375,
+      "y": -0.982973,
       "size": 12
     },
     {
@@ -855,8 +886,8 @@
       "githubRefs": [],
       "bytes": 21674,
       "degree": 1,
-      "x": 0.309017,
-      "y": -0.951057,
+      "x": 0.273663,
+      "y": -0.961826,
       "size": 12
     },
     {
@@ -874,8 +905,8 @@
       ],
       "bytes": 13899,
       "degree": 4,
-      "x": 0.485983,
-      "y": -0.873968,
+      "x": 0.445738,
+      "y": -0.895163,
       "size": 12
     },
     {
@@ -893,8 +924,8 @@
       ],
       "bytes": 5995,
       "degree": 3,
-      "x": 0.568065,
-      "y": -0.822984,
+      "x": 0.526432,
+      "y": -0.850217,
       "size": 12
     },
     {
@@ -905,8 +936,8 @@
       "githubRefs": [],
       "bytes": 264,
       "degree": 5,
-      "x": 0.399365,
-      "y": -0.916792,
+      "x": 0.361242,
+      "y": -0.932472,
       "size": 12
     },
     {
@@ -917,9 +948,28 @@
       "githubRefs": [],
       "bytes": 7744,
       "degree": 3,
-      "x": 0.644842,
-      "y": -0.764316,
+      "x": 0.602635,
+      "y": -0.798017,
       "size": 12
+    },
+    {
+      "id": "wiki/topics/commit-message-standard.md",
+      "label": "Commit message standard",
+      "type": "topic",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 50,
+          "url": "https://github.com/jfusco/design-passport/issues/50"
+        }
+      ],
+      "bytes": 719,
+      "degree": 5,
+      "x": 0.673696,
+      "y": -0.739009,
+      "size": 8
     },
     {
       "id": "wiki/topics/design-passport-architecture.md",
@@ -936,8 +986,8 @@
       ],
       "bytes": 7225,
       "degree": 42,
-      "x": 0.715599,
-      "y": -0.698511,
+      "x": 0.739009,
+      "y": -0.673696,
       "size": 8
     },
     {
@@ -948,8 +998,8 @@
       "githubRefs": [],
       "bytes": 5450,
       "degree": 19,
-      "x": 0.779674,
-      "y": -0.626185,
+      "x": 0.798017,
+      "y": -0.602635,
       "size": 8
     },
     {
@@ -967,8 +1017,8 @@
       ],
       "bytes": 19159,
       "degree": 41,
-      "x": 0.83647,
-      "y": -0.548013,
+      "x": 0.850217,
+      "y": -0.526432,
       "size": 8
     },
     {
@@ -985,9 +1035,9 @@
         }
       ],
       "bytes": 1973,
-      "degree": 5,
-      "x": 0.885456,
-      "y": -0.464723,
+      "degree": 6,
+      "x": 0.895163,
+      "y": -0.445738,
       "size": 8
     },
     {
@@ -998,8 +1048,8 @@
       "githubRefs": [],
       "bytes": 5091,
       "degree": 21,
-      "x": 0.926175,
-      "y": -0.377095,
+      "x": 0.932472,
+      "y": -0.361242,
       "size": 8
     },
     {
@@ -1023,8 +1073,8 @@
       ],
       "bytes": 4968,
       "degree": 4,
-      "x": 0.958246,
-      "y": -0.285946,
+      "x": 0.961826,
+      "y": -0.273663,
       "size": 8
     },
     {
@@ -1035,8 +1085,8 @@
       "githubRefs": [],
       "bytes": 4803,
       "degree": 16,
-      "x": 0.98137,
-      "y": -0.192127,
+      "x": 0.982973,
+      "y": -0.18375,
       "size": 8
     },
     {
@@ -1047,8 +1097,8 @@
       "githubRefs": [],
       "bytes": 4946,
       "degree": 28,
-      "x": 0.995332,
-      "y": -0.096514,
+      "x": 0.995734,
+      "y": -0.092268,
       "size": 8
     }
   ],
@@ -1066,6 +1116,13 @@
       "target": "wiki/topics/graphify-codebase-map.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "071519ae2bf4627f",
+      "source": "wiki/journal/2026-09-29-commit-message-standard.md",
+      "target": "wiki/plans/2026-09-29-standardize-commit-messages-and-graphify-across-eight-repositories-e4b953bbda.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "0b819571afa68868",
@@ -1185,6 +1242,13 @@
       "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "1f0e4d970e7e21b3",
+      "source": "wiki/journal/2026-09-29-commit-message-standard.md",
+      "target": "wiki/topics/commit-message-standard.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "23d57d91a2ee4b45",
@@ -1593,6 +1657,13 @@
       "relation": "topic"
     },
     {
+      "id": "6cf215639ff167ef",
+      "source": "wiki/INDEX.md",
+      "target": "wiki/topics/commit-message-standard.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "6e57e7bfea718d3d",
       "source": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -1873,6 +1944,13 @@
       "relation": "topic"
     },
     {
+      "id": "9ec116710c2da0ca",
+      "source": "wiki/topics/commit-message-standard.md",
+      "target": "wiki/topics/graphify-codebase-map.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "9fb9221ab02f37ff",
       "source": "wiki/plans/2026-09-11-make-scoped-audits-look-scoped-7be69504d6.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
@@ -2053,6 +2131,13 @@
       "target": "wiki/topics/graphify-codebase-map.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "bc588c9b160246f6",
+      "source": "wiki/journal/2026-09-29-commit-message-standard.md",
+      "target": "wiki/plans/2026-09-29-standardize-commit-messages-and-graphify-across-eight-repositories-e4b953bbda.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "bcde06bc16744a7f",
@@ -2279,6 +2364,13 @@
       "relation": "link"
     },
     {
+      "id": "dfbf8b3022b7d062",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-29-standardize-commit-messages-and-graphify-across-eight-repositories-e4b953bbda.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "e02a9b05029235af",
       "source": "wiki/journal/2026-09-08-live-readiness-stress-test.md",
       "target": "wiki/topics/design-readiness-standard.md",
@@ -2354,6 +2446,13 @@
       "target": "wiki/benchmarks/persistent-audits.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "ea9ce33e2bb81c89",
+      "source": "wiki/plans/2026-09-29-standardize-commit-messages-and-graphify-across-eight-repositories-e4b953bbda.md",
+      "target": "wiki/topics/commit-message-standard.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "eb08cdc4f14e8eb2",
@@ -2492,6 +2591,13 @@
       "id": "fe4f75c16ad39366",
       "source": "wiki/journal/2026-09-09-certification-annotation-cleanup.md",
       "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "ff40dff45626a2b5",
+      "source": "wiki/journal/2026-09-29-commit-message-standard.md",
+      "target": "wiki/topics/commit-message-standard.md",
       "type": "topic",
       "relation": "topic"
     }

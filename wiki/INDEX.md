@@ -6,6 +6,7 @@ This wiki is the durable project record for decisions, executed plans, and subst
 
 - [Wiki mechanics](./MECHANICS.md) — authoring, plan capture, validation, and automation.
 - [Plan ledger](./plans/INDEX.md) — executed-plan archives and historical audit results.
+- [Commit message standard](./topics/commit-message-standard.md) — scoped Conventional Commit writing guidance.
 - [Current guides](./guides/INDEX.md) — architecture, operating, ruleset, and security references.
 - [QA evidence](./qa/INDEX.md) and [benchmark evidence](./benchmarks/INDEX.md) — sanitized verification records.
 - [Open proposals](./proposals/INDEX.md) — reviewed plans that have not been executed.
