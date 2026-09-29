@@ -1,0 +1,35 @@
+# Map maintained Passport and companion source from the repository root.
+*
+!src/
+!src/**
+!apps/
+apps/*
+!apps/companion/
+!apps/companion/**
+
+# Keep the code map separate from the Markdown-only context wiki.
+**/*.md
+**/*.mdx
+**/*.qmd
+**/test/
+**/tests/
+**/__tests__/
+**/scripts/
+**/*.test.*
+**/*.spec.*
+**/generated/
+**/__generated__/
+**/*.generated.*
+**/node_modules/
+**/dist/
+**/build/
+src/generated/
+apps/companion/next-env.d.ts
+apps/companion/node_modules/
+apps/companion/.next/
+apps/companion/out/
+apps/companion/coverage/
+apps/companion/test-results/
+apps/companion/playwright-report/
+apps/companion/.vercel/
+apps/companion/.env*
