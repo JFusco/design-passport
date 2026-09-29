@@ -1,6 +1,8 @@
 ---
 topics: [commit-message-standard]
 plans: [2026-09-29-standardize-commit-messages-and-graphify-across-eight-repositories-e4b953bbda.md]
+issue: 'https://github.com/jfusco/design-passport/issues/50'
+issues: ['https://github.com/jfusco/design-passport/issues/50']
 ---
 
 # Commit message standard
