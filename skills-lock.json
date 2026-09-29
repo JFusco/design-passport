@@ -9,6 +9,12 @@
       "license": "UNLICENSED internal guidance",
       "computedHash": "524e74f060a5f9a916453b55d8d358efc69dd31b2abfa90b0408fb0841e2b746"
     },
+    "graphify": {
+      "source": "JFusco/design-passport",
+      "sourcePath": ".agents/skills/graphify",
+      "license": "UNLICENSED internal guidance",
+      "computedHash": "fa97bcfb7e22de8606a9ec1437911d0009c2df1d481babdbeb461de85872b077"
+    },
     "next-dev-loop": {
       "source": "JFusco/qa-operations",
       "sourcePath": ".agents/skills/next-dev-loop",

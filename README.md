@@ -149,6 +149,37 @@ pnpm catalog:check
 pnpm schemas:check
 ```
 
+## Maintainer code map (Graphify)
+
+[Graphify](https://github.com/Graphify-Labs/graphify) maps current Passport and companion source for maintainer queries. The root `.graphifyignore` includes only `src/` and `apps/companion/`; it excludes generated source and Markdown, including `wiki/`. This code map is separate from the plugin's whole-file design knowledge and the Markdown-only context-wiki graph. It is not served by the companion app.
+
+Graphify 0.9.36 is a Python developer prerequisite, not a pnpm dependency. After the normal `pnpm install --frozen-lockfile`, install Graphify if needed (`pipx install graphifyy==0.9.36`) and register its native Git hooks from the repository root:
+
+```bash
+graphify hook install
+graphify hook status
+```
+
+The repository's [Graphify skill](.agents/skills/graphify/SKILL.md) guides agents through CLI queries, source verification, and graph refreshes. Codex and Cursor discover it in `.agents/skills/`; Claude uses the link in `.claude/skills/`. It does not add agent tool hooks.
+
+Graphify adds native `post-commit` and `post-checkout` hooks alongside Husky's quality hooks and registers a local merge driver for `graphify-out/graph.json`. The hooks refresh code in the background after commits and branch switches; after a pull or merge, run `PYTHONHASHSEED=0 graphify update .`. Use `GRAPHIFY_SKIP_HOOK=1` only for an intentional one-command skip.
+
+The shared `graphify-out/` map includes `graph.json`, `graph.html`, `GRAPH_REPORT.md`, `manifest.json`, analysis, and labels. Open `graphify-out/graph.html` locally, or query a source symbol:
+
+```bash
+graphify explain buildChangePlans
+graphify explain requirePageAccess
+```
+
+The initial map is built from local AST extraction with no model calls. To rebuild it deliberately from scratch:
+
+```bash
+PYTHONHASHSEED=0 GRAPHIFY_MAX_WORKERS=1 graphify extract . --code-only --force
+PYTHONHASHSEED=0 graphify update .
+```
+
+Only the shareable outputs are committed. Caches, machine paths, query history, and dated backups stay local. Keep `graphify-out/memory/` empty: Graphify 0.9.36 scans it even when ignored. Optional query outcomes belong in ignored `graphify-out/local-memory/` via `graphify save-result --memory-dir graphify-out/local-memory`.
+
 ## Commit, push, and pull-request workflow
 
 The repository uses the same guarded Git lifecycle as `@verndale/ui-design-library`:
@@ -159,7 +190,7 @@ The repository uses the same guarded Git lifecycle as `@verndale/ui-design-libra
 - `.github/workflows/commitlint.yml` validates the PR body, title, and every commit in the PR range.
 - `.github/workflows/quality.yml` runs the complete non-fixing `pnpm verify:ci` gate for pull requests into `main`.
 
-The setup commands have already been applied to the repository. A fresh checkout only needs the normal dependency install, which activates Husky through the `prepare` script:
+The quality hooks activate with the normal dependency install through the `prepare` script. Maintainers who use the code map also run the Graphify setup above once per clone:
 
 ```bash
 pnpm install --frozen-lockfile

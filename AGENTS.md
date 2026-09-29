@@ -47,6 +47,12 @@ This managed block was installed for Codex, Cursor, and Claude (via `@AGENTS.md`
 
 ## Repository-local development skills
 
-Canonical skill sources live under `.agents/skills`; `.claude/skills` contains links to the same files. Use `next-dev-loop` while changing the companion, `playwright-cli` for browser exploration, the Vercel React/composition and web-design guidance for UI review, `writing-guidelines` for user-facing copy, and `design-passport-security-review` for credential, local-access, upload, persistence, or knowledge-decision changes.
+Canonical skill sources live under `.agents/skills`; `.claude/skills` contains links to the same files. Use `graphify` for code-map queries and refreshes, `next-dev-loop` while changing the companion, `playwright-cli` for browser exploration, the Vercel React/composition and web-design guidance for UI review, `writing-guidelines` for user-facing copy, and `design-passport-security-review` for credential, local-access, upload, persistence, or knowledge-decision changes.
 
-`skills-lock.json` records the copied QA Operations snapshot, known upstream metadata, license evidence, and deterministic folder hashes. Run `pnpm skills:check` after modifying any skill. The check is offline and does not pin content fetched later by the web or writing guideline skills.
+`skills-lock.json` records the copied QA Operations snapshot, repository-local skill provenance, known upstream metadata, license evidence, and deterministic folder hashes. Run `pnpm skills:check` after modifying any skill. The check is offline and does not pin content fetched later by the web or writing guideline skills.
+
+## Graphify repository workflow
+
+Use the repository-local [Graphify skill](.agents/skills/graphify/SKILL.md) when querying or maintaining the shared code map. It guides the Graphify CLI for current relationships in `src/` and `apps/companion/`; exact behavior comes from source, and rationale or history comes from the wiki. The map is maintainer tooling, separate from the plugin's design knowledge and the wiki's Markdown-only graph.
+
+Use Graphify 0.9.36. After cloning, run `pnpm install --frozen-lockfile` and `graphify hook install` to register the native Git hooks and local merge driver. The hooks live beside Husky's quality hooks. Keep `graphify-out/memory/` empty, and review background graph refreshes before staging them. No Graphify agent tool hooks are installed.
