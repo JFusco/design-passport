@@ -1,6 +1,8 @@
 ---
 topics: [graphify-codebase-map]
 plans: [2026-09-29-install-graphify-skill-and-code-map-for-design-passport-21417fc984.md]
+issue: 'https://github.com/jfusco/design-passport/issues/47'
+issues: ['https://github.com/jfusco/design-passport/issues/47']
 ---
 
 # 2026-09-29 — Graphify codebase map
