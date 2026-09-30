@@ -1,0 +1,92 @@
+---
+title: Audit memory and certification verification
+topics: [persistent-audits]
+plans: [2026-09-30-reduce-audit-memory-use-and-certification-delay-e50b8ab0d1.md]
+---
+
+# Audit memory and certification verification
+
+[Issue #53](https://github.com/JFusco/design-passport/issues/53) covers a reported
+out-of-memory audit and roughly five-minute source-frame certification. The
+screenshot identifies production build `b85721625f58`; the implementation base
+is `8a07fe8`. Both include the whole-file scene-signature check. The reported
+file has 71 pages and the linked page has 761 nodes. Deleting a saved report
+retains context, so the primary reproduction includes cache reads and misses.
+
+## Changes and decisions
+
+- Remove one redundant cache-read clone and replace whole-build raw staging
+  with bounded encoded staging. Stop producing optional fragments after quota
+  saturation; recheck quota when publishing. Preserve cancelled-build discard,
+  report protection, file isolation, and existing cache formats.
+- Retain one verifier over the union of variable dependencies and style
+  evidence. Preserve the original library verifier and all scene signatures.
+  Keep the local inventory fingerprint so additions during capture still
+  invalidate the previous graph.
+  Release inference snapshots that cannot support the next build.
+- Resolve every certification target and variant before the first full check.
+  Write synchronously and run a second full check before the final undo commit.
+  Mark writes as started before a setter can fail partway through. Preserve
+  annotations, readiness rules, and existing native rollback.
+- Use local busy state and a ref guard for duplicate clicks. Keep the pressed
+  button busy through stale notices and nonterminal errors. No progress
+  protocol, screen-wake handler, cache migration, or audit-scope change was added.
+- Extend console diagnostics for restore, REST export, fingerprints, resources,
+  scene signatures, storage inventory, and staged bytes. Audit/save checks
+  remain at their existing asynchronous boundaries.
+
+## Local verification
+
+Command tests exercise two resource inventories and two complete signature
+walks for both one and three certification targets. Adapter tests exercise 20
+refreshes with one local-variable inventory per subsequent check and retain
+remote/style dependencies from untouched fragments. Storage tests cover
+saturation, zero allowance, rejected staging, and capacity changes before
+publication. Existing equivalence and cancellation tests remain required.
+
+Browser tests run the actual React UI against fixture messages and exercise
+same-task double clicks, blocked refresh, stale and nonterminal notices, and
+success/error/profile-invalidation completion. These are UI tests, not native
+Figma evidence. `DESIGN_PASSPORT_E2E_PORT=5190 pnpm run verify:ci` passed:
+497 tests in 50 files, five browser tests, type checks, lint, generated-data
+checks, wiki/skill checks, and companion/plugin builds.
+
+The test server accepts `DESIGN_PASSPORT_E2E_PORT` so verification can run on
+5190 without interrupting QA Operations on 5180. Default behavior stays on
+5180. This override affects only the Playwright test server and test origin.
+
+The security review found no high-confidence vulnerabilities in the changed
+local persistence and freshness paths. No credentials, upload handling,
+companion access policy, network destination, or stored schema changed.
+Native undo ownership during a concurrent designer edit still needs evidence.
+The new loading copy is `Certifying…`, reviewed with writing-guidelines.
+
+## Outstanding native acceptance
+
+Native app control reported that the Mac was locked and automatic unlock
+failed. No live current-main baseline, crash reproduction, or speedup is claimed.
+The plan archive is partial until the following checks are complete:
+
+1. Run the reporter build, current main, and candidate on the same machine and
+   disposable file copy with the same audit setup. Enable DevTools Preserve
+   log before opening the plugin. Record producer identity and the last started
+   phase; do not use UI iframe heap as a plugin heap measurement.
+2. For retained, mixed, and cold cache, run the reported sequence with and
+   without screen-saver interruption. Require three consecutive successful
+   candidate runs per variant. Record active time separately from wall time,
+   visibility changes, node counts, cache hits/misses, and fragment sizes.
+3. Compare graph hashes, findings, grades, readiness, and repair plans against
+   full capture. Time resource checks, scene walks, exports/fingerprints,
+   storage inventories, total audit, and total certification separately.
+4. Targets versus current main: at least 60% lower certification time, at least
+   20% lower retained/mixed audit time, and no more than 10% slower cold audits.
+   Set a scene-walk timing target from the measured baseline. These targets
+   are unverified.
+5. Edit as a designer during final asynchronous certification verification,
+   force verification failure, and confirm native undo removes certification
+   metadata while preserving the designer edit. Mocks prove rollback is
+   requested; they cannot establish Figma's undo-group ownership.
+
+Keep the PR open for review. Its `Closes #53` reference closes the issue only
+when merged into the default branch. No merge or plugin publication is part
+of this delivery.

@@ -11,6 +11,65 @@ const withoutTime = <T extends { builtAt: string }>(value: T) => { const { built
 afterEach(() => { Reflect.deleteProperty(globalThis, "figma"); });
 
 describe("validated persisted context", () => {
+  it("rejects a local variable added between the entry check and incremental capture", async () => {
+    const fixture = contextFixture();
+    fixture.readinessProfile.tokenSourceCollectionKeys = [];
+    const initial = await build(fixture);
+    const locals = fixture.figma.variables.getLocalVariablesAsync;
+    let reads = 0;
+    fixture.figma.variables.getLocalVariablesAsync = async () => {
+      reads += 1;
+      if (reads === 2) {
+        fixture.setVariables([{ id: "new:1", key: "new:key", name: "semantic/space", variableCollectionId: "collection:1", resolvedType: "FLOAT", remote: false, valuesByMode: { mode: 8 }, scopes: ["GAP"], codeSyntax: {} } as unknown as Variable]);
+        fixture.setCollections([{ id: "collection:1", key: "collection:key", name: "Semantic", remote: false, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: ["new:1"] } as unknown as VariableCollection]);
+      }
+      return locals();
+    };
+    fixture.pages[0]!.children[0]!.name = "Edited card";
+    await expect(fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, {
+      contextCache: fixture.cache, dirtyNodeIds: ["root:0"], previousGraph: initial.graph, previousCollections: initial.collections,
+    })).rejects.toThrow("Resources changed");
+  });
+
+  it("retains style dependencies from untouched fragments after refresh", async () => {
+    const fixture = contextFixture(2);
+    fixture.readinessProfile.tokenSourceCollectionKeys = [];
+    const style = { id: "style:1", type: "TEXT", key: "style:key", name: "Body", remote: false, fontSize: 18, fontName: { family: "Inter", style: "Regular" }, letterSpacing: { unit: "PIXELS", value: 0 }, lineHeight: { unit: "PIXELS", value: 24 }, paragraphSpacing: 0, paragraphIndent: 0 };
+    fixture.pages[1]!.children[0]!.children[0]!.textStyleId = style.id;
+    Object.assign(fixture.figma, { getStyleByIdAsync: async () => style });
+    const initial = await build(fixture);
+    fixture.pages[0]!.children[0]!.name = "Edited card";
+    await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache, dirtyNodeIds: ["root:0"], previousGraph: initial.graph, previousCollections: initial.collections });
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    style.fontSize = 20;
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
+  it("keeps one variable enumeration per check after 20 refreshes and retains remote dependencies", async () => {
+    const fixture = contextFixture(2);
+    fixture.readinessProfile.tokenSourceCollectionKeys = [];
+    const variable = { id: "remote:1", key: "remote:key", name: "semantic/space", variableCollectionId: "remote:collection", resolvedType: "FLOAT", remote: true, valuesByMode: { mode: 8 }, scopes: ["GAP"], codeSyntax: {} };
+    const collection = { id: "remote:collection", key: "remote:collection:key", name: "Semantic", remote: true, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: [variable.id] };
+    // The remote dependency lives on the fragment that is never refreshed.
+    fixture.pages[1]!.children[0]!.boundVariables = { width: { type: "VARIABLE_ALIAS", id: variable.id } };
+    fixture.figma.variables.getVariableByIdAsync = async () => variable as unknown as Variable;
+    fixture.figma.variables.getVariableCollectionByIdAsync = async () => collection as unknown as VariableCollection;
+    const locals = vi.spyOn(fixture.figma.variables, "getLocalVariablesAsync");
+    let current = await build(fixture);
+    for (let index = 0; index < 20; index += 1) {
+      const changed = fixture.pages[0]!.children[0]!;
+      changed.name = `Edited card ${index}`;
+      current = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, {
+        contextCache: fixture.cache, dirtyNodeIds: [changed.id], previousGraph: current.graph, previousCollections: current.collections,
+      });
+      locals.mockClear();
+      expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+      expect(locals).toHaveBeenCalledTimes(1);
+    }
+    variable.valuesByMode.mode = 16;
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
   it("matches report groups, grades, readiness and exact repairs after a localized incremental edit", async () => {
     const fixture = contextFixture(20, 4);
     fixture.readinessProfile.tokenSourceCollectionKeys = [];

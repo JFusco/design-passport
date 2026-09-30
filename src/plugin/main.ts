@@ -29,6 +29,7 @@ import { buildReadinessReport } from "../core/report";
 import { evaluateRules } from "../core/rules";
 import { hashValue, stableStringify } from "../core/stable";
 import { applyWaivers, sanitizeWaiverStore, type WaiverStore } from "../core/waivers";
+import { mapConcurrent } from "../figma/context-cache";
 import { FigmaAdapter, FullKnowledgeRebuildRequired, type BootstrapData, type CapturedAuditTarget, type ProjectStyleGuideStatus, type VariableCollectionOption } from "../figma/adapter";
 import { applyChangePlan, clearVariantCoverageAnnotations, createSemanticTokenAndBind, setCertification } from "../figma/mutations";
 import { buildKnowledgeSummary } from "./knowledge-summary";
@@ -128,6 +129,8 @@ function restoreAudit(audit: SavedAuditV1): void {
 }
 
 async function restoreLastAudit(generation: number, revision: number): Promise<void> {
+  const started = Date.now();
+  console.info("[Design Passport] restore started", { producer: PRODUCER_IDENTITY });
   const fileKey = figma.fileKey;
   if (!fileKey) {
     post({ type: "audit-save-status", status: { state: "session-only", message: "This file has no stable file key. Results are available for this session only." } });
@@ -144,6 +147,7 @@ async function restoreLastAudit(generation: number, revision: number): Promise<v
     if (generation !== initializeGeneration || revision !== displayRevision) return;
     if (!audit) continue;
     restoreAudit(audit);
+    console.info("[Design Passport] restore finished", { producer: PRODUCER_IDENTITY, durationMs: Date.now() - started });
     return;
   }
 }
@@ -341,9 +345,9 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
     await ensureDocumentChangeWatcher();
     assertScanNotCancelled();
     const token = knowledgeState.beginBuild();
+    const fileKey = figma.fileKey;
+    const stagedFragments = fileKey ? await auditStorage.stageContexts(fileKey) : undefined;
     try {
-      const fileKey = figma.fileKey;
-      const stagedFragments = new Map<string, unknown>();
       const changeJournal = knowledgeState.changes;
       const journalRequiresFull = Boolean(changeJournal.fullBuildReason && changeJournal.fullBuildReason !== "not-loaded");
       let forceFull = forceFullCapture || journalRequiresFull || Boolean(graph && (rebuildReason === "profile-changed"
@@ -352,9 +356,9 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
       // Full builds must not retain the previous large graph. The saved report
       // remains available as historical output if replacement fails.
       graph = undefined;
-      const cachePort = fileKey ? {
+      const cachePort = fileKey && stagedFragments ? {
           get: (key: string) => auditStorage.loadContext(fileKey, key),
-          set: async (key: string, value: unknown) => { stagedFragments.set(key, value); },
+          set: async (key: string, value: () => unknown) => { stagedFragments.set(key, value); },
         } : undefined;
       let result;
       try {
@@ -367,6 +371,7 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
       } catch (error) {
         if (adapter.isScanCancelled()) throw new ScanCancelledError();
         if (!(error instanceof FullKnowledgeRebuildRequired)) throw error;
+        stagedFragments?.discard();
         graph = undefined;
         previousGraph = undefined;
         forceFull = true;
@@ -404,19 +409,19 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
       mutationRecheckPending = false;
       const contextStorageStarted = Date.now();
       if (fileKey && !adapter.isScanCancelled() && !knowledgeState.dirty) {
-        await auditStorage.saveContexts(fileKey, [...stagedFragments].map(([key, value]) => ({ key, value }))).catch(() => undefined);
+        await stagedFragments?.flush();
       }
       console.info("[Design Passport] context build", {
-        reason: rebuildReason, ...result.diagnostics,
+        producer: PRODUCER_IDENTITY, reason: rebuildReason, ...result.diagnostics,
         contextStorageMs: Date.now() - contextStorageStarted, codec: { ...codecMetrics },
       });
     } catch (error) {
       if (knowledgeState.buildActive) knowledgeState.abandonBuild(token);
       throw error;
-    }
+    } finally { stagedFragments?.discard(); }
   } else {
     lastRefresh = { mode: "session", reason: "verified-current-session" };
-    console.info("[Design Passport] context reuse", { source: "current-session" });
+    console.info("[Design Passport] context reuse", { producer: PRODUCER_IDENTITY, source: "current-session" });
   }
   assertScanNotCancelled();
   return graph;
@@ -771,7 +776,11 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
     } else if (message.type === "certify" || message.type === "certify-components") {
       if (invalidateProfileIfNeeded()) return;
       assertDocumentMutationAllowed();
-      const current = await assertCurrentReport("certification");
+      if (historicalAudit) throw new Error("This is a saved historical audit. Refresh it before certification");
+      if (!graph || !report) throw new Error("Run an audit before certification");
+      assertScanNotCancelled();
+      if (!currentKnowledgeAvailable() || report.target.knowledgeSnapshotHash !== graph.snapshotHash) throw new Error("Whole-file knowledge is stale; rescan before certification");
+      const current = { graph, report };
       const componentCertification = message.type === "certify-components";
       const certificationFrames = componentCertification
         ? current.report.frames.filter((frame) => frame.rootType === "COMPONENT" || frame.rootType === "COMPONENT_SET")
@@ -799,28 +808,40 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         frame.rootId,
         ...(componentCertification ? (frame.variantCoverage ?? []).map((variant) => variant.variantId) : []),
       ]);
+      const resolved = await mapConcurrent(certificationFrames, 16, async (frame) => {
+        const node = await figma.getNodeByIdAsync(frame.rootId);
+        if (!node || node.type === "DOCUMENT" || node.type === "PAGE") throw new Error(`Source frame ${frame.rootId} no longer exists`);
+        const variants = componentCertification ? frame.variantCoverage ?? [] : [];
+        const variantNodes = await mapConcurrent(variants, 8, async (variant) => {
+          const variantNode = await figma.getNodeByIdAsync(variant.variantId);
+          if (!variantNode || variantNode.type !== "COMPONENT" || variantNode.parent?.type !== "COMPONENT_SET") {
+            throw new Error(`Variant ${variant.variantId} no longer exists in a component set`);
+          }
+          return variantNode;
+        });
+        return { frame, node, variantNodes };
+      });
+      await assertVerifiedKnowledge();
+      assertKnowledgeRevision();
+      if (resolved.some((entry) => !entry || entry.node.removed || entry.variantNodes.some((node) => !node || node.removed))) {
+        throw new Error("A certification target no longer exists");
+      }
       mutationChangeGuard.arm(documentMutationIds(certificationNodeIds));
       let count = 0;
       let removedVariantAnnotations = 0;
       let wroteCertification = false;
       figma.commitUndo();
       try {
-        for (const frame of certificationFrames) {
-          const node = await figma.getNodeByIdAsync(frame.rootId);
-          if (!node || node.type === "DOCUMENT" || node.type === "PAGE") throw new Error(`Source frame ${frame.rootId} no longer exists`);
-          await assertVerifiedKnowledge();
+        // All bridge lookups finished before verification. Keep writes synchronous.
+        for (const entry of resolved) {
+          const { frame, node, variantNodes } = entry!;
           const summary = { ...summaryBase, grade: frame.grade.letter, score: frame.grade.score };
-          const variants = componentCertification ? frame.variantCoverage ?? [] : [];
-          setCertification(node, summary, variants.length);
           wroteCertification = true;
+          setCertification(node, summary, variantNodes.length);
           recordCertificationAnnotations(node);
-          for (const variant of variants) {
-            const variantNode = await figma.getNodeByIdAsync(variant.variantId);
-            if (!variantNode || variantNode.type === "DOCUMENT" || variantNode.type === "PAGE") {
-              throw new Error(`Variant ${variant.variantId} no longer exists`);
-            }
-            removedVariantAnnotations += clearVariantCoverageAnnotations(variantNode);
-            recordCertificationAnnotations(variantNode);
+          for (const variantNode of variantNodes) {
+            removedVariantAnnotations += clearVariantCoverageAnnotations(variantNode!);
+            recordCertificationAnnotations(variantNode!);
           }
           count += 1;
         }

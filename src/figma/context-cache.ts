@@ -4,7 +4,8 @@ import { hashValue } from "../core/stable";
 /** The storage implementation supplies file isolation, byte limits and eviction. */
 export interface ContextCachePort {
   get(key: string): Promise<unknown>;
-  set(key: string, value: unknown): Promise<void>;
+  /** Freeze/encode now, but publish only after the caller accepts the build. */
+  set(key: string, value: () => unknown): Promise<void>;
 }
 
 export interface KnowledgeBuildDiagnostics {
@@ -97,7 +98,7 @@ export function readContextFragment(value: unknown, fingerprint: string, ids: re
     }
     // Clone before enrichment so a port returning shared object references cannot
     // accidentally mutate the saved baseline during a cancelled attempt.
-    return (JSON.parse(JSON.stringify(value.nodes)) as NodeSnapshot[]).map(baseSnapshot);
+    return (value.nodes as NodeSnapshot[]).map(baseSnapshot);
   } catch {
     return undefined;
   }

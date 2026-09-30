@@ -16,6 +16,7 @@ export interface OverviewProps {
   stale: boolean;
   canMutateDocument: boolean;
   scanning: boolean;
+  certifying?: "certify" | "certify-components" | undefined;
   actionsBlocked: boolean;
   historical?: boolean;
   pages?: PageOption[];
@@ -97,11 +98,11 @@ export function Overview(props: OverviewProps) {
             {props.report.axes.map((axis) => <div className="axis-row" key={axis.axis}><div><span>{AXIS_LABELS[axis.axis]}</span><strong>{axis.score.toFixed(1)}</strong></div><div className="score-track"><span style={{ width: `${axis.score}%` }} /></div></div>)}
           </div>
           <div className="footer-actions">
-            {props.stale
+            {props.stale && !props.certifying
               ? props.onRecheck ? <p>Refresh this audit before certifying.</p> : <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan(props.report?.target.scope ?? "selection", true)}>Refresh audit to certify</button>
               : <>
-                <button className="button primary" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !componentsReady} onClick={props.onCertifyComponents}>Certify components ({componentFrames.length})</button>
-                <button className="button" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !props.report.ready} onClick={props.onCertify}>Certify source frames</button>
+                <button className="button primary" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !componentsReady} onClick={props.onCertifyComponents}>{props.certifying === "certify-components" ? "Certifying…" : `Certify components (${componentFrames.length})`}</button>
+                <button className="button" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !props.report.ready} onClick={props.onCertify}>{props.certifying === "certify" ? "Certifying…" : "Certify source frames"}</button>
               </>}
             <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("json")}>{historicalExport ? "Export historical JSON" : "Export JSON"}</button>
             <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("markdown")}>{historicalExport ? "Export historical Markdown" : "Export Markdown"}</button>

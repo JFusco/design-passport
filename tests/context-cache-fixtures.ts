@@ -71,9 +71,20 @@ export function contextFixture(pageCount = 1, childrenPerRoot = 1) {
   Object.assign(globalThis, { figma });
   const adapter = new FigmaAdapter();
   adapter.getCollectionOptions = async () => [];
+  const staged = new Map<string, unknown>();
+  const capture = adapter.buildKnowledge.bind(adapter);
+  adapter.buildKnowledge = async (...args) => {
+    try {
+      const result = await capture(...args);
+      if (result.graph.complete) {
+        for (const [key, value] of staged) { counts.cacheWrites += 1; cacheValues.set(key, value); }
+      }
+      return result;
+    } finally { staged.clear(); }
+  };
   const cache: ContextCachePort = {
     get: async (key) => { counts.cacheReads += 1; return cacheValues.get(key); },
-    set: async (key, value) => { counts.cacheWrites += 1; cacheValues.set(key, JSON.parse(JSON.stringify(value))); },
+    set: async (key, value) => { staged.set(key, JSON.parse(JSON.stringify(value()))); },
   };
   const readinessProfile = profile({ pageRoles: { screens: { pageIds: pages.map((page) => page.id), externalLibraryKeys: [] }, components: { pageIds: [], externalLibraryKeys: [] }, foundations: { pageIds: [], externalLibraryKeys: [] } } });
   return { adapter, cache, cacheValues, figma, counts, metadata, resources, pages, readinessProfile, setInference: (value: SceneNode["inferredVariables"]) => { inference = value; }, setVariables: (value: Variable[]) => { variables = value; }, setCollections: (value: VariableCollection[]) => { collections = value; }, setMainName: (value: string) => { mainName = value; } };

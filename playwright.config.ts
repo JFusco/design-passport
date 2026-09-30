@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 import { E2E_WORKSPACE } from "./tests/e2e/global-setup";
 
-const port = 5180;
+const port = Number(process.env.DESIGN_PASSPORT_E2E_PORT ?? 5180);
 const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
@@ -18,7 +18,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "pnpm --filter @design-passport/companion start",
+    command: `pnpm --filter @design-passport/companion exec next start --hostname 127.0.0.1 --port ${port}`,
     url: `${baseURL}/setup`,
     reuseExistingServer: false,
     timeout: 60_000,

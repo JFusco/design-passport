@@ -32,6 +32,32 @@ The 65-page editable fixture completed 63 eligible pages and skipped two. Variab
 
 False-positive rubric changes are outside this change until concrete designer examples are provided.
 
+## Bounded capture and certification
+
+[Issue #53](https://github.com/JFusco/design-passport/issues/53) bounds pending
+context by the shared storage budget minus all non-context records. Each
+fragment is encoded when captured; only compressed candidates are retained.
+Once a candidate exceeds the remaining allowance, later fragments are not
+produced or encoded. One candidate can exceed the allowance temporarily while
+its size is determined. Publication still requires an accepted build and
+rechecks capacity without evicting reports. Cache reads clone each node once.
+
+Incremental refreshes retain one resource verifier with a union of variable
+dependency digests and style evidence, rather than a chain of earlier readers.
+Dependencies from untouched fragments remain checked. Old inference snapshots
+are cleared when reuse is unavailable and released as fragments are replaced.
+
+Certification resolves all targets first and runs exactly two full checks,
+each including resources and whole-file scene signatures, around synchronous
+writes. Cheap readiness and revision checks remain. The UI blocks duplicate
+certification and competing actions until a terminal response, including when
+a stale notice arrives during verification. Failed writes request native undo.
+
+The [delivery journal](../journal/2026-09-30-audit-memory-and-certification.md)
+separates automated evidence from outstanding native Figma checks. Console
+diagnostics identify producer, phase, duration, counts, and staging bytes;
+they contain no design content and are not plugin heap measurements.
+
 ## Repository automation
 
 Since 2026-09-25, drafts and changes limited to wiki content or its generated graph use lightweight validation while ready product, workflow, script, documentation, and skill changes retain the full browser-backed suite. Wiki maintenance runs Mondays, audits missed merges in batches, updates bot pull requests through REST, and rejects duplicate or malformed frontmatter across the full wiki before writing history ([issue #35](https://github.com/JFusco/design-passport/issues/35)).

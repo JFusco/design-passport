@@ -107,6 +107,84 @@ afterEach(() => {
 });
 
 describe("plugin audit recovery integration", () => {
+  it.each([1, 3])("certifies %i targets with exactly two resource and scene checks", async (targetCount) => {
+    const fixture = contextFixture(2);
+    const plugin = await launch();
+    const targetIds = ["root:desktop", "root:tablet", "root:mobile"].slice(0, targetCount);
+    const live = targetIds.map((id) => ({ id, type: "FRAME", removed: false, annotations: [{ label: "Designer documentation" }], setSharedPluginData: vi.fn(), setRelaunchData: vi.fn() }));
+    const lookup = vi.fn(async (id: string) => live.find((node) => node.id === id) ?? fixture.figma.getNodeByIdAsync(id));
+    Object.assign(plugin.figmaMock, { variables: fixture.figma.variables, teamLibrary: fixture.figma.teamLibrary, mixed: fixture.figma.mixed, getNodeByIdAsync: lookup, commitUndo: vi.fn(), triggerUndo: vi.fn() });
+    plugin.figmaMock.root.children.splice(0, plugin.figmaMock.root.children.length, ...fixture.pages);
+    await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined);
+    plugin.adapter.matchesVariableEnvironment.mockImplementation(() => fixture.adapter.matchesVariableEnvironment());
+    plugin.adapter.targetRootIds.mockReturnValue(targetIds);
+    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
+    expect(plugin.events.find((event) => event.type === "scan-result")).toMatchObject({ report: { ready: true } });
+    const locals = vi.spyOn(fixture.figma.variables, "getLocalVariablesAsync");
+    plugin.adapter.matchesVariableEnvironment.mockClear();
+    lookup.mockClear();
+    await plugin.send({ type: "certify" });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "certified", count: targetCount });
+    expect(plugin.adapter.matchesVariableEnvironment).toHaveBeenCalledTimes(2);
+    expect(locals).toHaveBeenCalledTimes(2);
+    const signatureIds = fixture.pages.flatMap((page) => page.children.flatMap((root) => [root.id, ...root.children.map((node) => node.id)]));
+    for (const id of signatureIds) expect(lookup.mock.calls.filter(([lookedUp]) => lookedUp === id)).toHaveLength(2);
+    for (const node of live) {
+      expect(node.setSharedPluginData).toHaveBeenCalledTimes(1);
+      expect(node.annotations).toContainEqual({ label: "Designer documentation" });
+    }
+  });
+
+  it("rejects an unannounced resource change before any certification writes", async () => {
+    const plugin = await launch();
+    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
+    const write = vi.fn();
+    Object.assign(plugin.figmaMock, { getNodeByIdAsync: vi.fn(async () => ({ id: "root:desktop", type: "FRAME", removed: false, setSharedPluginData: write })), commitUndo: vi.fn(), triggerUndo: vi.fn() });
+    plugin.adapter.matchesVariableEnvironment.mockResolvedValue(false);
+    await plugin.send({ type: "certify" });
+    expect(write).not.toHaveBeenCalled();
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("changed or expired") });
+    expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
+  });
+
+  it("resolves every target before writing so a missing later root cannot leave partial metadata", async () => {
+    const plugin = await launch();
+    plugin.adapter.targetRootIds.mockReturnValue(["root:desktop", "root:tablet", "root:mobile"]);
+    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
+    const write = vi.fn();
+    const undo = vi.fn();
+    Object.assign(plugin.figmaMock, {
+      getNodeByIdAsync: vi.fn(async (id: string) => id === "root:mobile" ? null : { id, type: "FRAME", removed: false, setSharedPluginData: write }),
+      commitUndo: vi.fn(), triggerUndo: undo,
+    });
+    await plugin.send({ type: "certify" });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("no longer exists") });
+    expect(write).not.toHaveBeenCalled();
+    expect(undo).not.toHaveBeenCalled();
+  });
+
+  it.each(["setter", "final verification"])("requests rollback after a %s failure without reporting success", async (failure) => {
+    const plugin = await launch();
+    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
+    const write = vi.fn();
+    const undo = vi.fn();
+    const node = { id: "root:desktop", type: "FRAME", removed: false, annotations: [], setSharedPluginData: write, setRelaunchData: () => { if (failure === "setter") throw new Error("Setter failed after metadata was written"); } };
+    Object.assign(plugin.figmaMock, { getNodeByIdAsync: vi.fn(async () => node), commitUndo: vi.fn(), triggerUndo: undo });
+    if (failure === "final verification") {
+      plugin.adapter.matchesVariableEnvironment.mockResolvedValueOnce(true).mockImplementationOnce(async () => {
+        plugin.handlers.get("documentchange")?.({ documentChanges: [{ id: "root:desktop", type: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["name"] }] });
+        return true;
+      });
+    }
+    await plugin.send({ type: "certify" });
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(undo).toHaveBeenCalledTimes(1);
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error" });
+    expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
+    // Native undo ownership of an overlapping designer edit needs live Figma;
+    // this mock proves only that failed certification requests rollback.
+  });
+
   it("certifies twice through actual commands while reconciling exact annotation echoes and rejecting a same-node designer edit", async () => {
     const plugin = await launch();
     await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
@@ -437,9 +515,10 @@ describe("plugin audit recovery integration", () => {
     await plugin.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
     plugin.variable.valuesByMode.mode = 12;
     await plugin.send({ type: "certify" });
-    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("stale") });
-    expect(plugin.events.some((event) => event.type === "knowledge-stale")).toBe(true);
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("requires grade B") });
+    expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
     await plugin.send({ type: "export", format: "json" });
+    expect(plugin.events.some((event) => event.type === "knowledge-stale")).toBe(true);
     expect(plugin.events.at(-1)).toMatchObject({ type: "export-result", content: expect.stringContaining('"historical-audit"') });
     expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(1);
   });
@@ -498,7 +577,7 @@ describe("plugin audit recovery integration", () => {
     const results = plugin.events.filter((event) => event.type === "scan-result");
     const committed = results[1]!;
     await plugin.send({ type: "certify" });
-    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("stale") });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("requires grade B") });
     await plugin.send({ type: "export", format: "json" });
     const exported = plugin.events.at(-1);
     expect(exported?.type === "export-result" && JSON.parse(exported.content)).toMatchObject({ kind: "historical-audit", report: committed.report });

@@ -796,7 +796,16 @@ function variableAliases(value: unknown, output = new Set<string>()): Set<string
   return output;
 }
 
+interface VariableDependencies {
+  localFingerprint: string;
+  variables: Map<string, string>;
+  collections: Map<string, string>;
+  missingVariables: Set<string>;
+  missingCollections: Set<string>;
+}
+
 interface VariableProvenance {
+  dependencies: VariableDependencies;
   localCollectionKeys: ReadonlySet<string>;
   fingerprint(supplements: unknown[]): Promise<string | undefined>;
   verify(): Promise<boolean>;
@@ -811,7 +820,7 @@ function collectionMaterial(collection: VariableCollection): unknown {
 }
 
 /** Actual values/modes, not collection labels, establish bound-value provenance. */
-async function variableEnvironmentReader(cancelled: () => boolean): Promise<VariableProvenance | undefined> {
+async function variableEnvironmentReader(cancelled: () => boolean, previous?: VariableDependencies): Promise<VariableProvenance | undefined> {
   try {
     const [locals, localCollections] = await Promise.all([
       figma.variables.getLocalVariablesAsync(),
@@ -888,12 +897,26 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
     const baseDigest = hashValue(materialFor(base));
     const baseIds = new Set(base.variables.keys());
     const extras = new Map<string, Promise<{ digest: string; dependencies: Dependencies } | undefined>>();
-    const used: Dependencies = { variables: new Map(), collections: new Map(), missingVariables: new Set(), missingCollections: new Set() };
+    // Copy only dependency digests, never a prior verifier or its capture closures.
+    const used: VariableDependencies = {
+      localFingerprint: baseDigest,
+      variables: new Map(previous?.variables), collections: new Map(previous?.collections),
+      missingVariables: new Set(previous?.missingVariables), missingCollections: new Set(previous?.missingCollections),
+    };
+    let consistent = previous === undefined || previous.localFingerprint === baseDigest;
     const recordUsed = (dependencies: Dependencies) => {
-      dependencies.variables.forEach((value, id) => { used.variables.set(id, value); });
-      dependencies.collections.forEach((value, id) => { used.collections.set(id, value); });
-      dependencies.missingVariables.forEach((id) => { used.missingVariables.add(id); });
-      dependencies.missingCollections.forEach((id) => { used.missingCollections.add(id); });
+      for (const kind of ["variables", "collections"] as const) {
+        const missing = kind === "variables" ? "missingVariables" : "missingCollections";
+        for (const [id, value] of dependencies[kind]) {
+          const expected = used[kind].get(id);
+          if (used[missing].has(id) || expected !== undefined && expected !== value.digest) consistent = false;
+          else used[kind].set(id, value.digest);
+        }
+        for (const id of dependencies[missing]) {
+          if (used[kind].has(id)) consistent = false;
+          used[missing].add(id);
+        }
+      }
     };
     let baseRecorded = false;
     const recordedExtras = new Set<string>();
@@ -901,6 +924,7 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
     recordBase();
     const complete = (dependencies: Dependencies) => dependencies.missingVariables.size === 0 && dependencies.missingCollections.size === 0;
     return {
+      dependencies: used,
       localCollectionKeys: new Set(localCollections.map((collection) => collection.key)),
       fingerprint: async (supplements) => {
         const ids = [...variableAliases(supplements)].filter((id) => !baseIds.has(id)).sort();
@@ -923,6 +947,7 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
         // Variable edits are not covered by documentchange. Recheck the frozen
         // dependency epoch at audit boundaries without recapturing scene nodes.
         try {
+          if (!consistent) return false;
           const [freshLocals, freshCollections] = await Promise.all([
             figma.variables.getLocalVariablesAsync(), figma.variables.getLocalVariableCollectionsAsync(),
           ]);
@@ -932,11 +957,11 @@ async function variableEnvironmentReader(cancelled: () => boolean): Promise<Vari
           const freshCollectionsById = new Map(freshCollections.map((collection) => [collection.id, collection]));
           const variableMatches = await mapConcurrent([...used.variables], 16, async ([id, expected]) => {
             const variable = freshById.get(id) ?? await figma.variables.getVariableByIdAsync(id).catch(() => null);
-            return Boolean(variable && hashValue(variableMaterial(variable)) === expected.digest);
+            return Boolean(variable && hashValue(variableMaterial(variable)) === expected);
           }, cancelled);
           const collectionMatches = await mapConcurrent([...used.collections], 8, async ([id, expected]) => {
             const collection = freshCollectionsById.get(id) ?? await figma.variables.getVariableCollectionByIdAsync(id).catch(() => null);
-            return Boolean(collection && hashValue(collectionMaterial(collection)) === expected.digest);
+            return Boolean(collection && hashValue(collectionMaterial(collection)) === expected);
           }, cancelled);
           const missingVariables = await mapConcurrent([...used.missingVariables], 16, async (id) => !await figma.variables.getVariableByIdAsync(id), cancelled);
           const missingCollections = await mapConcurrent([...used.missingCollections], 8, async (id) => !await figma.variables.getVariableCollectionByIdAsync(id), cancelled);
@@ -1071,22 +1096,35 @@ async function variableCandidates(
 export class FigmaAdapter {
   private cancelled = false;
   private verifyResourceEnvironment: (() => Promise<boolean>) | undefined;
+  private variableDependencies: VariableDependencies | undefined;
+  private styleEvidence: TextStyleEvidenceReader | undefined;
+  private verifyLibraries: (() => Promise<boolean>) | undefined;
   private sceneSignatures = new Map<string, string>();
   private sessionInferences = new Map<string, { fingerprint: string; nodes: NodeSnapshot[] }>();
 
   async matchesVariableEnvironment(): Promise<boolean> {
-    try { return Boolean(await this.verifyResourceEnvironment?.()) && await this.matchesSceneSignatures(); }
+    const started = Date.now();
+    console.info("[Design Passport] resource verification started", { producer: PRODUCER_IDENTITY, retainedVerifiers: Number(Boolean(this.verifyResourceEnvironment)) });
+    try {
+      const matches = Boolean(await this.verifyResourceEnvironment?.());
+      console.info("[Design Passport] resource verification finished", { producer: PRODUCER_IDENTITY, durationMs: Date.now() - started, matches });
+      return matches && await this.matchesSceneSignatures();
+    }
     catch { return false; }
   }
 
   private async matchesSceneSignatures(ignored = new Set<string>()): Promise<boolean> {
     const entries = [...this.sceneSignatures].filter(([id]) => !ignored.has(id));
+    const started = Date.now();
+    console.info("[Design Passport] scene verification started", { producer: PRODUCER_IDENTITY, signatureCount: entries.length });
     const matches = await mapConcurrent(entries, 32, async ([id, digest]) => {
       const node = await figma.getNodeByIdAsync(id).catch(() => null);
       try { return Boolean(node && isSceneNode(node) && !node.removed && bindingSignature(node) === digest); }
       catch { return false; }
     }, () => this.cancelled);
-    return !this.cancelled && matches.every(Boolean);
+    const verified = !this.cancelled && matches.every(Boolean);
+    console.info("[Design Passport] scene verification finished", { producer: PRODUCER_IDENTITY, signatureCount: entries.length, durationMs: Date.now() - started, matches: verified });
+    return verified;
   }
 
   beginScan(): void {
@@ -1263,7 +1301,8 @@ export class FigmaAdapter {
     const started = Date.now();
     const diagnostics = newBuildDiagnostics();
     const priorResourceVerifier = this.verifyResourceEnvironment;
-    if (!priorResourceVerifier) throw new FullKnowledgeRebuildRequired("The previous resource epoch is unavailable");
+    const verifyLibraries = this.verifyLibraries;
+    if (!priorResourceVerifier || !verifyLibraries) throw new FullKnowledgeRebuildRequired("The previous resource epoch is unavailable");
     const resourceFingerprint = previous.resourceFingerprint;
     if (!resourceFingerprint) throw new FullKnowledgeRebuildRequired("The previous resource fingerprint is unavailable");
     let stageStarted = Date.now();
@@ -1272,7 +1311,7 @@ export class FigmaAdapter {
     if (this.cancelled) throw new FullKnowledgeRebuildRequired("The incremental refresh was cancelled");
 
     stageStarted = Date.now();
-    const variableEnvironment = await variableEnvironmentReader(() => this.cancelled);
+    const variableEnvironment = await variableEnvironmentReader(() => this.cancelled, this.variableDependencies);
     diagnostics.variablesMs += Date.now() - stageStarted;
     if (!variableEnvironment) throw new FullKnowledgeRebuildRequired("Variable provenance could not be verified incrementally");
 
@@ -1331,7 +1370,7 @@ export class FigmaAdapter {
       throw new FullKnowledgeRebuildRequired("An untracked scene binding or confirmation changed");
     }
 
-    const styles = new TextStyleEvidenceReader();
+    const styles = this.styleEvidence?.fork() ?? new TextStyleEvidenceReader();
     const staged: Array<{ root: SceneNode; page: PageNode; key: string; fingerprint: string; snapshots: NodeSnapshot[]; signatures: Array<[string, string]> }> = [];
     const rootsByPage = new Map<string, { page: PageNode; roots: SceneNode[] }>();
     for (const root of affectedRoots.values()) {
@@ -1430,7 +1469,7 @@ export class FigmaAdapter {
     }
 
     stageStarted = Date.now();
-    if (!await variableEnvironment.verify() || !await styles.verify() || !await priorResourceVerifier()
+    if (!await variableEnvironment.verify() || !await styles.verify() || !await verifyLibraries()
       || !await this.matchesSceneSignatures(affectedPreviousIds)) {
       throw new FullKnowledgeRebuildRequired("Resources changed while affected sources were refreshed");
     }
@@ -1438,7 +1477,7 @@ export class FigmaAdapter {
 
     for (const { key, fingerprint, snapshots } of staged) {
       if (options.contextCache) {
-        try { await options.contextCache.set(key, contextFragment(fingerprint, snapshots)); }
+        try { await options.contextCache.set(key, () => contextFragment(fingerprint, snapshots)); }
         catch { diagnostics.cacheWriteFailures += 1; }
       }
     }
@@ -1473,7 +1512,9 @@ export class FigmaAdapter {
     }
     for (const id of affectedPreviousIds) this.sceneSignatures.delete(id);
     for (const { signatures } of staged) for (const [id, digest] of signatures) this.sceneSignatures.set(id, digest);
-    this.verifyResourceEnvironment = async () => await priorResourceVerifier() && await variableEnvironment.verify() && await styles.verify();
+    this.variableDependencies = variableEnvironment.dependencies;
+    this.styleEvidence = styles;
+    this.verifyResourceEnvironment = async () => await variableEnvironment.verify() && await verifyLibraries() && await styles.verify();
     diagnostics.totalMs = Date.now() - started;
     onProgress({ phase: "complete", completed: pageGroups.length, total: pageGroups.length,
       message: `Refreshed ${staged.length} affected source${staged.length === 1 ? "" : "s"}` });
@@ -1494,7 +1535,10 @@ export class FigmaAdapter {
       });
     }
     this.verifyResourceEnvironment = undefined;
-    if (options.forceFullCapture) {
+    this.variableDependencies = undefined;
+    this.styleEvidence = undefined;
+    this.verifyLibraries = undefined;
+    if (options.forceFullCapture || options.dirtyNodeIds === undefined) {
       this.sessionInferences.clear();
       this.sceneSignatures.clear();
     }
@@ -1506,7 +1550,6 @@ export class FigmaAdapter {
     const componentIds: string[] = [];
     const instanceIds: string[] = [];
     const instances: Array<{ scene: InstanceNode; snapshot: NodeSnapshot }> = [];
-    const pendingCache: Array<{ key: string; value: unknown }> = [];
     const styles = new TextStyleEvidenceReader();
     const nextSessionInferences = new Map<string, { fingerprint: string; nodes: NodeSnapshot[] }>();
     const nextSceneSignatures = new Map<string, string>();
@@ -1529,12 +1572,15 @@ export class FigmaAdapter {
       stageStarted = Date.now();
       let exported: ReturnType<typeof restPageFingerprint>;
       if (cache && "exportAsync" in page) {
+        console.info("[Design Passport] REST export started", { producer: PRODUCER_IDENTITY, pageIndex });
         try { exported = restPageFingerprint(await page.exportAsync({ format: "JSON_REST_V1" }), page.id); }
         catch { /* Unsupported bulk serialization is a cache miss. */ }
       }
       diagnostics.validationMs += Date.now() - stageStarted;
       const rootNodeIds = page.children.map((node) => node.id);
       const restNodes = exported ? new Map([...exported.roots.values()].flatMap((root) => [...restSubtreeNodes(root)])) : undefined;
+      if (cache) console.info("[Design Passport] REST export finished", { producer: PRODUCER_IDENTITY, pageIndex, durationMs: Date.now() - stageStarted, exportedNodes: restNodes?.size ?? 0 });
+      let fingerprintMs = 0;
       let pageNodeCount = 0;
       for (const { root, entries } of capturePageFragments(page.children, page.name)) {
         if (this.cancelled) break;
@@ -1556,6 +1602,7 @@ export class FigmaAdapter {
           // A richer validation getter may be unavailable on an older runtime.
           // Continue through the established full capture instead of trusting it.
         }
+        fingerprintMs += Date.now() - stageStarted;
         const key = `capture-v1:${page.id}:${root.id}`;
         let snapshots: NodeSnapshot[] | undefined;
         if (cache && fingerprint) {
@@ -1581,7 +1628,13 @@ export class FigmaAdapter {
           diagnostics.captureMs += Date.now() - stageStarted;
           diagnostics.capturedFragments += 1;
           diagnostics.capturedNodes += snapshots.length;
-          if (cache && fingerprint && !this.cancelled) pendingCache.push({ key, value: contextFragment(fingerprint, snapshots) });
+          if (cache && fingerprint && !this.cancelled) {
+            try {
+              const captured = snapshots;
+              const capturedFingerprint = fingerprint;
+              await cache.set(key, () => contextFragment(capturedFingerprint, captured));
+            } catch { diagnostics.cacheWriteFailures += 1; }
+          }
         }
         if (this.cancelled) break;
         stageStarted = Date.now();
@@ -1644,8 +1697,10 @@ export class FigmaAdapter {
           }
         }
         diagnostics.inferenceMs += Date.now() - stageStarted;
+        this.sessionInferences.delete(key);
         if (fingerprint) nextSessionInferences.set(key, { fingerprint, nodes: snapshots });
       }
+      console.info("[Design Passport] page fingerprint finished", { producer: PRODUCER_IDENTITY, pageIndex, nodeCount: pageNodeCount, durationMs: fingerprintMs });
       pageSnapshots.push({ id: page.id, name: page.name, role: roleForPage(page.id, profile), loaded: true, nodeCount: pageNodeCount, rootNodeIds });
       if (this.cancelled) break;
       stageStarted = Date.now();
@@ -1750,20 +1805,13 @@ export class FigmaAdapter {
     partial.sourceFrameIds = sourceFrameIds(partial, profile);
     let graph = finalizeKnowledgeGraph(partial, profile);
     diagnostics.derivedMs = Date.now() - stageStarted;
-    if (graph.complete && cache) {
-      // The caller's storage port stages these writes until its document-change
-      // revision accepts the build; cancellation never publishes partial capture.
-      for (const entry of pendingCache) {
-        if (this.cancelled) break;
-        try { await cache.set(entry.key, entry.value); }
-        catch { diagnostics.cacheWriteFailures += 1; }
-      }
-    }
     if (this.cancelled && graph.complete) graph = finalizeKnowledgeGraph({ ...graph, complete: false, cancelled: true }, profile);
     if (graph.complete && variableEnvironment) {
-      // Scene bindings are covered by the document-change journal. Retaining a
-      // live handle and signature for every node doubles peak memory in large
-      // libraries and repeats tens of thousands of bridge reads at each save.
+      // Resource maps retain a single epoch; scene signatures still cover
+      // binding and plugin-data changes that the document journal cannot prove.
+      this.variableDependencies = variableEnvironment.dependencies;
+      this.styleEvidence = styles;
+      this.verifyLibraries = verifyLibraries;
       this.verifyResourceEnvironment = async () => await variableEnvironment.verify() && await verifyLibraries() && await styles.verify();
       this.sceneSignatures = nextSceneSignatures;
       this.sessionInferences = nextSessionInferences;

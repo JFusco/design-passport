@@ -41,7 +41,7 @@ import type { BootstrapEnvelope, Tab, TokenWizardState, WaiverDraft } from "./ty
 
 const EMPTY_SELECTION_SUMMARY: SelectionSummary = { eligibleCount: 0, unsupportedCount: 0 };
 
-function send(message: UiToPluginMessage): void {
+function postMessage(message: UiToPluginMessage): void {
   parent.postMessage({ pluginMessage: message }, "*");
 }
 
@@ -71,6 +71,18 @@ export function App() {
   const [selectionSummary, setSelectionSummary] = useState<SelectionSummary>(EMPTY_SELECTION_SUMMARY);
   const [auditTarget, setAuditTarget] = useState<AuditTargetSummary>();
   const [scanInFlight, setScanInFlight] = useState(false);
+  const [certifying, setCertifying] = useState<"certify" | "certify-components">();
+  const certificationInFlight = useRef(false);
+  const send = (message: UiToPluginMessage) => {
+    if (certificationInFlight.current) return;
+    if (message.type === "certify" || message.type === "certify-components") {
+      certificationInFlight.current = true;
+      setCertifying(message.type);
+      setError(undefined);
+      setNotice(undefined);
+    }
+    postMessage(message);
+  };
   const [stale, setStale] = useState(true);
   const [showPassing, setShowPassing] = useState(false);
   const [axisFilter, setAxisFilter] = useState<Axis | "all">("all");
@@ -103,6 +115,10 @@ export function App() {
     const handler = (event: MessageEvent<{ pluginMessage?: PluginToUiMessage }>) => {
       const message = event.data?.pluginMessage;
       if (!message || typeof message !== "object" || typeof message.type !== "string") return;
+      if (message.type === "certified" || message.type === "profile-invalidated" || message.type === "error" && !message.nonTerminal) {
+        certificationInFlight.current = false;
+        setCertifying(undefined);
+      }
       if (message.type === "bootstrap") {
         if (initialized) return;
         initialized = true;
@@ -356,6 +372,7 @@ export function App() {
       : "Design Passport could not classify this file safely. Confirm the recommended audit setup to continue.";
 
   const scan = (scope: ScanScope, refreshKnowledge = false) => {
+    if (certificationInFlight.current) return;
     if (!profile || draftState.blocked) {
       setActiveTab("profile");
       return;
@@ -374,7 +391,7 @@ export function App() {
   };
 
   const recheck = (request: AuditRecheckRequest) => {
-    if (!report || draftState.blocked || scanInFlight) return;
+    if (!report || draftState.blocked || scanInFlight || certificationInFlight.current) return;
     restoreRequest.current = null;
     setError(undefined);
     setNotice(undefined);
@@ -388,7 +405,7 @@ export function App() {
   };
 
   const reviewPages = (pageIds: string[]) => {
-    if (draftState.blocked || pageIds.length === 0 || !bootstrap?.data.fileKeyAvailable) return;
+    if (certificationInFlight.current || draftState.blocked || pageIds.length === 0 || !bootstrap?.data.fileKeyAvailable) return;
     restoreRequest.current = null;
     batchRunning.current = true;
     setBatchProgress({ completed: 0, total: pageIds.length, skipped: 0 });
@@ -428,7 +445,7 @@ export function App() {
     : undefined;
   const showStaleNotification = Boolean(stale && report && !historical && !error && !scanInFlight);
   const saveFailure = saveStatus && saveStatus.state !== "saved";
-  const panelLocked = scanInFlight && (!report || activeTab === "profile" || activeTab === "context");
+  const panelLocked = Boolean(certifying) || scanInFlight && (!report || activeTab === "profile" || activeTab === "context");
   const hasNotifications = draftState.blocked
     || bootstrap.data.producer.channel === "development"
     || !bootstrap.data.canMutateDocument
@@ -465,9 +482,9 @@ export function App() {
         audits={savedAudits}
         activeId={activeSavedId}
         status={saveStatus}
-        disabled={scanInFlight}
-        onOpen={(id) => { restoreRequest.current = { id }; setLoadingSavedAudit(true); setScanInFlight(true); send({ type: "open-saved-audit", id }); }}
-        onForget={(id) => { send({ type: "forget-saved-audit", id }); if (id === activeSavedId) forgetDisplayedResult(); }}
+        disabled={scanInFlight || Boolean(certifying)}
+        onOpen={(id) => { if (certificationInFlight.current) return; restoreRequest.current = { id }; setLoadingSavedAudit(true); setScanInFlight(true); send({ type: "open-saved-audit", id }); }}
+        onForget={(id) => { if (certificationInFlight.current) return; send({ type: "forget-saved-audit", id }); if (id === activeSavedId) forgetDisplayedResult(); }}
         onClear={() => send({ type: "clear-file-cache" })}
       />
 
@@ -501,7 +518,7 @@ export function App() {
       <div
         className={`panel-host${panelLocked ? " scan-locked" : ""}`}
         inert={panelLocked}
-        aria-busy={scanInFlight}
+        aria-busy={scanInFlight || Boolean(certifying)}
       >
         {activeTab === "overview" && (
           <Overview
@@ -510,13 +527,14 @@ export function App() {
             stale={stale}
             canMutateDocument={bootstrap.data.canMutateDocument}
             scanning={scanInFlight}
-            actionsBlocked={draftState.blocked}
+            certifying={certifying}
+            actionsBlocked={draftState.blocked || Boolean(certifying)}
             historical={historical}
             pages={bootstrap.data.pages}
             fileKeyAvailable={bootstrap.data.fileKeyAvailable}
             onReviewPages={reviewPages}
             onRecheck={recheck}
-            recheckDisabled={draftState.blocked || scanInFlight}
+            recheckDisabled={draftState.blocked || scanInFlight || Boolean(certifying)}
             onScan={scan}
             onCertify={() => send({ type: "certify" })}
             onCertifyComponents={() => send({ type: "certify-components" })}
@@ -530,7 +548,7 @@ export function App() {
             categoryFilter={categoryFilter}
             onCategoryFilter={setCategoryFilter}
             onRecheckIssue={(issueId) => recheck({ mode: "issue", issueId })}
-            recheckDisabled={historical || draftState.blocked || scanInFlight}
+            recheckDisabled={historical || draftState.blocked || scanInFlight || Boolean(certifying)}
             frames={report?.frames ?? []}
             showPassing={showPassing}
             axisFilter={axisFilter}
@@ -541,7 +559,7 @@ export function App() {
             collections={collections.filter((collection) => !collection.remote && profile.tokenSourceCollectionKeys.includes(collection.key))}
             tokenWizard={tokenWizard}
             waiverDraft={waiverDraft}
-            disabled={stale || draftState.blocked || scanInFlight}
+            disabled={stale || draftState.blocked || scanInFlight || Boolean(certifying)}
             canMutateDocument={bootstrap.data.canMutateDocument}
             onTogglePassing={setShowPassing}
             onAxisFilter={setAxisFilter}
@@ -584,7 +602,7 @@ export function App() {
           <Modules
             report={report}
             onRecheck={recheck}
-            recheckDisabled={historical || draftState.blocked || scanInFlight}
+            recheckDisabled={historical || draftState.blocked || scanInFlight || Boolean(certifying)}
             onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
             onViewFindings={(rootId) => {
               const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
@@ -626,7 +644,7 @@ export function App() {
         )}
         {activeTab === "cleanup" && (
           <Cleanup
-            disabled={stale || draftState.blocked || scanInFlight || !bootstrap.data.canMutateDocument}
+            disabled={stale || draftState.blocked || scanInFlight || Boolean(certifying) || !bootstrap.data.canMutateDocument}
             plans={plans}
             findings={report?.findings ?? []}
             undoAcknowledged={undoAcknowledged}
@@ -638,7 +656,7 @@ export function App() {
         {activeTab === "context" && (
           <ContextPanel
             knowledge={knowledge}
-            actionsBlocked={draftState.blocked}
+            actionsBlocked={draftState.blocked || Boolean(certifying)}
             onRefresh={() => scan(report?.target.scope ?? "selection", true)}
             projectStyleGuide={bootstrap.data.projectStyleGuide}
             referencePackRaw={referencePackRaw}

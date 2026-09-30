@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-const companionOrigin = "http://127.0.0.1:5180";
+const companionOrigin = `http://127.0.0.1:${process.env.DESIGN_PASSPORT_E2E_PORT ?? 5180}`;
 
 function learningFile(): Buffer {
   return readFileSync(join(process.cwd(), "tests", "e2e", "fixtures", "valid-learning.json"));

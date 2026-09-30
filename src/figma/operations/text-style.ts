@@ -39,6 +39,12 @@ export function mixedTypographyFields(node: TextNode): BindableField[] {
 export class TextStyleEvidenceReader {
   private readonly captured = new Map<string, Promise<TextStyleMaterial | undefined>>();
 
+  fork(): TextStyleEvidenceReader {
+    const next = new TextStyleEvidenceReader();
+    for (const [id, value] of this.captured) next.captured.set(id, value);
+    return next;
+  }
+
   private async read(id: string): Promise<TextStyleMaterial | undefined> {
     try { return material(await figma.getStyleByIdAsync(id)); }
     catch { return undefined; }
