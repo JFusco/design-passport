@@ -35,6 +35,26 @@ retains context, so the primary reproduction includes cache reads and misses.
   scene signatures, storage inventory, and staged bytes. Audit/save checks
   remain at their existing asynchronous boundaries.
 
+## Review repair
+
+- A cancelled certification now ends the local busy state, so another action
+  can start without reopening the plugin. The busy button remains available to
+  assistive technology on Overview, and the polite status region announces
+  certification. Other panels keep competing actions blocked during the check.
+- Saved-audit tab changes continue to reach local view storage while
+  certification is pending. They do not mutate the design.
+- Context staging now inventories storage when the first fragment is offered.
+  Forced full builds and builds whose fragments are all cache hits skip that
+  inventory; a build with fragments still checks capacity at staging and again
+  before publication.
+- Certification intentionally checks readiness before its first full resource
+  verification. A report below grade B receives the readiness error first.
+  The ready-report integration fixture exercises an unannounced variable edit
+  through the real adapter, including the stale notice and absence of writes.
+- Historical export buttons stay disabled if a stale notice arrives during
+  certification. After the terminal response, they become available again;
+  the browser case checks both states and one JSON export request.
+
 ## Local verification
 
 Command tests exercise two resource inventories and two complete signature
@@ -50,6 +70,15 @@ success/error/profile-invalidation completion. These are UI tests, not native
 Figma evidence. `DESIGN_PASSPORT_E2E_PORT=5190 pnpm run verify:ci` passed:
 497 tests in 50 files, five browser tests, type checks, lint, generated-data
 checks, wiki/skill checks, and companion/plugin builds.
+
+After the review repairs, the restricted implementer sandbox passed 500
+Vitest tests in 50 files, type checks, lint, and the companion build, but
+denied Playwright's local server bind and a direct Chromium launch. A later
+host-side `DESIGN_PASSPORT_E2E_PORT=5190 pnpm run verify:ci` passed on the
+repaired tree: 500 Vitest tests, seven Chromium tests including five plugin
+certification cases, generated-data and wiki/skill checks, type checks,
+lint, and companion/plugin builds. The wiki graph was regenerated before
+that full run.
 
 The test server accepts `DESIGN_PASSPORT_E2E_PORT` so verification can run on
 5190 without interrupting QA Operations on 5180. Default behavior stays on

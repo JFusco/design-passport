@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { CapturedAuditTarget } from "../src/figma/adapter";
+import type { CapturedAuditTarget, ContextCachePort } from "../src/figma/adapter";
 import type { PluginToUiMessage, UiToPluginMessage } from "../src/plugin/messages";
 import { hashValue } from "../src/core/stable";
 import type { DesignReferencePackV1, ProjectStyleGuideBindingV1 } from "../src/core/contracts";
@@ -74,7 +74,7 @@ async function launch(storage = memoryStorage(), fileKey: string | undefined = "
   return { storage, events, adapter, handlers, send, figmaMock };
 }
 
-async function launchWithVariables() {
+async function launchWithVariables(readyForCertification = false) {
   const fixture = contextFixture(2);
   const variable = { id: "variable:1", key: "variable:key", name: "semantic/space", variableCollectionId: "collection:1", resolvedType: "FLOAT", remote: false, valuesByMode: { mode: 8 }, scopes: ["GAP"], codeSyntax: {} };
   const collection = { id: "collection:1", key: "collection:key", name: "Semantic", remote: false, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: [variable.id] };
@@ -90,13 +90,17 @@ async function launchWithVariables() {
   plugin.figmaMock.root.children.splice(0, plugin.figmaMock.root.children.length, ...fixture.pages);
   plugin.adapter.buildKnowledge.mockImplementation(async () => {
     const result = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache });
-    return { ...result, collections: [] };
+    if (!readyForCertification) return { ...result, collections: [] };
+    const graph = healthyGraph(fixture.readinessProfile);
+    graph.builtAt = new Date().toISOString();
+    return { ...result, graph, collections: [] };
   });
   plugin.adapter.matchesVariableEnvironment.mockImplementation(() => fixture.adapter.matchesVariableEnvironment());
   plugin.adapter.captureAuditTarget.mockReturnValue({ scope: "page", pageId: "page:0" });
   plugin.adapter.targetRootIds.mockImplementation((target) => target.scope === "page"
     ? fixture.pages.find((page) => page.id === target.pageId)?.children.map((root) => root.id) ?? []
     : fixture.pages.flatMap((page) => page.children.map((root) => root.id)));
+  if (readyForCertification) plugin.adapter.targetRootIds.mockReturnValue(["root:desktop"]);
   return { ...plugin, fixture, variable };
 }
 
@@ -107,6 +111,35 @@ afterEach(() => {
 });
 
 describe("plugin audit recovery integration", () => {
+  it.each(["forced full", "all hits", "staged"] as const)("counts context inventories for a %s build", async (mode) => {
+    const plugin = await launch();
+    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
+    plugin.storage.keysAsync.mockClear();
+    const build = plugin.adapter.buildKnowledge.getMockImplementation()!;
+    plugin.adapter.buildKnowledge.mockImplementation(async (...args: unknown[]) => {
+      const options = args[2] as { contextCache?: ContextCachePort; forceFullCapture?: boolean };
+      if (mode === "forced full") expect(options.forceFullCapture).toBe(true);
+      if (mode === "staged") await options.contextCache?.set("root:fragment", () => ({ nodes: [1] }));
+      return build();
+    });
+    let atVerification = -1;
+    plugin.adapter.matchesVariableEnvironment.mockImplementation(async () => {
+      if (atVerification < 0) atVerification = plugin.storage.keysAsync.mock.calls.length;
+      return true;
+    });
+    let atAnalysis = -1;
+    const targetRootIds = plugin.adapter.targetRootIds.getMockImplementation()!;
+    plugin.adapter.targetRootIds.mockImplementation((target) => {
+      atAnalysis = plugin.storage.keysAsync.mock.calls.length;
+      return targetRootIds(target);
+    });
+    if (mode === "forced full") await plugin.send({ type: "recheck-audit", request: { mode: "full" } });
+    else await plugin.send({ type: "refresh-audit" });
+    expect(plugin.events.filter((event) => event.type === "scan-result")).toHaveLength(2);
+    expect(atVerification).toBe(mode === "staged" ? 1 : 0);
+    expect(atAnalysis).toBe(mode === "staged" ? 2 : 0);
+  });
+
   it.each([1, 3])("certifies %i targets with exactly two resource and scene checks", async (targetCount) => {
     const fixture = contextFixture(2);
     const plugin = await launch();
@@ -511,14 +544,20 @@ describe("plugin audit recovery integration", () => {
   });
 
   it("rejects mutation authority and exports historically after an unannounced variable edit", async () => {
-    const plugin = await launchWithVariables();
+    const plugin = await launchWithVariables(true);
     await plugin.send({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    expect(plugin.events.find((event) => event.type === "scan-result")).toMatchObject({ report: { ready: true } });
+    const write = vi.fn();
+    Object.assign(plugin.figmaMock, { getNodeByIdAsync: async (id: string) => id === "root:desktop"
+      ? { id, type: "FRAME", removed: false, setSharedPluginData: write }
+      : plugin.fixture.figma.getNodeByIdAsync(id) });
     plugin.variable.valuesByMode.mode = 12;
     await plugin.send({ type: "certify" });
-    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("requires grade B") });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("changed or expired") });
+    expect(plugin.events.some((event) => event.type === "knowledge-stale")).toBe(true);
+    expect(write).not.toHaveBeenCalled();
     expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
     await plugin.send({ type: "export", format: "json" });
-    expect(plugin.events.some((event) => event.type === "knowledge-stale")).toBe(true);
     expect(plugin.events.at(-1)).toMatchObject({ type: "export-result", content: expect.stringContaining('"historical-audit"') });
     expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(1);
   });

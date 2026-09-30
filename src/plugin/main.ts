@@ -346,7 +346,7 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
     assertScanNotCancelled();
     const token = knowledgeState.beginBuild();
     const fileKey = figma.fileKey;
-    const stagedFragments = fileKey ? await auditStorage.stageContexts(fileKey) : undefined;
+    let stagedFragments: Awaited<ReturnType<typeof auditStorage.stageContexts>> | undefined;
     try {
       const changeJournal = knowledgeState.changes;
       const journalRequiresFull = Boolean(changeJournal.fullBuildReason && changeJournal.fullBuildReason !== "not-loaded");
@@ -356,9 +356,12 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
       // Full builds must not retain the previous large graph. The saved report
       // remains available as historical output if replacement fails.
       graph = undefined;
-      const cachePort = fileKey && stagedFragments ? {
+      const cachePort = fileKey ? {
           get: (key: string) => auditStorage.loadContext(fileKey, key),
-          set: async (key: string, value: () => unknown) => { stagedFragments.set(key, value); },
+          set: async (key: string, value: () => unknown) => {
+            stagedFragments ??= await auditStorage.stageContexts(fileKey);
+            stagedFragments.set(key, value);
+          },
         } : undefined;
       let result;
       try {

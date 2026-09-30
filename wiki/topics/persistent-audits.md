@@ -41,6 +41,8 @@ Once a candidate exceeds the remaining allowance, later fragments are not
 produced or encoded. One candidate can exceed the allowance temporarily while
 its size is determined. Publication still requires an accepted build and
 rechecks capacity without evicting reports. Cache reads clone each node once.
+The staging inventory starts with the first new fragment, so full captures
+without caching and all-hit retained captures skip unused inventory reads.
 
 Incremental refreshes retain one resource verifier with a union of variable
 dependency digests and style evidence, rather than a chain of earlier readers.
@@ -52,6 +54,10 @@ each including resources and whole-file scene signatures, around synchronous
 writes. Cheap readiness and revision checks remain. The UI blocks duplicate
 certification and competing actions until a terminal response, including when
 a stale notice arrives during verification. Failed writes request native undo.
+Cancellation ends the busy state. The pressed button and a polite status
+message remain accessible; tab view preferences can still be saved locally.
+Historical export buttons stay disabled during certification even after a
+stale notice, then become available when certification finishes.
 
 The [delivery journal](../journal/2026-09-30-audit-memory-and-certification.md)
 separates automated evidence from outstanding native Figma checks. Console

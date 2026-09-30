@@ -74,7 +74,7 @@ export function App() {
   const [certifying, setCertifying] = useState<"certify" | "certify-components">();
   const certificationInFlight = useRef(false);
   const send = (message: UiToPluginMessage) => {
-    if (certificationInFlight.current) return;
+    if (certificationInFlight.current && message.type !== "save-audit-view") return;
     if (message.type === "certify" || message.type === "certify-components") {
       certificationInFlight.current = true;
       setCertifying(message.type);
@@ -115,7 +115,7 @@ export function App() {
     const handler = (event: MessageEvent<{ pluginMessage?: PluginToUiMessage }>) => {
       const message = event.data?.pluginMessage;
       if (!message || typeof message !== "object" || typeof message.type !== "string") return;
-      if (message.type === "certified" || message.type === "profile-invalidated" || message.type === "error" && !message.nonTerminal) {
+      if (message.type === "certified" || message.type === "profile-invalidated" || message.type === "scan-cancelled" || message.type === "error" && !message.nonTerminal) {
         certificationInFlight.current = false;
         setCertifying(undefined);
       }
@@ -445,7 +445,7 @@ export function App() {
     : undefined;
   const showStaleNotification = Boolean(stale && report && !historical && !error && !scanInFlight);
   const saveFailure = saveStatus && saveStatus.state !== "saved";
-  const panelLocked = Boolean(certifying) || scanInFlight && (!report || activeTab === "profile" || activeTab === "context");
+  const panelLocked = scanInFlight && (!report || activeTab === "profile" || activeTab === "context");
   const hasNotifications = draftState.blocked
     || bootstrap.data.producer.channel === "development"
     || !bootstrap.data.canMutateDocument
@@ -474,7 +474,7 @@ export function App() {
         {showStaleNotification ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true">This result hasn’t been verified against the current design and audit setup. Refresh before applying fixes or certifying.</div> : null}
         {error ? <div className="banner error" role="alert" aria-atomic="true"><span>{error}</span><button className="icon-button" onClick={() => setError(undefined)} aria-label="Dismiss error">×</button></div> : null}
         <div className={notice ? "banner success" : "status-announcer"} role="status" aria-live="polite" aria-atomic="true">
-          {notice ? <><span>{notice}</span><button className="icon-button" onClick={() => setNotice(undefined)} aria-label="Dismiss notice">×</button></> : null}
+          {notice ? <><span>{notice}</span><button className="icon-button" onClick={() => setNotice(undefined)} aria-label="Dismiss notice">×</button></> : certifying ? <span>Certifying…</span> : null}
         </div>
       </div>
 
@@ -517,7 +517,7 @@ export function App() {
 
       <div
         className={`panel-host${panelLocked ? " scan-locked" : ""}`}
-        inert={panelLocked}
+        inert={panelLocked || Boolean(certifying && activeTab !== "overview")}
         aria-busy={scanInFlight || Boolean(certifying)}
       >
         {activeTab === "overview" && (

@@ -104,8 +104,8 @@ export function Overview(props: OverviewProps) {
                 <button className="button primary" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !componentsReady} onClick={props.onCertifyComponents}>{props.certifying === "certify-components" ? "Certifying…" : `Certify components (${componentFrames.length})`}</button>
                 <button className="button" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !props.report.ready} onClick={props.onCertify}>{props.certifying === "certify" ? "Certifying…" : "Certify source frames"}</button>
               </>}
-            <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("json")}>{historicalExport ? "Export historical JSON" : "Export JSON"}</button>
-            <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("markdown")}>{historicalExport ? "Export historical Markdown" : "Export Markdown"}</button>
+            <button className="button" disabled={Boolean(props.certifying) || (!historicalExport && (props.scanning || props.actionsBlocked))} onClick={() => props.onExport("json")}>{historicalExport ? "Export historical JSON" : "Export JSON"}</button>
+            <button className="button" disabled={Boolean(props.certifying) || (!historicalExport && (props.scanning || props.actionsBlocked))} onClick={() => props.onExport("markdown")}>{historicalExport ? "Export historical Markdown" : "Export Markdown"}</button>
           </div>
         </>
       )}

@@ -435,8 +435,8 @@
     "semantic_hash": "31f15a3db33902aa791c6d0efef6ad7f"
   },
   "src/plugin/main.ts": {
-    "mtime": 1790799940.6056285,
-    "ast_hash": "25a078ff0f87a4753bdf91fdec335046",
+    "mtime": 1790806924.4868515,
+    "ast_hash": "74491cc0f24531872822a169ee3e10bb",
     "semantic_hash": ""
   },
   "src/plugin/message-validation.ts": {
@@ -470,8 +470,8 @@
     "semantic_hash": "a08ad1becf6b69919eff241fd980ca9f"
   },
   "src/ui/App.tsx": {
-    "mtime": 1790800752.4598553,
-    "ast_hash": "3ffaf8ecf1526592173533eada230331",
+    "mtime": 1790806960.6059752,
+    "ast_hash": "dfa042903d893191c791ec8761abcf1c",
     "semantic_hash": ""
   },
   "src/ui/BrandMark.tsx": {
@@ -510,8 +510,8 @@
     "semantic_hash": "3a368b9d73989f021272603affebe17e"
   },
   "src/ui/components/Overview.tsx": {
-    "mtime": 1790800181.0611687,
-    "ast_hash": "5e4e9504149268c02123542908154fdc",
+    "mtime": 1790808310.3473728,
+    "ast_hash": "a024c59fcae8fa95e6b88ec211d0eb81",
     "semantic_hash": ""
   },
   "src/ui/components/PageBatch.tsx": {
