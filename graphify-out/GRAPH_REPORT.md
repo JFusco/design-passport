@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8a07fe8f`
+- Built from commit: `d9507356`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -44,18 +44,18 @@
 - recheck.ts
 - runtime.ts
 - session-state.ts
-- graph.ts
 - Finding
 - audit-state.ts
-- new/page.tsx
-- NodeSnapshot
-- layout.tsx
 - accessibility.ts
-- core/operations/interaction-state.ts
+- new/page.tsx
 - post
+- layout.tsx
+- NodeSnapshot
+- core/operations/interaction-state.ts
+- knowledge.ts
 - proxy.ts
 - next.config.ts
-- knowledge.ts
+- graph.ts
 - ChangePlan
 - core/waivers.ts
 - rules/component.ts
@@ -206,45 +206,45 @@ Nodes (14): GET(), dynamic, ImportLearningsPage(), metadata, DashboardPage(), dy
 Cohesion: 0.18
 Nodes (6): CommandGate, DocumentChangeSignal, isLocalMetadataOnly(), KnowledgeBuildToken, MutationChangeGuard, requiresTransientMutationGuard()
 
-### Community 29 - "graph.ts"
-Cohesion: 0.33
-Nodes (8): AUDIT_TARGET_NODE_TYPES, AuditTargetNodeType, isAuditTargetNodeType(), nestedComponentSources(), postOrder(), resolveTargetRoots(), targetRootIds(), TargetRootResolution
-
-### Community 30 - "Finding"
+### Community 29 - "Finding"
 Cohesion: 0.27
 Nodes (12): canonicalPatternName(), CATALOG_VERSION, SOURCES, Finding, createFinding(), FindingInput, FindingOptions, evaluateNamingRules() (+4 more)
 
-### Community 31 - "audit-state.ts"
+### Community 30 - "audit-state.ts"
 Cohesion: 0.23
 Nodes (14): Axis, FindingCategory, Grade, CapturedAuditTarget, AuditSaveStatus, AuditViewState, SavedAuditSummary, SavedAuditV1 (+6 more)
+
+### Community 31 - "accessibility.ts"
+Cohesion: 0.31
+Nodes (12): isLargeText(), assessTarget(), evaluateAccessibilityRules(), insideDefinition(), interactiveCandidates(), isDescendant(), overlappingBounds(), renderedInGraph() (+4 more)
 
 ### Community 32 - "new/page.tsx"
 Cohesion: 0.19
 Nodes (9): FileResult, ImportForm(), ImportResult, PackForm(), PackResult, dynamic, metadata, NewPackPage() (+1 more)
 
-### Community 33 - "NodeSnapshot"
-Cohesion: 0.33
-Nodes (7): NodeSnapshot, evaluateStructureRules(), GEOMETRY_NODE_TYPES, isEmptyNonInteractiveSpacer(), isMeasurableLayoutContainer(), spacerSizingEvidence(), TextStyleMaterial
+### Community 33 - "post"
+Cohesion: 0.25
+Nodes (8): ensureDocumentChangeWatcher(), handleDocumentChange(), initialize(), markKnowledgeDirty(), post(), restoreAudit(), restoreLastAudit(), storedProjectStyleGuideBinding()
 
 ### Community 34 - "layout.tsx"
 Cohesion: 0.33
 Nodes (4): metadata, viewport, CumulativeLogo(), CumulativeLogoProps
 
-### Community 35 - "accessibility.ts"
-Cohesion: 0.31
-Nodes (12): isLargeText(), assessTarget(), evaluateAccessibilityRules(), insideDefinition(), interactiveCandidates(), isDescendant(), overlappingBounds(), renderedInGraph() (+4 more)
+### Community 35 - "NodeSnapshot"
+Cohesion: 0.33
+Nodes (7): NodeSnapshot, evaluateStructureRules(), GEOMETRY_NODE_TYPES, isEmptyNonInteractiveSpacer(), isMeasurableLayoutContainer(), spacerSizingEvidence(), TextStyleMaterial
 
 ### Community 36 - "core/operations/interaction-state.ts"
 Cohesion: 0.31
 Nodes (11): FALSE_VALUES, hasInactiveVariantState(), interactionState, normalizedProperties(), normalizePropertyName(), normalizePropertyValue(), resolvedState(), stateEvidence() (+3 more)
 
-### Community 37 - "post"
-Cohesion: 0.25
-Nodes (8): ensureDocumentChangeWatcher(), handleDocumentChange(), initialize(), markKnowledgeDirty(), post(), restoreAudit(), restoreLastAudit(), storedProjectStyleGuideBinding()
-
-### Community 45 - "knowledge.ts"
+### Community 37 - "knowledge.ts"
 Cohesion: 0.39
 Nodes (8): ResponsiveFamily, bindingSignature(), deriveRepeatedStructures(), deriveResponsiveFamilies(), finalizeKnowledgeGraph(), normalizedResponsiveRootName(), parseResponsiveName(), ResponsiveName
+
+### Community 45 - "graph.ts"
+Cohesion: 0.33
+Nodes (8): AUDIT_TARGET_NODE_TYPES, AuditTargetNodeType, isAuditTargetNodeType(), nestedComponentSources(), postOrder(), resolveTargetRoots(), targetRootIds(), TargetRootResolution
 
 ### Community 46 - "ChangePlan"
 Cohesion: 0.48
@@ -270,7 +270,7 @@ Nodes (4): collectBoundVariableIds(), hasResponsiveVariableSignal(), evaluateRes
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `hashValue()` connect `hashValue` to `NodeSnapshot`, `report.ts`, `audit-storage.ts`, `plugin/main.ts`, `App.tsx`, `knowledge.ts`, `adapter.ts`, `messages.ts`, `repository.ts`, `handleMessage`, `companion/main.ts`, `stable.ts`, `ensureKnowledge`, `graph.ts`, `audit-state.ts`?**
+- **Why does `hashValue()` connect `hashValue` to `report.ts`, `NodeSnapshot`, `audit-storage.ts`, `knowledge.ts`, `plugin/main.ts`, `App.tsx`, `graph.ts`, `adapter.ts`, `messages.ts`, `repository.ts`, `handleMessage`, `companion/main.ts`, `stable.ts`, `ensureKnowledge`, `audit-state.ts`?**
   _High betweenness centrality (0.081) - this node is a cross-community bridge._
 - **Why does `version` connect `devDependencies` to `plugin/main.ts`?**
   _High betweenness centrality (0.066) - this node is a cross-community bridge._
