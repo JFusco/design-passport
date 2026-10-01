@@ -73,6 +73,21 @@ UI receipt timing and batched change callbacks do not prove native elapsed time
 or edit placement. Short-viewport collapse checks run in standalone Chromium;
 native certification timing and concurrent-edit undo require their own evidence.
 
+One repaired-harness native pair retained the same whole-file knowledge and
+normalized report while candidate audit time was 2.93% slower than main in
+retained/mixed context. A separate zero-reuse cold pair was 8.41% faster.
+These are individual samples, so the 20% audit-speed and repeated-matrix
+gates remain open. Candidate source-frame certification succeeded natively
+for six roots with a correlated 60,816 ms runtime handler duration. Main also
+certified six roots in 238,003 ms, but the Mac locked during that attempt, so
+the pair cannot establish the uninterrupted 60% target. Concurrent-edit
+rollback remains unverified. The
+[journal](../journal/2026-09-30-audit-memory-and-certification.md) records
+the measurements and their limits.
+The six-root exact prior-metadata snapshot was exported before a later
+rollback attempt; the Mac locked during its fresh audit, before any native
+designer rename.
+
 ## Repository automation
 
 Since 2026-09-25, drafts and changes limited to wiki content or its generated graph use lightweight validation while ready product, workflow, script, documentation, and skill changes retain the full browser-backed suite. Wiki maintenance runs Mondays, audits missed merges in batches, updates bot pull requests through REST, and rejects duplicate or malformed frontmatter across the full wiki before writing history ([issue #35](https://github.com/JFusco/design-passport/issues/35)).

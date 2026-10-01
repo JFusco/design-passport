@@ -237,3 +237,59 @@ The plan archive is partial until the following checks are complete:
 Keep the PR open for review. Its `Closes #53` reference closes the issue only
 when merged into the default branch. No merge or plugin publication is part
 of this delivery.
+
+## 2026-10-01 repaired-harness native continuation
+
+The repaired QA harness was generated from clean production bundles at main
+`8a07fe8f480a` and candidate `da3b0c2eb2c7`. Both retained the production
+bytes, used the same isolated development plugin ID, and allowed document
+writes only in the disposable Colliers copy. Read-only inspection confirmed
+the expected page and all six source roots. Their exact existing certificate
+strings, complete annotations, and relaunch data were exported privately
+before the runs; the original Colliers file was not opened or changed.
+
+One new native retained/mixed pair completed with correlated handlers. Main
+showed the report in 692,257 ms and candidate in 712,542 ms: candidate was
+2.93% slower, missing the 20% faster target. Main reused 1,221 fragments;
+candidate reused 1,226, so the cache states were close but not identical.
+Both had the same whole-file knowledge hash, B 83.2 readiness, 484 report
+findings, 107 groups, and 36 plans. After validating each original report
+hash, normalized reports matched when producer and generation identity were
+excluded; plans matched exactly. The stock comparator correctly rejected
+cross-build identity, so its release-parity flag was not used as proof.
+
+After clearing rebuildable context and restarting each plugin, a cold pair
+reused zero fragments and captured all 81,888 nodes on both builds. Main
+showed the report in 796,036 ms and candidate in 729,099 ms, an 8.41%
+improvement for this one pair. Their normalized reports and plans matched.
+This single result is within the 10% cold-regression limit; it does not
+satisfy the repeated matrix. The candidate retained/mixed run spent
+570,880 ms building context, including 180,733 ms in validation and
+169,896 ms in inference. Four complete scene checks took 133,987 ms.
+Removing those checks would violate the freshness boundary and would still
+fall short of the approximately 159,000 ms needed for the 20% target.
+No new optimization is justified by this evidence alone.
+
+The candidate then certified six source frames through the ordinary
+production button. The exported `certified` terminal event and correlated
+handler completion recorded runtime `handlerElapsedMs` of 60,816 ms. The
+iframe receipt interval was only 157 ms, confirming that it is unsuitable
+for this timing comparison. The document-change observer was available but
+recorded no callback during that successful command; this cannot prove a
+concurrent designer edit. A fresh main audit also completed and its ordinary
+production button certified all six roots with a correlated runtime duration
+of 238,003 ms. The Mac locked during that attempt, and the screen-saver
+interval could not be bounded. The observed candidate/main ratio is 0.256,
+but this is not an uninterrupted matched pair or a controlled screen-saver
+case. Three matched successful certification pairs, the audit matrix, and
+exact native rollback remain open.
+
+For a later rollback attempt, the repaired candidate harness exported a new
+read-only inspection of all six source roots. It captured each exact prior
+certificate string, complete annotation objects, relaunch data, and name;
+all six carried existing certificates from the successful native runs. A
+fresh candidate current-page audit started, but the Mac locked while it was
+building whole-file context. Native access could not be restored without a
+manual unlock, so completion was not observed and no designer rename or
+rollback assertion was made from this attempt. The private inspection export
+and every earlier native export were retained.
