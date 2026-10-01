@@ -270,6 +270,24 @@ Removing those checks would violate the freshness boundary and would still
 fall short of the approximately 159,000 ms needed for the 20% target.
 No new optimization is justified by this evidence alone.
 
+| Native run (production build) | Reused fragments / nodes | Terminal and handler | Timing origin | Dropped events / runs |
+| --- | ---: | --- | --- | ---: |
+| Main retained/mixed (`8a07fe8`) | 1,221 / 46,607 | completed / fulfilled | `qa-send` | 0 / 0 |
+| Candidate retained/mixed (`da3b0c2`) | 1,226 / 47,320 | completed / fulfilled | `qa-send` | 0 / 0 |
+| Main cold (`8a07fe8`) | 0 / 0 | completed / fulfilled | `qa-send` | 0 / 0 |
+| Candidate cold (`da3b0c2`) | 0 / 0 | completed / fulfilled | `qa-send` | 0 / 0 |
+| Main fresh audit before certification (`8a07fe8`) | 0 / 0 | completed / fulfilled | `qa-send` | 0 / 0 |
+| Candidate source-frame certification (`da3b0c2`) | n/a | certified (6) / fulfilled | `qa-handler-start` | 0 / 0 |
+| Main source-frame certification (`8a07fe8`) | n/a | certified (6) / fulfilled | `qa-handler-start` | 0 / 0 |
+
+The main audit before certification showed its report in 688,189 ms.
+Audit comparison uses `reportVisibleElapsedMs`; certification comparison
+uses runtime `handlerElapsedMs`. Each export was taken after correlated
+handler completion. The Mac lock was observed as denied UI access, but its
+onset and end were not directly timed or accompanied by visibility evidence.
+No active-time estimate can be derived from those wall intervals, and none
+of these attempts counts as a controlled screen-saver case.
+
 The candidate then certified six source frames through the ordinary
 production button. The exported `certified` terminal event and correlated
 handler completion recorded runtime `handlerElapsedMs` of 60,816 ms. The
