@@ -210,9 +210,9 @@
     "semantic_hash": "87dd2c4fee0b56d4ff1c0cecf1e74cfa"
   },
   "src/core/knowledge.ts": {
-    "mtime": 1790185309.578794,
-    "ast_hash": "71f0f1f6cb22a458383710cc6f7652c8",
-    "semantic_hash": "71f0f1f6cb22a458383710cc6f7652c8"
+    "mtime": 1790812362.4162898,
+    "ast_hash": "92c3014986c796c6b09c658b81c286e6",
+    "semantic_hash": ""
   },
   "src/core/markdown.ts": {
     "mtime": 1790180577.6301138,
@@ -345,8 +345,8 @@
     "semantic_hash": "ae94c122c23bc463439ae5f09fc597f3"
   },
   "src/figma/adapter.ts": {
-    "mtime": 1790800690.247036,
-    "ast_hash": "8f4074bc1a774b230fc92c157901bc10",
+    "mtime": 1790812397.9642456,
+    "ast_hash": "c612b0bceceb661dc9071708e5d76fb7",
     "semantic_hash": ""
   },
   "src/figma/context-cache.ts": {
@@ -470,8 +470,8 @@
     "semantic_hash": "a08ad1becf6b69919eff241fd980ca9f"
   },
   "src/ui/App.tsx": {
-    "mtime": 1790806960.6059752,
-    "ast_hash": "dfa042903d893191c791ec8761abcf1c",
+    "mtime": 1790811393.9479513,
+    "ast_hash": "55764afcac1e433d33ace9be07c6ed96",
     "semantic_hash": ""
   },
   "src/ui/BrandMark.tsx": {

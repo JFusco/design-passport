@@ -1,7 +1,7 @@
 # Graph Report - design-passport  (2026-09-30)
 
 ## Corpus Check
-- 117 files · ~71,294 words
+- 117 files · ~71,440 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `cea8e9ec`
+- Built from commit: `19b28f38`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -29,11 +29,11 @@
 - Overview.tsx
 - mutations.ts
 - adapter.ts
-- messages.ts
+- companion/main.ts
 - contracts.ts
 - repository.ts
 - handleMessage
-- companion/main.ts
+- messages.ts
 - stable.ts
 - presentation.ts
 - ReviewController.tsx
@@ -46,12 +46,12 @@
 - session-state.ts
 - Finding
 - audit-state.ts
-- accessibility.ts
 - new/page.tsx
-- post
+- accessibility.ts
+- core/operations/interaction-state.ts
 - layout.tsx
 - NodeSnapshot
-- core/operations/interaction-state.ts
+- post
 - knowledge.ts
 - proxy.ts
 - next.config.ts
@@ -146,9 +146,9 @@ Nodes (65): AI_SOURCE_FRAME_ANNOTATION, CERTIFICATION_ANNOTATION_PREFIX, CERTIFI
 Cohesion: 0.05
 Nodes (78): ScanProgress, populateGraphMetrics(), sourceFrameIds(), annotateInstanceDescendants(), BINDABLE_FIELDS, bindingSignature(), boundFields(), boundVariableIds() (+70 more)
 
-### Community 14 - "messages.ts"
-Cohesion: 0.26
-Nodes (12): TokenCoverageDisposition, TokenCoverageField, TokenCoverageReason, TokenCoveragePageQuery, TokenCoveragePageRequest, TokenCoveragePageResult, UiToPluginMessage, aggregate() (+4 more)
+### Community 14 - "companion/main.ts"
+Cohesion: 0.18
+Nodes (22): createReferencePack(), fetchFigmaSource(), figmaFetchJson(), FigmaSourceResult, ReferencePackInput, responseTextWithinLimit(), args(), availablePort() (+14 more)
 
 ### Community 15 - "contracts.ts"
 Cohesion: 0.10
@@ -162,9 +162,9 @@ Nodes (27): acquireLock(), assertNoSymlink(), assertWithinRoot(), atomicWriteJso
 Cohesion: 0.23
 Nodes (17): activeProjectStyleGuidePack(), analyzeCurrentGraph(), assertCurrentReport(), assertDocumentMutationAllowed(), assertKnowledgeRevision(), assertScanNotCancelled(), assertVerifiedKnowledge(), currentKnowledgeAvailable() (+9 more)
 
-### Community 18 - "companion/main.ts"
-Cohesion: 0.18
-Nodes (22): createReferencePack(), fetchFigmaSource(), figmaFetchJson(), FigmaSourceResult, ReferencePackInput, responseTextWithinLimit(), args(), availablePort() (+14 more)
+### Community 18 - "messages.ts"
+Cohesion: 0.26
+Nodes (12): TokenCoverageDisposition, TokenCoverageField, TokenCoverageReason, TokenCoveragePageQuery, TokenCoveragePageRequest, TokenCoveragePageResult, UiToPluginMessage, aggregate() (+4 more)
 
 ### Community 19 - "stable.ts"
 Cohesion: 0.08
@@ -214,17 +214,17 @@ Nodes (12): canonicalPatternName(), CATALOG_VERSION, SOURCES, Finding, createFin
 Cohesion: 0.23
 Nodes (14): Axis, FindingCategory, Grade, CapturedAuditTarget, AuditSaveStatus, AuditViewState, SavedAuditSummary, SavedAuditV1 (+6 more)
 
-### Community 31 - "accessibility.ts"
-Cohesion: 0.31
-Nodes (12): isLargeText(), assessTarget(), evaluateAccessibilityRules(), insideDefinition(), interactiveCandidates(), isDescendant(), overlappingBounds(), renderedInGraph() (+4 more)
-
-### Community 32 - "new/page.tsx"
+### Community 31 - "new/page.tsx"
 Cohesion: 0.19
 Nodes (9): FileResult, ImportForm(), ImportResult, PackForm(), PackResult, dynamic, metadata, NewPackPage() (+1 more)
 
-### Community 33 - "post"
-Cohesion: 0.25
-Nodes (8): ensureDocumentChangeWatcher(), handleDocumentChange(), initialize(), markKnowledgeDirty(), post(), restoreAudit(), restoreLastAudit(), storedProjectStyleGuideBinding()
+### Community 32 - "accessibility.ts"
+Cohesion: 0.31
+Nodes (12): isLargeText(), assessTarget(), evaluateAccessibilityRules(), insideDefinition(), interactiveCandidates(), isDescendant(), overlappingBounds(), renderedInGraph() (+4 more)
+
+### Community 33 - "core/operations/interaction-state.ts"
+Cohesion: 0.31
+Nodes (11): FALSE_VALUES, hasInactiveVariantState(), interactionState, normalizedProperties(), normalizePropertyName(), normalizePropertyValue(), resolvedState(), stateEvidence() (+3 more)
 
 ### Community 34 - "layout.tsx"
 Cohesion: 0.33
@@ -234,9 +234,9 @@ Nodes (4): metadata, viewport, CumulativeLogo(), CumulativeLogoProps
 Cohesion: 0.33
 Nodes (7): NodeSnapshot, evaluateStructureRules(), GEOMETRY_NODE_TYPES, isEmptyNonInteractiveSpacer(), isMeasurableLayoutContainer(), spacerSizingEvidence(), TextStyleMaterial
 
-### Community 36 - "core/operations/interaction-state.ts"
-Cohesion: 0.31
-Nodes (11): FALSE_VALUES, hasInactiveVariantState(), interactionState, normalizedProperties(), normalizePropertyName(), normalizePropertyValue(), resolvedState(), stateEvidence() (+3 more)
+### Community 36 - "post"
+Cohesion: 0.25
+Nodes (8): ensureDocumentChangeWatcher(), handleDocumentChange(), initialize(), markKnowledgeDirty(), post(), restoreAudit(), restoreLastAudit(), storedProjectStyleGuideBinding()
 
 ### Community 37 - "knowledge.ts"
 Cohesion: 0.39
@@ -270,7 +270,7 @@ Nodes (4): collectBoundVariableIds(), hasResponsiveVariableSignal(), evaluateRes
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `hashValue()` connect `hashValue` to `report.ts`, `NodeSnapshot`, `audit-storage.ts`, `knowledge.ts`, `plugin/main.ts`, `App.tsx`, `graph.ts`, `adapter.ts`, `messages.ts`, `repository.ts`, `handleMessage`, `companion/main.ts`, `stable.ts`, `ensureKnowledge`, `audit-state.ts`?**
+- **Why does `hashValue()` connect `hashValue` to `report.ts`, `NodeSnapshot`, `audit-storage.ts`, `knowledge.ts`, `plugin/main.ts`, `App.tsx`, `graph.ts`, `companion/main.ts`, `adapter.ts`, `repository.ts`, `handleMessage`, `messages.ts`, `stable.ts`, `ensureKnowledge`, `audit-state.ts`?**
   _High betweenness centrality (0.081) - this node is a cross-community bridge._
 - **Why does `version` connect `devDependencies` to `plugin/main.ts`?**
   _High betweenness centrality (0.066) - this node is a cross-community bridge._
