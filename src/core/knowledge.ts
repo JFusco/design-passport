@@ -25,7 +25,9 @@ export function deriveResponsiveFamilies(nodes: Record<string, NodeSnapshot>, pr
     const parsed = parseResponsiveName(node.name);
     if (!parsed) continue;
     const key = `${node.pageId}:${node.parentId ?? "page"}:${parsed.artifact.toLocaleLowerCase("en-US")}`;
-    groups.set(key, [...(groups.get(key) ?? []), { node, parsed }]);
+    const members = groups.get(key) ?? [];
+    members.push({ node, parsed });
+    groups.set(key, members);
   }
   const breakpointOrder = new Map(profile.breakpoints.map((breakpoint, index) => [breakpoint.name.toLocaleLowerCase("en-US"), index]));
   return [...groups.values()].map((unsortedMembers) => {
@@ -91,7 +93,9 @@ export function deriveRepeatedStructures(nodes: Record<string, NodeSnapshot>): A
   const groups = new Map<string, string[]>();
   for (const node of Object.values(nodes)) {
     if (node.evidenceRole === "instance-descendant" || !node.structuralSignature || !["FRAME", "GROUP", "COMPONENT"].includes(node.type)) continue;
-    groups.set(node.structuralSignature, [...(groups.get(node.structuralSignature) ?? []), node.id]);
+    const members = groups.get(node.structuralSignature) ?? [];
+    members.push(node.id);
+    groups.set(node.structuralSignature, members);
   }
   return [...groups.entries()]
     .filter(([, nodeIds]) => nodeIds.length >= 3)

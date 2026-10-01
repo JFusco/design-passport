@@ -1545,6 +1545,9 @@ export class FigmaAdapter {
     const started = Date.now();
     const diagnostics = newBuildDiagnostics();
     const pages = figma.root.children;
+    const logBuildPhase = (name: string, data: Record<string, number>) => {
+      if (pages.length > 10) console.info(`[Design Passport] ${name}`, { producer: PRODUCER_IDENTITY, ...data });
+    };
     const nodes: Record<string, NodeSnapshot> = {};
     const pageSnapshots: PageSnapshot[] = [];
     const componentIds: string[] = [];
@@ -1704,6 +1707,7 @@ export class FigmaAdapter {
       pageSnapshots.push({ id: page.id, name: page.name, role: roleForPage(page.id, profile), loaded: true, nodeCount: pageNodeCount, rootNodeIds });
       if (this.cancelled) break;
       stageStarted = Date.now();
+      logBuildPhase("dev resources started", { pageIndex, rootCount: page.children.length, nodeCount: pageNodeCount });
       let resources: DevResourceWithNodeId[] | undefined;
       if ("getDevResourcesAsync" in page) {
         try { resources = await page.getDevResourcesAsync({ includeChildren: true }); }
@@ -1721,9 +1725,11 @@ export class FigmaAdapter {
         if (snapshot) snapshot.devResourceCount += 1;
       }
       diagnostics.devResourcesMs += Date.now() - stageStarted;
+      logBuildPhase("dev resources finished", { pageIndex, resourceCount: resources.length, durationMs: Date.now() - stageStarted });
     }
 
     let stageStarted = Date.now();
+    logBuildPhase("instance resolution started", { instanceCount: instances.length });
     await mapConcurrent(instances, 16, async ({ scene, snapshot }) => {
       const main = await scene.getMainComponentAsync().catch(() => null);
       const evidence = captureInstanceEvidence(scene);
@@ -1735,9 +1741,11 @@ export class FigmaAdapter {
       annotateInstanceDescendants(snapshot.childIds.map((id) => nodes[id]).filter((candidate): candidate is NodeSnapshot => Boolean(candidate)), scene.id, evidence);
     }, () => this.cancelled);
     diagnostics.componentsMs = Date.now() - stageStarted;
+    logBuildPhase("instance resolution finished", { instanceCount: instances.length, durationMs: diagnostics.componentsMs });
 
     onProgress({ phase: "indexing", completed: loadedPageCount, total: pages.length, message: "Resolving variables and cross-file relationships" });
     stageStarted = Date.now();
+    logBuildPhase("variable resolution started", { nodeCount: pageSnapshots.reduce((count, page) => count + page.nodeCount, 0) });
     const collections = await this.getCollectionOptions(true, 4_000, true);
     const approvedKeys = new Set(profile.tokenSourceCollectionKeys);
     const remoteKeys = new Set([...approvedKeys].filter((key) => !variableEnvironment?.localCollectionKeys.has(key)
@@ -1774,6 +1782,7 @@ export class FigmaAdapter {
       return !this.cancelled && matches.every(Boolean);
     };
     diagnostics.variablesMs = Date.now() - stageStarted;
+    logBuildPhase("variable resolution finished", { variableCount: variables.length, durationMs: diagnostics.variablesMs });
     if (variableEnvironment && !this.cancelled) {
       stageStarted = Date.now();
       const verified = await variableEnvironment.verify();
@@ -1783,7 +1792,9 @@ export class FigmaAdapter {
     if (!this.cancelled && !await styles.verify()) throw new Error("Text styles changed while file context was being verified. Run the audit again.");
     if (!this.cancelled && !await verifyLibraries()) throw new Error("Available library variables changed while file context was being verified. Run the audit again.");
     stageStarted = Date.now();
+    logBuildPhase("graph metrics started", { nodeCount: pageSnapshots.reduce((count, page) => count + page.nodeCount, 0) });
     populateGraphMetrics(nodes);
+    logBuildPhase("graph metrics finished", { durationMs: Date.now() - stageStarted });
     const partial = {
       schemaVersion: 1 as const,
       resourceFingerprint: hashValue({ variables: variableResourceFingerprint ?? "unavailable", styles: await styles.fingerprint(),
@@ -1803,8 +1814,11 @@ export class FigmaAdapter {
       sourceFrameIds: [] as string[],
     };
     partial.sourceFrameIds = sourceFrameIds(partial, profile);
+    const finalizationStarted = Date.now();
+    logBuildPhase("graph finalization started", { nodeCount: pageSnapshots.reduce((count, page) => count + page.nodeCount, 0) });
     let graph = finalizeKnowledgeGraph(partial, profile);
     diagnostics.derivedMs = Date.now() - stageStarted;
+    logBuildPhase("graph finalization finished", { durationMs: Date.now() - finalizationStarted });
     if (this.cancelled && graph.complete) graph = finalizeKnowledgeGraph({ ...graph, complete: false, cancelled: true }, profile);
     if (graph.complete && variableEnvironment) {
       // Resource maps retain a single epoch; scene signatures still cover

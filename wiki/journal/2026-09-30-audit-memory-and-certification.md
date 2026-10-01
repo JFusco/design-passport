@@ -90,6 +90,27 @@ companion access policy, network destination, or stored schema changed.
 Native undo ownership during a concurrent designer edit still needs evidence.
 The new loading copy is `Certifying…`, reviewed with writing-guidelines.
 
+## Native follow-up in progress
+
+On a disposable copy of the reported 71-page file, the clean `307c6925feee`
+development build reached the final page fingerprint, then showed Figma's
+`out of memory` error. The Mac locked during the run, but the audit continued
+after unlock. This reproduces the reported failure; it does not establish the
+cause or a memory improvement. A production-channel current-main QA harness
+from `8a07fe8f480a` reached the final page on the same copy. Its terminal
+result and exported diagnostics remain pending while the Mac is locked.
+
+Follow-up changes keep the full file scope and hashes intact. Large-file
+phase markers now distinguish resource collection, instance resolution,
+variable resolution, graph metrics, and finalization. Repeated-structure and
+responsive grouping append to existing arrays instead of copying each group
+on every member. Certification also shows its status in the existing visible
+info banner, including when the pressed button has scrolled out of view.
+The local full `verify:ci` gate passed after these changes: 500 Vitest tests,
+seven Chromium tests, type checks, lint, generated-data and wiki checks, and
+builds. Native equivalence, performance targets, and rollback ownership are
+still unverified.
+
 ## Outstanding native acceptance
 
 Native app control reported that the Mac was locked and automatic unlock

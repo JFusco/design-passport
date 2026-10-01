@@ -453,7 +453,8 @@ export function App() {
     || historical
     || Boolean(saveFailure)
     || Boolean(error)
-    || Boolean(notice);
+    || Boolean(notice)
+    || Boolean(certifying);
 
   return (
     <main className="app-shell">
@@ -473,7 +474,7 @@ export function App() {
         {saveFailure ? <div className="banner warning" role="status"><span><strong>{saveStatus.state === "session-only" ? "Available this session only" : "Not saved"}</strong><br />{saveStatus.message ?? "Export this result before closing Passport to keep a copy."}</span></div> : null}
         {showStaleNotification ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true">This result hasn’t been verified against the current design and audit setup. Refresh before applying fixes or certifying.</div> : null}
         {error ? <div className="banner error" role="alert" aria-atomic="true"><span>{error}</span><button className="icon-button" onClick={() => setError(undefined)} aria-label="Dismiss error">×</button></div> : null}
-        <div className={notice ? "banner success" : "status-announcer"} role="status" aria-live="polite" aria-atomic="true">
+        <div className={notice ? "banner success" : certifying ? "banner info" : "status-announcer"} role="status" aria-live="polite" aria-atomic="true">
           {notice ? <><span>{notice}</span><button className="icon-button" onClick={() => setNotice(undefined)} aria-label="Dismiss notice">×</button></> : certifying ? <span>Certifying…</span> : null}
         </div>
       </div>

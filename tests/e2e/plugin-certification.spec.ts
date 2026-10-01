@@ -75,7 +75,7 @@ test("blocks duplicate clicks and competing mutations until certification finish
   await expect(page.getByRole("button", { name: "Certifying…" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Certifying…" })).toBeDisabled();
   await expect(page.locator(".panel-host")).not.toHaveAttribute("inert");
-  await expect(page.locator(".status-announcer")).toContainText("Certifying");
+  await expect(page.locator(".notification-stack > .banner.info")).toContainText("Certifying…");
   await expect(page.getByText("Refresh audit", { exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Clear rebuildable context", exact: true })).toBeDisabled();
   await deliver(page, { type: "knowledge-stale" });
