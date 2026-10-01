@@ -97,8 +97,50 @@ development build reached the final page fingerprint, then showed Figma's
 `out of memory` error. The Mac locked during the run, but the audit continued
 after unlock. This reproduces the reported failure; it does not establish the
 cause or a memory improvement. A production-channel current-main QA harness
-from `8a07fe8f480a` reached the final page on the same copy. Its terminal
-result and exported diagnostics remain pending while the Mac is locked.
+from `8a07fe8f480a` completed a current-page audit on the same copy. Its
+exported native evidence records 71 checked pages, 81,888 captured nodes,
+5,811 captured fragments, a 956,586 ms context build, and 1,290,138 ms until
+the report was visible. The report was B (82.1), ready, with 484 findings and
+knowledge snapshot `h53:1a60b81de9cdfa`. This is one baseline run, not a
+controlled retained/mixed/cold comparison. The raw evidence stays outside
+the repository.
+
+The clean pushed-branch `645bd0504558` production QA harness completed on the
+same page without the earlier memory error. Its first run reused 1,241
+fragments (47,606 nodes), so it is a mixed-cache observation and cannot be
+compared with the main run as a cold timing pair. It captured 4,570 fragments,
+completed context building in 977,200 ms, and showed the report in 1,268,187
+ms. The B (82.1) ready report has the same knowledge hash, 484 findings, and
+113 issue groups. Excluding producer, generation time, and their derived report
+hash, every report field matches main; all 42 repair plans match exactly. A
+separate branch run after clearing rebuildable context and restarting the
+plugin completed with zero reused fragments and 81,888 captured nodes. Its
+context build took 1,082,480 ms and its report became visible in 1,383,876
+ms, 7.3% slower than the single main baseline end to end. This one pair is
+within the plan's 10% cold-audit limit; it is not a three-run acceptance
+sample. The normalized report and all 42 plans match main again. The branch
+context-build phase alone was 13.2% slower, which remains worth investigating
+if repeated runs show the same pattern.
+
+A later fresh-session run with retained storage reused 1,225 fragments and
+47,313 nodes on both builds. The clean branch showed its report in 1,251,243
+ms; current main showed it in 1,233,680 ms. The branch was 1.4% slower in
+this matched pair, so the planned 20% retained/mixed audit speedup is not
+demonstrated. Both saved B (82.1) ready reports with 484 findings and 42
+plans. The cache is quota-limited and captured the other 4,586 fragments in
+each run; neither run represents a fully retained file.
+
+On the disposable copy, the current-main source-frame certification then
+reported success for all six targets. The QA event timeline records its
+`certified` response at 02:21:09 UTC. The main UI did not show a local busy
+state or disable its button during the request. Repeat clicks produced
+`Cannot start certify; certify is still running`, and later produced a stale
+context error that displaced the success notice. Because the first click was
+not timestamped by the QA harness, this is native UI and completion evidence,
+not a certification speed baseline. The branch's visible `Certifying…` state
+and duplicate-click guard address this confusing main-build behavior in local
+browser tests, but native branch certification and concurrent-edit undo are
+still unverified.
 
 Follow-up changes keep the full file scope and hashes intact. Large-file
 phase markers now distinguish resource collection, instance resolution,
@@ -108,13 +150,15 @@ on every member. Certification also shows its status in the existing visible
 info banner, including when the pressed button has scrolled out of view.
 The local full `verify:ci` gate passed after these changes: 500 Vitest tests,
 seven Chromium tests, type checks, lint, generated-data and wiki checks, and
-builds. Native equivalence, performance targets, and rollback ownership are
-still unverified.
+builds. The native checks below test report equivalence and one cold and
+retained timing pair. Full performance and rollback acceptance remain open.
 
 ## Outstanding native acceptance
 
-Native app control reported that the Mac was locked and automatic unlock
-failed. No live current-main baseline, crash reproduction, or speedup is claimed.
+Native app control resumed after the Mac was unlocked. One current-main audit
+completed, and the earlier clean candidate run reproduced an out-of-memory
+failure. Neither result establishes a speedup or acceptance across cache
+variants.
 The plan archive is partial until the following checks are complete:
 
 1. Run the reporter build, current main, and candidate on the same machine and
