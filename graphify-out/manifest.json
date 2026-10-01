@@ -345,8 +345,8 @@
     "semantic_hash": "ae94c122c23bc463439ae5f09fc597f3"
   },
   "src/figma/adapter.ts": {
-    "mtime": 1790812397.9642456,
-    "ast_hash": "c612b0bceceb661dc9071708e5d76fb7",
+    "mtime": 1790859947.376103,
+    "ast_hash": "4c46445699e4e256574831f857ab15f4",
     "semantic_hash": ""
   },
   "src/figma/context-cache.ts": {

@@ -130,6 +130,14 @@ demonstrated. Both saved B (82.1) ready reports with 484 findings and 42
 plans. The cache is quota-limited and captured the other 4,586 fragments in
 each run; neither run represents a fully retained file.
 
+The matched branch export attributes 260,375 ms (20.81% of report-visible
+time) to four whole-file scene-signature passes; the corresponding resource
+checks total 1,291 ms. Scene walks account for 89.57% of the labeled report
+evaluation phase and 96.04% of report persistence. Graph finalization took
+112,620 ms (9.00%). These measurements identify costs in the earlier native
+run. They do not measure the later child-array change or justify removing
+freshness checks.
+
 On the disposable copy, the current-main source-frame certification then
 reported success for all six targets. The QA event timeline records its
 `certified` response at 02:21:09 UTC. The main UI did not show a local busy
@@ -153,12 +161,55 @@ seven Chromium tests, type checks, lint, generated-data and wiki checks, and
 builds. The native checks below test report equivalence and one cold and
 retained timing pair. Full performance and rollback acceptance remain open.
 
+## 2026-10-01 measurement and harness follow-up
+
+The synchronous capture traversal now reads each parent's child array once.
+A probe executing the actual function against a 10,000-child fixture reduced
+getter reads from 10,001 to one and preserved all 10,001 entries exactly.
+Traversal order, visibility and ownership filters are unchanged. No evidence
+is cached across an await; native speed impact remains unmeasured.
+
+The development harness measures both production certification commands and
+retains their certified result separately from handler fulfillment. It keeps
+an overlapping measured command's rejection out of the active result. Read-only
+inspection now captures exact prior certificate strings, full annotations and
+relaunch data. A bounded, correlated document-change observer records up to
+200 changes and discloses truncation. Registration failure is reported as
+`observationUnavailable` and still enters production's own handler; observation
+and cleanup add no writes or undo boundaries.
+
+The QA collapse summary remains visible after scrolling and exporting at a
+500 by 400 viewport. Standalone Chromium checks passed click, Enter and Space
+toggling. This is browser fixture evidence, separate from native Figma proof.
+The tested UI source SHA-256 was
+`d5393153a9e170d9e8f346f3597b2bff82d8597a8d397ee1e82c7241a46b2d22`.
+
+The native protocol compares correlated runtime `handlerElapsedMs`. UI receipt
+intervals can compress or inflate elapsed time when messages are delayed: a
+VM reproduction preserved a 60,000 ms runtime duration while showing only
+100 ms between UI receipts. Document-change timestamps are callback observation
+times; they cannot establish exact native-edit placement by themselves. The
+protocol requires independent action timing and exact prior metadata restored
+while the designer rename survives. `qa-edit` changes undo boundaries and is
+excluded from that proof.
+
+Independent recheck passed the original six repairs in run
+`1361bb2e-3198-41ae-b71c-24e0c84157cd`, then identified the observer-registration
+and timing-documentation follow-ups. Fresh run
+`e659e850-8853-45e3-a29f-e748b1abb2cf` repaired and independently verified both.
+The focused harness/context-cache suites passed 54 tests, and typecheck passed.
+The full `DESIGN_PASSPORT_E2E_PORT=5190 pnpm run verify:ci` gate then passed:
+504 Vitest tests in 50 files, seven Chromium tests, type checks, lint,
+generated-data/wiki/skill checks, and companion/plugin builds.
+No production certification logic, persistent schema, hash format, credential
+handling or original design file changed in this follow-up.
+
 ## Outstanding native acceptance
 
-Native app control resumed after the Mac was unlocked. One current-main audit
-completed, and the earlier clean candidate run reproduced an out-of-memory
-failure. Neither result establishes a speedup or acceptance across cache
-variants.
+Earlier native sessions produced the audit comparisons and current-main
+certification completion recorded above. The harness follow-up has local
+source and browser evidence; native timing and concurrent-edit undo remain
+pending. Native app access was unavailable at the last follow-up attempt.
 The plan archive is partial until the following checks are complete:
 
 1. Run the reporter build, current main, and candidate on the same machine and
@@ -177,9 +228,11 @@ The plan archive is partial until the following checks are complete:
    Set a scene-walk timing target from the measured baseline. These targets
    are unverified.
 5. Edit as a designer during final asynchronous certification verification,
-   force verification failure, and confirm native undo removes certification
-   metadata while preserving the designer edit. Mocks prove rollback is
-   requested; they cannot establish Figma's undo-group ownership.
+   force verification failure, and confirm native undo restores every exact
+   prior certificate string, annotation and relaunch value while preserving
+   the designer edit. The disposable copy already has six prior certificates;
+   empty metadata is not the baseline. Mocks prove rollback is requested;
+   they cannot establish Figma's undo-group ownership.
 
 Keep the PR open for review. Its `Closes #53` reference closes the issue only
 when merged into the default branch. No merge or plugin publication is part

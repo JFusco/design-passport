@@ -585,8 +585,9 @@ function captureEntries(root: SceneNode, pageName: string, identity?: { rootId: 
     if (entry.include) entries.push(entry);
     if (hasChildren(entry.node)) {
       const occurrenceOwner = entry.node.type === "INSTANCE" ? entry.node.id : entry.owningInstanceId;
-      for (let index = entry.node.children.length - 1; index >= 0; index -= 1) {
-        const child = entry.node.children[index];
+      const children = entry.node.children;
+      for (let index = children.length - 1; index >= 0; index -= 1) {
+        const child = children[index];
         if (!child || occurrenceOwner && !child.visible) continue;
         // Contrast needs visible text occurrences. Target-size/state evidence
         // additionally needs explicit prototype targets and nested instances,

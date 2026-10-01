@@ -48,6 +48,9 @@ Incremental refreshes retain one resource verifier with a union of variable
 dependency digests and style evidence, rather than a chain of earlier readers.
 Dependencies from untouched fragments remain checked. Old inference snapshots
 are cleared when reuse is unavailable and released as fragments are replaced.
+Each synchronous traversal reads a parent's child array once. Live evidence
+is still refreshed at the existing asynchronous boundaries; this optimization
+does not reuse evidence across a yield.
 
 Certification resolves all targets first and runs exactly two full checks,
 each including resources and whole-file scene signatures, around synchronous
@@ -63,6 +66,12 @@ The [delivery journal](../journal/2026-09-30-audit-memory-and-certification.md)
 separates automated evidence from outstanding native Figma checks. Console
 diagnostics identify producer, phase, duration, counts, and staging bytes;
 they contain no design content and are not plugin heap measurements.
+The development-only QA harness records certification results and runtime
+handler timing, exact prior metadata, and bounded document-change observations.
+Its observer cannot bypass production handling if registration is unavailable.
+UI receipt timing and batched change callbacks do not prove native elapsed time
+or edit placement. Short-viewport collapse checks run in standalone Chromium;
+native certification timing and concurrent-edit undo require their own evidence.
 
 ## Repository automation
 

@@ -59,7 +59,7 @@ describe("native QA harness generation", () => {
     const figma = {
       fileKey: "production-original", editorType: "figma", root: { name: "Original", children: [] }, currentPage: { id: "page", selection: [] },
       ui: { onmessage: undefined as unknown as (message: unknown) => Promise<void>, postMessage: (message: typeof events[number]) => events.push(message) },
-      getNodeByIdAsync: async () => live, commitUndo: () => undefined,
+      getNodeByIdAsync: async () => live, commitUndo: () => undefined, on: () => undefined, off: () => undefined,
     };
     new Script(fixture.code).runInNewContext({ figma, console: { info: () => undefined }, productionCalls }, { timeout: 2000 });
     const scan = { type: "scan", request: { scope: "page", refreshKnowledge: true } };
@@ -162,4 +162,145 @@ describe("native QA harness generation", () => {
     expect(evidence.runs[0]).toMatchObject({ timingOrigin: "qa-send", elapsedMs: 800, reportVisibleElapsedMs: 800, handlerCompleteElapsedMs: 850, status: "completed" });
     expect(evidence.runs[1]).toMatchObject({ timingOrigin: "qa-send", elapsedMs: 100, handlerCompleteElapsedMs: 200, status: "failed", failure: { message: "Changed during capture" } });
   });
+
+  it("times both production certification commands and observes bounded changes without writing", async () => {
+    const runtime = (await readFile("scripts/qa/native-harness-runtime.js", "utf8")).replace("/*__QA_CONFIG__*/", JSON.stringify({ allowedWriteFileKeys: ["private-copy"] }));
+    const events: Array<Record<string, any>> = [];
+    const productionCalls: unknown[] = [];
+    const listeners = new Set<(event: unknown) => void>();
+    const annotations = [{ label: "existing", properties: [{ type: "TEXT", value: "prior" }] }];
+    const relaunch = { review: "previous action" };
+    const dataReads: string[] = [];
+    const node = {
+      id: "source-1", type: "FRAME", name: "Source", annotations,
+      getSharedPluginData: (namespace: string, key: string) => { dataReads.push(`${namespace}/${key}`); return "{\"prior\":true}"; },
+      getRelaunchData: () => relaunch,
+    };
+    const figma = {
+      fileKey: "private-copy", editorType: "figma", root: { name: "Copy", children: [] }, currentPage: { id: "page", selection: [node] },
+      ui: { postMessage: (message: Record<string, unknown>) => events.push(message), onmessage: async (message: unknown) => {
+        productionCalls.push(message);
+        const changes = Array.from({ length: 205 }, (_, index) => ({ id: `source-${index}`, type: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["name"] }));
+        for (const listener of listeners) listener({ documentChanges: changes });
+        events.push({ type: "certified", count: 6, target: "source frames", removedVariantAnnotations: 0 });
+      } },
+      on: (type: string, listener: (event: unknown) => void) => { expect(type).toBe("documentchange"); listeners.add(listener); },
+      off: (type: string, listener: (event: unknown) => void) => { expect(type).toBe("documentchange"); listeners.delete(listener); },
+      getNodeByIdAsync: async () => node,
+      commitUndo: () => { throw new Error("Unexpected commitUndo"); },
+    };
+    new Script(runtime).runInNewContext({ figma, console: { info: () => undefined } }, { timeout: 2000 });
+    await figma.ui.onmessage({ type: "qa-inspect", nodeIds: ["source-1"] });
+    const inspected = events.at(-1)!.nodes[0];
+    expect(inspected).toMatchObject({ id: "source-1", annotationLabels: ["existing"], certification: "{\"prior\":true}", annotations, relaunchData: relaunch });
+    annotations[0]!.label = "changed";
+    relaunch.review = "changed";
+    expect(inspected.annotations[0].label).toBe("existing");
+    expect(inspected.relaunchData.review).toBe("previous action");
+    expect(dataReads).toEqual(["verndaleAiReady/certification-v1"]);
+    for (const type of ["certify", "certify-components"]) {
+      const commandId = type === "certify" ? "qa-request-7" : "qa-request-8";
+      const from = events.length;
+      await figma.ui.onmessage({ type, __nativeQaCommandId: commandId });
+      expect(productionCalls.at(-1)).toEqual({ type });
+      expect(events.slice(from).map((event) => event.type)).toEqual(["qa-command-started", "certified", "qa-command-complete"]);
+      expect(events[from]).toMatchObject({ commandId, commandType: type });
+      expect(events.at(-1)).toMatchObject({ commandId, commandType: type, returned: "fulfilled", truncatedDocumentChanges: 5, observationUnavailable: false });
+      expect(events.at(-1)!.documentChanges).toHaveLength(200);
+      expect(events.at(-1)!.documentChanges[0]).toMatchObject({ commandId, nodeId: "source-0", changeType: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["name"] });
+      expect(events.at(-1)!.documentChanges[0].observedAt).toEqual(expect.any(String));
+      expect(listeners.size).toBe(0);
+    }
+  });
+
+  it("continues certification when documentchange observation cannot register", async () => {
+    const runtime = (await readFile("scripts/qa/native-harness-runtime.js", "utf8")).replace("/*__QA_CONFIG__*/", JSON.stringify({ allowedWriteFileKeys: ["private-copy"] }));
+    const events: Array<Record<string, unknown>> = [];
+    const productionCalls: unknown[] = [];
+    const offCalls: string[] = [];
+    const figma = {
+      fileKey: "private-copy", editorType: "figma",
+      ui: { postMessage: (message: Record<string, unknown>) => events.push(message), onmessage: async (message: unknown) => {
+        productionCalls.push(message);
+        events.push({ type: "error", message: "Production certification failed" });
+      } },
+      on: (type: string) => { expect(type).toBe("documentchange"); throw new Error("Pages are not loaded"); },
+      off: (type: string) => { offCalls.push(type); },
+    };
+    new Script(runtime).runInNewContext({ figma, console: { info: () => undefined } }, { timeout: 2000 });
+    await figma.ui.onmessage({ type: "certify", __nativeQaCommandId: "qa-request-9" });
+    expect(productionCalls).toEqual([{ type: "certify" }]);
+    expect(events.map((event) => event.type)).toEqual(["qa-command-started", "error", "qa-command-complete"]);
+    expect(events[1]).toMatchObject({ type: "error", message: "Production certification failed" });
+    expect(events).not.toContainEqual(expect.objectContaining({ type: "qa-error" }));
+    expect(events.at(-1)).toMatchObject({ type: "qa-command-complete", commandId: "qa-request-9", returned: "fulfilled", observationUnavailable: true });
+    expect(offCalls).toEqual([]);
+  });
+
+  it("retains certified success and caught-production failure after fulfilled handlers", async () => {
+    const ui = await createUiHarness();
+    ui.emit({ type: "qa-command-started", commandId: "native-command-1", request: { type: "certify" } });
+    ui.advance(40);
+    ui.emit({ type: "certified", count: 6, target: "source frames", removedVariantAnnotations: 2 });
+    ui.advance(10);
+    ui.emit({ type: "qa-command-complete", commandId: "native-command-1", handlerElapsedMs: 48, returned: "fulfilled" });
+    ui.emit({ type: "qa-command-started", commandId: "native-command-2", request: { type: "certify-components" } });
+    ui.advance(30);
+    ui.emit({ type: "error", message: "Supporting file context changed" });
+    ui.advance(10);
+    ui.emit({ type: "qa-command-complete", commandId: "native-command-2", handlerElapsedMs: 38, returned: "fulfilled" });
+    ui.emit({ type: "qa-command-started", commandId: "native-command-3", request: { type: "scan" } });
+    ui.emit({ type: "scan-cancelled", message: "Cancelled" });
+    ui.emit({ type: "qa-command-complete", commandId: "native-command-3", returned: "fulfilled" });
+    const runs = ui.exportEvidence().runs;
+    expect(runs).toHaveLength(3);
+    expect(runs[0]).toMatchObject({ status: "certified", count: 6, target: "source frames", removedVariantAnnotations: 2, elapsedMs: 40, handlerCompleteElapsedMs: 50, handlerElapsedMs: 48 });
+    expect(runs[1]).toMatchObject({ status: "failed", failure: { message: "Supporting file context changed" }, handlerReturned: "fulfilled" });
+    expect(runs[2]).toMatchObject({ status: "cancelled", handlerReturned: "fulfilled" });
+  });
+
+  it("keeps an overlapping rejected command's uncorrelated error out of the active result", async () => {
+    const ui = await createUiHarness();
+    ui.emit({ type: "qa-command-started", commandId: "A", request: { type: "certify" } });
+    ui.emit({ type: "qa-command-started", commandId: "B", request: { type: "certify-components" } });
+    ui.emit({ type: "error", message: "Cannot start certify-components; certify is still running" });
+    ui.emit({ type: "qa-command-complete", commandId: "B", handlerElapsedMs: 1, returned: "fulfilled" });
+    ui.advance(100);
+    ui.emit({ type: "certified", count: 6, target: "source frames", removedVariantAnnotations: 0 });
+    ui.advance(10);
+    ui.emit({ type: "qa-command-complete", commandId: "A", handlerElapsedMs: 105, returned: "fulfilled" });
+    const evidence = ui.exportEvidence();
+    expect(evidence.runs).toHaveLength(1);
+    expect(evidence.runs[0]).toMatchObject({ commandId: "A", status: "certified", handlerCompleteElapsedMs: 110, handlerElapsedMs: 105 });
+    expect(evidence.runs[0]).not.toHaveProperty("failure");
+    expect(evidence.events.some((event: { message: { message?: string } }) => event.message.message?.startsWith("Cannot start"))).toBe(true);
+  });
 });
+
+async function createUiHarness() {
+  const html = (await readFile("scripts/qa/native-harness-ui.html", "utf8")).replace("/*__QA_CONFIG__*/", JSON.stringify({
+    source: { revision: "1234567890123456", dirty: false, productionCodeSha256: "abc1234567890123" }, harnessSourceSha256: "abc1234567890123",
+    capabilities: { targetedRecheck: true }, coldSessionNote: "Ready",
+  }));
+  const script = html.slice(html.lastIndexOf("<script>") + "<script>".length, html.lastIndexOf("</script>"));
+  const elements = new Map<string, { value: string; textContent: string; onclick?: () => void }>();
+  const element = (id: string) => {
+    if (!elements.has(id)) elements.set(id, { value: "", textContent: "" });
+    return elements.get(id)!;
+  };
+  const exported: string[] = [];
+  let now = 0;
+  let listener!: (event: { data: { pluginMessage: Record<string, unknown> } }) => void;
+  new Script(script).runInNewContext({
+    document: { getElementById: element, createElement: () => ({ click: () => undefined }) },
+    window: { addEventListener: (_name: string, callback: typeof listener) => { listener = callback; } },
+    parent: { postMessage: () => undefined }, performance: { now: () => now },
+    Blob: class { constructor(parts: string[]) { exported.push(parts.join("")); } },
+    URL: { createObjectURL: () => "blob:evidence", revokeObjectURL: () => undefined }, setTimeout: () => 0,
+  }, { timeout: 2000 });
+  return {
+    emit: (pluginMessage: Record<string, unknown>) => listener({ data: { pluginMessage } }),
+    advance: (ms: number) => { now += ms; },
+    exportEvidence: () => { element("native-qa-export").onclick!(); return JSON.parse(exported.at(-1)!); },
+  };
+}

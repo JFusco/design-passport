@@ -6,15 +6,18 @@
   const post = (type, data) => figma.ui.postMessage({ type, ...data });
   const writeCommands = new Set(["save-profile", "apply-plan", "apply-all", "certify", "certify-components", "import-project-style-guide", "remove-project-style-guide", "waive", "clear-waiver", "confirm-pattern", "create-token", "clear-file-cache", "forget-saved-audit"]);
   const readCommands = new Set(["initialize", "scan", "refresh-audit", "recheck-audit", "audit-pages", "open-saved-audit", "save-audit-view", "cancel-scan", "navigate", "add-session-reference", "clear-session-references", "preview-contribution", "export-contribution", "export"]);
-  const measuredCommands = new Set(["scan", "refresh-audit", "recheck-audit", "audit-pages", "apply-plan", "apply-all", "waive", "clear-waiver", "confirm-pattern", "create-token", "import-project-style-guide", "remove-project-style-guide", "add-session-reference", "clear-session-references"]);
+  const measuredCommands = new Set(["scan", "refresh-audit", "recheck-audit", "audit-pages", "certify", "certify-components", "apply-plan", "apply-all", "waive", "clear-waiver", "confirm-pattern", "create-token", "import-project-style-guide", "remove-project-style-guide", "add-session-reference", "clear-session-references"]);
   let commandSequence = 0;
   const assertWritable = () => { if (!allowed()) throw new Error("Native QA document writes are restricted to explicit private-copy file keys in the generated allowlist"); };
+  const clone = (value) => JSON.parse(JSON.stringify(value));
   const inspectNode = (node) => node ? {
     id: node.id, name: node.name, type: node.type,
     ...("width" in node ? { width: node.width, height: node.height, visible: node.visible, opacity: node.opacity } : {}),
     ...("x" in node ? { x: node.x, y: node.y } : {}),
     ...("layoutMode" in node ? { layoutMode: node.layoutMode, inferredAutoLayoutAvailable: node.inferredAutoLayout !== null } : {}),
-    ...("annotations" in node ? { annotationLabels: node.annotations.map((annotation) => annotation.label) } : {}),
+    ...("annotations" in node ? { annotationLabels: node.annotations.map((annotation) => annotation.label), annotations: clone(node.annotations) } : {}),
+    ...(typeof node.getSharedPluginData === "function" ? { certification: node.getSharedPluginData("verndaleAiReady", "certification-v1") } : {}),
+    ...(typeof node.getRelaunchData === "function" ? { relaunchData: clone(node.getRelaunchData()) } : {}),
     ...("children" in node ? { children: node.children.map((child) => ({ id: child.id, name: child.name, type: child.type,
       ...("x" in child ? { x: child.x, y: child.y } : {}), ...("width" in child ? { width: child.width, height: child.height } : {}),
       ...("layoutMode" in child ? { layoutMode: child.layoutMode } : {}) })) } : {}),
@@ -46,6 +49,21 @@
     }
     if (measured) post("qa-command-started", { commandId, commandType: message.type, request: message, startedAt: new Date(started).toISOString() });
     let rejected = false;
+    const certification = measured && (message.type === "certify" || message.type === "certify-components");
+    const documentChanges = [];
+    let truncatedDocumentChanges = 0;
+    const observeChange = (event) => {
+      try {
+        const observedAt = new Date().toISOString();
+        for (const change of event.documentChanges) {
+          if (documentChanges.length === 200) { truncatedDocumentChanges += 1; continue; }
+          documentChanges.push({ commandId, observedAt, nodeId: change.id, changeType: change.type,
+            origin: change.origin, properties: change.type === "PROPERTY_CHANGE" ? [...change.properties] : [] });
+        }
+      } catch { /* Observation cannot change production results. */ }
+    };
+    let observing = false;
+    let observationUnavailable = false;
     try {
       if (message?.type === "qa-inspect") {
         const ids = message.nodeIds === undefined ? figma.currentPage.selection.map((node) => node.id) : message.nodeIds;
@@ -90,14 +108,23 @@
       // an original or another ongoing QA file can never be cleared here.
       if (writeCommands.has(message.type)) assertWritable();
       else if (!readCommands.has(message.type)) throw new Error("Unrecognized production command is blocked by the QA write boundary");
+      if (certification) {
+        try { figma.on("documentchange", observeChange); observing = true; }
+        catch { observationUnavailable = true; }
+      }
       return await production(message, properties);
     } catch (error) {
       rejected = true;
       post("qa-error", { at: new Date().toISOString(), commandId, message: error instanceof Error ? error.message : String(error) });
     } finally {
+      if (observing) {
+        try { figma.off("documentchange", observeChange); }
+        catch { /* Observer cleanup cannot change production results. */ }
+      }
       if (measured) post("qa-command-complete", {
         commandId, commandType: message.type, completedAt: new Date().toISOString(),
         handlerElapsedMs: Date.now() - started, returned: rejected ? "rejected" : "fulfilled",
+        ...(certification ? { documentChanges, truncatedDocumentChanges, observationUnavailable } : {}),
       });
     }
   };
