@@ -360,15 +360,44 @@ write allowlist were verified. Six explicit root inspections matched the
 expected file and page before its fresh current-page audit began at
 04:24:33 UTC. The UI reached 70 of 71 supporting pages. Figma was accessible
 at 04:39:33 UTC, but native control reported the Mac locked at 04:40:33 UTC.
-The lock start is bounded by those observations; its end and the audit's
-terminal outcome have not been observed. This main audit is not an
-uninterrupted comparison, and no active-time or CPU-time estimate is claimed.
-The user was asked to unlock the Mac manually; no bypass was attempted.
+The lock start is bounded by those observations. The audit finished at
+04:46:47 UTC with a completed report and fulfilled handler; its
+`reportVisibleElapsedMs` was 1,332,062 ms, and the export had zero dropped
+records. Knowledge was built at 04:39:28 UTC. Native access was still locked
+at 04:57:31 UTC and was first observed restored at 20:05:07 UTC, so the lock
+end is only bounded by that broad interval. Certification knowledge had long
+expired. This is a completed interrupted audit, not an uninterrupted speed
+sample. Its active-time estimate is unresolvable from these observations and
+must not be described as CPU time. No unlock bypass was attempted.
 
-All cited requests have terminal outcomes and correlated handler completion;
-their exports report zero dropped runs and events. Audit comparisons use
+After the next manual unlock, six explicit root inspections again matched
+the disposable file and target page. A fresh main audit started at
+20:06:20 UTC and completed at 20:30:20 UTC with a fulfilled handler, a
+1,437,840 ms report-visible interval, and zero dropped evidence records.
+Its knowledge was built at 20:22:31 UTC. The production certification
+control was offscreen behind the expanded QA pane; attempts to activate it
+did not produce a certification command. An export at 20:38 UTC confirmed
+that only the two main audits were recorded. The UI then marked the audit
+historical because its knowledge expired. No certification outcome or timing
+is inferred from the attempted click.
+
+The QA pane was collapsed and the ordinary production `Refresh audit`
+control was located in the saved report. That refresh began at 20:40:11 UTC
+and reached 65 of 71 supporting pages. Native control reported the Mac
+locked again before its terminal state could be observed. This refresh is
+pending, and it does not count as a completed timing or certification sample.
+The user was asked for another manual unlock; no bypass was attempted.
+
+The user relaxed the 20% retained/mixed audit improvement from a hard stop
+for further native work. The measured 2.93% regression remains the observed
+result, with no safe evidence-backed narrow repair identified. The repeated
+audit matrix and its speed threshold remain unsupported; this change in
+priority does not turn the speed gate into a pass.
+
+The completed exported requests have terminal outcomes and correlated handler
+completion with zero dropped runs and events. Audit comparisons use
 `reportVisibleElapsedMs` from `qa-send`, while ordinary certification uses
 runtime `handlerElapsedMs` from `qa-handler-start`. These extra candidate
 certifications lack matched uninterrupted main runs, so they cannot establish
-the median 60% speed target. The retained/mixed audit target and its gated
-matrix remain partial. Raw exports and exact design metadata remain private.
+the median 60% speed target. Raw exports and exact design metadata remain
+private.

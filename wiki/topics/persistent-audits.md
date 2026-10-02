@@ -99,7 +99,16 @@ a rename, so native concurrent-edit rollback remains unproven. The
 separate timing and metadata evidence.
 The rebuilt main harness began a new fresh audit for certification timing,
 but native access reported the Mac locked after 70 of 71 pages were visible.
-Its completion and any new matched certification result remain unobserved.
+That audit later completed with a fulfilled handler and zero dropped records;
+its 1,332,062 ms report-visible interval includes an unbounded lock and is
+excluded from uninterrupted timing. After unlock, a fresh main audit also
+completed in 1,437,840 ms, but its knowledge expired before an ordinary
+certification command was recorded. A production refresh then began, and
+native access locked again after 65 of 71 pages. Its terminal state and any
+new matched main certification result remain unobserved. The user made the
+20% retained/mixed speed target advisory for continued native work; the
+observed 2.93% regression and repeated-matrix gap are still recorded as
+partial in the [journal](../journal/2026-09-30-audit-memory-and-certification.md).
 
 ## Repository automation
 
