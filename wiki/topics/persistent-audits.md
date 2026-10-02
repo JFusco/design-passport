@@ -88,6 +88,19 @@ The six-root exact prior-metadata snapshot was exported before a later
 rollback attempt; the Mac locked during its fresh audit, before any native
 designer rename.
 
+After unlock, a fresh audit led to a prewrite certification failure when its
+15-minute knowledge window expired during whole-file verification. All six
+prior metadata records remained exact. Six later candidate production-button
+requests certified all six roots with correlated runtime durations between
+141,864 and 152,343 ms; no matched uninterrupted main series accompanies
+them. Desktop layer edits attempted during final verification did not commit
+a rename, so native concurrent-edit rollback remains unproven. The
+[journal](../journal/2026-09-30-audit-memory-and-certification.md) records the
+separate timing and metadata evidence.
+The rebuilt main harness began a new fresh audit for certification timing,
+but native access reported the Mac locked after 70 of 71 pages were visible.
+Its completion and any new matched certification result remain unobserved.
+
 ## Repository automation
 
 Since 2026-09-25, drafts and changes limited to wiki content or its generated graph use lightweight validation while ready product, workflow, script, documentation, and skill changes retain the full browser-backed suite. Wiki maintenance runs Mondays, audits missed merges in batches, updates bot pull requests through REST, and rejects duplicate or malformed frontmatter across the full wiki before writing history ([issue #35](https://github.com/JFusco/design-passport/issues/35)).

@@ -1,7 +1,7 @@
 ---
 title: Audit memory and certification verification
 topics: [persistent-audits]
-plans: [2026-09-30-reduce-audit-memory-use-and-certification-delay-e50b8ab0d1.md]
+plans: [2026-09-30-reduce-audit-memory-use-and-certification-delay-e50b8ab0d1.md, 2026-10-01-complete-design-passport-issue-53-native-acceptance-1953566c5f.md]
 ---
 
 # Audit memory and certification verification
@@ -311,3 +311,64 @@ building whole-file context. Native access could not be restored without a
 manual unlock, so completion was not observed and no designer rename or
 rollback assertion was made from this attempt. The private inspection export
 and every earlier native export were retained.
+
+## 2026-10-02 unlocked native continuation
+
+After the Mac was unlocked, the interrupted candidate audit was observed to
+have completed with a fulfilled handler. The lock interval remains unbounded,
+so its 1,284,169 ms report-visible time is not an uninterrupted benchmark.
+Read-only inspection confirmed the same six source roots in the disposable
+copy. The exact prior certificate strings, full annotations, relaunch values,
+and names survived the lock and a later prewrite failure.
+
+A fresh candidate audit completed in 1,627,649 ms of report-visible time.
+Its knowledge was built at 02:25:57 UTC; ordinary certification started at
+02:40:21 UTC and crossed the 15-minute freshness limit during the first
+whole-file verification. It failed before writing after 93,681 ms of runtime
+`handlerElapsedMs`. A postfailure read-only inspection matched all six prior
+metadata and names exactly. This proves absence of a prewrite mutation, not
+concurrent-edit rollback.
+
+An ordinary candidate recheck completed in 1,410,495 ms of report-visible
+time and built fresh knowledge. The next two production-button certification
+requests reached `certified` for all six roots with correlated fulfilled
+handlers in 152,343 and 148,564 ms of runtime `handlerElapsedMs`. A mistaken
+native rename targeted an enclosing section only after final verification
+ended; the section name was restored through Figma's layer UI. No audited root
+was renamed in that attempt.
+
+Another candidate recheck completed in 1,003,585 ms of report-visible time.
+Its certification reached `certified` for six roots in 142,565 ms. A click on
+the selected audited root occurred while the second scene check was visible,
+but the layer-name editor appeared only after certification finished; no
+rename was committed. A further production-button request from the same
+knowledge reached `certified` in 144,334 ms. During its second scene check,
+the desktop layer and properties controls did not accept an edit; the root
+name remained unchanged. These attempts do not establish rollback.
+
+A later fresh candidate audit completed with a fulfilled handler in
+1,291,342 ms of report-visible time. Its knowledge was built at 04:05:31 UTC.
+All six root IDs were checked by explicit read-only inspection before each
+ordinary production-button certification. Two requests then reached
+`certified` for six roots with correlated runtime durations of 141,864 and
+142,342 ms. Each exported run had zero dropped records. They are candidate
+timing samples; a matched uninterrupted main series is still required.
+
+The repaired main harness was then imported and its production revision,
+bundle hash, QA harness hash, isolated development plugin ID, and single-copy
+write allowlist were verified. Six explicit root inspections matched the
+expected file and page before its fresh current-page audit began at
+04:24:33 UTC. The UI reached 70 of 71 supporting pages. Figma was accessible
+at 04:39:33 UTC, but native control reported the Mac locked at 04:40:33 UTC.
+The lock start is bounded by those observations; its end and the audit's
+terminal outcome have not been observed. This main audit is not an
+uninterrupted comparison, and no active-time or CPU-time estimate is claimed.
+The user was asked to unlock the Mac manually; no bypass was attempted.
+
+All cited requests have terminal outcomes and correlated handler completion;
+their exports report zero dropped runs and events. Audit comparisons use
+`reportVisibleElapsedMs` from `qa-send`, while ordinary certification uses
+runtime `handlerElapsedMs` from `qa-handler-start`. These extra candidate
+certifications lack matched uninterrupted main runs, so they cannot establish
+the median 60% speed target. The retained/mixed audit target and its gated
+matrix remain partial. Raw exports and exact design metadata remain private.

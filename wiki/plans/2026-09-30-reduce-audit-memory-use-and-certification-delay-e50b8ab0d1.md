@@ -1,7 +1,7 @@
 ---
 status: "partial"
 executed: true
-evidence: ["JFusco/design-passport#53; tests/plugin-audit-recovery.test.ts; tests/context-cache.test.ts; 2026-10-01 native paired audits and candidate certification; performance matrix and rollback partial"]
+evidence: ["JFusco/design-passport#53; tests/plugin-audit-recovery.test.ts; tests/context-cache.test.ts; 2026-10-01 paired audits; 2026-10-02 candidate certification and prewrite failure; performance matrix and rollback partial"]
 source_tool: "codex"
 source: "codex:/Users/joe.fusco/.codex/sessions/2026/09/30/rollout-2026-09-30T15-20-29-01a0f3c2-dd2f-7de2-ad48-d846b6216ee7.jsonl"
 topics: ["persistent-audits"]
