@@ -448,3 +448,44 @@ tests in 50 files and seven Chromium tests after the sandbox's local bind
 restriction required an escalated rerun. Native proof of this repaired
 behavior and subsequent Undo ownership is still pending. All raw exports
 remain private; fixture evidence is not native proof.
+
+## 2026-10-03 repaired candidate native recheck
+
+The repaired production bundle at `5df347c` and its byte-preserving QA
+harness ran only in the authorized disposable copy. The harness displayed
+the source revision, production code hash, and harness hash before each run.
+Read-only inspection confirmed 71 pages, the expected current page and six
+source roots. All exports below have correlated handler completion and zero
+dropped runs or events; raw exports remain private.
+
+Five fresh candidate audits completed. Their `reportVisibleElapsedMs`
+values were 831,436, 629,880, 266,213, 266,399, and 250,091 ms, in run
+order. The second refresh was reported as full; the last three were
+incremental rebuilds after native layer renames. These are successive
+candidate runs with different cache state and target names, not matched
+main–candidate speed pairs. No matrix or 20% speed pass follows from them.
+
+Five ordinary production-button certifications each ended `certified` for
+all six roots. Runtime `handlerElapsedMs` was 237,815, 154,123, 143,843,
+144,054, and 136,493 ms in run order. The QA UI receipt intervals were
+shorter because messages arrived after runtime work; the runtime values are
+the relevant certification observations. The prior main certification
+failed stale and there are no three successful matched main–candidate
+pairs, so the median 60% timing gate remains partial.
+
+The first repaired certification had a browser layer edit that affected an
+enclosing section rather than an audited root; the section name was restored
+through native Figma UI. Three later native root rename attempts committed
+after their final scene verification finished. In the last attempt the
+rename editor opened only after verification completed, and no name change
+was committed. All four had a `certified` terminal outcome, so none tests
+failed-command compensation. The last final scene verification ran from
+02:32:02.619 to 02:32:50.046 UTC and certified at 02:32:50.998 UTC; the
+native rename action began at 02:32:30.092 UTC but did not open an editor
+until after certification. The immediate prior and post-attempt six-root
+inspections show updated certificate strings and relaunch data, unchanged
+annotations and names, and zero dropped records, as expected for success.
+Exact-prior rollback with a committed concurrent designer rename, later
+Undo ownership, and the repeated audit matrix remain native acceptance
+gaps. The focused fixture tests and independent review of the repair remain
+valid local evidence but do not close those gaps.

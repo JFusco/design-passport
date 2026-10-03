@@ -125,6 +125,18 @@ audit matrix, and matched certification timing remain partial. The
 [journal](../journal/2026-09-30-audit-memory-and-certification.md) records
 the timings and evidence limits.
 
+The repaired `5df347c` harness subsequently completed five fresh native
+candidate audits and five ordinary certifications with correlated handlers
+and zero dropped records. All five certifications succeeded, with runtime
+`handlerElapsedMs` between 136,493 and 237,815 ms. Native rename attempts
+did not commit an audited-root edit inside final verification, so exact
+prior-metadata rollback is still unproven. The successive audits had
+different cache state and names, and no successful matched main
+certification series was obtained. The audit matrix, both performance
+medians, concurrent-edit rollback, and later Undo ownership remain partial;
+the [journal](../journal/2026-09-30-audit-memory-and-certification.md)
+records the individual timings and attempt boundaries.
+
 ## Repository automation
 
 Since 2026-09-25, drafts and changes limited to wiki content or its generated graph use lightweight validation while ready product, workflow, script, documentation, and skill changes retain the full browser-backed suite. Wiki maintenance runs Mondays, audits missed merges in batches, updates bot pull requests through REST, and rejects duplicate or malformed frontmatter across the full wiki before writing history ([issue #35](https://github.com/JFusco/design-passport/issues/35)).
