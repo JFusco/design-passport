@@ -451,15 +451,15 @@ describe("durable audit storage", () => {
     expect((await storage.listAudits("file-one"))[0]?.id).toBe(saved.audit.id);
   });
 
-  it("flushes 65 context fragments with one storage inventory", async () => {
+  it("uses one inventory at staging and one at publication for 65 fragments", async () => {
     const port = new MemoryStorage();
     const storage = new AuditStorage(port);
     const saved = await storage.saveAudit(input());
     port.inventories = 0;
     port.reads = 0;
     await storage.saveContexts("file-one", Array.from({ length: 65 }, (_, index) => ({ key: `root:${index}`, value: { nodes: [index] } })));
-    expect(port.inventories).toBe(1);
-    expect(port.reads).toBe(2); // Existing report header and its optional view record.
+    expect(port.inventories).toBe(2);
+    expect(port.reads).toBe(4); // Report header and optional view, at each boundary.
     expect(await storage.loadContext("file-one", "root:0")).toEqual({ nodes: [0] });
     expect(await storage.loadContext("file-one", "root:64")).toEqual({ nodes: [64] });
     expect((await storage.listAudits("file-one"))[0]?.id).toBe(saved.audit.id);
@@ -473,8 +473,53 @@ describe("durable audit storage", () => {
     await storage.saveContexts("file-one", Array.from({ length: 65 }, (_, index) => ({ key: `root:${index}`, value: { index, data: noise(600) } })));
     expect(port.size()).toBeLessThanOrEqual(maximumBytes);
     expect((await storage.listAudits("file-one"))[0]?.id).toBe(saved.audit.id);
-    expect(await storage.loadContext("file-one", "root:64")).toMatchObject({ index: 64 });
+    expect(await storage.loadContext("file-one", "root:0")).toMatchObject({ index: 0 });
+    expect(await storage.loadContext("file-one", "root:64")).toBeUndefined();
+  });
+
+  it("stops producing and encoding fragments when the shared staging budget is exhausted", async () => {
+    const port = new MemoryStorage();
+    await port.setAsync("waivers:other-file", { data: noise(500) });
+    const measurements: AuditCodecMeasurement[] = [];
+    const storage = new AuditStorage(port, { maximumBytes: port.size() + 1_000, onCodec: (measurement) => measurements.push(measurement) });
+    const staged = await storage.stageContexts("file-one");
+    let produced = 0;
+    for (let index = 0; index < 65; index += 1) staged.set(`root:${index}`, () => { produced += 1; return { data: noise(600) }; });
+    expect(produced).toBe(2); // One fits; the next establishes saturation.
+    expect(measurements).toHaveLength(2);
+    expect(port.values.size).toBe(1); // No context is visible before acceptance.
+    await staged.flush();
+    expect(port.size()).toBeLessThanOrEqual(1_000 + utf8ByteLength("waivers:other-file") + utf8ByteLength(JSON.stringify({ data: noise(500) })));
+    expect(await storage.loadContext("file-one", "root:0")).toBeDefined();
+    expect(await storage.loadContext("file-one", "root:1")).toBeUndefined();
+  });
+
+  it("never produces a fragment with no available quota and discards rejected builds", async () => {
+    const port = new MemoryStorage();
+    const storage = new AuditStorage(port, { maximumBytes: 0 });
+    const full = await storage.stageContexts("file-one");
+    let produced = 0;
+    full.set("root:0", () => { produced += 1; return {}; });
+    await full.flush();
+    expect(produced).toBe(0);
+    expect(port.events).toEqual([]);
+    const staged = await new AuditStorage(port).stageContexts("file-one");
+    staged.set("root:0", () => ({ nodes: [1] }));
+    staged.discard();
+    await staged.flush();
+    expect(port.events).toEqual([]);
+  });
+
+  it("rechecks capacity at publication without displacing new protected data", async () => {
+    const port = new MemoryStorage();
+    const storage = new AuditStorage(port, { maximumBytes: 1_000 });
+    const staged = await storage.stageContexts("file-one");
+    staged.set("root:0", () => ({ data: noise(600) }));
+    await port.setAsync("waivers:other-file", { data: noise(800) });
+    await staged.flush();
     expect(await storage.loadContext("file-one", "root:0")).toBeUndefined();
+    expect(port.values.has("waivers:other-file")).toBe(true);
+    expect(port.size()).toBeLessThanOrEqual(1_000);
   });
 
   it("ignores corrupted, unsupported, and malformed cache values", async () => {

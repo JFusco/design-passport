@@ -1,4 +1,5 @@
 import { gzipSync, gunzipSync } from "fflate";
+import { PRODUCER_IDENTITY } from "../core/build-info";
 import { validateContract } from "../core/schema";
 import { hashValue, utf8ByteLength } from "../core/stable";
 import type { CapturedAuditTarget } from "../figma/adapter";
@@ -349,6 +350,8 @@ export class AuditStorage {
   }
 
   private async entries(): Promise<StoredEntry[]> {
+    const started = Date.now();
+    console.info("[Design Passport] storage inventory started", { producer: PRODUCER_IDENTITY });
     const keys = await this.storage.keysAsync();
     const entries = await Promise.all(keys.map(async (key): Promise<StoredEntry | undefined> => {
       const value = await this.storage.getAsync(key);
@@ -364,7 +367,9 @@ export class AuditStorage {
       }
       return entry;
     }));
-    return entries.filter((entry): entry is StoredEntry => entry !== undefined);
+    const present = entries.filter((entry): entry is StoredEntry => entry !== undefined);
+    console.info("[Design Passport] storage inventory finished", { producer: PRODUCER_IDENTITY, durationMs: Date.now() - started, entryCount: present.length, bytes: present.reduce((sum, entry) => sum + entry.bytes, 0) });
+    return present;
   }
 
   private async writeView(fileKey: string, id: string, value: ViewRecord): Promise<void> {
@@ -532,49 +537,83 @@ export class AuditStorage {
   }
 
   async saveContexts(fileKey: string, values: readonly { key: string; value: unknown }[]): Promise<void> {
-    // Encode caller-owned snapshots before asynchronous work can change them.
-    // Optional acceleration data may never displace saved reports.
-    const candidates = new Map<string, Uint8Array>();
-    for (const { key, value } of values) {
-      try {
-        candidates.set(`${filePrefix(CONTEXT_PREFIX, fileKey)}${hashValue(key)}`, compress({ schemaVersion: 1, fileKey, key, value }, this.onCodec));
-      } catch {
-        // A malformed or oversized fragment does not block other useful fragments.
-      }
-    }
-    if (candidates.size === 0) return;
-    try {
-      await this.enqueue(async () => {
-        // One clientStorage inventory for the entire flush avoids quadratic
-        // bridge traffic when a large file contains hundreds of source roots.
-        const ledger = new Map((await this.entries()).map((entry) => [entry.key, entry]));
-        let used = [...ledger.values()].reduce((sum, entry) => sum + entry.bytes, 0);
-        for (const [storageKey, compressed] of candidates) {
-          const candidateBytes = storageBytes(storageKey, compressed);
-          const previous = ledger.get(storageKey);
-          const contexts = [...ledger.values()].filter((entry) => entry.key.startsWith(CONTEXT_PREFIX));
-          const protectedBytes = used - contexts.reduce((sum, entry) => sum + entry.bytes, 0);
-          if (protectedBytes + candidateBytes > this.maximumBytes) continue;
-          for (const context of contexts) {
-            if (used - (previous?.bytes ?? 0) + candidateBytes <= this.maximumBytes) break;
-            if (context.key === storageKey) continue;
-            await this.storage.deleteAsync(context.key);
-            ledger.delete(context.key);
-            used -= context.bytes;
-          }
-          if (used - (previous?.bytes ?? 0) + candidateBytes > this.maximumBytes) continue;
-          try {
-            await this.storage.setAsync(storageKey, compressed);
-            used = used - (previous?.bytes ?? 0) + candidateBytes;
-            ledger.set(storageKey, { key: storageKey, bytes: candidateBytes });
-          } catch {
-            // A concurrent writer can consume space after the inventory; leave
-            // persisted reports untouched and continue on a best-effort basis.
-          }
-        }
-      });
-    } catch {
-      // Failure to retain optional acceleration data must not fail a completed audit.
-    }
+    const staged = await this.stageContexts(fileKey);
+    for (const { key, value } of values) staged.set(key, () => value);
+    await staged.flush();
   }
+
+  /** Retain only bounded encoded context until the caller accepts its build. */
+  async stageContexts(fileKey: string) {
+    const allowance = await this.enqueue(async () => {
+      const nonContextBytes = (await this.entries()).filter((entry) => !entry.key.startsWith(CONTEXT_PREFIX))
+        .reduce((sum, entry) => sum + entry.bytes, 0);
+      return Math.max(0, this.maximumBytes - nonContextBytes);
+    }).catch(() => 0);
+    const candidates = new Map<string, Uint8Array>();
+    let stagedBytes = 0;
+    let saturated = allowance === 0;
+    let maxRawFragmentBytes = 0;
+    let encodeMs = 0;
+    const discard = () => { candidates.clear(); stagedBytes = 0; saturated = true; };
+    return {
+      set: (key: string, value: () => unknown): void => {
+        if (saturated) return;
+        try {
+          const storageKey = `${filePrefix(CONTEXT_PREFIX, fileKey)}${hashValue(key)}`;
+          const compressed = compress({ schemaVersion: 1, fileKey, key, value: value() }, (measurement) => {
+            encodeMs += measurement.durationMs;
+            maxRawFragmentBytes = Math.max(maxRawFragmentBytes, measurement.rawBytes);
+            recordCodec(this.onCodec, measurement);
+          });
+          const previous = candidates.get(storageKey);
+          const nextBytes = stagedBytes - (previous ? storageBytes(storageKey, previous) : 0) + storageBytes(storageKey, compressed);
+          if (nextBytes > allowance) { saturated = true; return; }
+          candidates.set(storageKey, compressed);
+          stagedBytes = nextBytes;
+          saturated = stagedBytes >= allowance;
+        } catch {
+          // Optional acceleration data never blocks a live audit.
+        }
+      },
+      discard,
+      flush: async (): Promise<void> => {
+        saturated = true;
+        console.info("[Design Passport] context staging finished", { producer: PRODUCER_IDENTITY, allowance, stagedBytes, fragments: candidates.size, maxRawFragmentBytes, encodeMs });
+        if (candidates.size === 0) return;
+        try {
+          await this.enqueue(async () => {
+            // Capacity can change during capture. Recheck inside the writer queue.
+            const ledger = new Map((await this.entries()).map((entry) => [entry.key, entry]));
+            let used = [...ledger.values()].reduce((sum, entry) => sum + entry.bytes, 0);
+            for (const [storageKey, compressed] of candidates) {
+              candidates.delete(storageKey);
+              const candidateBytes = storageBytes(storageKey, compressed);
+              const previous = ledger.get(storageKey);
+              const contexts = [...ledger.values()].filter((entry) => entry.key.startsWith(CONTEXT_PREFIX));
+              const protectedBytes = used - contexts.reduce((sum, entry) => sum + entry.bytes, 0);
+              if (protectedBytes + candidateBytes > this.maximumBytes) continue;
+              for (const context of contexts) {
+                if (used - (previous?.bytes ?? 0) + candidateBytes <= this.maximumBytes) break;
+                if (context.key === storageKey) continue;
+                await this.storage.deleteAsync(context.key);
+                ledger.delete(context.key);
+                used -= context.bytes;
+              }
+              if (used - (previous?.bytes ?? 0) + candidateBytes > this.maximumBytes) continue;
+              try {
+                await this.storage.setAsync(storageKey, compressed);
+                used = used - (previous?.bytes ?? 0) + candidateBytes;
+                ledger.set(storageKey, { key: storageKey, bytes: candidateBytes });
+              } catch {
+                // Another writer may consume quota; saved reports remain protected.
+              }
+            }
+          });
+        } catch {
+          // A completed audit does not depend on retaining optional context.
+        } finally { discard(); }
+      },
+    };
+  }
+
 }

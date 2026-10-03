@@ -32,6 +32,111 @@ The 65-page editable fixture completed 63 eligible pages and skipped two. Variab
 
 False-positive rubric changes are outside this change until concrete designer examples are provided.
 
+## Bounded capture and certification
+
+[Issue #53](https://github.com/JFusco/design-passport/issues/53) bounds pending
+context by the shared storage budget minus all non-context records. Each
+fragment is encoded when captured; only compressed candidates are retained.
+Once a candidate exceeds the remaining allowance, later fragments are not
+produced or encoded. One candidate can exceed the allowance temporarily while
+its size is determined. Publication still requires an accepted build and
+rechecks capacity without evicting reports. Cache reads clone each node once.
+The staging inventory starts with the first new fragment, so full captures
+without caching and all-hit retained captures skip unused inventory reads.
+
+Incremental refreshes retain one resource verifier with a union of variable
+dependency digests and style evidence, rather than a chain of earlier readers.
+Dependencies from untouched fragments remain checked. Old inference snapshots
+are cleared when reuse is unavailable and released as fragments are replaced.
+Each synchronous traversal reads a parent's child array once. Live evidence
+is still refreshed at the existing asynchronous boundaries; this optimization
+does not reuse evidence across a yield.
+
+Certification resolves all targets first and runs exactly two full checks,
+each including resources and whole-file scene signatures, around synchronous
+writes. Cheap readiness and revision checks remain. The UI blocks duplicate
+certification and competing actions until a terminal response, including when
+a stale notice arrives during verification. Failed writes request native undo.
+Cancellation ends the busy state. The pressed button and a polite status
+message remain accessible; tab view preferences can still be saved locally.
+Historical export buttons stay disabled during certification even after a
+stale notice, then become available when certification finishes.
+
+The [delivery journal](../journal/2026-09-30-audit-memory-and-certification.md)
+separates automated evidence from outstanding native Figma checks. Console
+diagnostics identify producer, phase, duration, counts, and staging bytes;
+they contain no design content and are not plugin heap measurements.
+The development-only QA harness records certification results and runtime
+handler timing, exact prior metadata, and bounded document-change observations.
+Its observer cannot bypass production handling if registration is unavailable.
+UI receipt timing and batched change callbacks do not prove native elapsed time
+or edit placement. Short-viewport collapse checks run in standalone Chromium;
+native certification timing and concurrent-edit undo require their own evidence.
+
+One repaired-harness native pair retained the same whole-file knowledge and
+normalized report while candidate audit time was 2.93% slower than main in
+retained/mixed context. A separate zero-reuse cold pair was 8.41% faster.
+These are individual samples, so the 20% audit-speed and repeated-matrix
+gates remain open. Candidate source-frame certification succeeded natively
+for six roots with a correlated 60,816 ms runtime handler duration. Main also
+certified six roots in 238,003 ms, but the Mac locked during that attempt, so
+the pair cannot establish the uninterrupted 60% target. Concurrent-edit
+rollback remains unverified. The
+[journal](../journal/2026-09-30-audit-memory-and-certification.md) records
+the measurements and their limits.
+The six-root exact prior-metadata snapshot was exported before a later
+rollback attempt; the Mac locked during its fresh audit, before any native
+designer rename.
+
+After unlock, a fresh audit led to a prewrite certification failure when its
+15-minute knowledge window expired during whole-file verification. All six
+prior metadata records remained exact. Six later candidate production-button
+requests certified all six roots with correlated runtime durations between
+141,864 and 152,343 ms; no matched uninterrupted main series accompanies
+them. Desktop layer edits attempted during final verification did not commit
+a rename, so native concurrent-edit rollback remains unproven. The
+[journal](../journal/2026-09-30-audit-memory-and-certification.md) records the
+separate timing and metadata evidence.
+The rebuilt main harness began a new fresh audit for certification timing,
+but native access reported the Mac locked after 70 of 71 pages were visible.
+That audit later completed with a fulfilled handler and zero dropped records;
+its 1,332,062 ms report-visible interval includes an unbounded lock and is
+excluded from uninterrupted timing. After unlock, a fresh main audit also
+completed in 1,437,840 ms, but its knowledge expired before an ordinary
+certification command was recorded. A production refresh then completed
+with a fulfilled handler after another lock interval. A later fresh main
+audit completed in 1,461,798 ms; its ordinary certification ran 364,130 ms
+and failed when knowledge expired during verification. No matched successful
+main certification series exists. The user made the
+20% retained/mixed speed target advisory for continued native work; the
+observed 2.93% regression and repeated-matrix gap are still recorded as
+partial in the [journal](../journal/2026-09-30-audit-memory-and-certification.md).
+
+The candidate subsequently certified six roots in 76,765 ms of runtime
+after a fresh audit. A second attempt failed stale after 66,798 ms. Native
+read-only inspection found that its undo reverted all six certificate
+strings, full annotations, and relaunch values to the state before the
+earlier successful certification, while a designer rename survived. The
+rename's commit interval could not be bounded inside final verification.
+The scoped repair now snapshots prior metadata and restores only owned
+fields after failure; focused tests, independent review, and the full local
+gate passed. Repaired native rollback, subsequent Undo ownership, repeated
+audit matrix, and matched certification timing remain partial. The
+[journal](../journal/2026-09-30-audit-memory-and-certification.md) records
+the timings and evidence limits.
+
+The repaired `5df347c` harness subsequently completed five fresh native
+candidate audits and five ordinary certifications with correlated handlers
+and zero dropped records. All five certifications succeeded, with runtime
+`handlerElapsedMs` between 136,493 and 237,815 ms. Native rename attempts
+did not commit an audited-root edit inside final verification, so exact
+prior-metadata rollback is still unproven. The successive audits had
+different cache state and names, and no successful matched main
+certification series was obtained. The audit matrix, both performance
+medians, concurrent-edit rollback, and later Undo ownership remain partial;
+the [journal](../journal/2026-09-30-audit-memory-and-certification.md)
+records the individual timings and attempt boundaries.
+
 ## Repository automation
 
 Since 2026-09-25, drafts and changes limited to wiki content or its generated graph use lightweight validation while ready product, workflow, script, documentation, and skill changes retain the full browser-backed suite. Wiki maintenance runs Mondays, audits missed merges in batches, updates bot pull requests through REST, and rejects duplicate or malformed frontmatter across the full wiki before writing history ([issue #35](https://github.com/JFusco/design-passport/issues/35)).
