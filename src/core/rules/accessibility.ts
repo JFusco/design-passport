@@ -208,10 +208,10 @@ export function evaluateAccessibilityRules(graph: DesignKnowledgeGraph, root: No
   const review = assessed.filter((item) => item.assessment === "review");
   const exceptions = assessed.filter((item) => item.assessment === "spacing-exception");
   const sizedWithoutPointerEvidence = review.filter(({ node }) => !node.hasPointerInteraction
-    && node.absoluteBounds && supportedTargetGeometry(graph, node)
+    && node.absoluteBounds
     && node.absoluteBounds.width >= 24 && node.absoluteBounds.height >= 24);
   const sizedReviewReason = sizedWithoutPointerEvidence.length > 0
-    ? ` ${sizedWithoutPointerEvidence.length} have measured geometry at least 24×24 but no explicit pointer interaction; confirm they are actionable.` : "";
+    ? ` ${sizedWithoutPointerEvidence.length} have measured bounds at least 24×24 but no explicit pointer interaction; confirm each actionable hit area.` : "";
   const belowPreferred = interactive.filter((node) => (node.absoluteBounds?.width ?? node.width) < 44 || (node.absoluteBounds?.height ?? node.height) < 44);
   output.push(createFinding(
     "accessibility.target-minimum", "accessibility", 2, root, undersized[0]?.node ?? review[0]?.node ?? root,

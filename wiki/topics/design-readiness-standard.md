@@ -39,7 +39,7 @@ WCAG 2.2 AA contrast is measured only for active text. Text inside a component, 
 
 Compound inactive values such as `state=Disabled off` also qualify after case normalization. Text in a transparent component whose eventual consumer surface is unknown is reported as a non-scoring manual contrast review; the scanner never invents a white background and labels white-on-transparent text as a measured 1:1 failure. Measured contrast failures on known solid backgrounds continue to deduct normally.
 
-For target size, a named button with reliable bounds of at least 24×24 can still need review when it has no explicit prototype pointer interaction. The finding now says that its geometry meets the size minimum and identifies the missing interaction evidence. It does not convert an inferred button name into a proven action or weaken reviews for uncertain hit regions and exceptions. [Issue 57](https://github.com/JFusco/design-passport/issues/57) and the [delivery journal](../journal/2026-10-03-target-size-review-reporting.md) record the designer report and correction.
+For target size, a named button with measured bounds of at least 24×24 can still need review when it has no explicit prototype pointer interaction. The finding now names those bounds and the missing interaction evidence, while asking for confirmation of the actionable hit area. It does not convert an inferred button name or bounding rectangle into a proven action or hit region. [Issue 57](https://github.com/JFusco/design-passport/issues/57) and the [delivery journal](../journal/2026-10-03-target-size-review-reporting.md) record the designer report and correction.
 
 ## Naming policy
 
