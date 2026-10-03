@@ -15,7 +15,7 @@ export type HistoricalAuditSource = Pick<SavedAuditV1, "target" | "provenance" |
 
 export function historicalAuditContent(audit: HistoricalAuditSource, format: "json" | "markdown"): string {
   if (format === "markdown") {
-    return `> Historical audit from ${audit.report.generatedAt}. The current design has not been verified. Refresh in Design Passport before applying fixes or certifying.\n\n${reportToMarkdown(audit.report)}`;
+    return `> Historical audit from ${audit.report.generatedAt}. The current design has not been verified. Refresh in Design Passport before applying fixes.\n\n${reportToMarkdown(audit.report)}`;
   }
   const envelope: HistoricalAuditExportV1 = {
     schemaVersion: 1,

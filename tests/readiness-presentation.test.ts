@@ -30,7 +30,7 @@ function reportFixture() {
 }
 
 function overviewProps(): OverviewProps {
-  return { report: reportFixture(), selectionSummary: { eligibleCount: 9, unsupportedCount: 0 }, stale: false, canMutateDocument: true, scanning: false, actionsBlocked: false, onScan: vi.fn(), onCertify: vi.fn(), onCertifyComponents: vi.fn(), onExport: vi.fn() };
+  return { report: reportFixture(), selectionSummary: { eligibleCount: 9, unsupportedCount: 0 }, stale: false, scanning: false, actionsBlocked: false, onScan: vi.fn(), onExport: vi.fn() };
 }
 
 function buttons(tree: ReactNode): Array<ReactElement<{ children?: ReactNode; onClick?: () => void }>> {

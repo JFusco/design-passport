@@ -78,9 +78,10 @@ describe("native QA harness generation", () => {
     await figma.ui.onmessage({ type: "qa-edit", nodeId: "node", field: "name", value: "Changed" });
     expect(live.name).toBe("Changed");
     await figma.ui.onmessage({ type: "certify" });
-    expect(productionCalls).toEqual([scan, { type: "certify" }]);
+    expect(productionCalls).toEqual([scan]);
+    expect(events.at(-1)).toMatchObject({ type: "qa-error", message: expect.stringContaining("Unrecognized production command") });
     for (const type of ["clear-file-cache", "forget-saved-audit"]) await figma.ui.onmessage({ type });
-    expect(productionCalls).toHaveLength(4);
+    expect(productionCalls).toHaveLength(3);
     expect(productionCalls.slice(-2)).toEqual([{ type: "clear-file-cache" }, { type: "forget-saved-audit" }]);
   });
 
@@ -163,11 +164,10 @@ describe("native QA harness generation", () => {
     expect(evidence.runs[1]).toMatchObject({ timingOrigin: "qa-send", elapsedMs: 100, handlerCompleteElapsedMs: 200, status: "failed", failure: { message: "Changed during capture" } });
   });
 
-  it("times both production certification commands and observes bounded changes without writing", async () => {
+  it("preserves exact legacy inspection and blocks retired commands even on allowlisted copies", async () => {
     const runtime = (await readFile("scripts/qa/native-harness-runtime.js", "utf8")).replace("/*__QA_CONFIG__*/", JSON.stringify({ allowedWriteFileKeys: ["private-copy"] }));
     const events: Array<Record<string, any>> = [];
     const productionCalls: unknown[] = [];
-    const listeners = new Set<(event: unknown) => void>();
     const annotations = [{ label: "existing", properties: [{ type: "TEXT", value: "prior" }] }];
     const relaunch = { review: "previous action" };
     const dataReads: string[] = [];
@@ -180,12 +180,7 @@ describe("native QA harness generation", () => {
       fileKey: "private-copy", editorType: "figma", root: { name: "Copy", children: [] }, currentPage: { id: "page", selection: [node] },
       ui: { postMessage: (message: Record<string, unknown>) => events.push(message), onmessage: async (message: unknown) => {
         productionCalls.push(message);
-        const changes = Array.from({ length: 205 }, (_, index) => ({ id: `source-${index}`, type: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["name"] }));
-        for (const listener of listeners) listener({ documentChanges: changes });
-        events.push({ type: "certified", count: 6, target: "source frames", removedVariantAnnotations: 0 });
       } },
-      on: (type: string, listener: (event: unknown) => void) => { expect(type).toBe("documentchange"); listeners.add(listener); },
-      off: (type: string, listener: (event: unknown) => void) => { expect(type).toBe("documentchange"); listeners.delete(listener); },
       getNodeByIdAsync: async () => node,
       commitUndo: () => { throw new Error("Unexpected commitUndo"); },
     };
@@ -202,49 +197,19 @@ describe("native QA harness generation", () => {
       const commandId = type === "certify" ? "qa-request-7" : "qa-request-8";
       const from = events.length;
       await figma.ui.onmessage({ type, __nativeQaCommandId: commandId });
-      expect(productionCalls.at(-1)).toEqual({ type });
-      expect(events.slice(from).map((event) => event.type)).toEqual(["qa-command-started", "certified", "qa-command-complete"]);
-      expect(events[from]).toMatchObject({ commandId, commandType: type });
-      expect(events.at(-1)).toMatchObject({ commandId, commandType: type, returned: "fulfilled", truncatedDocumentChanges: 5, observationUnavailable: false });
-      expect(events.at(-1)!.documentChanges).toHaveLength(200);
-      expect(events.at(-1)!.documentChanges[0]).toMatchObject({ commandId, nodeId: "source-0", changeType: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["name"] });
-      expect(events.at(-1)!.documentChanges[0].observedAt).toEqual(expect.any(String));
-      expect(listeners.size).toBe(0);
+      expect(productionCalls).toEqual([]);
+      expect(events.slice(from)).toMatchObject([{ type: "qa-error", message: expect.stringContaining("Unrecognized production command") }]);
     }
   });
 
-  it("continues certification when documentchange observation cannot register", async () => {
-    const runtime = (await readFile("scripts/qa/native-harness-runtime.js", "utf8")).replace("/*__QA_CONFIG__*/", JSON.stringify({ allowedWriteFileKeys: ["private-copy"] }));
-    const events: Array<Record<string, unknown>> = [];
-    const productionCalls: unknown[] = [];
-    const offCalls: string[] = [];
-    const figma = {
-      fileKey: "private-copy", editorType: "figma",
-      ui: { postMessage: (message: Record<string, unknown>) => events.push(message), onmessage: async (message: unknown) => {
-        productionCalls.push(message);
-        events.push({ type: "error", message: "Production certification failed" });
-      } },
-      on: (type: string) => { expect(type).toBe("documentchange"); throw new Error("Pages are not loaded"); },
-      off: (type: string) => { offCalls.push(type); },
-    };
-    new Script(runtime).runInNewContext({ figma, console: { info: () => undefined } }, { timeout: 2000 });
-    await figma.ui.onmessage({ type: "certify", __nativeQaCommandId: "qa-request-9" });
-    expect(productionCalls).toEqual([{ type: "certify" }]);
-    expect(events.map((event) => event.type)).toEqual(["qa-command-started", "error", "qa-command-complete"]);
-    expect(events[1]).toMatchObject({ type: "error", message: "Production certification failed" });
-    expect(events).not.toContainEqual(expect.objectContaining({ type: "qa-error" }));
-    expect(events.at(-1)).toMatchObject({ type: "qa-command-complete", commandId: "qa-request-9", returned: "fulfilled", observationUnavailable: true });
-    expect(offCalls).toEqual([]);
-  });
-
-  it("retains certified success and caught-production failure after fulfilled handlers", async () => {
+  it("retains audit success and caught-production failure after fulfilled handlers", async () => {
     const ui = await createUiHarness();
-    ui.emit({ type: "qa-command-started", commandId: "native-command-1", request: { type: "certify" } });
+    ui.emit({ type: "qa-command-started", commandId: "native-command-1", request: { type: "scan" } });
     ui.advance(40);
-    ui.emit({ type: "certified", count: 6, target: "source frames", removedVariantAnnotations: 2 });
+    ui.emit({ type: "scan-result", report: { findings: [], grade: { letter: "B", score: 85 } }, plans: [] });
     ui.advance(10);
     ui.emit({ type: "qa-command-complete", commandId: "native-command-1", handlerElapsedMs: 48, returned: "fulfilled" });
-    ui.emit({ type: "qa-command-started", commandId: "native-command-2", request: { type: "certify-components" } });
+    ui.emit({ type: "qa-command-started", commandId: "native-command-2", request: { type: "refresh-audit" } });
     ui.advance(30);
     ui.emit({ type: "error", message: "Supporting file context changed" });
     ui.advance(10);
@@ -254,24 +219,24 @@ describe("native QA harness generation", () => {
     ui.emit({ type: "qa-command-complete", commandId: "native-command-3", returned: "fulfilled" });
     const runs = ui.exportEvidence().runs;
     expect(runs).toHaveLength(3);
-    expect(runs[0]).toMatchObject({ status: "certified", count: 6, target: "source frames", removedVariantAnnotations: 2, elapsedMs: 40, handlerCompleteElapsedMs: 50, handlerElapsedMs: 48 });
+    expect(runs[0]).toMatchObject({ status: "completed", report: { grade: { letter: "B", score: 85 } }, elapsedMs: 40, handlerCompleteElapsedMs: 50, handlerElapsedMs: 48 });
     expect(runs[1]).toMatchObject({ status: "failed", failure: { message: "Supporting file context changed" }, handlerReturned: "fulfilled" });
     expect(runs[2]).toMatchObject({ status: "cancelled", handlerReturned: "fulfilled" });
   });
 
   it("keeps an overlapping rejected command's uncorrelated error out of the active result", async () => {
     const ui = await createUiHarness();
-    ui.emit({ type: "qa-command-started", commandId: "A", request: { type: "certify" } });
-    ui.emit({ type: "qa-command-started", commandId: "B", request: { type: "certify-components" } });
-    ui.emit({ type: "error", message: "Cannot start certify-components; certify is still running" });
+    ui.emit({ type: "qa-command-started", commandId: "A", request: { type: "scan" } });
+    ui.emit({ type: "qa-command-started", commandId: "B", request: { type: "refresh-audit" } });
+    ui.emit({ type: "error", message: "Cannot start refresh-audit; scan is still running" });
     ui.emit({ type: "qa-command-complete", commandId: "B", handlerElapsedMs: 1, returned: "fulfilled" });
     ui.advance(100);
-    ui.emit({ type: "certified", count: 6, target: "source frames", removedVariantAnnotations: 0 });
+    ui.emit({ type: "scan-result", report: { findings: [], grade: { letter: "B", score: 85 } }, plans: [] });
     ui.advance(10);
     ui.emit({ type: "qa-command-complete", commandId: "A", handlerElapsedMs: 105, returned: "fulfilled" });
     const evidence = ui.exportEvidence();
     expect(evidence.runs).toHaveLength(1);
-    expect(evidence.runs[0]).toMatchObject({ commandId: "A", status: "certified", handlerCompleteElapsedMs: 110, handlerElapsedMs: 105 });
+    expect(evidence.runs[0]).toMatchObject({ commandId: "A", status: "completed", handlerCompleteElapsedMs: 110, handlerElapsedMs: 105 });
     expect(evidence.runs[0]).not.toHaveProperty("failure");
     expect(evidence.events.some((event: { message: { message?: string } }) => event.message.message?.startsWith("Cannot start"))).toBe(true);
   });

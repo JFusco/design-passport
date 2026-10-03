@@ -2,7 +2,7 @@
 topics: [design-passport-architecture, design-readiness-standard, whole-file-design-knowledge, figma-runtime-qa]
 ---
 
-# Mutation and certification safety
+# Mutation safety and audit readiness
 
 ## Cleanup policy
 
@@ -12,7 +12,7 @@ Structural work first requests the version-history checkpoint `Before Design Pas
 
 Inferred Auto Layout is tested on a temporary clone. Child order must remain stable, no overlap or clipping may appear, and every measured geometry bound must remain within 0.5 px. The plugin never deletes content, moves pages, enables libraries, guesses semantic mappings, or destructively replaces detached instances.
 
-Whole-library structural cleanup validates proposals component by component, commits every accepted proposal in its own undo group, rejects unsafe proposals without touching the source, and performs one fresh scan after the batch. Clone preflight runs before opening the source mutation transaction: a failed clone must never trigger undo, because doing so can unwind an earlier accepted component. Both single-plan and batch structural paths guard transient clone document-change events throughout the following rescan; remote changes still invalidate the snapshot.
+Whole-library structural cleanup validates proposals component by component, commits every accepted proposal in its own undo group, rejects unsafe proposals without touching the source, and performs one fresh scan after the batch. Clone preflight runs before opening the source mutation transaction: a failed clone must never trigger undo, because doing so can unwind an earlier accepted component. Both single-plan and batch structural paths require full recapture after mutation. Local plugin-data-only events are exempt; annotation, visual, remote, and unknown changes invalidate knowledge.
 
 Repeated literals can open a semantic token wizard only after three matches. The designer must choose an existing local collection and a slash-separated semantic name. A unique compatible inferred variable may be guarded; multiple matches remain manual.
 
@@ -22,16 +22,16 @@ Before binding any variable to a text field, the mutation runtime loads every fo
 
 Waivers require an inline reason and remain score deductions. The Figma plugin sandbox did not reliably support `window.prompt`, so waiver capture is an explicit React form with blank-state validation, cancel, apply, and remove actions.
 
-## Certification
+## Audit readiness and retired certification
 
-Certification requires a fresh complete graph, a confirmed committed profile, and a passing independent source-frame report. It writes a concise annotation, compact shared metadata, and a relaunch action containing grade, ruleset and catalog versions, timestamp, and snapshot hash. Full findings and sensitive content are not stored in shared plugin data.
+As of plugin `0.5.0` / ruleset `1.0.0-beta.5`, designers aim for B or better and a ready result. There is no separate certification or approval action. Readiness still requires complete whole-file knowledge, no hard blockers, and no unresolved scoring-critical reviews. Every audited frame must pass; component sets remain one graded root with variant and descendant attribution.
 
-Source-frame and reusable-component certification are separate actions. Source-frame certification retains the whole-scope readiness gate; component certification considers only actual `COMPONENT` and `COMPONENT_SET` roots from the fresh scan and stamps each independently passing A or B root. This lets a healthy component library be certified even when documentation or specimen frames keep the broader file report below B.
+The controller rejects old certification messages as unsupported. Historical `set-certification` operations remain in schemas, types, and planner ordering for readability. Execution rejects the entire operation list before clone preflight, checkpoints, Undo, transaction markers, or metadata writes. Batch execution scans every approved plan before its first operation or shared structural checkpoint.
 
-Every certification writes both the `AI source frame` marker and the `[Design Passport] Grade ...` annotation without duplicating the source marker. Compact certification metadata is stored on the same node. A needs-review item marked `scoreImpact: false` remains visible but cannot block readiness or certification; this is especially important for contrast that cannot be resolved until a transparent component is placed on a runtime surface.
+Certificate summaries, raw capture inputs, and cached fragments retain their old shape. Certificate-prefix filtering still prevents legacy grade stamps from satisfying the source-annotation rule. Fresh grading no longer consumes certificates. Removing the formerly scored freshness rule can raise or lower new scores; grade thresholds, weights, coverage caps, policies, and waivers are unchanged.
 
-For component sets, the set remains the sole graded and certified source root. Its single concise certificate states how many direct variants were scanned as one component set; child variants receive no Design Passport canvas annotation. Variant properties, descendant finding attribution, filters, and Markdown evidence remain in the report, where the copy explains that every listed variant and descendant was scanned while the score belongs to the component set as a whole.
+No migration or cleanup runs. Stored report findings, grades, hashes, timestamps, and provenance remain unchanged. Certificate strings, source markers, grade notes, variant notes, and node relaunch maps stay intact. Removing the command from both manifests hides its buttons under [Figma's relaunch contract](https://developers.figma.com/docs/plugins/api/properties/nodes-setrelaunchdata/).
 
-Component re-certification atomically removes every current direct-child annotation whose text begins with the exact legacy `[Design Passport] Covered by` prefix. Designer-authored and other unrelated annotations are preserved, the success notice reports the deletion count, and an immediate repeat certification removes zero. Compact shared metadata, the `AI source frame` marker, and the relaunch action remain on the certified root; legacy child notes never carried those fields.
+Unsaved or invalid audit setup still blocks audits, cleanup, contribution, and current exports. Historical exports remain available. Serialization, dirty-node tracking, resource verification, structural recapture, scan locks, and Dev Mode restrictions remain in force for surviving commands.
 
-An unsaved, invalid, or unconfirmed advanced audit-setup draft blocks cleanup, certification, contribution, and exports while leaving the earlier report readable for comparison. Automatically inferred valid setup does not block the normal designer journey. After cleanup, certification and exports always use the post-change rescan. See [runtime QA](./figma-runtime-qa.md) for the verified score improvement and relaunch path.
+The [retirement journal](../journal/2026-10-03-retire-certification.md) records implementation and verification. Earlier certification records remain historical evidence. Merging and publication are separate; the published certification guard stays until a separately reviewed release replaces it.

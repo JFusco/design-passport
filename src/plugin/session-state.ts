@@ -104,26 +104,7 @@ function isLocalMetadataOnly(change: DocumentChangeSignal): boolean {
  * including edits to an expected node or transient clones, invalidate knowledge.
  */
 export class MutationChangeGuard {
-  private annotationSignatures = new Map<string, { expected: string; current: () => string | undefined }>();
-
-  arm(_nodeIds: readonly string[], _now = Date.now(), _lifetimeMs = 120_000, _includesTransientNodes = false): void { this.clear(); }
-
-  /** Certification records its exact annotation output immediately after writing. */
-  expectAnnotations(nodeId: string, expected: string, current: () => string | undefined): void {
-    this.annotationSignatures.set(nodeId, { expected, current });
+  hasUnexpectedChange(changes: readonly DocumentChangeSignal[]): boolean {
+    return changes.some((change) => !isLocalMetadataOnly(change));
   }
-
-  hasUnexpectedChange(changes: readonly DocumentChangeSignal[], _now = Date.now()): boolean {
-    return changes.some((change) => {
-      if (isLocalMetadataOnly(change)) return false;
-      const signature = this.annotationSignatures.get(change.id);
-      if (signature && change.origin === "LOCAL" && change.type === "PROPERTY_CHANGE" && change.properties?.length
-        && change.properties.every((property) => property === "annotations" || property === "pluginData")) {
-        try { return signature.current() !== signature.expected; } catch { return true; }
-      }
-      return true;
-    });
-  }
-
-  clear(): void { this.annotationSignatures.clear(); }
 }

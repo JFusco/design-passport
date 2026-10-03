@@ -31,9 +31,9 @@ describe("UI message validation", () => {
     }
   });
 
-  it("accepts source-frame and component certification requests", () => {
-    expect(parseUiMessage({ type: "certify" })).toEqual({ type: "certify" });
-    expect(parseUiMessage({ type: "certify-components" })).toEqual({ type: "certify-components" });
+  it("rejects retired source-frame and component certification requests", () => {
+    expect(() => parseUiMessage({ type: "certify" })).toThrow("Unsupported plugin message type: certify");
+    expect(() => parseUiMessage({ type: "certify-components" })).toThrow("Unsupported plugin message type: certify-components");
   });
 
   it("accepts a bounded, distinct apply-all request", () => {

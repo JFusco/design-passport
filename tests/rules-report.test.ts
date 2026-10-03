@@ -1,3 +1,5 @@
+import { CATALOG_VERSION } from "../src/core/catalog";
+import { PRODUCER_IDENTITY } from "../src/core/build-info";
 import { describe, expect, it } from "vitest";
 import { buildReadinessReport } from "../src/core/report";
 import { evaluateRules } from "../src/core/rules";
@@ -31,7 +33,6 @@ describe("rule engine and report", () => {
       "naming.default-healthy",
       "naming.source-unique",
       "pipeline.annotation",
-      "pipeline.certification-freshness",
       "pipeline.consumable-root",
       "pipeline.dev-resource",
       "pipeline.export-names",
@@ -163,20 +164,21 @@ describe("rule engine and report", () => {
     expect(validateContract("readiness-report", report)).toEqual({ valid: true, errors: [] });
   });
 
-  it("detects a certificate made against an older whole-file snapshot", () => {
+  it("ignores absent, current, and stale certificates in fresh findings, grades, and readiness", () => {
     const p = profile();
     const graph = healthyGraph(p);
-    graph.nodes["root:desktop"]!.certification = {
-      schemaVersion: 1,
-      grade: "A",
-      score: 95,
-      rulesetVersion: "1.0.0-beta.1",
-      catalogVersion: "1.17.0",
-      certifiedAt: "2026-09-07T12:00:00.000Z",
-      snapshotHash: "old-report",
-      knowledgeSnapshotHash: "old-knowledge",
-    };
-    expect(evaluateRules(graph, p, ["root:desktop"]).find((item) => item.ruleId === "pipeline.certification-freshness")).toMatchObject({ status: "needs-review" });
+    const now = new Date("2026-10-03T12:00:00.000Z");
+    const build = () => buildReadinessReport({ graph, profile: p, scope: "selection", targetRootIds: ["root:desktop"], now });
+    const absent = build();
+    for (const current of [true, false]) {
+      graph.nodes["root:desktop"]!.certification = {
+        schemaVersion: 2, grade: "A", score: 95,
+        catalogVersion: CATALOG_VERSION, certifiedAt: "2026-09-07T12:00:00.000Z", snapshotHash: "old-report",
+        knowledgeSnapshotHash: current ? graph.snapshotHash : "old-knowledge", ...PRODUCER_IDENTITY,
+      };
+      expect(build()).toEqual(absent);
+    }
+    expect(absent.findings.some((item) => item.ruleId === "pipeline.certification-freshness")).toBe(false);
   });
 
   it("honors a designer-confirmed contextual pattern for the pinned catalog version", () => {

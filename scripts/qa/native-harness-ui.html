@@ -23,7 +23,7 @@
   const overlappingCommands = new Set();
   let nextCommand = 1;
   let lastReport;
-  const measureCommands = new Set(['scan', 'refresh-audit', 'recheck-audit', 'audit-pages', 'certify', 'certify-components']);
+  const measureCommands = new Set(['scan', 'refresh-audit', 'recheck-audit', 'audit-pages']);
   const beginRun = (request, timingOrigin, commandId) => ({ commandId, startedAt: new Date().toISOString(), start: performance.now(), request, timingOrigin, firstInSession: evidence.runs.length === 0 && evidence.droppedRuns === 0 });
   const retainRun = (run) => {
     delete run.start;
@@ -85,12 +85,6 @@
       if (activeRun?.request?.type === 'audit-pages') run.timingOrigin += '-batch-cumulative';
       retainRun(run);
       status({ run: run.number, reportVisibleElapsedMs: run.reportVisibleElapsedMs, handlerCompleteElapsedMs: 'pending', findings: run.report.findings.length, grade: run.report.grade, refresh: run.refresh, saveStatus: run.saveStatus });
-    }
-    if (message.type === 'certified' && activeRun) {
-      const run = { ...activeRun, status: 'certified', completedAt: at, elapsedMs: performance.now() - activeRun.start,
-        count: message.count, target: message.target, removedVariantAnnotations: message.removedVariantAnnotations };
-      retainRun(run);
-      status({ run: run.number, status: run.status, elapsedMs: run.elapsedMs, handlerCompleteElapsedMs: 'pending', count: run.count, target: run.target });
     }
     if (message.type === 'qa-inspection') { evidence.inspections.push({ at, ...message }); status(message); if (message.nodes?.[0]?.id) byId('node').value = message.nodes[0].id; }
     if (message.type === 'qa-edited') { evidence.edits.push({ at, ...message }); status(message); }
