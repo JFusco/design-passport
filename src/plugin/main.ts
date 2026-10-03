@@ -1,5 +1,5 @@
 import { CATALOG_DIGEST, CATALOG_VERSION } from "../core/catalog";
-import { PRODUCT_NAME } from "../core/constants";
+import { CERTIFICATION_PAUSED, CERTIFICATION_PAUSED_MESSAGE, PRODUCT_NAME } from "../core/constants";
 import { RULESET_VERSION } from "../core/constants";
 import { PRODUCER_IDENTITY } from "../core/build-info";
 import type {
@@ -777,6 +777,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       }
       await rescanActiveTarget(true);
     } else if (message.type === "certify" || message.type === "certify-components") {
+      if (CERTIFICATION_PAUSED) throw new Error(CERTIFICATION_PAUSED_MESSAGE);
       if (invalidateProfileIfNeeded()) return;
       assertDocumentMutationAllowed();
       if (historicalAudit) throw new Error("This is a saved historical audit. Refresh it before certification");

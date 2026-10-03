@@ -18,8 +18,12 @@ function memoryStorage() {
   };
 }
 
-async function launch(storage = memoryStorage(), fileKey: string | undefined = "file-key", editorType: "figma" | "dev" = "figma", waitForRestore = true, inputProfile = profile(), projectBinding?: ProjectStyleGuideBindingV1) {
+async function launch(storage = memoryStorage(), fileKey: string | undefined = "file-key", editorType: "figma" | "dev" = "figma", waitForRestore = true, inputProfile = profile(), projectBinding?: ProjectStyleGuideBindingV1, allowCertification = true) {
   vi.resetModules();
+  vi.doMock("../src/core/constants", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("../src/core/constants")>()),
+    CERTIFICATION_PAUSED: !allowCertification,
+  }));
   const events: PluginToUiMessage[] = [];
   let cancelled = false;
   const guideStatus = () => projectBinding ? {
@@ -108,10 +112,21 @@ async function launchWithVariables(readyForCertification = false) {
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.doUnmock("../src/figma/adapter");
+  vi.doUnmock("../src/core/constants");
   vi.restoreAllMocks();
 });
 
 describe("plugin audit recovery integration", () => {
+  it("rejects both certification commands before any metadata write while paused", async () => {
+    const plugin = await launch(memoryStorage(), "file-key", "figma", true, profile(), undefined, false);
+    for (const type of ["certify", "certify-components"] as const) {
+      await plugin.send({ type });
+      expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("Certification is temporarily unavailable") });
+    }
+    expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
+    expect(plugin.adapter.matchesVariableEnvironment).not.toHaveBeenCalled();
+  });
+
   it.each(["forced full", "all hits", "staged"] as const)("counts context inventories for a %s build", async (mode) => {
     const plugin = await launch();
     await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
