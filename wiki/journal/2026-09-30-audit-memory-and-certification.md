@@ -2,6 +2,8 @@
 title: Audit memory and certification verification
 topics: [persistent-audits]
 plans: [2026-09-30-reduce-audit-memory-use-and-certification-delay-e50b8ab0d1.md, 2026-10-01-complete-design-passport-issue-53-native-acceptance-1953566c5f.md]
+issue: 'https://github.com/jfusco/design-passport/issues/53'
+issues: ['https://github.com/jfusco/design-passport/issues/53']
 ---
 
 # Audit memory and certification verification
