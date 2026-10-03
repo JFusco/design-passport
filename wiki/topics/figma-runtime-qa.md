@@ -4,6 +4,12 @@ topics: [design-passport-architecture, whole-file-design-knowledge, mutation-cer
 
 # Figma runtime and release QA
 
+## Retirement candidate, 2026-10-03
+
+The `0.5.0` candidate removes certification. Use the [retirement inspection procedure](../../scripts/qa/README.md#certification-retirement-checks) for document-read-only audit, refresh, and export checks on the authorized copy. Preserve exact legacy certificate strings, annotations, and relaunch maps. Earlier dated certification outcomes below are historical evidence, not current actions or candidate acceptance.
+
+Retirement supersedes the two certification acceptance checks and certification speed/rollback work under [issue 53](https://github.com/JFusco/design-passport/issues/53). Audit-cache semantic parity and the native performance and screen-saver matrix remain open. This adds no obligations to that issue. Native candidate inspection was unavailable because the computer-use service returned no apps or browsers and a native-pipe startup error; exact native metadata preservation remains unverified. See [the retirement journal](../journal/2026-10-03-retire-certification.md).
+
 ## Post-review interaction constraints, 2026-09-23
 
 Saved reports and rebuildable graph context are separate retention classes. “Clear rebuildable context” removes only disposable context fragments; deleting a saved report is a distinct, confirmed action that also removes only that report's view state. Tests protect this boundary.

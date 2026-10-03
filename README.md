@@ -1,13 +1,13 @@
 # Design Passport
 
-An organization-published private Figma Design plugin that builds whole-file design knowledge, audits source frames for MCP/API consumption, previews safe cleanup, and certifies only deterministic grade-B-or-better results.
+An organization-published private Figma Design plugin that builds whole-file design knowledge, audits source frames for MCP/API consumption, and previews safe cleanup. Aim for **B or better and a ready result**; there is no separate certification action.
 
 The target and context scopes are deliberately separate:
 
 - **Audit target:** selected frames, components, or component sets; the captured current page; or all profile-designated source frames.
 - **Knowledge scope:** the complete Figma file on every fresh audit. Pages are loaded sequentially with progress and cancellation.
 
-This lets a selected frame be graded at the altitude a pipeline consumes while component definitions, instances, variables, responsive siblings, repeated structures, page roles, and source relationships are understood across the design as a whole. Incomplete or stale whole-file knowledge is a hard certification blocker.
+This lets a selected frame be graded at the altitude a pipeline consumes while component definitions, instances, variables, responsive siblings, repeated structures, page roles, and source relationships are understood across the design as a whole. Incomplete or stale whole-file knowledge is a hard readiness blocker.
 
 ## What is implemented
 
@@ -21,15 +21,15 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 - Automatic and guarded cleanup plans with one undo boundary per risk group.
 - Clone-first inferred Auto Layout validation with child-order, overlap, clipping, and 0.5 px geometry postconditions.
 - Semantic token-creation wizard for values repeated at least three times.
-- Compact shared profile/certification data in the `verndaleAiReady` namespace.
-- Concise parent-only certificate annotations and relaunch actions on passing source frames and reusable components.
+- Compact shared profile data and read-only legacy certificate capture in the `verndaleAiReady` namespace.
+- Per-source readiness results with component-set variant coverage.
 - JSON Schema-validated profiles, findings, change plans, and reports.
 - Complete JSON and escaped Markdown report exports.
 - Automatic compressed local audit recovery, historical exports, and a saved-audit picker with per-target view preferences.
 - Validated persisted context fragments and multi-page batches that retain each completed page report.
 - A reconcilable token-coverage ledger that separates bound, inherited, ignored, and missing evidence; only missing evidence lowers coverage.
-- Required, Advisory, and Off modes for team conventions while accessibility, token correctness, evidence integrity, and certification safety remain locked.
-- Versioned producer identity on live results, saved audits, exports, and certificates, with visibly separate production and development builds.
+- Required, Advisory, and Off modes for team conventions while accessibility, token correctness, evidence integrity, and readiness requirements remain locked.
+- Versioned producer identity on live results, saved audits, and exports, with visibly separate production and development builds.
 - Project-scoped style-guide advisories, session-only references, and an explicit sanitized learning export that never changes grades.
 - A local Node companion for Figma REST ingestion and human-gated knowledge review.
 - No backend, telemetry, OAuth, or plugin network access. Only the separately run local companion fetches explicitly supplied Figma sources.
@@ -52,14 +52,14 @@ Design Passport is published to the Verndale organization. Organization members 
 2. Open **Resources → Plugins** (or Quick Actions) and run **Design Passport**.
 3. Choose an audit scope. Design Passport automatically classifies conventional product and library files; there is no required setup step.
 4. Wait for the complete file-wide knowledge build, then review Overview and Findings. Completion shows whether the result was saved locally.
-5. Apply only reviewed cleanup, let the rescan complete, and certify only when Overview reports **ready**.
+5. Apply only reviewed cleanup and let the rescan complete. Use the current grade and readiness result to review the handoff.
 6. Export current JSON for machine consumers or Markdown for people. Saved historical exports are explicitly labeled and do not establish current readiness.
 
 The footer and audit result identify the exact plugin version, ruleset, build SHA, and Production/Development channel. If an already-open plugin window does not show the announced identity, close it and launch the organization plugin again.
 
 ### Return to an audit
 
-Completed audits save automatically to this device. Closing Passport, switching to another plugin, or reopening the file restores the last-viewed saved result without starting another audit. The saved-audit chooser keeps the latest result for each page, selection, or whole-file audit and restores its tab, filters, and expanded finding. Node links and historical export remain available while an explicit refresh checks the design; cleanup and certification require verified current context.
+Completed audits save automatically to this device. Closing Passport, switching to another plugin, or reopening the file restores the last-viewed saved result without starting another audit. The saved-audit chooser keeps the latest result for each page, selection, or whole-file audit and restores its tab, filters, and expanded finding. Node links and historical export remain available while an explicit refresh checks the design; cleanup requires verified current context.
 
 Saved results retain their original timestamp and configuration. Session reference packs still clear on restart; their previous advisory findings can be read as part of the historical audit but are not reapplied to a new review. A profile or rule update does not rewrite the old report. Changing audit setup also keeps an unsaved completed result available for historical export.
 
@@ -69,7 +69,7 @@ Choose **Review pages** to select several pages or all pages. A batch prepares c
 
 ### Repeat-review performance
 
-Within a fresh unchanged session, audits reuse whole-file knowledge. After reopening or an explicit refresh, Passport validates saved base fragments against bulk page exports and Plugin API metadata, then captures changed fragments. Inferred variables, relevant variable/alias evidence, component relationships, and documentation resources are refreshed; an unverified saved graph never enables cleanup or certification. If exports or dependencies cannot establish a match, capture falls back conservatively.
+Within a fresh unchanged session, audits reuse whole-file knowledge. After reopening or an explicit refresh, Passport validates saved base fragments against bulk page exports and Plugin API metadata, then captures changed fragments. Inferred variables, relevant variable/alias evidence, component relationships, and documentation resources are refreshed; an unverified saved graph never enables cleanup. If exports or dependencies cannot establish a match, capture falls back conservatively.
 
 Diagnostic timings and cache counts appear only in the local plugin console. `node scripts/benchmark-context-cache.mjs 65 30` runs a synthetic cache/parity benchmark; it excludes the real Figma bridge and cannot establish a user-facing speedup. See [runtime and performance QA](wiki/guides/manual-qa.md) for the cold, reopen, component-edit, next-page, and batch measurement procedure.
 
@@ -97,12 +97,12 @@ To test an unreleased local build in Figma Desktop:
 3. Choose `development/manifest.json`.
 4. Run **Design Passport (Development)** from **Plugins → Development** and confirm the persistent Development warning and development channel in the footer.
 
-`manifest.json` retains the existing organization-published production identity. `development/manifest.json` lives in its own directory because Figma registers one development plugin per manifest directory; it uses a separate identity so local client storage, reports, certificates, and launch menus cannot be mistaken for the published plugin. The build mirrors the exact generated controller/UI bytes into ignored `development/dist/` output because Figma confines a development plugin to its manifest directory. Both manifests remain offline and expose the same capabilities.
+`manifest.json` retains the existing organization-published production identity. `development/manifest.json` lives in its own directory because Figma registers one development plugin per manifest directory; it uses a separate identity so local client storage, reports, and launch menus cannot be mistaken for the published plugin. The build mirrors the exact generated controller/UI bytes into ignored `development/dist/` output because Figma confines a development plugin to its manifest directory. Both manifests remain offline and expose the same capabilities.
 
 ### Release identity and freshness
 
 - `pnpm build` produces a Development-channel bundle and mirrors its controller/UI into `development/dist/`; `pnpm build:release` produces only the Production-channel bundle in `dist/` and deliberately leaves the development copy untouched.
-- Every clean bundle embeds package version `0.4.0`, ruleset `1.0.0-beta.4`, the current 12-character Git SHA, and its channel. Production builds reject a dirty checkout; Development builds visibly append a dirty-content digest. There is no remote version service or runtime “latest” lookup.
+- Every clean bundle embeds package version `0.5.0`, ruleset `1.0.0-beta.5`, the current 12-character Git SHA, and its channel. Production builds reject a dirty checkout; Development builds visibly append a dirty-content digest. There is no remote version service or runtime “latest” lookup.
 - Production is published only to the existing organization plugin record in `manifest.json`. Figma distributes that record’s current published version to organization users; users do not import a manifest or choose an older published build.
 - Before publishing, preserve the last verified production `dist/` bundle outside tracked source for rollback. A rollback republishes those verified bytes to the same organization record.
 - Smoke-test the published plugin with two non-publisher organization accounts. Ask anyone with an already-open plugin window to close and relaunch **Design Passport** before validating the announced footer identity.
@@ -207,15 +207,19 @@ Designers normally open Design Passport and run an audit immediately. The plugin
 
 `Audit setup` is a secondary recovery surface, not part of the normal workflow. It appears automatically only when the file cannot be classified safely or a saved page mapping was deleted. A recommended one-click setup is offered when deterministic inference can repair the state; unusual files can use the collapsed advanced controls for manual roles, token sources, and breakpoints.
 
-Advanced edits remain a local draft until the designer explicitly saves them. Audits, context rebuilds, cleanup, certification, learning contribution, and current report export stay unavailable while a draft is unsaved or invalid. Historical reports remain readable and exportable using their original configuration. Discard restores the committed setup. Deleted page mappings are removed from the draft and require review and confirmation before work continues.
+Advanced edits remain a local draft until the designer explicitly saves them. Audits, context rebuilds, cleanup, learning contribution, and current report export stay unavailable while a draft is unsaved or invalid. Historical reports remain readable and exportable using their original configuration. Discard restores the committed setup. Deleted page mappings are removed from the draft and require review and confirmation before work continues.
 
-Only the committed profile, compact certificate summaries, and explicit contextual-pattern confirmations are stored as shared plugin data. A validated project style-guide binding is stored separately as private document-root plugin data, never public shared data or client storage. Full nodes, findings, and text are not persisted in the document. Completed reports and normalized context fragments are stored separately in local clientStorage. Text content is represented by length and a deterministic fingerprint, not raw characters; raw bulk exports are transient.
+The committed profile and explicit contextual-pattern confirmations are stored as shared plugin data. Legacy compact certificate summaries remain unchanged. A validated project style-guide binding is stored separately as private document-root plugin data, never public shared data or client storage. Full nodes, findings, and text are not persisted in the document. Completed reports and normalized context fragments are stored separately in local clientStorage. Text content is represented by length and a deterministic fingerprint, not raw characters; raw bulk exports are transient.
 
-## Component-set certification
+## Grades, readiness, and legacy certificates
 
-A component set is scanned as one reusable source root: every direct variant and its descendants contribute evidence, but the resulting grade belongs to the set as a whole. The certified set receives one canvas note such as `[Design Passport] Grade B (88.0) · 2 variants scanned as one component set.` Direct variants do not receive Design Passport annotations.
+Aim for B or better and a ready result. Readiness still requires complete whole-file knowledge, no hard blockers, and no unresolved scoring-critical reviews. Every audited source must be ready. A component set is one graded root; its variants and descendants retain their finding attribution and coverage in the report.
 
-Re-certification removes legacy child notes whose text begins with the exact `[Design Passport] Covered by` prefix, preserves designer-authored annotations, and reports how many notes were removed. Variant properties, descendant finding attribution, per-variant filtering, and Markdown evidence remain available in the report. A repeat certification is idempotent and should report zero additional removals.
+Plugin `0.5.0` and ruleset `1.0.0-beta.5` retire certification actions and the scored `pipeline.certification-freshness` rule. Removing that rule can raise or lower fresh scores on previously certified targets. Grade thresholds, axis weights, token-coverage caps, policies, and waivers are unchanged.
+
+Old reports retain their findings, grades, hashes, timestamps, and producer identity. Certificate strings, source markers, grade notes, variant notes, and node relaunch data remain untouched. Legacy stamps cannot satisfy the source-annotation rule. The retired operation remains readable in historical contracts but is rejected before any cleanup writes.
+
+Both manifests omit the old relaunch command. [Figma hides buttons whose commands are removed](https://developers.figma.com/docs/plugins/api/properties/nodes-setrelaunchdata/) without requiring node-data cleanup. Merging and publication remain separate; the published certification guard remains in place until a separately reviewed release replaces it.
 
 ## Safety boundaries
 

@@ -1,10 +1,9 @@
 import type { Axis, ReadinessProfile, SourceRef } from "./contracts";
 
-export const RULESET_VERSION = "1.0.0-beta.4";
+export const RULESET_VERSION = "1.0.0-beta.5";
 export const PRODUCT_NAME = "Design Passport";
 export const AI_SOURCE_FRAME_ANNOTATION = "AI source frame";
 export const CERTIFICATION_ANNOTATION_PREFIX = "[Design Passport]";
-export const VARIANT_COVERAGE_ANNOTATION_PREFIX = "[Design Passport] Covered by";
 export const LEGACY_CERTIFICATION_ANNOTATION_PREFIX = "[Figma AI Ready]";
 export const SHARED_PLUGIN_DATA_NAMESPACE = "verndaleAiReady";
 export const PROFILE_DATA_KEY = "profile-v1";

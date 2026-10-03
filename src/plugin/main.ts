@@ -29,9 +29,8 @@ import { buildReadinessReport } from "../core/report";
 import { evaluateRules } from "../core/rules";
 import { hashValue, stableStringify } from "../core/stable";
 import { applyWaivers, sanitizeWaiverStore, type WaiverStore } from "../core/waivers";
-import { mapConcurrent } from "../figma/context-cache";
 import { FigmaAdapter, FullKnowledgeRebuildRequired, type BootstrapData, type CapturedAuditTarget, type ProjectStyleGuideStatus, type VariableCollectionOption } from "../figma/adapter";
-import { applyChangePlan, captureCertificationMetadata, clearVariantCoverageAnnotations, createSemanticTokenAndBind, recordWrittenCertificationMetadata, restoreCertificationMetadata, setCertification } from "../figma/mutations";
+import { applyChangePlan, createSemanticTokenAndBind } from "../figma/mutations";
 import { buildKnowledgeSummary } from "./knowledge-summary";
 import { parseUiMessage } from "./message-validation";
 import type { AuditRecheckRequest, AuditRefreshResult, PluginToUiMessage, UiToPluginMessage } from "./messages";
@@ -221,7 +220,6 @@ async function saveWaivers(waivers: WaiverStore): Promise<void> {
 
 async function runDocumentMutation<T>(expectedNodeIds: readonly string[], mutation: () => Promise<T>, includesTransientNodes = false): Promise<T> {
   assertDocumentMutationAllowed();
-  mutationChangeGuard.arm(documentMutationIds(expectedNodeIds), Date.now(), 120_000, includesTransientNodes);
   try {
     const result = await mutation();
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -232,30 +230,13 @@ async function runDocumentMutation<T>(expectedNodeIds: readonly string[], mutati
   }
 }
 
-function documentMutationIds(expectedNodeIds: readonly string[]): string[] {
-  const affectedIds = new Set<string>([figma.root.id, ...expectedNodeIds]);
-  for (const nodeId of expectedNodeIds) {
-    let node = graph?.nodes[nodeId];
-    while (node?.parentId) {
-      affectedIds.add(node.parentId);
-      node = graph?.nodes[node.parentId];
-    }
-  }
-  return [...affectedIds];
-}
-
-function recordCertificationAnnotations(node: SceneNode): void {
-  if (!("annotations" in node)) return;
-  mutationChangeGuard.expectAnnotations(node.id, hashValue(node.annotations), () => node.removed ? undefined : hashValue(node.annotations));
-}
-
 function assertInitialized(): void {
   if (!initialized) throw new Error("Initialize the plugin before sending commands");
 }
 
 function assertDocumentMutationAllowed(): void {
   if (figma.editorType !== "figma") {
-    throw new Error("Document cleanup and certification are available in Figma Design mode; Dev Mode supports audit, navigation, guidance, and report export");
+    throw new Error("Document cleanup is available in Figma Design mode; Dev Mode supports audit, navigation, guidance, and report export");
   }
 }
 
@@ -733,6 +714,9 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       const selectedPlans = message.planIds.map((planId) => plans.find((candidate) => candidate.id === planId));
       if (selectedPlans.some((plan) => !plan)) throw new Error("At least one cleanup plan is stale; rescan before applying all fixes");
       const approvedPlans = selectedPlans as ChangePlan[];
+      if (approvedPlans.some((plan) => plan.operations.some((operation) => operation.kind === "set-certification"))) {
+        throw new Error("Certification operations are retired; refresh the audit for current cleanup plans");
+      }
       const structuralBatch = approvedPlans.every((plan) => plan.risk === "structural");
       if (!structuralBatch && approvedPlans.some((plan) => plan.risk === "structural")) {
         throw new Error("Structural plans cannot be mixed with safe or guarded cleanup");
@@ -776,121 +760,6 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         throw new Error(`Fix all stopped after ${appliedOperationCount} completed operations. ${errorMessage(error)}`);
       }
       await rescanActiveTarget(true);
-    } else if (message.type === "certify" || message.type === "certify-components") {
-      if (invalidateProfileIfNeeded()) return;
-      assertDocumentMutationAllowed();
-      if (historicalAudit) throw new Error("This is a saved historical audit. Refresh it before certification");
-      if (!graph || !report) throw new Error("Run an audit before certification");
-      assertScanNotCancelled();
-      if (!currentKnowledgeAvailable() || report.target.knowledgeSnapshotHash !== graph.snapshotHash) throw new Error("Whole-file knowledge is stale; rescan before certification");
-      const current = { graph, report };
-      const componentCertification = message.type === "certify-components";
-      const certificationFrames = componentCertification
-        ? current.report.frames.filter((frame) => frame.rootType === "COMPONENT" || frame.rootType === "COMPONENT_SET")
-        : current.report.frames;
-      if (componentCertification) {
-        if (certificationFrames.length === 0) throw new Error("This audit does not contain component roots to certify");
-        if (certificationFrames.some((frame) => !frame.ready)) throw new Error("Every component root must be grade B or better with no blockers or unresolved critical reviews");
-      } else if (!current.report.ready) {
-        throw new Error("Certification requires grade B or better with no blockers or unresolved critical reviews");
-      }
-      const summaryBase = {
-        schemaVersion: 2 as const,
-        grade: current.report.grade.letter,
-        score: current.report.grade.score,
-        rulesetVersion: current.report.rulesetVersion,
-        catalogVersion: current.report.catalogVersion,
-        certifiedAt: new Date().toISOString(),
-        snapshotHash: current.report.snapshotHash,
-        knowledgeSnapshotHash: current.graph.snapshotHash,
-        pluginVersion: PRODUCER_IDENTITY.pluginVersion,
-        buildSha: PRODUCER_IDENTITY.buildSha,
-        channel: PRODUCER_IDENTITY.channel,
-      };
-      const certificationNodeIds = certificationFrames.flatMap((frame) => [
-        frame.rootId,
-        ...(componentCertification ? (frame.variantCoverage ?? []).map((variant) => variant.variantId) : []),
-      ]);
-      const resolved = await mapConcurrent(certificationFrames, 16, async (frame) => {
-        const node = await figma.getNodeByIdAsync(frame.rootId);
-        if (!node || node.type === "DOCUMENT" || node.type === "PAGE") throw new Error(`Source frame ${frame.rootId} no longer exists`);
-        const variants = componentCertification ? frame.variantCoverage ?? [] : [];
-        const variantNodes = await mapConcurrent(variants, 8, async (variant) => {
-          const variantNode = await figma.getNodeByIdAsync(variant.variantId);
-          if (!variantNode || variantNode.type !== "COMPONENT" || variantNode.parent?.type !== "COMPONENT_SET") {
-            throw new Error(`Variant ${variant.variantId} no longer exists in a component set`);
-          }
-          return variantNode;
-        });
-        return { frame, node, variantNodes };
-      });
-      await assertVerifiedKnowledge();
-      if (!await adapter.matchesCertificationTargetNames(current.graph, certificationNodeIds)) {
-        markKnowledgeDirty();
-        throw new Error("A certification target changed after the audit. Refresh before certification.");
-      }
-      assertKnowledgeRevision();
-      if (resolved.some((entry) => !entry || entry.node.removed || entry.variantNodes.some((node) => !node || node.removed))) {
-        throw new Error("A certification target no longer exists");
-      }
-      const priorMetadata = resolved.flatMap((entry) => [
-        captureCertificationMetadata(entry!.node, true),
-        ...entry!.variantNodes.map((node) => captureCertificationMetadata(node!, false)),
-      ]);
-      const metadataById = new Map(priorMetadata.map((snapshot) => [snapshot.node.id, snapshot]));
-      mutationChangeGuard.arm(documentMutationIds(certificationNodeIds));
-      let count = 0;
-      let removedVariantAnnotations = 0;
-      let wroteCertification = false;
-      figma.commitUndo();
-      try {
-        // All bridge lookups finished before verification. Keep writes synchronous.
-        for (const entry of resolved) {
-          const { frame, node, variantNodes } = entry!;
-          const summary = { ...summaryBase, grade: frame.grade.letter, score: frame.grade.score };
-          wroteCertification = true;
-          setCertification(node, summary, variantNodes.length);
-          recordCertificationAnnotations(node);
-          recordWrittenCertificationMetadata(metadataById.get(node.id)!);
-          for (const variantNode of variantNodes) {
-            removedVariantAnnotations += clearVariantCoverageAnnotations(variantNode!);
-            recordCertificationAnnotations(variantNode!);
-            recordWrittenCertificationMetadata(metadataById.get(variantNode!.id)!);
-          }
-          count += 1;
-        }
-        await assertVerifiedKnowledge();
-        if (!await adapter.matchesCertificationTargetNames(current.graph, certificationNodeIds)) {
-          markKnowledgeDirty();
-          throw new Error("A certification target changed during certification. Refresh the audit.");
-        }
-        if (count !== certificationFrames.length) throw new Error(`Every ${componentCertification ? "component" : "source frame"} must be certified in the same undo group`);
-        figma.commitUndo();
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      } catch (error) {
-        if (wroteCertification) {
-          // Native undo can target an earlier certification after an awaited
-          // verification. Compensate the fields this command wrote without
-          // adding a separate undo entry or reversing a designer rename.
-          const rollbackErrors: string[] = [];
-          for (const snapshot of priorMetadata) {
-            try {
-              restoreCertificationMetadata(snapshot);
-            } catch (rollbackError) {
-              rollbackErrors.push(`${snapshot.node.id}: ${errorMessage(rollbackError)}`);
-            }
-          }
-          if (rollbackErrors.length > 0) {
-            knowledgeState.markDirty();
-            post({ type: "knowledge-stale" });
-            throw new Error(`${errorMessage(error)} Certification metadata rollback was incomplete: ${rollbackErrors.join("; ")}`);
-          }
-        }
-        knowledgeState.markDirty();
-        post({ type: "knowledge-stale" });
-        throw error;
-      }
-      post({ type: "certified", count, target: componentCertification ? "components" : "source frames", removedVariantAnnotations });
     } else if (message.type === "import-project-style-guide") {
       const binding = adapter.importProjectStyleGuide(message.raw);
       sessionStyleGuidePack = undefined;

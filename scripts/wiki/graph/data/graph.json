@@ -2,12 +2,12 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 72,
-    "edges": 225,
+    "nodes": 76,
+    "edges": 240,
     "byType": {
       "index": 18,
-      "journal": 25,
-      "plan": 20,
+      "journal": 28,
+      "plan": 21,
       "topic": 9
     }
   },
@@ -20,8 +20,8 @@
       "githubRefs": [],
       "bytes": 162,
       "degree": 3,
-      "x": 0.984808,
-      "y": 0.173648,
+      "x": 0.986361,
+      "y": 0.164595,
       "size": 12
     },
     {
@@ -39,8 +39,8 @@
       ],
       "bytes": 6250,
       "degree": 3,
-      "x": 0.965926,
-      "y": 0.258819,
+      "x": 0.9694,
+      "y": 0.245485,
       "size": 12
     },
     {
@@ -58,8 +58,8 @@
       ],
       "bytes": 10158,
       "degree": 3,
-      "x": 0.939693,
-      "y": 0.34202,
+      "x": 0.945817,
+      "y": 0.324699,
       "size": 12
     },
     {
@@ -70,8 +70,8 @@
       "githubRefs": [],
       "bytes": 9443,
       "degree": 1,
-      "x": 0.866025,
-      "y": 0.5,
+      "x": 0.879474,
+      "y": 0.475947,
       "size": 12
     },
     {
@@ -82,8 +82,8 @@
       "githubRefs": [],
       "bytes": 260,
       "degree": 7,
-      "x": 0.906308,
-      "y": 0.422618,
+      "x": 0.915773,
+      "y": 0.401695,
       "size": 12
     },
     {
@@ -94,8 +94,8 @@
       "githubRefs": [],
       "bytes": 5586,
       "degree": 2,
-      "x": 0.819152,
-      "y": 0.573576,
+      "x": 0.837166,
+      "y": 0.546948,
       "size": 12
     },
     {
@@ -111,10 +111,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/21"
         }
       ],
-      "bytes": 19151,
+      "bytes": 19515,
       "degree": 4,
-      "x": 0.766044,
-      "y": 0.642788,
+      "x": 0.789141,
+      "y": 0.614213,
       "size": 12
     },
     {
@@ -125,8 +125,8 @@
       "githubRefs": [],
       "bytes": 6801,
       "degree": 1,
-      "x": 0.707107,
-      "y": 0.707107,
+      "x": 0.735724,
+      "y": 0.677282,
       "size": 12
     },
     {
@@ -137,8 +137,8 @@
       "githubRefs": [],
       "bytes": 2899,
       "degree": 1,
-      "x": 0.642788,
-      "y": 0.766044,
+      "x": 0.677282,
+      "y": 0.735724,
       "size": 12
     },
     {
@@ -161,8 +161,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.573576,
-      "y": 0.819152,
+      "x": 0.614213,
+      "y": 0.789141,
       "size": 8
     },
     {
@@ -173,8 +173,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.5,
-      "y": 0.866025,
+      "x": 0.546948,
+      "y": 0.837166,
       "size": 8
     },
     {
@@ -192,8 +192,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.422618,
-      "y": 0.906308,
+      "x": 0.475947,
+      "y": 0.879474,
       "size": 8
     },
     {
@@ -217,8 +217,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.34202,
-      "y": 0.939693,
+      "x": 0.401695,
+      "y": 0.915773,
       "size": 8
     },
     {
@@ -229,8 +229,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.258819,
-      "y": 0.965926,
+      "x": 0.324699,
+      "y": 0.945817,
       "size": 8
     },
     {
@@ -254,8 +254,8 @@
       ],
       "bytes": 2463,
       "degree": 3,
-      "x": 0.173648,
-      "y": 0.984808,
+      "x": 0.245485,
+      "y": 0.9694,
       "size": 8
     },
     {
@@ -273,8 +273,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": 0.087156,
-      "y": 0.996195,
+      "x": 0.164595,
+      "y": 0.986361,
       "size": 8
     },
     {
@@ -292,8 +292,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": 0,
-      "y": 1,
+      "x": 0.082579,
+      "y": 0.996584,
       "size": 8
     },
     {
@@ -304,8 +304,8 @@
       "githubRefs": [],
       "bytes": 2327,
       "degree": 5,
-      "x": -0.087156,
-      "y": 0.996195,
+      "x": 0,
+      "y": 1,
       "size": 8
     },
     {
@@ -316,8 +316,8 @@
       "githubRefs": [],
       "bytes": 3437,
       "degree": 7,
-      "x": -0.173648,
-      "y": 0.984808,
+      "x": -0.082579,
+      "y": 0.996584,
       "size": 8
     },
     {
@@ -328,8 +328,8 @@
       "githubRefs": [],
       "bytes": 2405,
       "degree": 6,
-      "x": -0.258819,
-      "y": 0.965926,
+      "x": -0.164595,
+      "y": 0.986361,
       "size": 8
     },
     {
@@ -347,8 +347,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": -0.34202,
-      "y": 0.939693,
+      "x": -0.245485,
+      "y": 0.9694,
       "size": 8
     },
     {
@@ -366,8 +366,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": -0.422618,
-      "y": 0.906308,
+      "x": -0.324699,
+      "y": 0.945817,
       "size": 8
     },
     {
@@ -385,8 +385,8 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": -0.5,
-      "y": 0.866025,
+      "x": -0.401695,
+      "y": 0.915773,
       "size": 8
     },
     {
@@ -404,8 +404,8 @@
       ],
       "bytes": 5487,
       "degree": 4,
-      "x": -0.573576,
-      "y": 0.819152,
+      "x": -0.475947,
+      "y": 0.879474,
       "size": 8
     },
     {
@@ -423,8 +423,8 @@
       ],
       "bytes": 5249,
       "degree": 6,
-      "x": -0.642788,
-      "y": 0.766044,
+      "x": -0.546948,
+      "y": 0.837166,
       "size": 8
     },
     {
@@ -442,8 +442,8 @@
       ],
       "bytes": 3810,
       "degree": 4,
-      "x": -0.707107,
-      "y": 0.707107,
+      "x": -0.614213,
+      "y": 0.789141,
       "size": 8
     },
     {
@@ -461,8 +461,8 @@
       ],
       "bytes": 2962,
       "degree": 5,
-      "x": -0.766044,
-      "y": 0.642788,
+      "x": -0.677282,
+      "y": 0.735724,
       "size": 8
     },
     {
@@ -486,8 +486,8 @@
       ],
       "bytes": 1022,
       "degree": 2,
-      "x": -0.819152,
-      "y": 0.573576,
+      "x": -0.735724,
+      "y": 0.677282,
       "size": 8
     },
     {
@@ -505,8 +505,8 @@
       ],
       "bytes": 418,
       "degree": 0,
-      "x": -0.866025,
-      "y": 0.5,
+      "x": -0.789141,
+      "y": 0.614213,
       "size": 8
     },
     {
@@ -524,8 +524,8 @@
       ],
       "bytes": 1472,
       "degree": 2,
-      "x": -0.906308,
-      "y": 0.422618,
+      "x": -0.837166,
+      "y": 0.546948,
       "size": 8
     },
     {
@@ -543,8 +543,8 @@
       ],
       "bytes": 943,
       "degree": 4,
-      "x": -0.939693,
-      "y": 0.34202,
+      "x": -0.879474,
+      "y": 0.475947,
       "size": 8
     },
     {
@@ -562,8 +562,8 @@
       ],
       "bytes": 2049,
       "degree": 4,
-      "x": -0.965926,
-      "y": 0.258819,
+      "x": -0.915773,
+      "y": 0.401695,
       "size": 8
     },
     {
@@ -581,8 +581,33 @@
       ],
       "bytes": 30914,
       "degree": 4,
-      "x": -0.984808,
-      "y": 0.173648,
+      "x": -0.945817,
+      "y": 0.324699,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-10-03-certification-release-guard.md",
+      "label": "Certification release guard",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 53,
+          "url": "https://github.com/jfusco/design-passport/issues/53"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 61,
+          "url": "https://github.com/jfusco/design-passport/issues/61"
+        }
+      ],
+      "bytes": 2288,
+      "degree": 3,
+      "x": -0.9694,
+      "y": 0.245485,
       "size": 8
     },
     {
@@ -605,9 +630,59 @@
         }
       ],
       "bytes": 7669,
-      "degree": 3,
-      "x": -0.996195,
-      "y": 0.087156,
+      "degree": 4,
+      "x": -0.986361,
+      "y": 0.164595,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-10-03-retire-certification.md",
+      "label": "Retire certification in favor of audit readiness",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 53,
+          "url": "https://github.com/jfusco/design-passport/issues/53"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 64,
+          "url": "https://github.com/jfusco/design-passport/issues/64"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "pull-request",
+          "number": 65,
+          "url": "https://github.com/jfusco/design-passport/pull/65"
+        }
+      ],
+      "bytes": 4219,
+      "degree": 8,
+      "x": -0.996584,
+      "y": 0.082579,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-10-03-target-size-review-reporting.md",
+      "label": "Explain sized button target reviews",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 57,
+          "url": "https://github.com/jfusco/design-passport/issues/57"
+        }
+      ],
+      "bytes": 2153,
+      "degree": 2,
+      "x": -1,
+      "y": 0,
       "size": 8
     },
     {
@@ -618,8 +693,8 @@
       "githubRefs": [],
       "bytes": 3126,
       "degree": 2,
-      "x": 0.996195,
-      "y": 0.087156,
+      "x": 0.996584,
+      "y": 0.082579,
       "size": 12
     },
     {
@@ -630,8 +705,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -1,
-      "y": 0,
+      "x": -0.996584,
+      "y": -0.082579,
       "size": 8
     },
     {
@@ -642,8 +717,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.996195,
-      "y": -0.087156,
+      "x": -0.986361,
+      "y": -0.164595,
       "size": 8
     },
     {
@@ -654,8 +729,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.984808,
-      "y": -0.173648,
+      "x": -0.9694,
+      "y": -0.245485,
       "size": 8
     },
     {
@@ -673,8 +748,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.965926,
-      "y": -0.258819,
+      "x": -0.945817,
+      "y": -0.324699,
       "size": 8
     },
     {
@@ -685,8 +760,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.939693,
-      "y": -0.34202,
+      "x": -0.915773,
+      "y": -0.401695,
       "size": 8
     },
     {
@@ -697,8 +772,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.906308,
-      "y": -0.422618,
+      "x": -0.879474,
+      "y": -0.475947,
       "size": 8
     },
     {
@@ -709,8 +784,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.866025,
-      "y": -0.5,
+      "x": -0.837166,
+      "y": -0.546948,
       "size": 8
     },
     {
@@ -721,8 +796,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.819152,
-      "y": -0.573576,
+      "x": -0.789141,
+      "y": -0.614213,
       "size": 8
     },
     {
@@ -733,8 +808,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.766044,
-      "y": -0.642788,
+      "x": -0.735724,
+      "y": -0.677282,
       "size": 8
     },
     {
@@ -752,8 +827,8 @@
       ],
       "bytes": 6239,
       "degree": 3,
-      "x": -0.707107,
-      "y": -0.707107,
+      "x": -0.677282,
+      "y": -0.735724,
       "size": 8
     },
     {
@@ -764,8 +839,8 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.642788,
-      "y": -0.766044,
+      "x": -0.614213,
+      "y": -0.789141,
       "size": 8
     },
     {
@@ -776,8 +851,8 @@
       "githubRefs": [],
       "bytes": 11833,
       "degree": 5,
-      "x": -0.573576,
-      "y": -0.819152,
+      "x": -0.546948,
+      "y": -0.837166,
       "size": 8
     },
     {
@@ -795,8 +870,8 @@
       ],
       "bytes": 2158,
       "degree": 4,
-      "x": -0.5,
-      "y": -0.866025,
+      "x": -0.475947,
+      "y": -0.879474,
       "size": 8
     },
     {
@@ -807,8 +882,8 @@
       "githubRefs": [],
       "bytes": 1840,
       "degree": 3,
-      "x": -0.422618,
-      "y": -0.906308,
+      "x": -0.401695,
+      "y": -0.915773,
       "size": 8
     },
     {
@@ -826,8 +901,8 @@
       ],
       "bytes": 1410,
       "degree": 3,
-      "x": -0.34202,
-      "y": -0.939693,
+      "x": -0.324699,
+      "y": -0.945817,
       "size": 8
     },
     {
@@ -845,8 +920,8 @@
       ],
       "bytes": 1654,
       "degree": 3,
-      "x": -0.258819,
-      "y": -0.965926,
+      "x": -0.245485,
+      "y": -0.9694,
       "size": 8
     },
     {
@@ -857,8 +932,8 @@
       "githubRefs": [],
       "bytes": 3932,
       "degree": 5,
-      "x": -0.173648,
-      "y": -0.984808,
+      "x": -0.164595,
+      "y": -0.986361,
       "size": 8
     },
     {
@@ -869,8 +944,8 @@
       "githubRefs": [],
       "bytes": 2203,
       "degree": 4,
-      "x": -0.087156,
-      "y": -0.996195,
+      "x": -0.082579,
+      "y": -0.996584,
       "size": 8
     },
     {
@@ -900,8 +975,27 @@
       ],
       "bytes": 6224,
       "degree": 4,
-      "x": 0.087156,
-      "y": -0.996195,
+      "x": 0.082579,
+      "y": -0.996584,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-10-03-retire-frame-certification-and-use-the-audit-grade-as-the-goal-73e1660f88.md",
+      "label": "Retire frame certification and use the audit grade as the goal",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 64,
+          "url": "https://github.com/jfusco/design-passport/issues/64"
+        }
+      ],
+      "bytes": 12464,
+      "degree": 3,
+      "x": 0.164595,
+      "y": -0.986361,
       "size": 8
     },
     {
@@ -936,15 +1030,21 @@
         },
         {
           "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 64,
+          "url": "https://github.com/jfusco/design-passport/issues/64"
+        },
+        {
+          "repository": "jfusco/design-passport",
           "kind": "pull-request",
           "number": 54,
           "url": "https://github.com/jfusco/design-passport/pull/54"
         }
       ],
-      "bytes": 23350,
-      "degree": 22,
-      "x": 0.173648,
-      "y": -0.984808,
+      "bytes": 23822,
+      "degree": 23,
+      "x": 0.245485,
+      "y": -0.9694,
       "size": 12
     },
     {
@@ -955,8 +1055,8 @@
       "githubRefs": [],
       "bytes": 211,
       "degree": 2,
-      "x": 0.258819,
-      "y": -0.965926,
+      "x": 0.324699,
+      "y": -0.945817,
       "size": 12
     },
     {
@@ -967,8 +1067,8 @@
       "githubRefs": [],
       "bytes": 21674,
       "degree": 1,
-      "x": 0.34202,
-      "y": -0.939693,
+      "x": 0.401695,
+      "y": -0.915773,
       "size": 12
     },
     {
@@ -986,8 +1086,8 @@
       ],
       "bytes": 13899,
       "degree": 4,
-      "x": 0.5,
-      "y": -0.866025,
+      "x": 0.546948,
+      "y": -0.837166,
       "size": 12
     },
     {
@@ -1005,8 +1105,8 @@
       ],
       "bytes": 5995,
       "degree": 3,
-      "x": 0.573576,
-      "y": -0.819152,
+      "x": 0.614213,
+      "y": -0.789141,
       "size": 12
     },
     {
@@ -1017,8 +1117,8 @@
       "githubRefs": [],
       "bytes": 264,
       "degree": 5,
-      "x": 0.422618,
-      "y": -0.906308,
+      "x": 0.475947,
+      "y": -0.879474,
       "size": 12
     },
     {
@@ -1029,8 +1129,8 @@
       "githubRefs": [],
       "bytes": 7744,
       "degree": 3,
-      "x": 0.642788,
-      "y": -0.766044,
+      "x": 0.677282,
+      "y": -0.735724,
       "size": 12
     },
     {
@@ -1048,8 +1148,8 @@
       ],
       "bytes": 719,
       "degree": 5,
-      "x": 0.707107,
-      "y": -0.707107,
+      "x": 0.735724,
+      "y": -0.677282,
       "size": 8
     },
     {
@@ -1065,10 +1165,10 @@
           "url": "https://github.com/jfusco/design-passport/issues/44"
         }
       ],
-      "bytes": 7225,
-      "degree": 42,
-      "x": 0.766044,
-      "y": -0.642788,
+      "bytes": 8014,
+      "degree": 44,
+      "x": 0.789141,
+      "y": -0.614213,
       "size": 8
     },
     {
@@ -1076,11 +1176,18 @@
       "label": "Design readiness standard",
       "type": "topic",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 5450,
-      "degree": 19,
-      "x": 0.819152,
-      "y": -0.573576,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 57,
+          "url": "https://github.com/jfusco/design-passport/issues/57"
+        }
+      ],
+      "bytes": 6658,
+      "degree": 23,
+      "x": 0.837166,
+      "y": -0.546948,
       "size": 8
     },
     {
@@ -1094,12 +1201,18 @@
           "kind": "issue",
           "number": 27,
           "url": "https://github.com/jfusco/design-passport/issues/27"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 53,
+          "url": "https://github.com/jfusco/design-passport/issues/53"
         }
       ],
-      "bytes": 19159,
-      "degree": 41,
-      "x": 0.866025,
-      "y": -0.5,
+      "bytes": 20188,
+      "degree": 42,
+      "x": 0.879474,
+      "y": -0.475947,
       "size": 8
     },
     {
@@ -1117,20 +1230,20 @@
       ],
       "bytes": 1973,
       "degree": 6,
-      "x": 0.906308,
-      "y": -0.422618,
+      "x": 0.915773,
+      "y": -0.401695,
       "size": 8
     },
     {
       "id": "wiki/topics/mutation-certification-safety.md",
-      "label": "Mutation and certification safety",
+      "label": "Mutation safety and audit readiness",
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 5091,
-      "degree": 21,
-      "x": 0.939693,
-      "y": -0.34202,
+      "bytes": 4694,
+      "degree": 24,
+      "x": 0.945817,
+      "y": -0.324699,
       "size": 8
     },
     {
@@ -1159,15 +1272,21 @@
         },
         {
           "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 61,
+          "url": "https://github.com/jfusco/design-passport/issues/61"
+        },
+        {
+          "repository": "jfusco/design-passport",
           "kind": "pull-request",
           "number": 54,
           "url": "https://github.com/jfusco/design-passport/pull/54"
         }
       ],
-      "bytes": 13048,
-      "degree": 10,
-      "x": 0.965926,
-      "y": -0.258819,
+      "bytes": 13787,
+      "degree": 12,
+      "x": 0.9694,
+      "y": -0.245485,
       "size": 8
     },
     {
@@ -1178,8 +1297,8 @@
       "githubRefs": [],
       "bytes": 4803,
       "degree": 16,
-      "x": 0.984808,
-      "y": -0.173648,
+      "x": 0.986361,
+      "y": -0.164595,
       "size": 8
     },
     {
@@ -1190,8 +1309,8 @@
       "githubRefs": [],
       "bytes": 4946,
       "degree": 28,
-      "x": 0.996195,
-      "y": -0.087156,
+      "x": 0.996584,
+      "y": -0.082579,
       "size": 8
     }
   ],
@@ -1228,6 +1347,13 @@
       "id": "0b98d7235ee47284",
       "source": "wiki/journal/2026-09-14-scanner-maintenance-verification.md",
       "target": "wiki/qa/ai-readiness-scanner-maintenance.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "0c23498ac22ac3a6",
+      "source": "wiki/topics/figma-runtime-qa.md",
+      "target": "wiki/journal/2026-10-03-retire-certification.md",
       "type": "link",
       "relation": "link"
     },
@@ -1330,9 +1456,23 @@
       "relation": "link"
     },
     {
+      "id": "1aed6c5d9e2ca9d3",
+      "source": "wiki/journal/2026-10-03-retire-certification.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "1ccc5eadccdce4dc",
       "source": "wiki/journal/2026-09-11-scoped-audit-clarity.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "1dea43d0f03f5373",
+      "source": "wiki/journal/2026-10-03-certification-release-guard.md",
+      "target": "wiki/topics/persistent-audits.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -1449,6 +1589,13 @@
       "relation": "link"
     },
     {
+      "id": "2f36722e860e8bbe",
+      "source": "wiki/journal/2026-10-03-retire-certification.md",
+      "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "2fcae0b8d4021f49",
       "source": "wiki/topics/graphify-codebase-map.md",
       "target": "wiki/plans/2026-09-29-install-graphify-skill-and-code-map-for-design-passport-21417fc984.md",
@@ -1540,6 +1687,20 @@
       "relation": "link"
     },
     {
+      "id": "3e830f49092210f5",
+      "source": "wiki/topics/design-readiness-standard.md",
+      "target": "wiki/journal/2026-10-03-target-size-review-reporting.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "3eff12fa0e8d203e",
+      "source": "wiki/topics/design-readiness-standard.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "3f5083cf4750c2a3",
       "source": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
       "target": "wiki/topics/project-scoped-knowledge-loop.md",
@@ -1573,6 +1734,13 @@
       "target": "wiki/topics/figma-runtime-qa.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "4b4b2b14594d43bc",
+      "source": "wiki/journal/2026-10-03-retire-certification.md",
+      "target": "wiki/plans/2026-10-03-retire-frame-certification-and-use-the-audit-grade-as-the-goal-73e1660f88.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "4cf2545c90cfac8c",
@@ -1785,6 +1953,13 @@
       "relation": "link"
     },
     {
+      "id": "6e9f8d95ef62211c",
+      "source": "wiki/journal/2026-10-03-retire-certification.md",
+      "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "6ec6491e49d33649",
       "source": "wiki/topics/project-scoped-knowledge-loop.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -1820,6 +1995,13 @@
       "relation": "topic"
     },
     {
+      "id": "733d89de292134c7",
+      "source": "wiki/journal/2026-10-03-certification-release-guard.md",
+      "target": "wiki/journal/2026-10-03-postmerge-native-acceptance.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "7526e323787969e2",
       "source": "wiki/journal/2026-09-29-graphify-codebase-map.md",
       "target": "wiki/plans/2026-09-29-install-graphify-skill-and-code-map-for-design-passport-21417fc984.md",
@@ -1848,11 +2030,25 @@
       "relation": "topic"
     },
     {
+      "id": "776118fe912a7f97",
+      "source": "wiki/journal/2026-10-03-target-size-review-reporting.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "77b15d87d7ac27ab",
       "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
       "target": "wiki/topics/figma-runtime-qa.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "788da7118fbfee02",
+      "source": "wiki/topics/persistent-audits.md",
+      "target": "wiki/journal/2026-10-03-certification-release-guard.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "7896a62ef023a35e",
@@ -1930,6 +2126,13 @@
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "8f03b1fe9a805dd3",
+      "source": "wiki/topics/design-passport-architecture.md",
+      "target": "wiki/journal/2026-10-03-retire-certification.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "8f3343d9e0c77efc",
@@ -2233,6 +2436,13 @@
       "relation": "topic"
     },
     {
+      "id": "b3cdf2ac489dca85",
+      "source": "wiki/plans/2026-10-03-retire-frame-certification-and-use-the-audit-grade-as-the-goal-73e1660f88.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "b46e48a979799fee",
       "source": "wiki/guides/INDEX.md",
       "target": "wiki/guides/architecture.md",
@@ -2266,6 +2476,13 @@
       "target": "wiki/topics/graphify-codebase-map.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "b9cde4fb06321d9e",
+      "source": "wiki/topics/mutation-certification-safety.md",
+      "target": "wiki/journal/2026-10-03-retire-certification.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "bc588c9b160246f6",
@@ -2611,6 +2828,13 @@
       "relation": "topic"
     },
     {
+      "id": "eaf7eb1a7b15b3f6",
+      "source": "wiki/journal/2026-10-03-retire-certification.md",
+      "target": "wiki/topics/design-readiness-standard.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "eb08cdc4f14e8eb2",
       "source": "wiki/journal/2026-09-08-ci-quality-and-commitlint-gates.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -2730,16 +2954,16 @@
       "relation": "link"
     },
     {
-      "id": "fd37b7c5b67ebcce",
-      "source": "wiki/topics/mutation-certification-safety.md",
-      "target": "wiki/topics/figma-runtime-qa.md",
+      "id": "fd87a0f0192d9bef",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-09-28-standardize-deterministic-git-delivery-d9459693bc.md",
       "type": "link",
       "relation": "link"
     },
     {
-      "id": "fd87a0f0192d9bef",
+      "id": "fd8f72edbae46521",
       "source": "wiki/plans/INDEX.md",
-      "target": "wiki/plans/2026-09-28-standardize-deterministic-git-delivery-d9459693bc.md",
+      "target": "wiki/plans/2026-10-03-retire-frame-certification-and-use-the-audit-grade-as-the-goal-73e1660f88.md",
       "type": "link",
       "relation": "link"
     },

@@ -33,7 +33,7 @@ export function Guidance(props: GuidanceProps) {
       <div>
         <span className="section-label">Advisory knowledge</span>
         <h2>Guidance, separate from the grade</h2>
-        <p className="fine-print">These suggestions never change Passport findings, scores, readiness, or certification.</p>
+        <p className="fine-print">These suggestions never change Passport findings, scores, or readiness.</p>
       </div>
       {props.historical ? <p className="fine-print">Saved guidance reflects the packs available during the original audit. Refresh the audit before contributing learnings.</p> : null}
       {!props.historical && props.projectStyleGuide.state === "active" ? <div className="binding-card"><strong>{props.projectStyleGuide.persistent ? "Active project pack" : "Session project pack"} · v{props.projectStyleGuide.packVersion}</strong><span>Pack reference {friendlyReference(props.projectStyleGuide.digest)}</span></div> : null}

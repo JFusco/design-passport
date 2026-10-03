@@ -57,6 +57,12 @@ The production manifest retains the organization-published plugin ID. `developme
 
 Post-review hardening makes the graph digest cover every rule-relevant ownership, layout, detachment, instance, and structural input while deliberately excluding the certificate that refers back to that digest. Production builds fail on a dirty checkout; Development build identities carry a dirty-content suffix. Generated controller/UI hashes and channel metadata are validated before copying into the Development manifest directory, and development certificates identify their channel both on the canvas and in relaunch data.
 
+## Certification retirement, 2026-10-03
+
+Plugin `0.5.0` / ruleset `1.0.0-beta.5` removes certification commands, controls, writers, and relaunch declarations. The grade and readiness result are the goal. Producer identity and the Development warning remain. Report schema 3 and historical versions, the legacy operation union, `certificationEligible:false`, parsed certificate snapshots, and raw cache-fingerprint inputs are unchanged. Fresh rules do not consume certificate summaries. No data migration or automatic cleanup occurs. See [the retirement journal](../journal/2026-10-03-retire-certification.md).
+
+The dated certificate behavior above describes the older build. Publication remains a separate release action; this delivery does not replace the published certification guard.
+
 ## Local companion boundary, 2026-09-23
 
 The companion is a pnpm workspace application under `apps/companion`. Next.js owns routing, server rendering, and the browser interface; typed services under `src/companion` own Figma transport, persistence, safe errors, and review projections. The CLI remains the only launcher and passes the explicit repository root, loopback origin, and per-process capability to the production server.

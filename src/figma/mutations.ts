@@ -1,14 +1,9 @@
 import {
-  AI_SOURCE_FRAME_ANNOTATION,
-  CERTIFICATION_ANNOTATION_PREFIX,
-  CERTIFICATION_DATA_KEY,
   DETACHMENT_INTENT_DATA_KEY,
-  LEGACY_CERTIFICATION_ANNOTATION_PREFIX,
   PRODUCT_NAME,
   SHARED_PLUGIN_DATA_NAMESPACE,
-  VARIANT_COVERAGE_ANNOTATION_PREFIX,
 } from "../core/constants";
-import type { BindableField, CertificationSummary, ChangeOperation, ChangePlan, JsonValue } from "../core/contracts";
+import type { BindableField, ChangeOperation, ChangePlan, JsonValue } from "../core/contracts";
 import { tokenPropertySnapshot } from "./adapter";
 import { assessTokenProperty, propertyBindingEvidence } from "../core/operations/node-fields";
 import { variableTypeForBindableField, scopesForBindableField } from "../core/operations/variable-compatibility";
@@ -17,7 +12,7 @@ import { stableStringify } from "../core/stable";
 import { readBindableRawValue, sameBindableValue } from "./operations/bindable-value";
 import { assessGeometryChange, type Bounds } from "./operations/geometry";
 import { annotationText, preservedAnnotations } from "./operations/annotations";
-import { parseCertificationSummary, parseDetachmentIntent, parsePatternConfirmation } from "./operations/shared-data";
+import { parseDetachmentIntent, parsePatternConfirmation } from "./operations/shared-data";
 import { normalizeSemanticTokenName, toVariableValue, variableScopesForField, variableTypeForField, webCodeSyntaxForTokenName } from "./operations/token-value";
 
 export { assessGeometryChange } from "./operations/geometry";
@@ -244,8 +239,7 @@ async function applyOperation(operation: ChangeOperation, prevalidatedNodeIds: R
     const componentNodes = await Promise.all(operation.value.componentIds.map((id) => figma.getNodeByIdAsync(id)));
     if (!componentNodes.every((node): node is ComponentNode => Boolean(node && node.type === "COMPONENT"))) throw new Error("Every variant target must be a component");
     figma.combineAsVariants(componentNodes, parent);
-  } else if (operation.kind === "set-certification") {
-    setCertification(base, operation.value);
+
   } else if (operation.kind === "acknowledge-detachment") {
     if (operation.value.nodeId !== base.id || !("detachedInfo" in base) || base.detachedInfo === null) throw new Error("Detachment acknowledgement no longer matches a detached design");
     base.setSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, DETACHMENT_INTENT_DATA_KEY, JSON.stringify(operation.value));
@@ -265,10 +259,6 @@ async function verifyOperation(operation: ChangeOperation): Promise<boolean> {
   if (operation.kind === "set-annotation") return "annotations" in node && node.annotations.some((annotation) => annotationText(annotation) === operation.value.label);
   if (operation.kind === "bind-variable") return boundVariableIdsForField(node, operation.value.field).has(operation.value.variableId);
   if (operation.kind === "apply-inferred-auto-layout") return isAutoLayoutNode(node) && node.layoutMode !== "NONE";
-  if (operation.kind === "set-certification") {
-    const stored = parseCertificationSummary(node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY));
-    return stableStringify(stored) === stableStringify(operation.value);
-  }
   if (operation.kind === "acknowledge-detachment") {
     return stableStringify(parseDetachmentIntent(node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, DETACHMENT_INTENT_DATA_KEY), node.id)) === stableStringify(operation.value);
   }
@@ -285,6 +275,9 @@ async function verifyOperation(operation: ChangeOperation): Promise<boolean> {
 
 export async function applyChangePlan(plan: ChangePlan, options: ApplyPlanOptions): Promise<ApplyPlanResult> {
   assertContract("change-plan", plan);
+  if (plan.operations.some((operation) => operation.kind === "set-certification")) {
+    throw new Error("Certification operations are retired; refresh the audit for current cleanup plans");
+  }
   const structural = plan.operations.some(requiresStructuralCheckpoint);
   const prevalidatedNodeIds = new Set<string>();
   for (const operation of plan.operations) {
@@ -318,116 +311,6 @@ export async function applyChangePlan(plan: ChangePlan, options: ApplyPlanOption
     figma.triggerUndo();
     throw error;
   }
-}
-
-export function setCertification(node: SceneNode, summary: CertificationSummary, coveredVariantCount = 0): void {
-  if (!["A", "B", "C", "D", "F"].includes(summary.grade) || !Number.isFinite(summary.score) || summary.score < 0 || summary.score > 100
-    || !Number.isFinite(Date.parse(summary.certifiedAt)) || !summary.rulesetVersion || !summary.catalogVersion || !summary.snapshotHash || !summary.knowledgeSnapshotHash
-    || summary.schemaVersion !== 2 || !summary.pluginVersion || !summary.buildSha || !summary.channel) {
-    throw new Error("Certification summary is invalid");
-  }
-  node.setSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY, JSON.stringify(summary));
-  const channelLabel = summary.channel === "development" ? "development " : "";
-  node.setRelaunchData({ "review-certification": `Review ${channelLabel}${summary.grade} certification from ${summary.certifiedAt}` });
-  if ("annotations" in node) {
-    const coverage = coveredVariantCount > 0 ? ` · ${coveredVariantCount} variants scanned as one component set.` : ".";
-    const development = summary.channel === "development" ? " Development ·" : "";
-    const annotation = `${CERTIFICATION_ANNOTATION_PREFIX}${development} Grade ${summary.grade} (${summary.score.toFixed(1)})${coverage}`;
-    const existing = preservedAnnotations(node.annotations, [
-      CERTIFICATION_ANNOTATION_PREFIX,
-      LEGACY_CERTIFICATION_ANNOTATION_PREFIX,
-    ]);
-    node.annotations = [
-      ...existing,
-      ...(existing.some((item) => annotationText(item) === AI_SOURCE_FRAME_ANNOTATION) ? [] : [{ label: AI_SOURCE_FRAME_ANNOTATION }]),
-      { label: annotation },
-    ];
-  }
-}
-
-export interface CertificationMetadataSnapshot {
-  node: SceneNode;
-  root: boolean;
-  certification?: string;
-  relaunchData?: Record<string, string>;
-  annotations?: ReadonlyArray<Annotation>;
-  writtenRelaunchData?: Record<string, string>;
-  writtenAnnotations?: ReadonlyArray<Annotation>;
-}
-
-function copyAnnotations(node: SceneNode): ReadonlyArray<Annotation> | undefined {
-  return "annotations" in node
-    ? node.annotations.map((annotation) => ({
-      ...annotation,
-      ...(annotation.properties ? { properties: annotation.properties.map((property) => ({ ...property })) } : {}),
-    }))
-    : undefined;
-}
-
-export function captureCertificationMetadata(node: SceneNode, root: boolean): CertificationMetadataSnapshot {
-  const annotations = copyAnnotations(node);
-  return {
-    node,
-    root,
-    ...(root ? {
-      certification: node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY),
-      relaunchData: { ...node.getRelaunchData() },
-    } : {}),
-    ...(annotations ? { annotations } : {}),
-  };
-}
-
-export function recordWrittenCertificationMetadata(snapshot: CertificationMetadataSnapshot): void {
-  if (snapshot.root) snapshot.writtenRelaunchData = { ...snapshot.node.getRelaunchData() };
-  const annotations = copyAnnotations(snapshot.node);
-  if (annotations) snapshot.writtenAnnotations = annotations;
-}
-
-export function restoreCertificationMetadata(snapshot: CertificationMetadataSnapshot): void {
-  const { node } = snapshot;
-  if (node.removed) throw new Error(`Certification target ${node.id} was removed before rollback`);
-  if (snapshot.certification !== undefined) {
-    node.setSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY, snapshot.certification);
-  }
-  if (snapshot.relaunchData !== undefined) {
-    const current = node.getRelaunchData();
-    const restored = { ...snapshot.relaunchData };
-    if (snapshot.writtenRelaunchData && stableStringify(current) !== stableStringify(snapshot.writtenRelaunchData)) {
-      for (const [key, value] of Object.entries(current)) {
-        if (key !== "review-certification" && snapshot.writtenRelaunchData[key] !== value) restored[key] = value;
-      }
-    }
-    node.setRelaunchData(restored);
-  }
-  if (snapshot.annotations !== undefined && "annotations" in node) {
-    const current = copyAnnotations(node) ?? [];
-    const owned = (annotation: Annotation): boolean => {
-      const text = annotationText(annotation);
-      return snapshot.root
-        ? text === AI_SOURCE_FRAME_ANNOTATION || text.startsWith(CERTIFICATION_ANNOTATION_PREFIX) || text.startsWith(LEGACY_CERTIFICATION_ANNOTATION_PREFIX)
-        : text.startsWith(VARIANT_COVERAGE_ANNOTATION_PREFIX);
-    };
-    const annotations = snapshot.writtenAnnotations && stableStringify(current) !== stableStringify(snapshot.writtenAnnotations)
-      ? [
-        ...current.filter((annotation) => !owned(annotation)),
-        ...snapshot.annotations.filter(owned),
-      ]
-      : snapshot.annotations;
-    node.annotations = annotations.map((annotation) => ({
-      ...annotation,
-      ...(annotation.properties ? { properties: annotation.properties.map((property) => ({ ...property })) } : {}),
-    }));
-  }
-}
-
-export function clearVariantCoverageAnnotations(node: SceneNode): number {
-  if (node.type !== "COMPONENT" || node.parent?.type !== "COMPONENT_SET") {
-    throw new Error("Variant coverage annotations can only be cleared from a component inside a component set");
-  }
-  if (!("annotations" in node)) return 0;
-  const removedCount = node.annotations.filter((annotation) => annotationText(annotation).startsWith(VARIANT_COVERAGE_ANNOTATION_PREFIX)).length;
-  if (removedCount > 0) node.annotations = preservedAnnotations(node.annotations, [VARIANT_COVERAGE_ANNOTATION_PREFIX]);
-  return removedCount;
 }
 
 export async function createSemanticTokenAndBind(input: {
