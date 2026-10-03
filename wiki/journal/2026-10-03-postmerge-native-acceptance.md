@@ -2,6 +2,8 @@
 title: Postmerge native acceptance for issue 53
 topics: [persistent-audits]
 plans: [2026-10-01-complete-design-passport-issue-53-native-acceptance-1953566c5f.md]
+issue: 'https://github.com/jfusco/design-passport/issues/53'
+issues: ['https://github.com/jfusco/design-passport/issues/53']
 ---
 
 # Postmerge native acceptance for issue 53
