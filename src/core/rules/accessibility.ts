@@ -207,14 +207,19 @@ export function evaluateAccessibilityRules(graph: DesignKnowledgeGraph, root: No
   const undersized = assessed.filter((item) => item.assessment === "undersized");
   const review = assessed.filter((item) => item.assessment === "review");
   const exceptions = assessed.filter((item) => item.assessment === "spacing-exception");
+  const sizedWithoutPointerEvidence = review.filter(({ node }) => !node.hasPointerInteraction
+    && node.absoluteBounds
+    && node.absoluteBounds.width >= 24 && node.absoluteBounds.height >= 24);
+  const sizedReviewReason = sizedWithoutPointerEvidence.length > 0
+    ? ` ${sizedWithoutPointerEvidence.length} have measured bounds at least 24×24 but no explicit pointer interaction; confirm each actionable hit area.` : "";
   const belowPreferred = interactive.filter((node) => (node.absoluteBounds?.width ?? node.width) < 44 || (node.absoluteBounds?.height ?? node.height) < 44);
   output.push(createFinding(
     "accessibility.target-minimum", "accessibility", 2, root, undersized[0]?.node ?? review[0]?.node ?? root,
     interactive.length === 0 ? "not-applicable" : undersized.length > 0 ? "fail" : review.length > 0 ? "needs-review" : "pass",
     "Minimum target size",
     interactive.length === 0 ? "No interactive targets were evidenced."
-      : `${undersized.length} evidenced targets fail the 24×24 minimum and spacing condition; ${exceptions.length} satisfy the spacing exception; ${review.length} need target or exception review. Prototype targets provide geometry evidence; equivalent controls, inline links, user-agent controls, and essential sizing exceptions need manual confirmation where applicable.`,
-    { interactiveCount: interactive.length, inactiveInteractiveCount, undersizedCount: undersized.length, reviewCount: review.length, spacingExceptionCount: exceptions.length, targetEvidence: assessed.map(({ node, assessment }) => ({ nodeId: node.id, explicitPointerInteraction: node.hasPointerInteraction ?? false, assessment, bounds: node.absoluteBounds ?? null })) },
+      : `${undersized.length} evidenced targets fail the 24×24 minimum and spacing condition; ${exceptions.length} satisfy the spacing exception; ${review.length} need target or exception review.${sizedReviewReason} Prototype targets provide geometry evidence; equivalent controls, inline links, user-agent controls, and essential sizing exceptions need manual confirmation where applicable.`,
+    { interactiveCount: interactive.length, inactiveInteractiveCount, undersizedCount: undersized.length, reviewCount: review.length, sizedWithoutPointerEvidenceCount: sizedWithoutPointerEvidence.length, spacingExceptionCount: exceptions.length, targetEvidence: assessed.map(({ node, assessment }) => ({ nodeId: node.id, explicitPointerInteraction: node.hasPointerInteraction ?? false, assessment, bounds: node.absoluteBounds ?? null })) },
     { sourceRefs: [SOURCES.wcagTarget], scoreImpact: undersized.length > 0 || review.length === 0 },
   ));
   output.push(createFinding(

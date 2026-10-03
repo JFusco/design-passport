@@ -45,6 +45,18 @@ describe("evidenced target bounds and spacing", () => {
     expect(evaluateAccessibilityRules(graph, root, [root, target]).find((finding) => finding.ruleId === "accessibility.target-minimum")).toMatchObject({ status: "needs-review", scoreImpact: false });
   });
 
+  it("explains why a sized named button still needs review", () => {
+    const { graph, root, target } = targetGraph();
+    target.hasPointerInteraction = false;
+    target.absoluteBounds = { x: 0, y: 0, width: 132, height: 44 };
+    target.rotation = 45;
+    const finding = evaluateAccessibilityRules(graph, root, [root, target]).find((item) => item.ruleId === "accessibility.target-minimum");
+    expect(finding).toMatchObject({ status: "needs-review", scoreImpact: false,
+      evidence: { measured: { undersizedCount: 0, reviewCount: 1, sizedWithoutPointerEvidenceCount: 1 } } });
+    expect(finding?.message).toContain("no explicit pointer interaction");
+    expect(finding?.message).toContain("measured bounds at least 24×24");
+  });
+
   it("accepts separated undersized targets at the exact circle boundary", () => {
     const { graph, root, target } = targetGraph();
     target.absoluteBounds = { x: 0, y: 0, width: 20, height: 20 };
