@@ -1,6 +1,8 @@
 ---
 topics: [mutation-certification-safety, design-readiness-standard, design-passport-architecture, figma-runtime-qa]
 plans: [2026-10-03-retire-frame-certification-and-use-the-audit-grade-as-the-goal-73e1660f88.md]
+issue: 'https://github.com/jfusco/design-passport/issues/64'
+issues: ['https://github.com/jfusco/design-passport/issues/64']
 ---
 
 # Retire certification in favor of audit readiness
