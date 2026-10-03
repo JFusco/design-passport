@@ -75,6 +75,46 @@ documented delivery bound supports a fixed delay or a claimed source fix.
 The whole-file verification, audit/save boundaries, hashes, and coverage were
 left intact.
 
+## Followup target-name verification
+
+The production candidate now reads the six audited target names immediately
+after each certification scene verification. A mismatch marks knowledge stale
+and enters the existing exact-prior-metadata compensation path. This bounded
+check supplements the asynchronous document-change callback; it does not
+replace whole-file verification or change the audit/save boundary. Independent
+source review identified a lookup race, which was repaired and covered by a
+focused asynchronous test. Focused tests and typecheck passed.
+The full `DESIGN_PASSPORT_E2E_PORT=5190 pnpm run verify:ci` gate passed
+508 unit tests and seven Chromium tests after a sandbox-only localhost bind
+denial was resolved with local permission. Independent final review found no
+source blocker to retaining this as partial protection.
+
+A dirty exploratory native harness identified the working source and isolated
+development plugin on the same disposable file with a one-file write
+allowlist. A fresh six-root audit completed with a fulfilled 1,374,309 ms
+handler and zero dropped records. An ordinary certification with no rename
+certified six roots with a fulfilled 71,587 ms handler. Its second postwrite
+scene verification lasted 37,755 ms. This control sample establishes timing
+for a subsequent concurrent-rename attempt, not rollback proof or a clean
+release check. The raw exports remain private and earlier exports remain
+intact.
+
+A subsequent refresh completed with a fulfilled 704,523 ms handler and zero
+dropped records. Read-only inspection saved six exact prior certificate
+strings, full annotations, relaunch data, and names. An ordinary production
+certification began at 13:42:09 UTC. Its second scene verification ran from
+13:42:41.431 to 13:43:12.327. A separate Figma client visibly committed a
+native layer rename from 13:42:59.406 to 13:43:00.574, with more than 11
+seconds of margin before verification ended. The command nevertheless emitted
+`certified` for six roots at 13:43:12.638 and a correlated fulfilled handler
+at 13:43:12.639 (`handlerElapsedMs` 62,578). The desktop observer saw no
+change during the command; `knowledge-stale` arrived at 13:43:12.836. Exact
+post-inspection found all six certificate strings and relaunch values changed,
+four annotation sets changed, and the designer rename retained. This is a
+repeatable cross-client freshness miss, not failed-command rollback proof.
+The bounded live-name check did not see the remote rename before success.
+The dirty-build native result is a release blocker for issue 53.
+
 ## Remaining acceptance
 
 The earlier single matched retained/mixed pair was 2.93% slower on candidate;
@@ -83,6 +123,6 @@ retained/mixed improvement advisory, but the three-pair audit matrix, reporter
 reference, interrupted screen-saver cases, and semantic comparisons are still
 unmeasured. The matched three-pair certification median, a failed-command
 concurrent-rename rollback with exact prior metadata, and later native Undo
-ownership also remain partial. Local fixture tests and the previous full CI
-gate support the repair implementation, not those native conclusions. No
-further source or harness change was justified by this run.
+ownership also remain partial. Local fixture tests and the full CI gate
+support the scoped implementation, not those native conclusions. The failed
+native cross-client check requires a separate product decision before release.

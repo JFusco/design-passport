@@ -138,6 +138,11 @@ the [journal](../journal/2026-09-30-audit-memory-and-certification.md)
 records the individual timings and attempt boundaries.
 
 After PR #54 merged, issue 53 was reopened for the outstanding native gates.
+The later target-name followup adds a bounded live-name comparison after each
+certification scene verification. The [postmerge journal](../journal/2026-10-03-postmerge-native-acceptance.md)
+records focused coverage and a timed native cross-client rename that remained
+invisible until after a successful six-root certification. The source check
+does not close the concurrent-rename rollback or release gate.
 Four more candidate audits and four six-root certifications completed on the
 disposable copy. Three root renames were visibly committed in a separate
 Figma client during final verification, but each certification succeeded and

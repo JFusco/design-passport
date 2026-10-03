@@ -11,6 +11,30 @@ const withoutTime = <T extends { builtAt: string }>(value: T) => { const { built
 afterEach(() => { Reflect.deleteProperty(globalThis, "figma"); });
 
 describe("validated persisted context", () => {
+  it("detects an audited certification root rename without a change callback", async () => {
+    const fixture = contextFixture();
+    const { graph } = await build(fixture);
+    expect(await fixture.adapter.matchesCertificationTargetNames(graph, ["root:0"])).toBe(true);
+    fixture.pages[0]!.children[0]!.name = "Designer rename";
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    expect(await fixture.adapter.matchesCertificationTargetNames(graph, ["root:0"])).toBe(false);
+  });
+
+  it("rechecks an early target after a later target lookup changes it", async () => {
+    const fixture = contextFixture(2);
+    const { graph } = await build(fixture);
+    const lookup = fixture.figma.getNodeByIdAsync;
+    const first = fixture.pages[0]!.children[0]!;
+    fixture.figma.getNodeByIdAsync = async (id) => {
+      if (id === "root:1") {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        first.name = "Late designer rename";
+      }
+      return lookup(id);
+    };
+    expect(await fixture.adapter.matchesCertificationTargetNames(graph, ["root:0", "root:1"])).toBe(false);
+  });
+
   it("rejects a local variable added between the entry check and incremental capture", async () => {
     const fixture = contextFixture();
     fixture.readinessProfile.tokenSourceCollectionKeys = [];
