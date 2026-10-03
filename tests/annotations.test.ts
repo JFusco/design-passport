@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { CERTIFICATION_ANNOTATION_PREFIX, LEGACY_CERTIFICATION_ANNOTATION_PREFIX } from "../src/core/constants";
-import { clearVariantCoverageAnnotations, setCertification } from "../src/figma/mutations";
 import { annotationText, copyAnnotationForWrite, preservedAnnotations } from "../src/figma/operations/annotations";
 
 describe("annotation safety", () => {
@@ -22,73 +21,4 @@ describe("annotation safety", () => {
     expect(preservedAnnotations(annotations, [CERTIFICATION_ANNOTATION_PREFIX, LEGACY_CERTIFICATION_ANNOTATION_PREFIX]).map(annotationText)).toEqual(["AI source frame"]);
   });
 
-  it("writes the source marker and concise grade note when certifying a component", () => {
-    const node = {
-      annotations: [],
-      setSharedPluginData: vi.fn(),
-      setRelaunchData: vi.fn(),
-    } as unknown as SceneNode;
-    setCertification(node, {
-      schemaVersion: 2,
-      grade: "B",
-      score: 82.3,
-      rulesetVersion: "1.0.0-beta.1",
-      catalogVersion: "1.17.0",
-      certifiedAt: "2026-09-09T11:00:00.000Z",
-      snapshotHash: "report",
-      knowledgeSnapshotHash: "knowledge",
-      pluginVersion: "0.4.0",
-      buildSha: "test-build",
-      channel: "development",
-    });
-    expect((node as SceneNode & { annotations: Annotation[] }).annotations.map(annotationText)).toEqual([
-      "AI source frame",
-      "[Design Passport] Development · Grade B (82.3).",
-    ]);
-    expect(node.setRelaunchData).toHaveBeenCalledWith({ "review-certification": "Review development B certification from 2026-09-09T11:00:00.000Z" });
-  });
-
-  it("summarizes component-set coverage on the certified root", () => {
-    const node = {
-      annotations: [],
-      setSharedPluginData: vi.fn(),
-      setRelaunchData: vi.fn(),
-    } as unknown as SceneNode;
-    setCertification(node, {
-      schemaVersion: 2,
-      grade: "A",
-      score: 94.9,
-      rulesetVersion: "1.0.0-beta.1",
-      catalogVersion: "1.17.0",
-      certifiedAt: "2026-09-09T11:00:00.000Z",
-      snapshotHash: "report",
-      knowledgeSnapshotHash: "knowledge",
-      pluginVersion: "0.4.0",
-      buildSha: "test-build",
-      channel: "production",
-    }, 18);
-    expect((node as SceneNode & { annotations: Annotation[] }).annotations.map(annotationText)).toEqual([
-      "AI source frame",
-      "[Design Passport] Grade A (94.9) · 18 variants scanned as one component set.",
-    ]);
-    expect(node.setRelaunchData).toHaveBeenCalledWith({ "review-certification": "Review A certification from 2026-09-09T11:00:00.000Z" });
-  });
-
-  it("clears legacy coverage notes while preserving designer annotations", () => {
-    const node = {
-      type: "COMPONENT",
-      parent: { type: "COMPONENT_SET" },
-      annotations: [
-        { label: "Designer note" },
-        { label: "[Design Passport] Covered by “In-page navigation” aggregate B (87.9); this variant is not independently graded." },
-        { labelMarkdown: "[Design Passport] Covered by **legacy Markdown note**" },
-      ],
-    } as unknown as SceneNode;
-    expect(clearVariantCoverageAnnotations(node)).toBe(2);
-    expect((node as SceneNode & { annotations: Annotation[] }).annotations.map(annotationText)).toEqual([
-      "Designer note",
-    ]);
-    expect(clearVariantCoverageAnnotations(node)).toBe(0);
-    expect((node as SceneNode & { annotations: Annotation[] }).annotations.map(annotationText)).toEqual(["Designer note"]);
-  });
 });

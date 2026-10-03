@@ -167,7 +167,7 @@ describe("durable audit storage", () => {
     const current = input({ target: { scope: "file" } });
     const next = await storage.saveAudit(current);
     expect(next.status.state).toBe("saved");
-    expect((await storage.loadAudit(current.fileKey, next.audit.id))?.report).toMatchObject({ schemaVersion: 3, producer: { pluginVersion: "0.4.0", rulesetVersion: "1.0.0-beta.4" } });
+    expect((await storage.loadAudit(current.fileKey, next.audit.id))?.report).toMatchObject({ schemaVersion: 3, producer: { pluginVersion: "0.5.0", rulesetVersion: "1.0.0-beta.5" } });
   });
 
   it.each(["changed", "cancelled"])("retains the predecessor when replacement becomes %s during its durable write", async (reason) => {

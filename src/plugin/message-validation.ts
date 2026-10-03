@@ -41,7 +41,7 @@ const TOKEN_COVERAGE_REASONS = new Set<TokenCoverageReason>([
 export function parseUiMessage(value: unknown): UiToPluginMessage {
   const message = record(value);
   if (!message || typeof message.type !== "string") throw new Error("Plugin message must be an object with a type");
-  if (message.type === "initialize" || message.type === "refresh-audit" || message.type === "cancel-scan" || message.type === "certify" || message.type === "certify-components"
+  if (message.type === "initialize" || message.type === "refresh-audit" || message.type === "cancel-scan"
     || message.type === "remove-project-style-guide" || message.type === "clear-session-references" || message.type === "preview-contribution"
     || message.type === "clear-file-cache") return { type: message.type };
   if (message.type === "open-saved-audit" || message.type === "forget-saved-audit") return { type: message.type, id: text(message.id, "id", 1_000) };

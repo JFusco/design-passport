@@ -1,4 +1,4 @@
-import { AXIS_LABELS, CERTIFICATION_PAUSED, CERTIFICATION_PAUSED_MESSAGE } from "../../core/constants";
+import { AXIS_LABELS } from "../../core/constants";
 import { producerLabel } from "../../core/build-info";
 import type { ReadinessReport, ScanScope } from "../../core/contracts";
 import type { PageOption, SelectionSummary } from "../../figma/adapter";
@@ -14,9 +14,7 @@ export interface OverviewProps {
   report: ReadinessReport | undefined;
   selectionSummary: SelectionSummary;
   stale: boolean;
-  canMutateDocument: boolean;
   scanning: boolean;
-  certifying?: "certify" | "certify-components" | undefined;
   actionsBlocked: boolean;
   historical?: boolean;
   pages?: PageOption[];
@@ -25,14 +23,10 @@ export interface OverviewProps {
   onRecheck?: (request: AuditRecheckRequest) => void;
   recheckDisabled?: boolean;
   onScan: (scope: ScanScope, refresh?: boolean) => void;
-  onCertify: () => void;
-  onCertifyComponents: () => void;
   onExport: (format: "json" | "markdown") => void;
 }
 
 export function Overview(props: OverviewProps) {
-  const componentFrames = props.report?.frames.filter((frame) => frame.rootType === "COMPONENT" || frame.rootType === "COMPONENT_SET") ?? [];
-  const componentsReady = componentFrames.length > 0 && componentFrames.every((frame) => frame.ready);
   const eligibility = selectionEligibility(props.selectionSummary);
   const historicalExport = props.historical || props.stale;
   const issues = props.report ? actionableIssueSummary(props.report) : undefined;
@@ -44,11 +38,11 @@ export function Overview(props: OverviewProps) {
     ? props.report?.ready ? "Grade passed · refresh required" : "Refresh required to confirm readiness"
     : props.report?.ready
       ? "Ready for MCP/API consumption"
-      : "Not ready for certification";
+      : "Not ready for MCP/API consumption";
   return (
     <section className="panel stack">
       <div className="scope-card">
-        <div><span className="section-label">Audit target</span><p>Choose what to audit. The rest of the file is used only as supporting context; the grade and findings apply only to your chosen target.</p></div>
+        <div><span className="section-label">Audit target</span><p>Aim for B or better and a ready result. Choose what to audit. The rest of the file is used only as supporting context; the grade and findings apply only to your chosen target.</p></div>
         <div className="scope-actions">
           <button
             className="button primary"
@@ -98,18 +92,8 @@ export function Overview(props: OverviewProps) {
             {props.report.axes.map((axis) => <div className="axis-row" key={axis.axis}><div><span>{AXIS_LABELS[axis.axis]}</span><strong>{axis.score.toFixed(1)}</strong></div><div className="score-track"><span style={{ width: `${axis.score}%` }} /></div></div>)}
           </div>
           <div className="footer-actions">
-            {CERTIFICATION_PAUSED ? <>
-              <p role="status">{CERTIFICATION_PAUSED_MESSAGE}</p>
-              <button className="button primary" disabled>Certify components ({componentFrames.length})</button>
-              <button className="button" disabled>Certify source frames</button>
-            </> : props.stale && !props.certifying
-              ? props.onRecheck ? <p>Refresh this audit before certifying.</p> : <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan(props.report?.target.scope ?? "selection", true)}>Refresh audit to certify</button>
-              : <>
-                <button className="button primary" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !componentsReady} onClick={props.onCertifyComponents}>{props.certifying === "certify-components" ? "Certifying…" : `Certify components (${componentFrames.length})`}</button>
-                <button className="button" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !props.report.ready} onClick={props.onCertify}>{props.certifying === "certify" ? "Certifying…" : "Certify source frames"}</button>
-              </>}
-            <button className="button" disabled={Boolean(props.certifying) || (!historicalExport && (props.scanning || props.actionsBlocked))} onClick={() => props.onExport("json")}>{historicalExport ? "Export historical JSON" : "Export JSON"}</button>
-            <button className="button" disabled={Boolean(props.certifying) || (!historicalExport && (props.scanning || props.actionsBlocked))} onClick={() => props.onExport("markdown")}>{historicalExport ? "Export historical Markdown" : "Export Markdown"}</button>
+            <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("json")}>{historicalExport ? "Export historical JSON" : "Export JSON"}</button>
+            <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("markdown")}>{historicalExport ? "Export historical Markdown" : "Export Markdown"}</button>
           </div>
         </>
       )}

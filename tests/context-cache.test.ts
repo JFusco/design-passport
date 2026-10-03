@@ -5,34 +5,40 @@ import { buildReadinessReport } from "../src/core/report";
 import { buildChangePlans } from "../src/core/planner";
 import { node } from "./fixtures";
 import { contextFixture } from "./context-cache-fixtures";
+import { legacyCertificate } from "./retirement-fixtures";
 
 const build = (fixture: ReturnType<typeof contextFixture>, forceFullCapture = false) => fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache, forceFullCapture });
 const withoutTime = <T extends { builtAt: string }>(value: T) => { const { builtAt: _builtAt, ...rest } = value; return rest; };
 afterEach(() => { Reflect.deleteProperty(globalThis, "figma"); });
 
 describe("validated persisted context", () => {
-  it("detects an audited certification root rename without a change callback", async () => {
+  it.each(["[Design Passport]", "[Figma AI Ready]"])("keeps %s stamps out of source annotations and preserves legacy cache evidence", async (prefix) => {
     const fixture = contextFixture();
-    const { graph } = await build(fixture);
-    expect(await fixture.adapter.matchesCertificationTargetNames(graph, ["root:0"])).toBe(true);
-    fixture.pages[0]!.children[0]!.name = "Designer rename";
-    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
-    expect(await fixture.adapter.matchesCertificationTargetNames(graph, ["root:0"])).toBe(false);
-  });
-
-  it("rechecks an early target after a later target lookup changes it", async () => {
-    const fixture = contextFixture(2);
-    const { graph } = await build(fixture);
-    const lookup = fixture.figma.getNodeByIdAsync;
-    const first = fixture.pages[0]!.children[0]!;
-    fixture.figma.getNodeByIdAsync = async (id) => {
-      if (id === "root:1") {
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        first.name = "Late designer rename";
-      }
-      return lookup(id);
-    };
-    expect(await fixture.adapter.matchesCertificationTargetNames(graph, ["root:0", "root:1"])).toBe(false);
+    const root = fixture.pages[0]!.children[0]!;
+    root.annotations = [{ label: `${prefix} Grade B (85).` }];
+    const key = `${root.id}:verndaleAiReady:certification-v1`;
+    const raw = JSON.stringify(legacyCertificate);
+    fixture.metadata.set(key, raw);
+    const initial = await build(fixture);
+    const cached = await build(fixture);
+    const full = await build(fixture, true);
+    expect(withoutTime(cached.graph)).toEqual(withoutTime(full.graph));
+    expect(cached.graph.nodes[root.id]!.certification).toEqual(legacyCertificate);
+    expect(cached.graph.nodes[root.id]!.hasAnnotations).toBe(false);
+    const report = buildReadinessReport({ graph: cached.graph, profile: fixture.readinessProfile, scope: "selection", targetRootIds: [root.id] });
+    expect(report.findings.find((finding) => finding.ruleId === "pipeline.annotation")).toMatchObject({ status: "fail" });
+    expect(fixture.metadata.get(key)).toBe(raw);
+    expect(root.annotations).toEqual([{ label: `${prefix} Grade B (85).` }]);
+    expect(fixture.counts.cacheReads).toBeGreaterThan(0);
+    // Raw certificate bytes still participate in capture fingerprints even
+    // though fresh rules do not consume the parsed certificate summary.
+    const fragments = JSON.stringify([...fixture.cacheValues]);
+    fixture.metadata.set(key, JSON.stringify(legacyCertificate, null, 2));
+    const reformatted = await build(fixture);
+    expect(reformatted.graph.nodes[root.id]!.certification).toEqual(initial.graph.nodes[root.id]!.certification);
+    expect(JSON.stringify([...fixture.cacheValues])).not.toBe(fragments);
+    root.annotations.push({ label: "AI source frame" });
+    expect((await build(fixture)).graph.nodes[root.id]!.hasAnnotations).toBe(true);
   });
 
   it("rejects a local variable added between the entry check and incremental capture", async () => {

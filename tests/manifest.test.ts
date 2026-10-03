@@ -13,8 +13,9 @@ describe("Figma manifest", () => {
     expect(manifest.networkAccess).toEqual({ allowedDomains: ["none"] });
   });
 
-  it("keeps certification review available as a relaunch action", () => {
-    expect(manifest.relaunchButtons).toEqual([{ command: "review-certification", name: "Review Design Passport certification", multipleSelection: true }]);
+  it("declares no retired relaunch controls", () => {
+    expect(manifest).not.toHaveProperty("relaunchButtons");
+    expect(developmentManifest).not.toHaveProperty("relaunchButtons");
   });
 
   it("uses a visibly separate Figma identity for local development", () => {
@@ -28,7 +29,6 @@ describe("Figma manifest", () => {
       permissions: manifest.permissions,
       enablePrivatePluginApi: manifest.enablePrivatePluginApi,
       networkAccess: manifest.networkAccess,
-      relaunchButtons: manifest.relaunchButtons,
     });
     expect(developmentManifest.main).toBe(manifest.main);
     expect(developmentManifest.ui).toBe(manifest.ui);

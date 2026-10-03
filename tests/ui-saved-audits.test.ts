@@ -18,12 +18,9 @@ function overview(overrides: Partial<OverviewProps> = {}): string {
     report,
     selectionSummary: { eligibleCount: 1, unsupportedCount: 0 },
     stale: true,
-    canMutateDocument: false,
     scanning: false,
     actionsBlocked: true,
     onScan: noop,
-    onCertify: noop,
-    onCertifyComponents: noop,
     onExport: noop,
     ...overrides,
   }));
@@ -40,8 +37,7 @@ describe("persistent audit presentation", () => {
     expect(button(markup, "Export historical JSON")).toBeDefined();
     expect(button(markup, "Export historical JSON")).not.toContain("disabled");
     expect(button(markup, "Export historical Markdown")).not.toContain("disabled");
-    expect(button(markup, "Certify source frames")).toContain("disabled");
-    expect(markup).toContain("Certification is temporarily unavailable");
+    expect(markup).not.toMatch(/certif/i);
   });
 
   it("retains the current-report export gate", () => {
@@ -54,7 +50,7 @@ describe("persistent audit presentation", () => {
     expect(button(markup, "Export historical JSON")).toBeDefined();
     expect(button(markup, "Export historical JSON")).not.toContain("disabled");
     expect(button(markup, "Export historical Markdown")).not.toContain("disabled");
-    expect(button(markup, "Certify source frames")).toContain("disabled");
+    expect(markup).not.toMatch(/certif/i);
   });
 
   it("shows historical advisory insights without offering contributions or labeling current packs as their source", () => {

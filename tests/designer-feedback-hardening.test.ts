@@ -144,7 +144,7 @@ describe("designer-feedback hardening", () => {
     const migrated = parseStoredProfile(JSON.stringify({ ...legacyFields, schemaVersion: 1 }));
     expect(migrated).toMatchObject({ schemaVersion: 2, ruleModes: current.ruleModes });
     const report = buildReadinessReport({ graph: healthyGraph(current), profile: current, scope: "selection", targetRootIds: ["root:desktop"] });
-    expect(report).toMatchObject({ schemaVersion: 3, producer: { pluginVersion: "0.4.0", rulesetVersion: "1.0.0-beta.4", channel: "development" }, frames: [{ tokenCoverage: expect.any(Object) }] });
+    expect(report).toMatchObject({ schemaVersion: 3, producer: { pluginVersion: "0.5.0", rulesetVersion: "1.0.0-beta.5", channel: "development" }, frames: [{ tokenCoverage: expect.any(Object) }] });
     expect(report.frames[0]!.tokenCoverage!.applicable).toBe(report.frames[0]!.tokenCoverage!.counts.bound + report.frames[0]!.tokenCoverage!.counts.inherited + report.frames[0]!.tokenCoverage!.counts.missing);
   });
 });

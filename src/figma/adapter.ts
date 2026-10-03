@@ -1114,16 +1114,6 @@ export class FigmaAdapter {
     catch { return false; }
   }
 
-  async matchesCertificationTargetNames(graph: DesignKnowledgeGraph, ids: readonly string[]): Promise<boolean> {
-    const targets = await mapConcurrent([...new Set(ids)], 16, async (id) => {
-      const live = await figma.getNodeByIdAsync(id).catch(() => null);
-      return { id, live };
-    }, () => this.cancelled);
-    return !this.cancelled && targets.every((target) =>
-      Boolean(target && target.live && isSceneNode(target.live) && !target.live.removed
-        && target.live.name === graph.nodes[target.id]?.name));
-  }
-
   private async matchesSceneSignatures(ignored = new Set<string>()): Promise<boolean> {
     const entries = [...this.sceneSignatures].filter(([id]) => !ignored.has(id));
     const started = Date.now();

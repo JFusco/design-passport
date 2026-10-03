@@ -1,10 +1,13 @@
+import { documentActivitySpies, layoutOperation, retiredOperation, retirementPlan } from "./retirement-fixtures";
+import { validateContract } from "../src/core/schema";
+import { reportToMarkdown } from "../src/core/markdown";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CapturedAuditTarget, ContextCachePort } from "../src/figma/adapter";
 import type { PluginToUiMessage, UiToPluginMessage } from "../src/plugin/messages";
 import { hashValue } from "../src/core/stable";
 import type { DesignReferencePackV1, ProjectStyleGuideBindingV1 } from "../src/core/contracts";
 import { buildProjectStyleGuideBinding, buildReferencePack } from "../src/core/knowledge-loop";
-import { healthyGraph, profile } from "./fixtures";
+import { healthyGraph, profile, syntheticFinding } from "./fixtures";
 import { contextFixture } from "./context-cache-fixtures";
 
 function memoryStorage() {
@@ -18,12 +21,8 @@ function memoryStorage() {
   };
 }
 
-async function launch(storage = memoryStorage(), fileKey: string | undefined = "file-key", editorType: "figma" | "dev" = "figma", waitForRestore = true, inputProfile = profile(), projectBinding?: ProjectStyleGuideBindingV1, allowCertification = true) {
+async function launch(storage = memoryStorage(), fileKey: string | undefined = "file-key", editorType: "figma" | "dev" = "figma", waitForRestore = true, inputProfile = profile(), projectBinding?: ProjectStyleGuideBindingV1) {
   vi.resetModules();
-  vi.doMock("../src/core/constants", async (importOriginal) => ({
-    ...(await importOriginal<typeof import("../src/core/constants")>()),
-    CERTIFICATION_PAUSED: !allowCertification,
-  }));
   const events: PluginToUiMessage[] = [];
   let cancelled = false;
   const guideStatus = () => projectBinding ? {
@@ -47,12 +46,12 @@ async function launch(storage = memoryStorage(), fileKey: string | undefined = "
     isScanCancelled: vi.fn(() => cancelled),
     buildKnowledge: vi.fn(async () => {
       const graph = healthyGraph(inputProfile);
+      graph.nodes["root:desktop"]!.hasAnnotations = false;
       graph.builtAt = new Date().toISOString();
       return { graph, collections: [], diagnostics: {} };
     }),
     matchesDocumentTopology: vi.fn(() => true),
     matchesVariableEnvironment: vi.fn(async () => true),
-    matchesCertificationTargetNames: vi.fn(async () => true),
     captureAuditTarget: vi.fn((scope: string): CapturedAuditTarget => scope === "page"
       ? { scope: "page", pageId: "page:1" } : { scope: "selection", nodeIds: ["root:desktop"] }),
     targetRootIds: vi.fn((target: CapturedAuditTarget) => target.scope === "selection" ? [...target.nodeIds] : ["root:desktop"]),
@@ -76,10 +75,10 @@ async function launch(storage = memoryStorage(), fileKey: string | undefined = "
   const send = async (message: UiToPluginMessage) => { await ui.onmessage?.(message); };
   await send({ type: "initialize" });
   if (waitForRestore) await vi.waitFor(() => expect(events.some((event) => event.type === "saved-audits" || event.type === "audit-save-status")).toBe(true));
-  return { storage, events, adapter, handlers, send, figmaMock };
+  return { storage, events, adapter, handlers, send, sendRaw: async (message: unknown) => { await ui.onmessage?.(message as UiToPluginMessage); }, figmaMock };
 }
 
-async function launchWithVariables(readyForCertification = false) {
+async function launchWithVariables(useHealthyGraph = false) {
   const fixture = contextFixture(2);
   const variable = { id: "variable:1", key: "variable:key", name: "semantic/space", variableCollectionId: "collection:1", resolvedType: "FLOAT", remote: false, valuesByMode: { mode: 8 }, scopes: ["GAP"], codeSyntax: {} };
   const collection = { id: "collection:1", key: "collection:key", name: "Semantic", remote: false, modes: [{ modeId: "mode", name: "Default" }], defaultModeId: "mode", variableIds: [variable.id] };
@@ -95,8 +94,9 @@ async function launchWithVariables(readyForCertification = false) {
   plugin.figmaMock.root.children.splice(0, plugin.figmaMock.root.children.length, ...fixture.pages);
   plugin.adapter.buildKnowledge.mockImplementation(async () => {
     const result = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache });
-    if (!readyForCertification) return { ...result, collections: [] };
+    if (!useHealthyGraph) return { ...result, collections: [] };
     const graph = healthyGraph(fixture.readinessProfile);
+    graph.nodes["root:desktop"]!.hasAnnotations = false;
     graph.builtAt = new Date().toISOString();
     return { ...result, graph, collections: [] };
   });
@@ -105,26 +105,57 @@ async function launchWithVariables(readyForCertification = false) {
   plugin.adapter.targetRootIds.mockImplementation((target) => target.scope === "page"
     ? fixture.pages.find((page) => page.id === target.pageId)?.children.map((root) => root.id) ?? []
     : fixture.pages.flatMap((page) => page.children.map((root) => root.id)));
-  if (readyForCertification) plugin.adapter.targetRootIds.mockReturnValue(["root:desktop"]);
+  if (useHealthyGraph) plugin.adapter.targetRootIds.mockReturnValue(["root:desktop"]);
   return { ...plugin, fixture, variable };
+}
+
+function cleanupRequest(plugin: Awaited<ReturnType<typeof launch>>): UiToPluginMessage {
+  const result = plugin.events.filter((event) => event.type === "scan-result" || event.type === "restored-audit").at(-1);
+  const plans = result?.type === "scan-result" ? result.plans : result?.type === "restored-audit" ? result.audit.plans : [];
+  const plan = plans.find((item) => item.operations.some((operation) => operation.kind === "set-annotation"));
+  expect(plan, "a valid surviving cleanup plan must reach the safety gate").toBeDefined();
+  return { type: "apply-plan", planId: plan!.id, undoOnlyAcknowledged: false };
 }
 
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.doUnmock("../src/figma/adapter");
-  vi.doUnmock("../src/core/constants");
+  vi.doUnmock("../src/core/planner");
   vi.restoreAllMocks();
 });
 
 describe("plugin audit recovery integration", () => {
-  it("rejects both certification commands before any metadata write while paused", async () => {
-    const plugin = await launch(memoryStorage(), "file-key", "figma", true, profile(), undefined, false);
+  it.each([false, true])("rejects a retired operation in the second batch plan before earlier work or a shared checkpoint (structural=%s)", async (structural) => {
+    const risk = structural ? "structural" : "low";
+    const first = retirementPlan([structural ? layoutOperation : { kind: "rename-node", nodeId: "root:desktop", value: { name: "Changed" } }], "first", risk);
+    const second = retirementPlan(structural ? [layoutOperation, retiredOperation] : [retiredOperation], "second", risk);
+    for (const plan of [first, second]) expect(validateContract("change-plan", plan).valid).toBe(true);
+    vi.doMock("../src/core/planner", () => ({ buildChangePlans: () => [first, second] }));
+    const plugin = await launch();
+    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
+    expect(plugin.events.filter((event) => event.type === "scan-result").at(-1)).toMatchObject({ plans: [first, second] });
+    const activity = documentActivitySpies();
+    Object.assign(plugin.figmaMock.root, activity.figma.root);
+    const { root: _root, ...documentApi } = activity.figma;
+    Object.assign(plugin.figmaMock, documentApi);
+    await plugin.send({ type: "apply-all", planIds: [first.id, second.id], undoOnlyAcknowledged: false });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("Certification operations are retired") });
+    expect(plugin.events.some((event) => event.type === "mutation-result")).toBe(false);
+    activity.assertUntouched();
+    expect(activity.figma.getNodeByIdAsync).not.toHaveBeenCalled();
+  });
+
+  it("rejects both certification commands as unsupported before document activity", async () => {
+    const plugin = await launch();
+    const activity = documentActivitySpies();
+    Object.assign(plugin.figmaMock, activity.figma);
     for (const type of ["certify", "certify-components"] as const) {
-      await plugin.send({ type });
-      expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("Certification is temporarily unavailable") });
+      await plugin.sendRaw({ type });
+      expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: `Unsupported plugin message type: ${type}` });
     }
-    expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
+    expect(plugin.events.some((event) => event.type === "mutation-result")).toBe(false);
     expect(plugin.adapter.matchesVariableEnvironment).not.toHaveBeenCalled();
+    activity.assertUntouched();
   });
 
   it.each(["forced full", "all hits", "staged"] as const)("counts context inventories for a %s build", async (mode) => {
@@ -156,158 +187,16 @@ describe("plugin audit recovery integration", () => {
     expect(atAnalysis).toBe(mode === "staged" ? 2 : 0);
   });
 
-  it.each([1, 3])("certifies %i targets with exactly two resource and scene checks", async (targetCount) => {
-    const fixture = contextFixture(2);
-    const plugin = await launch();
-    const targetIds = ["root:desktop", "root:tablet", "root:mobile"].slice(0, targetCount);
-    const live = targetIds.map((id) => {
-      let certification = "";
-      let relaunchData: Record<string, string> = {};
-      return {
-        id, type: "FRAME", removed: false, annotations: [{ label: "Designer documentation" }],
-        getSharedPluginData: () => certification,
-        setSharedPluginData: vi.fn((_namespace: string, _key: string, value: string) => { certification = value; }),
-        getRelaunchData: () => relaunchData,
-        setRelaunchData: vi.fn((value: Record<string, string>) => { relaunchData = value; }),
-      };
-    });
-    const lookup = vi.fn(async (id: string) => live.find((node) => node.id === id) ?? fixture.figma.getNodeByIdAsync(id));
-    Object.assign(plugin.figmaMock, { variables: fixture.figma.variables, teamLibrary: fixture.figma.teamLibrary, mixed: fixture.figma.mixed, getNodeByIdAsync: lookup, commitUndo: vi.fn(), triggerUndo: vi.fn() });
-    plugin.figmaMock.root.children.splice(0, plugin.figmaMock.root.children.length, ...fixture.pages);
-    await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined);
-    plugin.adapter.matchesVariableEnvironment.mockImplementation(() => fixture.adapter.matchesVariableEnvironment());
-    plugin.adapter.targetRootIds.mockReturnValue(targetIds);
-    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
-    expect(plugin.events.find((event) => event.type === "scan-result")).toMatchObject({ report: { ready: true } });
-    const locals = vi.spyOn(fixture.figma.variables, "getLocalVariablesAsync");
-    plugin.adapter.matchesVariableEnvironment.mockClear();
-    lookup.mockClear();
-    await plugin.send({ type: "certify" });
-    expect(plugin.events.at(-1)).toMatchObject({ type: "certified", count: targetCount });
-    expect(plugin.adapter.matchesVariableEnvironment).toHaveBeenCalledTimes(2);
-    expect(plugin.adapter.matchesCertificationTargetNames).toHaveBeenCalledTimes(2);
-    expect(locals).toHaveBeenCalledTimes(2);
-    const signatureIds = fixture.pages.flatMap((page) => page.children.flatMap((root) => [root.id, ...root.children.map((node) => node.id)]));
-    for (const id of signatureIds) expect(lookup.mock.calls.filter(([lookedUp]) => lookedUp === id)).toHaveLength(2);
-    for (const node of live) {
-      expect(node.setSharedPluginData).toHaveBeenCalledTimes(1);
-      expect(node.annotations).toContainEqual({ label: "Designer documentation" });
-    }
-  });
-
-  it("rejects an unannounced resource change before any certification writes", async () => {
+  it("rejects an unannounced resource change before any cleanup writes", async () => {
     const plugin = await launch();
     await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
     const write = vi.fn();
     Object.assign(plugin.figmaMock, { getNodeByIdAsync: vi.fn(async () => ({ id: "root:desktop", type: "FRAME", removed: false, setSharedPluginData: write })), commitUndo: vi.fn(), triggerUndo: vi.fn() });
     plugin.adapter.matchesVariableEnvironment.mockResolvedValue(false);
-    await plugin.send({ type: "certify" });
+    await plugin.send(cleanupRequest(plugin));
     expect(write).not.toHaveBeenCalled();
-    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("changed or expired") });
-    expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
-  });
-
-  it("resolves every target before writing so a missing later root cannot leave partial metadata", async () => {
-    const plugin = await launch();
-    plugin.adapter.targetRootIds.mockReturnValue(["root:desktop", "root:tablet", "root:mobile"]);
-    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
-    const write = vi.fn();
-    const undo = vi.fn();
-    Object.assign(plugin.figmaMock, {
-      getNodeByIdAsync: vi.fn(async (id: string) => id === "root:mobile" ? null : { id, type: "FRAME", removed: false, setSharedPluginData: write }),
-      commitUndo: vi.fn(), triggerUndo: undo,
-    });
-    await plugin.send({ type: "certify" });
-    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("no longer exists") });
-    expect(write).not.toHaveBeenCalled();
-    expect(undo).not.toHaveBeenCalled();
-  });
-
-  it.each(["setter", "final verification", "silent target rename"])("restores exact prior metadata after a %s failure and keeps a designer rename", async (failure) => {
-    const plugin = await launch();
-    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
-    const priorCertification = '{"certifiedAt":"prior","grade":"A"}';
-    const priorAnnotations = [{ label: "Designer documentation", labelMarkdown: "**Designer documentation**", properties: [{ type: "width" }] }, { label: "Earlier certificate" }];
-    const priorRelaunchData = { "review-certification": "Earlier certificate", custom: "Keep me" };
-    let certification = priorCertification;
-    let annotations = structuredClone(priorAnnotations);
-    let relaunchData = { ...priorRelaunchData };
-    let failSetter = failure === "setter";
-    const write = vi.fn((_namespace: string, _key: string, value: string) => { certification = value; });
-    const undo = vi.fn();
-    const commit = vi.fn();
-    const node = {
-      id: "root:desktop", type: "FRAME", removed: false, name: "Original name",
-      get annotations() { return annotations; }, set annotations(value: typeof annotations) { annotations = value; },
-      getSharedPluginData: () => certification, setSharedPluginData: write,
-      getRelaunchData: () => relaunchData,
-      setRelaunchData: (value: typeof relaunchData) => {
-        if (failSetter) { failSetter = false; throw new Error("Setter failed after metadata was written"); }
-        relaunchData = value;
-      },
-    };
-    Object.assign(plugin.figmaMock, { getNodeByIdAsync: vi.fn(async () => node), commitUndo: commit, triggerUndo: undo });
-    if (failure === "final verification") {
-      plugin.adapter.matchesVariableEnvironment.mockResolvedValueOnce(true).mockImplementationOnce(async () => {
-        node.name = "Designer rename during verification";
-        plugin.handlers.get("documentchange")?.({ documentChanges: [{ id: "root:desktop", type: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["name"] }] });
-        return true;
-      });
-    } else if (failure === "silent target rename") {
-      plugin.adapter.matchesCertificationTargetNames.mockResolvedValueOnce(true).mockImplementationOnce(async () => {
-        node.name = "Designer rename during verification";
-        return false;
-      });
-    }
-    await plugin.send({ type: "certify" });
-    expect(write).toHaveBeenCalledTimes(2);
-    expect(undo).not.toHaveBeenCalled();
-    expect(commit).toHaveBeenCalledTimes(1);
-    expect(certification).toBe(priorCertification);
-    expect(annotations).toEqual(priorAnnotations);
-    expect(relaunchData).toEqual(priorRelaunchData);
-    if (failure !== "setter") expect(node.name).toBe("Designer rename during verification");
-    expect(plugin.events.at(-1)).toMatchObject({ type: "error" });
-    expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
-    // Native undo ownership and the timing of an overlapping edit still need
-    // live Figma confirmation.
-  });
-
-  it("certifies twice through actual commands while reconciling exact annotation echoes and rejecting a same-node designer edit", async () => {
-    const plugin = await launch();
-    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
-    const initial = plugin.events.find((event) => event.type === "scan-result");
-    expect(initial).toMatchObject({ report: { ready: true } });
-    let annotations = [{ label: "Original design documentation" }];
-    let certification = "";
-    let relaunchData: Record<string, string> = {};
-    const live = {
-      id: "root:desktop", type: "FRAME", removed: false,
-      get annotations() { return annotations; },
-      set annotations(value: typeof annotations) {
-        annotations = value;
-        queueMicrotask(() => plugin.handlers.get("documentchange")?.({ documentChanges: [{ id: "root:desktop", type: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["annotations", "pluginData"] }] }));
-      },
-      getSharedPluginData: () => certification,
-      setSharedPluginData: vi.fn((_namespace: string, _key: string, value: string) => { certification = value; }),
-      getRelaunchData: () => relaunchData,
-      setRelaunchData: vi.fn((value: Record<string, string>) => { relaunchData = value; }),
-    };
-    const undo = vi.fn();
-    Object.assign(plugin.figmaMock, { getNodeByIdAsync: vi.fn(async () => live), commitUndo: vi.fn(), triggerUndo: undo });
-    await plugin.send({ type: "certify" });
-    await plugin.send({ type: "certify" });
-    expect(plugin.events.filter((event) => event.type === "certified")).toHaveLength(2);
-    expect(plugin.events.filter((event) => event.type === "knowledge-stale")).toHaveLength(0);
-    expect(annotations.filter((annotation) => annotation.label === "Original design documentation")).toHaveLength(1);
-    expect(undo).not.toHaveBeenCalled();
-    live.annotations = [{ label: "Designer replaced the source documentation" }];
-    await Promise.resolve();
-    expect(plugin.events.at(-1)).toEqual({ type: "knowledge-stale" });
-    await plugin.send({ type: "certify" });
     expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("stale") });
-    expect(plugin.events.filter((event) => event.type === "certified")).toHaveLength(2);
-    expect(undo).not.toHaveBeenCalled();
+    expect(plugin.events.some((event) => event.type === "mutation-result")).toBe(false);
   });
 
   it("rechecks changes and explicit full rescans against the captured audit target", async () => {
@@ -386,7 +275,7 @@ describe("plugin audit recovery integration", () => {
     expect(second.adapter.buildKnowledge).not.toHaveBeenCalled();
     const restored = second.events.find((event) => event.type === "restored-audit");
     expect(restored?.type === "restored-audit" && restored.audit.report).toEqual(result?.type === "scan-result" && result.report);
-    await second.send({ type: "certify" });
+    await second.send(cleanupRequest(second));
     expect(second.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("saved historical audit") });
     await second.send({ type: "export", format: "json" });
     const exported = second.events.at(-1);
@@ -424,6 +313,10 @@ describe("plugin audit recovery integration", () => {
     legacy.report.rulesetVersion = "1.0.0-beta.2";
     legacy.report.generatedAt = "2026-09-01T12:00:00.000Z";
     legacy.provenance.pluginVersion = "0.2.0";
+    legacy.report.findings.push(syntheticFinding({ id: "legacy-freshness", ruleId: "pipeline.certification-freshness", title: "Certification freshness", status: "needs-review", message: "Original stale certificate finding" }));
+    const oldPlan = retirementPlan([retiredOperation]);
+    legacy.plans.push(oldPlan);
+    legacy.report.appliedChanges.push(oldPlan);
     delete legacy.report.issueGroups;
     for (const finding of legacy.report.findings) { delete finding.category; delete finding.provenance; }
     const { snapshotHash: _legacyHash, ...legacyMaterial } = legacy.report;
@@ -434,16 +327,20 @@ describe("plugin audit recovery integration", () => {
     expect(storedLegacy.status.state).toBe("saved");
     const reopened = await launch(first.storage);
     const restored = reopened.events.find((event) => event.type === "restored-audit");
-    expect(restored).toMatchObject({ audit: { report: legacy.report } });
-    for (const command of [{ type: "certify" }, { type: "preview-contribution" }, { type: "export-contribution", digest: "hash:historical" }] as const) {
+    expect(restored).toMatchObject({ audit: { report: legacy.report, plans: legacy.plans, provenance: legacy.provenance } });
+    for (const command of [cleanupRequest(reopened), { type: "preview-contribution" }, { type: "export-contribution", digest: "hash:historical" }] as const) {
       await reopened.send(command);
       expect(reopened.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("saved historical audit") });
     }
     await reopened.send({ type: "export", format: "json" });
     const exported = reopened.events.at(-1);
     expect(exported?.type === "export-result" && JSON.parse(exported.content)).toMatchObject({ kind: "historical-audit", report: legacy.report, savedAt: storedLegacy.audit.savedAt, provenance: { pluginVersion: "0.2.0" } });
+    await reopened.send({ type: "export", format: "markdown" });
+    const markdown = reopened.events.at(-1);
+    expect(markdown?.type === "export-result" && markdown.content).toBe(`> Historical audit from ${legacy.report.generatedAt}. The current design has not been verified. Refresh in Design Passport before applying fixes.\n\n${reportToMarkdown(legacy.report)}`);
+    expect(markdown?.type === "export-result" && markdown.content).toContain("Original stale certificate finding");
     await reopened.send({ type: "recheck-audit", request: { mode: "changes" } });
-    expect(reopened.events.filter((event) => event.type === "scan-result").at(-1)).toMatchObject({ report: { schemaVersion: 3, rulesetVersion: "1.0.0-beta.4", producer: { pluginVersion: "0.4.0" } } });
+    expect(reopened.events.filter((event) => event.type === "scan-result").at(-1)).toMatchObject({ report: { schemaVersion: 3, rulesetVersion: "1.0.0-beta.5", producer: { pluginVersion: "0.5.0" } } });
   });
 
   it("keeps grading and repairs identical across advisory packs, incremental refresh, and saved restoration", async () => {
@@ -505,8 +402,6 @@ describe("plugin audit recovery integration", () => {
     const commands: UiToPluginMessage[] = [
       { type: "apply-plan", planId: "any", undoOnlyAcknowledged: false },
       { type: "apply-all", planIds: ["any"], undoOnlyAcknowledged: false },
-      { type: "certify" },
-      { type: "certify-components" },
       { type: "waive", findingId: "any", reason: "Temporary exemption" },
       { type: "clear-waiver", findingId: "any" },
       { type: "confirm-pattern", findingId: "any", canonicalName: "Button" },
@@ -612,11 +507,11 @@ describe("plugin audit recovery integration", () => {
       ? { id, type: "FRAME", removed: false, setSharedPluginData: write }
       : plugin.fixture.figma.getNodeByIdAsync(id) });
     plugin.variable.valuesByMode.mode = 12;
-    await plugin.send({ type: "certify" });
-    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("changed or expired") });
+    await plugin.send(cleanupRequest(plugin));
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("stale") });
     expect(plugin.events.some((event) => event.type === "knowledge-stale")).toBe(true);
     expect(write).not.toHaveBeenCalled();
-    expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
+    expect(plugin.events.some((event) => event.type === "mutation-result")).toBe(false);
     await plugin.send({ type: "export", format: "json" });
     expect(plugin.events.at(-1)).toMatchObject({ type: "export-result", content: expect.stringContaining('"historical-audit"') });
     expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(1);
@@ -675,8 +570,8 @@ describe("plugin audit recovery integration", () => {
     expect(plugin.events.filter((event) => event.type === "error")).toHaveLength(0);
     const results = plugin.events.filter((event) => event.type === "scan-result");
     const committed = results[1]!;
-    await plugin.send({ type: "certify" });
-    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("requires grade B") });
+    await plugin.send(cleanupRequest(plugin));
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("stale") });
     await plugin.send({ type: "export", format: "json" });
     const exported = plugin.events.at(-1);
     expect(exported?.type === "export-result" && JSON.parse(exported.content)).toMatchObject({ kind: "historical-audit", report: committed.report });
@@ -779,7 +674,7 @@ describe("plugin audit recovery integration", () => {
       expect(envelope.savedAt).toBeUndefined();
     }
     expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(1);
-    await plugin.send({ type: "certify" });
+    await plugin.send(cleanupRequest(plugin));
     expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("stale") });
   });
 
@@ -805,7 +700,7 @@ describe("plugin audit recovery integration", () => {
       expect(envelope.savedAt).toBeUndefined();
     }
     expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(1);
-    await plugin.send({ type: "certify" });
+    await plugin.send(cleanupRequest(plugin));
     expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringMatching(/audit|stale/) });
   });
 
