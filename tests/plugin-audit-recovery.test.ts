@@ -144,7 +144,17 @@ describe("plugin audit recovery integration", () => {
     const fixture = contextFixture(2);
     const plugin = await launch();
     const targetIds = ["root:desktop", "root:tablet", "root:mobile"].slice(0, targetCount);
-    const live = targetIds.map((id) => ({ id, type: "FRAME", removed: false, annotations: [{ label: "Designer documentation" }], setSharedPluginData: vi.fn(), setRelaunchData: vi.fn() }));
+    const live = targetIds.map((id) => {
+      let certification = "";
+      let relaunchData: Record<string, string> = {};
+      return {
+        id, type: "FRAME", removed: false, annotations: [{ label: "Designer documentation" }],
+        getSharedPluginData: () => certification,
+        setSharedPluginData: vi.fn((_namespace: string, _key: string, value: string) => { certification = value; }),
+        getRelaunchData: () => relaunchData,
+        setRelaunchData: vi.fn((value: Record<string, string>) => { relaunchData = value; }),
+      };
+    });
     const lookup = vi.fn(async (id: string) => live.find((node) => node.id === id) ?? fixture.figma.getNodeByIdAsync(id));
     Object.assign(plugin.figmaMock, { variables: fixture.figma.variables, teamLibrary: fixture.figma.teamLibrary, mixed: fixture.figma.mixed, getNodeByIdAsync: lookup, commitUndo: vi.fn(), triggerUndo: vi.fn() });
     plugin.figmaMock.root.children.splice(0, plugin.figmaMock.root.children.length, ...fixture.pages);
@@ -196,26 +206,49 @@ describe("plugin audit recovery integration", () => {
     expect(undo).not.toHaveBeenCalled();
   });
 
-  it.each(["setter", "final verification"])("requests rollback after a %s failure without reporting success", async (failure) => {
+  it.each(["setter", "final verification"])("restores exact prior metadata after a %s failure and keeps a designer rename", async (failure) => {
     const plugin = await launch();
     await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
-    const write = vi.fn();
+    const priorCertification = '{"certifiedAt":"prior","grade":"A"}';
+    const priorAnnotations = [{ label: "Designer documentation", labelMarkdown: "**Designer documentation**", properties: [{ type: "width" }] }, { label: "Earlier certificate" }];
+    const priorRelaunchData = { "review-certification": "Earlier certificate", custom: "Keep me" };
+    let certification = priorCertification;
+    let annotations = structuredClone(priorAnnotations);
+    let relaunchData = { ...priorRelaunchData };
+    let failSetter = failure === "setter";
+    const write = vi.fn((_namespace: string, _key: string, value: string) => { certification = value; });
     const undo = vi.fn();
-    const node = { id: "root:desktop", type: "FRAME", removed: false, annotations: [], setSharedPluginData: write, setRelaunchData: () => { if (failure === "setter") throw new Error("Setter failed after metadata was written"); } };
-    Object.assign(plugin.figmaMock, { getNodeByIdAsync: vi.fn(async () => node), commitUndo: vi.fn(), triggerUndo: undo });
+    const commit = vi.fn();
+    const node = {
+      id: "root:desktop", type: "FRAME", removed: false, name: "Original name",
+      get annotations() { return annotations; }, set annotations(value: typeof annotations) { annotations = value; },
+      getSharedPluginData: () => certification, setSharedPluginData: write,
+      getRelaunchData: () => relaunchData,
+      setRelaunchData: (value: typeof relaunchData) => {
+        if (failSetter) { failSetter = false; throw new Error("Setter failed after metadata was written"); }
+        relaunchData = value;
+      },
+    };
+    Object.assign(plugin.figmaMock, { getNodeByIdAsync: vi.fn(async () => node), commitUndo: commit, triggerUndo: undo });
     if (failure === "final verification") {
       plugin.adapter.matchesVariableEnvironment.mockResolvedValueOnce(true).mockImplementationOnce(async () => {
+        node.name = "Designer rename during verification";
         plugin.handlers.get("documentchange")?.({ documentChanges: [{ id: "root:desktop", type: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["name"] }] });
         return true;
       });
     }
     await plugin.send({ type: "certify" });
-    expect(write).toHaveBeenCalledTimes(1);
-    expect(undo).toHaveBeenCalledTimes(1);
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(undo).not.toHaveBeenCalled();
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(certification).toBe(priorCertification);
+    expect(annotations).toEqual(priorAnnotations);
+    expect(relaunchData).toEqual(priorRelaunchData);
+    if (failure === "final verification") expect(node.name).toBe("Designer rename during verification");
     expect(plugin.events.at(-1)).toMatchObject({ type: "error" });
     expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
-    // Native undo ownership of an overlapping designer edit needs live Figma;
-    // this mock proves only that failed certification requests rollback.
+    // Native undo ownership and the timing of an overlapping edit still need
+    // live Figma confirmation.
   });
 
   it("certifies twice through actual commands while reconciling exact annotation echoes and rejecting a same-node designer edit", async () => {
@@ -224,6 +257,8 @@ describe("plugin audit recovery integration", () => {
     const initial = plugin.events.find((event) => event.type === "scan-result");
     expect(initial).toMatchObject({ report: { ready: true } });
     let annotations = [{ label: "Original design documentation" }];
+    let certification = "";
+    let relaunchData: Record<string, string> = {};
     const live = {
       id: "root:desktop", type: "FRAME", removed: false,
       get annotations() { return annotations; },
@@ -231,7 +266,10 @@ describe("plugin audit recovery integration", () => {
         annotations = value;
         queueMicrotask(() => plugin.handlers.get("documentchange")?.({ documentChanges: [{ id: "root:desktop", type: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["annotations", "pluginData"] }] }));
       },
-      setSharedPluginData: vi.fn(), setRelaunchData: vi.fn(),
+      getSharedPluginData: () => certification,
+      setSharedPluginData: vi.fn((_namespace: string, _key: string, value: string) => { certification = value; }),
+      getRelaunchData: () => relaunchData,
+      setRelaunchData: vi.fn((value: Record<string, string>) => { relaunchData = value; }),
     };
     const undo = vi.fn();
     Object.assign(plugin.figmaMock, { getNodeByIdAsync: vi.fn(async () => live), commitUndo: vi.fn(), triggerUndo: undo });

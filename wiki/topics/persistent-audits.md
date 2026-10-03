@@ -103,12 +103,27 @@ That audit later completed with a fulfilled handler and zero dropped records;
 its 1,332,062 ms report-visible interval includes an unbounded lock and is
 excluded from uninterrupted timing. After unlock, a fresh main audit also
 completed in 1,437,840 ms, but its knowledge expired before an ordinary
-certification command was recorded. A production refresh then began, and
-native access locked again after 65 of 71 pages. Its terminal state and any
-new matched main certification result remain unobserved. The user made the
+certification command was recorded. A production refresh then completed
+with a fulfilled handler after another lock interval. A later fresh main
+audit completed in 1,461,798 ms; its ordinary certification ran 364,130 ms
+and failed when knowledge expired during verification. No matched successful
+main certification series exists. The user made the
 20% retained/mixed speed target advisory for continued native work; the
 observed 2.93% regression and repeated-matrix gap are still recorded as
 partial in the [journal](../journal/2026-09-30-audit-memory-and-certification.md).
+
+The candidate subsequently certified six roots in 76,765 ms of runtime
+after a fresh audit. A second attempt failed stale after 66,798 ms. Native
+read-only inspection found that its undo reverted all six certificate
+strings, full annotations, and relaunch values to the state before the
+earlier successful certification, while a designer rename survived. The
+rename's commit interval could not be bounded inside final verification.
+The scoped repair now snapshots prior metadata and restores only owned
+fields after failure; focused tests, independent review, and the full local
+gate passed. Repaired native rollback, subsequent Undo ownership, repeated
+audit matrix, and matched certification timing remain partial. The
+[journal](../journal/2026-09-30-audit-memory-and-certification.md) records
+the timings and evidence limits.
 
 ## Repository automation
 

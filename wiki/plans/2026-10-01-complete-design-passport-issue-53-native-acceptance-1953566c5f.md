@@ -1,7 +1,7 @@
 ---
 status: "partial"
 executed: true
-evidence: ["JFusco/design-passport#53; draft PR #54; candidate timing and two completed main audits; matched certification, speed matrix, and rollback partial"]
+evidence: ["JFusco/design-passport#53; draft PR #54; native rollback defect and reviewed repair; matched certification, speed matrix, and postrepair rollback partial"]
 source_tool: "codex"
 source: "codex:/Users/joe.fusco/.codex/sessions/2026/10/01/rollout-2026-10-01T13-35-54-01a0f889-7793-7e20-9378-ec01c7589f58.jsonl"
 topics: ["persistent-audits"]

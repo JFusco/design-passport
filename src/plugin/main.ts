@@ -31,7 +31,7 @@ import { hashValue, stableStringify } from "../core/stable";
 import { applyWaivers, sanitizeWaiverStore, type WaiverStore } from "../core/waivers";
 import { mapConcurrent } from "../figma/context-cache";
 import { FigmaAdapter, FullKnowledgeRebuildRequired, type BootstrapData, type CapturedAuditTarget, type ProjectStyleGuideStatus, type VariableCollectionOption } from "../figma/adapter";
-import { applyChangePlan, clearVariantCoverageAnnotations, createSemanticTokenAndBind, setCertification } from "../figma/mutations";
+import { applyChangePlan, captureCertificationMetadata, clearVariantCoverageAnnotations, createSemanticTokenAndBind, recordWrittenCertificationMetadata, restoreCertificationMetadata, setCertification } from "../figma/mutations";
 import { buildKnowledgeSummary } from "./knowledge-summary";
 import { parseUiMessage } from "./message-validation";
 import type { AuditRecheckRequest, AuditRefreshResult, PluginToUiMessage, UiToPluginMessage } from "./messages";
@@ -829,6 +829,11 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       if (resolved.some((entry) => !entry || entry.node.removed || entry.variantNodes.some((node) => !node || node.removed))) {
         throw new Error("A certification target no longer exists");
       }
+      const priorMetadata = resolved.flatMap((entry) => [
+        captureCertificationMetadata(entry!.node, true),
+        ...entry!.variantNodes.map((node) => captureCertificationMetadata(node!, false)),
+      ]);
+      const metadataById = new Map(priorMetadata.map((snapshot) => [snapshot.node.id, snapshot]));
       mutationChangeGuard.arm(documentMutationIds(certificationNodeIds));
       let count = 0;
       let removedVariantAnnotations = 0;
@@ -842,9 +847,11 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
           wroteCertification = true;
           setCertification(node, summary, variantNodes.length);
           recordCertificationAnnotations(node);
+          recordWrittenCertificationMetadata(metadataById.get(node.id)!);
           for (const variantNode of variantNodes) {
             removedVariantAnnotations += clearVariantCoverageAnnotations(variantNode!);
             recordCertificationAnnotations(variantNode!);
+            recordWrittenCertificationMetadata(metadataById.get(variantNode!.id)!);
           }
           count += 1;
         }
@@ -853,7 +860,24 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         figma.commitUndo();
         await new Promise((resolve) => setTimeout(resolve, 0));
       } catch (error) {
-        if (wroteCertification) figma.triggerUndo();
+        if (wroteCertification) {
+          // Native undo can target an earlier certification after an awaited
+          // verification. Compensate the fields this command wrote without
+          // adding a separate undo entry or reversing a designer rename.
+          const rollbackErrors: string[] = [];
+          for (const snapshot of priorMetadata) {
+            try {
+              restoreCertificationMetadata(snapshot);
+            } catch (rollbackError) {
+              rollbackErrors.push(`${snapshot.node.id}: ${errorMessage(rollbackError)}`);
+            }
+          }
+          if (rollbackErrors.length > 0) {
+            knowledgeState.markDirty();
+            post({ type: "knowledge-stale" });
+            throw new Error(`${errorMessage(error)} Certification metadata rollback was incomplete: ${rollbackErrors.join("; ")}`);
+          }
+        }
         knowledgeState.markDirty();
         post({ type: "knowledge-stale" });
         throw error;

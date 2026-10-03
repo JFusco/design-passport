@@ -401,3 +401,50 @@ runtime `handlerElapsedMs` from `qa-handler-start`. These extra candidate
 certifications lack matched uninterrupted main runs, so they cannot establish
 the median 60% speed target. Raw exports and exact design metadata remain
 private.
+
+## 2026-10-03 native rollback defect and scoped repair
+
+The previously pending main refresh completed at 21:00:32 UTC with a
+fulfilled handler, zero dropped records, and 1,215,456 ms report-visible
+time. Native access was locked during it, so it is not an uninterrupted
+speed sample. A fresh main audit completed at 23:54:24 UTC in 1,461,798 ms;
+knowledge was built at 23:45:40 UTC. Ordinary certification started at
+23:54:56 UTC and failed stale at 00:01:05 UTC after 364,130 ms of runtime.
+The knowledge expired during verification. There was no certified outcome.
+
+Two QA fixture pages were inadvertently created in the authorized disposable
+copy during delayed UI interaction. Both were removed through Figma's native
+page menu. A subsequent read-only export confirmed 71 pages and the expected
+target page. Both the incident and cleanup exports are retained privately.
+
+A fresh candidate audit completed at 00:43:21 UTC in 1,770,567 ms
+report-visible time, with zero dropped records. The editor and developer
+tools were active, so it is not a matched speed benchmark. Ordinary
+certification succeeded for all six roots in 76,765 ms runtime. Read-only
+inspection immediately afterward captured each new certificate string,
+complete annotation objects, relaunch data, and name.
+
+The next ordinary candidate certification started at 00:48:13 UTC and failed
+stale at 00:49:20 UTC after 66,798 ms runtime. Its second scene verification
+ran from 00:48:48.047 to 00:49:20.434 UTC. A designer rename was initiated
+near the end of that interval and later appeared in the native layer list and
+read-only inspection. The UI did not show the committed layer name within a
+bounded interval before verification finished, so exact interleaving is
+unproven. There was no `certified` terminal outcome. All six postfailure
+certificate strings, full annotations, and relaunch values matched the older
+pre-first-certification snapshot, not the immediate prior snapshot. The
+rename survived. This is a native exact-prior rollback failure even though
+the failed command's bounded document-change observer reported no changes.
+
+The failure identified `figma.triggerUndo()` reversing an earlier successful
+certification after awaited whole-file verification. The scoped repair takes
+exact prewrite snapshots of owned metadata for roots and variant annotations,
+then compensates those fields directly on failure. It leaves names intact
+and preserves concurrent changes to non-certification annotations and other
+relaunch entries. It adds no catch-path undo commit. Focused tests passed
+(48 in two files); an independent read-only review found no remaining code
+blocker. `DESIGN_PASSPORT_E2E_PORT=5190 pnpm run verify:ci` passed 505 unit
+tests in 50 files and seven Chromium tests after the sandbox's local bind
+restriction required an escalated rerun. Native proof of this repaired
+behavior and subsequent Undo ownership is still pending. All raw exports
+remain private; fixture evidence is not native proof.

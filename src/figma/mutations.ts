@@ -345,6 +345,81 @@ export function setCertification(node: SceneNode, summary: CertificationSummary,
   }
 }
 
+export interface CertificationMetadataSnapshot {
+  node: SceneNode;
+  root: boolean;
+  certification?: string;
+  relaunchData?: Record<string, string>;
+  annotations?: ReadonlyArray<Annotation>;
+  writtenRelaunchData?: Record<string, string>;
+  writtenAnnotations?: ReadonlyArray<Annotation>;
+}
+
+function copyAnnotations(node: SceneNode): ReadonlyArray<Annotation> | undefined {
+  return "annotations" in node
+    ? node.annotations.map((annotation) => ({
+      ...annotation,
+      ...(annotation.properties ? { properties: annotation.properties.map((property) => ({ ...property })) } : {}),
+    }))
+    : undefined;
+}
+
+export function captureCertificationMetadata(node: SceneNode, root: boolean): CertificationMetadataSnapshot {
+  const annotations = copyAnnotations(node);
+  return {
+    node,
+    root,
+    ...(root ? {
+      certification: node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY),
+      relaunchData: { ...node.getRelaunchData() },
+    } : {}),
+    ...(annotations ? { annotations } : {}),
+  };
+}
+
+export function recordWrittenCertificationMetadata(snapshot: CertificationMetadataSnapshot): void {
+  if (snapshot.root) snapshot.writtenRelaunchData = { ...snapshot.node.getRelaunchData() };
+  const annotations = copyAnnotations(snapshot.node);
+  if (annotations) snapshot.writtenAnnotations = annotations;
+}
+
+export function restoreCertificationMetadata(snapshot: CertificationMetadataSnapshot): void {
+  const { node } = snapshot;
+  if (node.removed) throw new Error(`Certification target ${node.id} was removed before rollback`);
+  if (snapshot.certification !== undefined) {
+    node.setSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, CERTIFICATION_DATA_KEY, snapshot.certification);
+  }
+  if (snapshot.relaunchData !== undefined) {
+    const current = node.getRelaunchData();
+    const restored = { ...snapshot.relaunchData };
+    if (snapshot.writtenRelaunchData && stableStringify(current) !== stableStringify(snapshot.writtenRelaunchData)) {
+      for (const [key, value] of Object.entries(current)) {
+        if (key !== "review-certification" && snapshot.writtenRelaunchData[key] !== value) restored[key] = value;
+      }
+    }
+    node.setRelaunchData(restored);
+  }
+  if (snapshot.annotations !== undefined && "annotations" in node) {
+    const current = copyAnnotations(node) ?? [];
+    const owned = (annotation: Annotation): boolean => {
+      const text = annotationText(annotation);
+      return snapshot.root
+        ? text === AI_SOURCE_FRAME_ANNOTATION || text.startsWith(CERTIFICATION_ANNOTATION_PREFIX) || text.startsWith(LEGACY_CERTIFICATION_ANNOTATION_PREFIX)
+        : text.startsWith(VARIANT_COVERAGE_ANNOTATION_PREFIX);
+    };
+    const annotations = snapshot.writtenAnnotations && stableStringify(current) !== stableStringify(snapshot.writtenAnnotations)
+      ? [
+        ...current.filter((annotation) => !owned(annotation)),
+        ...snapshot.annotations.filter(owned),
+      ]
+      : snapshot.annotations;
+    node.annotations = annotations.map((annotation) => ({
+      ...annotation,
+      ...(annotation.properties ? { properties: annotation.properties.map((property) => ({ ...property })) } : {}),
+    }));
+  }
+}
+
 export function clearVariantCoverageAnnotations(node: SceneNode): number {
   if (node.type !== "COMPONENT" || node.parent?.type !== "COMPONENT_SET") {
     throw new Error("Variant coverage annotations can only be cleared from a component inside a component set");

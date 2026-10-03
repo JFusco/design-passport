@@ -1,9 +1,43 @@
 import { describe, expect, it } from "vitest";
 import { buildChangePlans } from "../src/core/planner";
-import { applyAutoLayoutProperties, assessGeometryChange } from "../src/figma/mutations";
+import { applyAutoLayoutProperties, assessGeometryChange, captureCertificationMetadata, recordWrittenCertificationMetadata, restoreCertificationMetadata } from "../src/figma/mutations";
 import { syntheticFinding } from "./fixtures";
 
 describe("mutation planning and geometry safety", () => {
+  it("restores owned certification fields while retaining a concurrent designer annotation and rename", () => {
+    let certification = "prior certificate string";
+    let relaunchData: Record<string, string> = { "review-certification": "Prior review", custom: "Original note" };
+    const node = {
+      id: "root:1", removed: false, name: "Original name", type: "COMPONENT_SET",
+      annotations: [
+        { label: "Designer documentation", labelMarkdown: "**Original**" },
+        { label: "[Design Passport] Grade A (95.5)." },
+      ] as Annotation[],
+      getSharedPluginData: () => certification,
+      setSharedPluginData: (_namespace: string, _key: string, value: string) => { certification = value; },
+      getRelaunchData: () => relaunchData,
+      setRelaunchData: (value: Record<string, string>) => { relaunchData = value; },
+    } as unknown as SceneNode & { annotations: Annotation[]; name: string };
+    const prior = captureCertificationMetadata(node, true);
+    node.setSharedPluginData("verndaleAiReady", "certification-v1", "failed certificate string");
+    node.setRelaunchData({ "review-certification": "Failed review" });
+    node.annotations = [{ label: "Designer documentation", labelMarkdown: "**Original**" }, { label: "AI source frame" }, { label: "[Design Passport] Grade B (83.2)." }];
+    recordWrittenCertificationMetadata(prior);
+    node.name = "Designer rename";
+    node.annotations = [{ label: "Designer documentation", labelMarkdown: "**Edited during verification**" }, { label: "AI source frame notes" }, { label: "AI source frame" }, { label: "[Design Passport] Grade B (83.2)." }];
+    node.setRelaunchData({ "review-certification": "Failed review", custom: "Edited during verification" });
+
+    restoreCertificationMetadata(prior);
+    expect(certification).toBe("prior certificate string");
+    expect(relaunchData).toEqual({ "review-certification": "Prior review", custom: "Edited during verification" });
+    expect(node.annotations).toEqual([
+      { label: "Designer documentation", labelMarkdown: "**Edited during verification**" },
+      { label: "AI source frame notes" },
+      { label: "[Design Passport] Grade A (95.5)." },
+    ]);
+    expect(node.name).toBe("Designer rename");
+  });
+
   it("keeps preview and apply operations deterministic and idempotent", () => {
     const findings = [
       syntheticFinding({ id: "rename", ruleId: "naming.pattern-alias", status: "fail", fixability: "automatic", suggestedValue: { name: "Button / Primary" } }),
