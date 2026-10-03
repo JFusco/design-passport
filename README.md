@@ -102,7 +102,7 @@ To test an unreleased local build in Figma Desktop:
 ### Release identity and freshness
 
 - `pnpm build` produces a Development-channel bundle and mirrors its controller/UI into `development/dist/`; `pnpm build:release` produces only the Production-channel bundle in `dist/` and deliberately leaves the development copy untouched.
-- Every clean bundle embeds package version `0.4.0`, ruleset `1.0.0-beta.4`, the current 12-character Git SHA, and its channel. Production builds reject a dirty checkout; Development builds visibly append a dirty-content digest. There is no remote version service or runtime “latest” lookup.
+- Every clean bundle embeds package version `0.5.0`, ruleset `1.0.0-beta.5`, the current 12-character Git SHA, and its channel. Production builds reject a dirty checkout; Development builds visibly append a dirty-content digest. There is no remote version service or runtime “latest” lookup.
 - Production is published only to the existing organization plugin record in `manifest.json`. Figma distributes that record’s current published version to organization users; users do not import a manifest or choose an older published build.
 - Before publishing, preserve the last verified production `dist/` bundle outside tracked source for rollback. A rollback republishes those verified bytes to the same organization record.
 - Smoke-test the published plugin with two non-publisher organization accounts. Ask anyone with an already-open plugin window to close and relaunch **Design Passport** before validating the announced footer identity.
@@ -220,3 +220,25 @@ Plugin `0.5.0` and ruleset `1.0.0-beta.5` retire certification actions and the s
 Old reports retain their findings, grades, hashes, timestamps, and producer identity. Certificate strings, source markers, grade notes, variant notes, and node relaunch data remain untouched. Legacy stamps cannot satisfy the source-annotation rule. The retired operation remains readable in historical contracts but is rejected before any cleanup writes.
 
 Both manifests omit the old relaunch command. [Figma hides buttons whose commands are removed](https://developers.figma.com/docs/plugins/api/properties/nodes-setrelaunchdata/) without requiring node-data cleanup. Merging and publication remain separate; the published certification guard remains in place until a separately reviewed release replaces it.
+
+## Safety boundaries
+
+- No content deletion, page movement, library enablement, semantic guessing, URL fetching, or template evaluation.
+- Structural work attempts a version-history checkpoint named `Before Design Passport cleanup`.
+- If that checkpoint is unavailable, structural work requires an explicit undo-only acknowledgement.
+- A postcondition failure immediately triggers Figma Undo for that risk group.
+- High-risk component conversion and variant grouping stay individually scoped.
+- The Figma Plugin API does not provide a lossless “reattach this detached frame” operation. Detached nodes are therefore diagnosed and left manual instead of being destructively replaced.
+
+See [architecture](wiki/guides/architecture.md), [ruleset](wiki/guides/ruleset.md), [security model](wiki/guides/security.md), and [manual rollout QA](wiki/guides/manual-qa.md).
+
+## Commit messages
+
+Use a specific scoped Conventional Commit, for example
+`fix(auth): reject expired reset tokens`. Begin the subject with an action verb
+and keep the subject at most 50 characters. Leave a blank line before an
+optional body; explain the reason, impact, or tradeoff when the diff alone does
+not make it clear. Wrap body and footer lines at 72 characters. Mark breaking
+changes with `!` or a `BREAKING CHANGE:` footer. Follow the repository's
+commitlint rules for allowed types and scopes. Avoid vague or ticket-only
+subjects.
