@@ -154,6 +154,17 @@ improvement advisory; the observed single-pair samples are still the only
 matched speed evidence. The [postmerge journal](../journal/2026-10-03-postmerge-native-acceptance.md)
 records the timing and provenance limits.
 
+The release guard in [issue #61](https://github.com/JFusco/design-passport/issues/61)
+temporarily blocks both certification commands before metadata writes and
+disables their UI controls. Audits, exports, cleanup, and existing certificate
+review remain available. A separate Figma client committed a target rename
+inside the final verification interval, but the plugin received the remote
+change only after reporting success. Figma Design offers no documented
+synchronous remote-edit checkpoint through the plugin API. Issue #53 remains
+open; this guard does not establish native rollback, Undo, or speed acceptance.
+The [release-guard journal](../journal/2026-10-03-certification-release-guard.md)
+records the implementation and checks.
+
 ## Repository automation
 
 Since 2026-09-25, drafts and changes limited to wiki content or its generated graph use lightweight validation while ready product, workflow, script, documentation, and skill changes retain the full browser-backed suite. Wiki maintenance runs Mondays, audits missed merges in batches, updates bot pull requests through REST, and rejects duplicate or malformed frontmatter across the full wiki before writing history ([issue #35](https://github.com/JFusco/design-passport/issues/35)).

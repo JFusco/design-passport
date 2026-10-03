@@ -1,4 +1,4 @@
-import { AXIS_LABELS } from "../../core/constants";
+import { AXIS_LABELS, CERTIFICATION_PAUSED, CERTIFICATION_PAUSED_MESSAGE } from "../../core/constants";
 import { producerLabel } from "../../core/build-info";
 import type { ReadinessReport, ScanScope } from "../../core/contracts";
 import type { PageOption, SelectionSummary } from "../../figma/adapter";
@@ -98,7 +98,11 @@ export function Overview(props: OverviewProps) {
             {props.report.axes.map((axis) => <div className="axis-row" key={axis.axis}><div><span>{AXIS_LABELS[axis.axis]}</span><strong>{axis.score.toFixed(1)}</strong></div><div className="score-track"><span style={{ width: `${axis.score}%` }} /></div></div>)}
           </div>
           <div className="footer-actions">
-            {props.stale && !props.certifying
+            {CERTIFICATION_PAUSED ? <>
+              <p role="status">{CERTIFICATION_PAUSED_MESSAGE}</p>
+              <button className="button primary" disabled>Certify components ({componentFrames.length})</button>
+              <button className="button" disabled>Certify source frames</button>
+            </> : props.stale && !props.certifying
               ? props.onRecheck ? <p>Refresh this audit before certifying.</p> : <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan(props.report?.target.scope ?? "selection", true)}>Refresh audit to certify</button>
               : <>
                 <button className="button primary" disabled={props.actionsBlocked || props.scanning || !props.canMutateDocument || !componentsReady} onClick={props.onCertifyComponents}>{props.certifying === "certify-components" ? "Certifying…" : `Certify components (${componentFrames.length})`}</button>

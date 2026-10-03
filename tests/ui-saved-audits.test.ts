@@ -40,8 +40,8 @@ describe("persistent audit presentation", () => {
     expect(button(markup, "Export historical JSON")).toBeDefined();
     expect(button(markup, "Export historical JSON")).not.toContain("disabled");
     expect(button(markup, "Export historical Markdown")).not.toContain("disabled");
-    expect(button(markup, "Refresh audit to certify")).toContain("disabled");
-    expect(markup).not.toContain("Certify source frames");
+    expect(button(markup, "Certify source frames")).toContain("disabled");
+    expect(markup).toContain("Certification is temporarily unavailable");
   });
 
   it("retains the current-report export gate", () => {
@@ -54,7 +54,7 @@ describe("persistent audit presentation", () => {
     expect(button(markup, "Export historical JSON")).toBeDefined();
     expect(button(markup, "Export historical JSON")).not.toContain("disabled");
     expect(button(markup, "Export historical Markdown")).not.toContain("disabled");
-    expect(button(markup, "Refresh audit to certify")).toContain("disabled");
+    expect(button(markup, "Certify source frames")).toContain("disabled");
   });
 
   it("shows historical advisory insights without offering contributions or labeling current packs as their source", () => {

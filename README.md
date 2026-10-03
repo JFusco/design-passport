@@ -1,6 +1,6 @@
 # Design Passport
 
-An organization-published private Figma Design plugin that builds whole-file design knowledge, audits source frames for MCP/API consumption, previews safe cleanup, and certifies only deterministic grade-B-or-better results.
+An organization-published private Figma Design plugin that builds whole-file design knowledge, audits source frames for MCP/API consumption, and previews safe cleanup. Certification is temporarily unavailable while concurrent edit safety is verified.
 
 The target and context scopes are deliberately separate:
 
@@ -52,7 +52,7 @@ Design Passport is published to the Verndale organization. Organization members 
 2. Open **Resources → Plugins** (or Quick Actions) and run **Design Passport**.
 3. Choose an audit scope. Design Passport automatically classifies conventional product and library files; there is no required setup step.
 4. Wait for the complete file-wide knowledge build, then review Overview and Findings. Completion shows whether the result was saved locally.
-5. Apply only reviewed cleanup, let the rescan complete, and certify only when Overview reports **ready**.
+5. Apply only reviewed cleanup and let the rescan complete. Certification is temporarily unavailable; use the current report to review readiness.
 6. Export current JSON for machine consumers or Markdown for people. Saved historical exports are explicitly labeled and do not establish current readiness.
 
 The footer and audit result identify the exact plugin version, ruleset, build SHA, and Production/Development channel. If an already-open plugin window does not show the announced identity, close it and launch the organization plugin again.

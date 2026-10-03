@@ -61,63 +61,17 @@ test.beforeEach(async ({ page }) => {
     window.postMessage({ pluginMessage: { type: "bootstrap", data: bootstrap, rulesetVersion: "fixture", catalogVersion: "fixture", catalogDigest: "fixture" } }, "*");
     window.postMessage({ pluginMessage: result }, "*");
   });
-  await expect(page.getByRole("button", { name: "Certify source frames", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Certify source frames", exact: true })).toBeDisabled();
 });
 
-test("blocks duplicate clicks and competing mutations until certification finishes", async ({ page }) => {
-  await page.getByRole("button", { name: "Certify source frames", exact: true }).evaluate((button) => {
-    // Two events in one task exercise the ref guard before React can repaint.
-    (button as HTMLButtonElement).click();
-    (button as HTMLButtonElement).click();
-  });
-  await expect(page.locator("#requests")).toHaveAttribute("data-count", "1");
-  await expect(page.locator(".panel-host")).toHaveAttribute("aria-busy", "true");
-  await expect(page.getByRole("button", { name: "Certifying…" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Certifying…" })).toBeDisabled();
-  await expect(page.locator(".panel-host")).not.toHaveAttribute("inert");
-  await expect(page.locator(".notification-stack > .banner.info")).toContainText("Certifying…");
-  await expect(page.getByText("Refresh audit", { exact: true })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Clear rebuildable context", exact: true })).toBeDisabled();
-  await deliver(page, { type: "knowledge-stale" });
-  await expect(page.getByRole("button", { name: "Export historical JSON", exact: true })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Export historical Markdown", exact: true })).toBeDisabled();
-  await deliver(page, { type: "error", message: "Another command was rejected", nonTerminal: true });
-  await expect(page.locator(".panel-host")).toHaveAttribute("aria-busy", "true");
-  await expect(page.locator(".footer-actions button").filter({ hasText: "Certifying…" })).toBeDisabled();
-  await deliver(page, { type: "certified", count: 1, target: "source frames", removedVariantAnnotations: 0 });
-  await expect(page.locator(".panel-host")).toHaveAttribute("aria-busy", "false");
-  await expect(page.getByText("Refresh this audit before certifying.", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Export historical JSON", exact: true })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Export historical Markdown", exact: true })).toBeEnabled();
-  await expect(page.locator("#requests")).toHaveAttribute("data-export-count", "0");
-  await page.getByRole("button", { name: "Export historical JSON", exact: true }).click();
+test("keeps certification paused while audits remain exportable", async ({ page }) => {
+  await expect(page.getByText("Certification is temporarily unavailable while concurrent edit safety is verified.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Certify components (0)" })).toBeDisabled();
+  await expect(page.locator("#requests")).toHaveAttribute("data-count", "0");
+  await page.getByRole("button", { name: "Export JSON", exact: true }).click();
   await expect(page.locator("#requests")).toHaveAttribute("data-export-count", "1");
-  await expect(page.locator("#requests")).toHaveAttribute("data-export-format", "json");
-});
-
-for (const terminal of ["error", "profile-invalidated"] as const) {
-  test(`clears certification busy state on ${terminal}`, async ({ page }) => {
-    await page.getByRole("button", { name: "Certify source frames", exact: true }).click();
-    await expect(page.locator(".panel-host")).toHaveAttribute("aria-busy", "true");
-    if (terminal === "error") await deliver(page, { type: "error", message: "Verification failed" });
-    else await page.evaluate(() => window.postMessage({ pluginMessage: { type: "profile-invalidated", data: (window as unknown as FixtureWindow).PassportTest.bootstrap } }, "*"));
-    await expect(page.locator(".panel-host")).toHaveAttribute("aria-busy", "false");
-    await expect(page.locator(".panel-host")).not.toHaveAttribute("inert");
-  });
-}
-
-test("recovers from a cancelled certification and allows another attempt", async ({ page }) => {
-  await page.getByRole("button", { name: "Certify source frames", exact: true }).click();
-  await deliver(page, { type: "scan-cancelled" });
-  await expect(page.locator(".panel-host")).toHaveAttribute("aria-busy", "false");
-  await expect(page.locator(".panel-host")).not.toHaveAttribute("inert");
-  await expect(page.getByRole("button", { name: "Certify source frames", exact: true })).toBeEnabled();
-  await page.getByRole("button", { name: "Certify source frames", exact: true }).click();
-  await expect(page.locator("#requests")).toHaveAttribute("data-count", "2");
-});
-
-test("persists tab changes while certification is pending", async ({ page }) => {
-  await page.getByRole("button", { name: "Certify source frames", exact: true }).click();
-  await page.getByRole("button", { name: "Findings", exact: false }).click();
-  await expect(page.locator("#requests")).toHaveAttribute("data-view-tab", "findings");
+  await deliver(page, { type: "knowledge-stale" });
+  await expect(page.getByRole("button", { name: "Certify source frames", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Export historical JSON", exact: true })).toBeEnabled();
+  await expect(page.locator("#requests")).toHaveAttribute("data-count", "0");
 });

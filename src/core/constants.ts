@@ -2,6 +2,9 @@ import type { Axis, ReadinessProfile, SourceRef } from "./contracts";
 
 export const RULESET_VERSION = "1.0.0-beta.4";
 export const PRODUCT_NAME = "Design Passport";
+// Restore certification only after native cross-client freshness is proven.
+export const CERTIFICATION_PAUSED = true;
+export const CERTIFICATION_PAUSED_MESSAGE = "Certification is temporarily unavailable while concurrent edit safety is verified. Audits and exports still work.";
 export const AI_SOURCE_FRAME_ANNOTATION = "AI source frame";
 export const CERTIFICATION_ANNOTATION_PREFIX = "[Design Passport]";
 export const VARIANT_COVERAGE_ANNOTATION_PREFIX = "[Design Passport] Covered by";
