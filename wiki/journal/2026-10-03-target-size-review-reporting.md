@@ -1,6 +1,8 @@
 ---
 title: Explain sized button target reviews
 topics: [design-readiness-standard]
+issue: 'https://github.com/jfusco/design-passport/issues/57'
+issues: ['https://github.com/jfusco/design-passport/issues/57']
 ---
 
 # Explain sized button target reviews
