@@ -137,6 +137,23 @@ medians, concurrent-edit rollback, and later Undo ownership remain partial;
 the [journal](../journal/2026-09-30-audit-memory-and-certification.md)
 records the individual timings and attempt boundaries.
 
+After PR #54 merged, issue 53 was reopened for the outstanding native gates.
+The later target-name followup adds a bounded live-name comparison after each
+certification scene verification. The [postmerge journal](../journal/2026-10-03-postmerge-native-acceptance.md)
+records focused coverage and a timed native cross-client rename that remained
+invisible until after a successful six-root certification. The source check
+does not close the concurrent-rename rollback or release gate.
+Four more candidate audits and four six-root certifications completed on the
+disposable copy. Three root renames were visibly committed in a separate
+Figma client during final verification, but each certification succeeded and
+the desktop change callback arrived 303–465 ms after handler completion.
+That timing cannot demonstrate the failed-command compensation path. The
+repaired rollback, native Undo ownership, matched certification median, and
+full audit/screen-saver matrix remain partial. The user made the 20% audit
+improvement advisory; the observed single-pair samples are still the only
+matched speed evidence. The [postmerge journal](../journal/2026-10-03-postmerge-native-acceptance.md)
+records the timing and provenance limits.
+
 ## Repository automation
 
 Since 2026-09-25, drafts and changes limited to wiki content or its generated graph use lightweight validation while ready product, workflow, script, documentation, and skill changes retain the full browser-backed suite. Wiki maintenance runs Mondays, audits missed merges in batches, updates bot pull requests through REST, and rejects duplicate or malformed frontmatter across the full wiki before writing history ([issue #35](https://github.com/JFusco/design-passport/issues/35)).

@@ -825,6 +825,10 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         return { frame, node, variantNodes };
       });
       await assertVerifiedKnowledge();
+      if (!await adapter.matchesCertificationTargetNames(current.graph, certificationNodeIds)) {
+        markKnowledgeDirty();
+        throw new Error("A certification target changed after the audit. Refresh before certification.");
+      }
       assertKnowledgeRevision();
       if (resolved.some((entry) => !entry || entry.node.removed || entry.variantNodes.some((node) => !node || node.removed))) {
         throw new Error("A certification target no longer exists");
@@ -856,6 +860,10 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
           count += 1;
         }
         await assertVerifiedKnowledge();
+        if (!await adapter.matchesCertificationTargetNames(current.graph, certificationNodeIds)) {
+          markKnowledgeDirty();
+          throw new Error("A certification target changed during certification. Refresh the audit.");
+        }
         if (count !== certificationFrames.length) throw new Error(`Every ${componentCertification ? "component" : "source frame"} must be certified in the same undo group`);
         figma.commitUndo();
         await new Promise((resolve) => setTimeout(resolve, 0));

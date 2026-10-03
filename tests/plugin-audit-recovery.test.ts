@@ -48,6 +48,7 @@ async function launch(storage = memoryStorage(), fileKey: string | undefined = "
     }),
     matchesDocumentTopology: vi.fn(() => true),
     matchesVariableEnvironment: vi.fn(async () => true),
+    matchesCertificationTargetNames: vi.fn(async () => true),
     captureAuditTarget: vi.fn((scope: string): CapturedAuditTarget => scope === "page"
       ? { scope: "page", pageId: "page:1" } : { scope: "selection", nodeIds: ["root:desktop"] }),
     targetRootIds: vi.fn((target: CapturedAuditTarget) => target.scope === "selection" ? [...target.nodeIds] : ["root:desktop"]),
@@ -169,6 +170,7 @@ describe("plugin audit recovery integration", () => {
     await plugin.send({ type: "certify" });
     expect(plugin.events.at(-1)).toMatchObject({ type: "certified", count: targetCount });
     expect(plugin.adapter.matchesVariableEnvironment).toHaveBeenCalledTimes(2);
+    expect(plugin.adapter.matchesCertificationTargetNames).toHaveBeenCalledTimes(2);
     expect(locals).toHaveBeenCalledTimes(2);
     const signatureIds = fixture.pages.flatMap((page) => page.children.flatMap((root) => [root.id, ...root.children.map((node) => node.id)]));
     for (const id of signatureIds) expect(lookup.mock.calls.filter(([lookedUp]) => lookedUp === id)).toHaveLength(2);
@@ -206,7 +208,7 @@ describe("plugin audit recovery integration", () => {
     expect(undo).not.toHaveBeenCalled();
   });
 
-  it.each(["setter", "final verification"])("restores exact prior metadata after a %s failure and keeps a designer rename", async (failure) => {
+  it.each(["setter", "final verification", "silent target rename"])("restores exact prior metadata after a %s failure and keeps a designer rename", async (failure) => {
     const plugin = await launch();
     await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
     const priorCertification = '{"certifiedAt":"prior","grade":"A"}';
@@ -236,6 +238,11 @@ describe("plugin audit recovery integration", () => {
         plugin.handlers.get("documentchange")?.({ documentChanges: [{ id: "root:desktop", type: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["name"] }] });
         return true;
       });
+    } else if (failure === "silent target rename") {
+      plugin.adapter.matchesCertificationTargetNames.mockResolvedValueOnce(true).mockImplementationOnce(async () => {
+        node.name = "Designer rename during verification";
+        return false;
+      });
     }
     await plugin.send({ type: "certify" });
     expect(write).toHaveBeenCalledTimes(2);
@@ -244,7 +251,7 @@ describe("plugin audit recovery integration", () => {
     expect(certification).toBe(priorCertification);
     expect(annotations).toEqual(priorAnnotations);
     expect(relaunchData).toEqual(priorRelaunchData);
-    if (failure === "final verification") expect(node.name).toBe("Designer rename during verification");
+    if (failure !== "setter") expect(node.name).toBe("Designer rename during verification");
     expect(plugin.events.at(-1)).toMatchObject({ type: "error" });
     expect(plugin.events.some((event) => event.type === "certified")).toBe(false);
     // Native undo ownership and the timing of an overlapping edit still need
