@@ -1,6 +1,8 @@
 ---
 title: Certification release guard
 topics: [persistent-audits]
+issue: 'https://github.com/jfusco/design-passport/issues/61'
+issues: ['https://github.com/jfusco/design-passport/issues/61']
 ---
 
 # Certification release guard
