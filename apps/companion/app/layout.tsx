@@ -25,6 +25,8 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             <Link href="/packs/new">Reference pack</Link>
             <Link href="/learnings/import">Import</Link>
             <Link href="/review">Review</Link>
+            <Link href="/history/audit">Audits</Link>
+            <Link href="/history/learning">Learnings</Link>
           </nav>
           <span className="local-badge">Private · local</span>
         </header>

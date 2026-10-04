@@ -376,6 +376,10 @@ function reportIdentityMaterial(report: ReadinessReport): unknown {
   };
 }
 
+export function reportIdentityDigest(report: ReadinessReport): string {
+  return hashValue(reportIdentityMaterial(report));
+}
+
 function envelopeMaterial(envelope: Omit<ReviewLearningEnvelopeV1, "digest" | "generatedAt">): unknown {
   return {
     ...envelope,
@@ -456,7 +460,7 @@ export function buildLearningEnvelope(input: {
       catalogVersion: input.report.catalogVersion,
       knowledgeVersion: input.knowledgeVersion,
     },
-    reportDigest: hashValue(reportIdentityMaterial(input.report)),
+    reportDigest: reportIdentityDigest(input.report),
     observations: [...groups.values()].sort((left, right) => left.observationKey.localeCompare(right.observationKey)),
   };
   const envelope: ReviewLearningEnvelopeV1 = {
@@ -675,7 +679,7 @@ function multiFileMaterial(report: Omit<MultiFileReviewReportV1, "digest" | "gen
     ...report,
     targets: report.targets.map(({ source, report: targetReport }) => ({
       source,
-      reportDigest: hashValue(reportIdentityMaterial(targetReport)),
+      reportDigest: reportIdentityDigest(targetReport),
     })).sort((left, right) => left.source.sourceId.localeCompare(right.source.sourceId)),
     references: [...report.references].sort((left, right) => left.sourceId.localeCompare(right.sourceId)),
     warnings: sortedUnique(report.warnings),

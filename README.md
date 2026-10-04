@@ -124,7 +124,7 @@ FIGMA_TOKEN=your_figma_personal_access_token pnpm companion pack create \
 
 Choose the generated pack file in **Context → Style guide and references** while in Design Mode. Designers see a plain-language summary, version, and short reference—not raw JSON. The pack is validated and bound privately to that exact Figma file; collaborators in the file can use it on later normal audits. Dev Mode can read it but cannot replace or remove it. A copied file rejects the inherited binding because its file fingerprint differs. One-off `reference` packs use the same command with `--role reference`, remain session-only, and are labeled as inspiration. If an unsaved file has no stable file key, its style guide can be used for that session but cannot be connected permanently.
 
-After an audit, **Guidance → Contribute learnings** shows a plain-language preview of the sanitized observations and everything that is excluded. Exporting is optional and is the only way scanning data leaves the plugin. Import and review the machine-readable file locally:
+After an audit, **Guidance → Contribute learnings** shows a plain-language preview of the sanitized observations and everything that is excluded. Exporting is optional and is the only way scanning data leaves the plugin. The companion runs locally and stores selected imports in your dedicated Supabase database. Configure server-only runtime access as described in [the database guide](wiki/topics/supabase-companion.md), then import and review the machine-readable file:
 
 ```bash
 pnpm companion:build
@@ -132,7 +132,7 @@ pnpm companion learning import path/to/review.design-passport-learning.json
 FIGMA_TOKEN=your_figma_personal_access_token pnpm companion knowledge review
 ```
 
-The review command starts the production companion on `127.0.0.1` and prints its private session URL. The dashboard creates downloadable reference packs, imports up to 10 learning files per batch, and opens the decision queue. Each file may be up to 1 MB, with a 5 MB combined limit. The browser never receives `FIGMA_TOKEN`.
+The review command starts the production companion on `127.0.0.1` and prints its private session URL. The dashboard creates downloadable reference packs, imports up to 10 learning files per batch, and opens the decision queue. Each file may be up to 1 MB, with a 5 MB combined limit. Audit history accepts separate readiness reports and historical envelopes, up to 10 files, 10 MB each and 25 MB combined. Audit metadata can include node paths, names, URLs and waiver information; the import page explains this before upload. Search audit and learning history by project, source date, rule, status and text, with audit grade/readiness filters. The browser never receives Figma or database credentials.
 
 The review screen generates draft wording automatically. A maintainer may edit it and must explicitly approve, reject, or defer it. Scope defaults to project-only; shared scope is an explicit client-neutral choice. See [the knowledge-loop guide](wiki/guides/knowledge-loop.md).
 

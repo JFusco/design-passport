@@ -2,7 +2,7 @@
 
 ## Network isolation
 
-The manifest declares `networkAccess.allowedDomains: ["none"]`. The plugin has no backend, telemetry, OAuth, webhook, analytics, or runtime-fetch path. The separately invoked local companion can fetch only explicitly supplied, strictly validated Figma sources with a maintainer-owned `FIGMA_TOKEN` that is never written to plugin data or generated artifacts.
+The manifest declares `networkAccess.allowedDomains: ["none"]`. The plugin has no backend, telemetry, OAuth, webhook, analytics, or runtime-fetch path. The separately invoked local companion connects to its dedicated Supabase database and fetches explicitly supplied, strictly validated Figma sources with a maintainer-owned `FIGMA_TOKEN` that is never written to plugin data or generated artifacts.
 
 ## Untrusted design data
 
@@ -28,6 +28,8 @@ The project style-guide binding uses private document-root plugin data under `pr
 One-off references and pending contribution previews are session-only. Learning export uses an allowlisted structured envelope and excludes credentials, URLs, file keys, node IDs, screenshots, raw copy, emails, local paths, source code, and waiver prose.
 
 The Knowledge Review server binds only to loopback, uses a random capability token, validates Host and Origin, limits request bodies, sets a restrictive content-security policy, and has no external assets. Draft generation never approves, ranks, changes scope, or publishes guidance.
+
+The companion stores selected audit exports in its private Supabase schema. These exports can include node paths, names, URLs, design metadata and waiver information; the import UI explains this before upload. Learning imports retain sanitization. All tables enable row-level security and deny public, anonymous and authenticated access. Runtime uses a restricted login with verified TLS; migration credentials never reach the companion. Evidence, revisions and decisions are append-only for runtime. Candidate changes, decisions and guidance derivations commit atomically, with digest checks inside a transaction-scoped advisory lock. Filesystem writes occur only for explicit exports under the retained local export lock. See [database persistence and recovery](../topics/supabase-companion.md).
 
 ## Mutation authorization
 

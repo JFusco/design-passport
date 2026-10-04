@@ -5,6 +5,7 @@ export type CompanionErrorCode =
   | "not-configured"
   | "not-found"
   | "unauthorized"
+  | "unavailable"
   | "upstream";
 
 export class CompanionError extends Error {

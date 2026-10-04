@@ -1,23 +1,23 @@
 # Graph Report - design-passport  (2026-10-04)
 
 ## Corpus Check
-- 117 files · ~70,289 words
+- 134 files · ~75,707 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1040 nodes · 3188 edges · 47 communities (44 shown, 3 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 34 edges (avg confidence: 0.65)
+- 1126 nodes · 3498 edges · 50 communities (48 shown, 2 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 39 edges (avg confidence: 0.65)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c5625aa3`
+- Built from commit: `26de3b6b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- hashValue
+- knowledge-loop.ts
 - adapter.ts
-- runtime.ts
+- requireRequestAccess
 - mutations.ts
 - repository.ts
 - audit-storage.ts
@@ -25,99 +25,102 @@
 - App.tsx
 - devDependencies
 - compilerOptions
-- .buildKnowledge
+- ReviewController.tsx
 - plugin/main.ts
 - contracts.ts
-- ReadinessReport
+- recheck.ts
 - constants.ts
-- handleMessage
+- report.ts
 - Overview.tsx
 - scan-lifecycle.ts
-- KnowledgeSessionState
+- ensureKnowledge
 - presentation.ts
 - companion/main.ts
-- catalog.ts
-- message-validation.ts
-- snapshotBase
+- DesignKnowledgeGraph
+- stable.ts
+- runtime.ts
 - review-source.ts
 - session-state.ts
-- node-fields.ts
-- FigmaAdapter
-- assertReferencePack
+- rules.ts
+- handleMessage
+- history.ts
 - analyzeCurrentGraph
 - messages.ts
 - layout.tsx
 - proxy.ts
 - next.config.ts
-- context-cache.ts
-- VariableCollectionOption
-- text-style.ts
-- profile.ts
-- finding-groups.ts
-- breakdown.ts
-- schema.ts
-- componentSnapshot
+- databasePage
+- ProfileEditor.tsx
+- node-fields.ts
+- AuditImportForm.tsx
+- Findings.tsx
+- ReadinessProfile
+- filesystem.ts
+- knowledge.ts
+- ChangePlan
+- rules/component.ts
+- download/[id]/route.ts
 
 ## God Nodes (most connected - your core abstractions)
 1. `hashValue()` - 69 edges
 2. `handleMessage()` - 42 edges
 3. `ReadinessProfile` - 32 edges
 4. `Finding` - 29 edges
-5. `DesignKnowledgeGraph` - 25 edges
-6. `assertContract()` - 24 edges
-7. `snapshotBase()` - 24 edges
-8. `FigmaAdapter` - 24 edges
-9. `buildReadinessReport()` - 22 edges
-10. `analyzeCurrentGraph()` - 21 edges
+5. `requireRequestAccess()` - 28 edges
+6. `failure()` - 26 edges
+7. `assertContract()` - 26 edges
+8. `DesignKnowledgeGraph` - 25 edges
+9. `snapshotBase()` - 24 edges
+10. `FigmaAdapter` - 24 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `POST()` --calls--> `importAudits()`  [EXTRACTED]
+  apps/companion/app/api/audits/import/route.ts → src/companion/repository.ts
+- `POST()` --calls--> `previewAuditProjects()`  [EXTRACTED]
+  apps/companion/app/api/audits/preview/route.ts → src/companion/repository.ts
 - `POST()` --calls--> `readKnowledgeState()`  [EXTRACTED]
   apps/companion/app/api/candidates/revise/route.ts → src/companion/repository.ts
 - `POST()` --calls--> `reviseCandidate()`  [EXTRACTED]
   apps/companion/app/api/candidates/revise/route.ts → src/companion/repository.ts
-- `POST()` --calls--> `readKnowledgeState()`  [EXTRACTED]
-  apps/companion/app/api/decisions/route.ts → src/companion/repository.ts
-- `POST()` --calls--> `recordDecision()`  [EXTRACTED]
-  apps/companion/app/api/decisions/route.ts → src/companion/repository.ts
-- `POST()` --calls--> `importLearning()`  [EXTRACTED]
-  apps/companion/app/api/learnings/import/route.ts → src/companion/repository.ts
+- `POST()` --calls--> `reviewView()`  [EXTRACTED]
+  apps/companion/app/api/candidates/revise/route.ts → src/companion/view-models.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (47 total, 3 thin omitted)
+## Communities (50 total, 2 thin omitted)
 
-### Community 0 - "hashValue"
-Cohesion: 0.18
-Nodes (32): assertKnowledgeCandidate(), assertKnowledgeDecision(), assertLearningEnvelope(), assertNoUnsafeStrings(), assertTeamKnowledgePack(), buildKnowledgeDecision(), buildKnowledgeInsights(), buildLearningEnvelope() (+24 more)
+### Community 0 - "knowledge-loop.ts"
+Cohesion: 0.12
+Nodes (47): loadDecisions(), loadEnvelopes(), readFilesystemKnowledgeState(), LearningObservationV1, ProjectStyleGuideBindingV1, assertKnowledgeCandidate(), assertKnowledgeDecision(), assertLearningEnvelope() (+39 more)
 
 ### Community 1 - "adapter.ts"
-Cohesion: 0.14
-Nodes (23): CertificationSummary, BINDABLE_FIELDS, CapturedInstanceEvidence, captureEntries(), CaptureEntry, CaptureFragmentEntries, captureFragments(), capturePageFragments() (+15 more)
+Cohesion: 0.05
+Nodes (83): CertificationSummary, populateGraphMetrics(), postOrder(), sourceFrameIds(), annotateInstanceDescendants(), BINDABLE_FIELDS, bindingSignature(), boundFields() (+75 more)
 
-### Community 2 - "runtime.ts"
-Cohesion: 0.06
-Nodes (62): POST(), runtime, POST(), runtime, GET(), runtime, safeFilename(), POST() (+54 more)
+### Community 2 - "requireRequestAccess"
+Cohesion: 0.12
+Nodes (32): POST(), runtime, POST(), runtime, POST(), runtime, POST(), runtime (+24 more)
 
 ### Community 3 - "mutations.ts"
 Cohesion: 0.09
-Nodes (51): BindableField, JsonValue, FIELD_SCOPES, FLOAT_FIELDS, isPreciselyScopedVariableForField(), scopesForBindableField(), variableTypeForBindableField(), normalizeStableValue() (+43 more)
+Nodes (48): BindableField, JsonValue, FIELD_SCOPES, FLOAT_FIELDS, isPreciselyScopedVariableForField(), scopesForBindableField(), variableTypeForBindableField(), aliasIds() (+40 more)
 
 ### Community 4 - "repository.ts"
-Cohesion: 0.18
-Nodes (27): acquireLock(), assertNoSymlink(), assertWithinRoot(), atomicWriteJson(), clearRebuildRequired(), ensureDirectory(), exists(), ImportBatchResult (+19 more)
+Cohesion: 0.14
+Nodes (33): transaction(), assertAudit(), assertProjectScope(), exactKeys(), IMPORT_LIMITS, ImportFileResult, ImportInput, ImportKind (+25 more)
 
 ### Community 5 - "audit-storage.ts"
-Cohesion: 0.08
-Nodes (42): FindingCategory, Grade, AuditSaveStatus, AuditViewState, canonicalAuditTargetKey(), isAuditViewState(), SaveAuditInput, SavedAuditSummary (+34 more)
+Cohesion: 0.10
+Nodes (34): CapturedAuditTarget, canonicalAuditTargetKey(), SavedAuditV1, AuditCodecMeasurement, AuditMetadata, auditPacket(), AuditSaveGuard, AuditStorage (+26 more)
 
 ### Community 6 - "accessibility.ts"
 Cohesion: 0.09
-Nodes (41): SOURCES, channel(), composite(), contrastRatio(), isLargeText(), relativeLuminance(), Rgba, FALSE_VALUES (+33 more)
+Nodes (40): channel(), composite(), contrastRatio(), isLargeText(), relativeLuminance(), Rgba, FALSE_VALUES, hasInactiveVariantState() (+32 more)
 
 ### Community 7 - "App.tsx"
-Cohesion: 0.15
-Nodes (21): profileDomainErrors(), App(), download(), EMPTY_SELECTION_SUMMARY, ProfileEditor(), root, auditCompletionNotice(), auditRefreshNotice() (+13 more)
+Cohesion: 0.14
+Nodes (26): Axis, FindingCategory, Grade, AuditSaveStatus, AuditViewState, SaveAuditInput, SavedAuditSummary, App() (+18 more)
 
 ### Community 8 - "devDependencies"
 Cohesion: 0.06
@@ -127,141 +130,157 @@ Nodes (33): dependencies, next, react, react-dom, server-only, devDependencies, 
 Cohesion: 0.06
 Nodes (30): compilerOptions, allowJs, baseUrl, esModuleInterop, incremental, isolatedModules, jsx, lib (+22 more)
 
-### Community 10 - ".buildKnowledge"
-Cohesion: 0.14
-Nodes (19): ScanProgress, populateGraphMetrics(), postOrder(), sourceFrameIds(), annotateInstanceDescendants(), bindingSignature(), captureInstanceEvidence(), enrichInferences() (+11 more)
+### Community 10 - "ReviewController.tsx"
+Cohesion: 0.13
+Nodes (22): DashboardPage(), dynamic, dynamic, metadata, ReviewPage(), decisionDateFormatter, humanize(), LocalReviewDraft (+14 more)
 
 ### Community 11 - "plugin/main.ts"
 Cohesion: 0.10
-Nodes (24): applyWaivers(), parseWaiver(), sanitizeWaiverStore(), validDate(), Waiver, WaiverStore, FullKnowledgeRebuildRequired, historicalAuditContent() (+16 more)
+Nodes (24): applyWaivers(), parseWaiver(), sanitizeWaiverStore(), validDate(), Waiver, WaiverStore, FullKnowledgeRebuildRequired, activeProjectStyleGuidePack() (+16 more)
 
 ### Community 12 - "contracts.ts"
-Cohesion: 0.10
-Nodes (21): AxisScore, BuildChannel, CONFIGURABLE_POLICY_IDS, ConfigurablePolicyId, EffectSnapshot, Fixability, JsonPrimitive, KnowledgeOriginV1 (+13 more)
+Cohesion: 0.11
+Nodes (18): PRODUCER_IDENTITY, RULESET_VERSION, AxisScore, BuildChannel, EffectSnapshot, FindingProvenance, FindingStatus, Fixability (+10 more)
 
-### Community 13 - "ReadinessReport"
-Cohesion: 0.30
-Nodes (10): ReadinessReport, AuditRecheckRequest, actionable(), captureRecheckFindings(), recheckCounts(), RecheckFindings, Modules(), ModulesProps (+2 more)
+### Community 13 - "recheck.ts"
+Cohesion: 0.53
+Nodes (5): AuditRecheckRequest, actionable(), captureRecheckFindings(), recheckCounts(), RecheckFindings
 
 ### Community 14 - "constants.ts"
-Cohesion: 0.12
-Nodes (17): AXIS_LABELS, AXIS_MULTIPLIERS, CERTIFICATION_ANNOTATION_PREFIX, CERTIFICATION_DATA_KEY, DEFAULT_PROFILE, DETACHMENT_INTENT_DATA_KEY, LEGACY_CERTIFICATION_ANNOTATION_PREFIX, PRODUCT_NAME (+9 more)
+Cohesion: 0.06
+Nodes (46): HistoricalAuditExportV1, AXIS_LABELS, AXIS_MULTIPLIERS, CERTIFICATION_ANNOTATION_PREFIX, CERTIFICATION_DATA_KEY, DEFAULT_PROFILE, DETACHMENT_INTENT_DATA_KEY, LEGACY_CERTIFICATION_ANNOTATION_PREFIX (+38 more)
 
-### Community 15 - "handleMessage"
-Cohesion: 0.29
-Nodes (11): validateSessionPackUse(), assertCurrentReport(), assertDocumentMutationAllowed(), assertInitialized(), currentKnowledgeAvailable(), handleMessage(), invalidateProfileIfNeeded(), markKnowledgeDirty() (+3 more)
+### Community 15 - "report.ts"
+Cohesion: 0.19
+Nodes (21): AXES, affectsScore(), blocksReadiness(), CATEGORIES, collapseDisabledPolicyFindings(), CONFIGURABLE_RULES, configurablePolicyIdForFinding(), findingImpactLabel() (+13 more)
 
 ### Community 16 - "Overview.tsx"
-Cohesion: 0.14
-Nodes (23): producerLabel(), GradeLetter, ScanScope, PageOption, SelectionSummary, AuditRefreshResult, AuditTargetSummary, BrandMark() (+15 more)
+Cohesion: 0.13
+Nodes (23): producerLabel(), GradeLetter, ScanProgress, PageOption, SelectionSummary, AuditRefreshResult, BrandMark(), BrandMarkProps (+15 more)
 
 ### Community 17 - "scan-lifecycle.ts"
-Cohesion: 0.15
-Nodes (16): CapturedAuditTarget, AuditMetadata, BatchAuditSummary, runPageBatch(), PluginToUiMessage, friendlyImportError(), pluginMessageForError(), ScanCancelledError (+8 more)
+Cohesion: 0.16
+Nodes (15): BatchAuditSummary, runPageBatch(), AuditTargetSummary, PluginToUiMessage, friendlyImportError(), pluginMessageForError(), ScanCancelledError, AuditTargetIntent (+7 more)
+
+### Community 18 - "ensureKnowledge"
+Cohesion: 0.19
+Nodes (6): isKnowledgeFresh(), assertCurrentReport(), currentKnowledgeAvailable(), ensureKnowledge(), verifiedKnowledgeAvailable(), KnowledgeSessionState
 
 ### Community 19 - "presentation.ts"
 Cohesion: 0.22
-Nodes (15): KnowledgeInsight, ReviewLearningEnvelopeV1, ProjectStyleGuideStatus, KnowledgeSummary, ContextPanel(), ContextPanelProps, JsonFilePicker(), Guidance() (+7 more)
+Nodes (14): KnowledgeInsight, ReviewLearningEnvelopeV1, ProjectStyleGuideStatus, KnowledgeSummary, ContextPanel(), ContextPanelProps, JsonFilePicker(), Guidance() (+6 more)
 
 ### Community 20 - "companion/main.ts"
-Cohesion: 0.16
-Nodes (24): createReferencePack(), fetchFigmaSource(), figmaFetchJson(), FigmaSourceResult, ReferencePackInput, responseTextWithinLimit(), args(), availablePort() (+16 more)
+Cohesion: 0.13
+Nodes (29): closeDatabases(), database(), databaseError(), loadRuntimeEnvironment(), pools, runtimeChildEnvironment(), runtimeKeys, exportKnowledge() (+21 more)
 
-### Community 21 - "catalog.ts"
-Cohesion: 0.14
-Nodes (15): canonical, CATALOG_DIGEST, CATALOG_VERSION, CatalogAlias, CatalogData, CatalogPattern, contextualAliases, getPattern() (+7 more)
+### Community 21 - "DesignKnowledgeGraph"
+Cohesion: 0.13
+Nodes (16): canonical, CATALOG_DIGEST, CATALOG_VERSION, CatalogAlias, CatalogData, CatalogPattern, contextualAliases, getPattern() (+8 more)
 
-### Community 22 - "message-validation.ts"
-Cohesion: 0.12
-Nodes (26): AI_SOURCE_FRAME_ANNOTATION, ChangeOperation, ChangePlan, BINDABLE_FIELDS, isBindableField(), operationForFinding(), operationKey(), operationOrder() (+18 more)
+### Community 22 - "stable.ts"
+Cohesion: 0.15
+Nodes (22): AI_SOURCE_FRAME_ANNOTATION, ChangeOperation, attachFindingProvenance(), buildFindingGroups(), group(), inheritedRootSource(), PROPERTY_BY_RULE, propertyForFinding() (+14 more)
 
-### Community 23 - "snapshotBase"
-Cohesion: 0.20
-Nodes (22): boundFields(), boundVariableIds(), canonicalBindableField(), captureSupplement(), devStatusSnapshot(), effectSnapshots(), enrichLiveEvidence(), geometryEvidence() (+14 more)
+### Community 23 - "runtime.ts"
+Cohesion: 0.21
+Nodes (14): GET(), dynamic, ImportLearningsPage(), metadata, dynamic, metadata, NewPackPage(), isConfigured() (+6 more)
 
 ### Community 24 - "review-source.ts"
-Cohesion: 0.19
-Nodes (16): DesignReferencePackV1, ReferenceDomainV1, ReferenceFactV1, ReviewSourceRoleV1, declaredBreakpointWidths(), declaredGuidanceFacts(), FigmaNode, GUIDANCE_DOMAINS (+8 more)
+Cohesion: 0.14
+Nodes (21): figmaFetchJson(), FigmaSourceResult, ReferencePackInput, responseTextWithinLimit(), DesignReferencePackV1, ReferenceDomainV1, ReferenceFactV1, ReviewSourceRoleV1 (+13 more)
 
 ### Community 25 - "session-state.ts"
 Cohesion: 0.22
 Nodes (6): CommandGate, DocumentChangeSignal, isLocalMetadataOnly(), KnowledgeBuildToken, MutationChangeGuard, requiresTransientMutationGuard()
 
-### Community 26 - "node-fields.ts"
-Cohesion: 0.05
-Nodes (95): canonicalPatternName(), AXES, DesignKnowledgeGraph, Finding, FindingStatus, NodeSnapshot, ReadinessProfile, ResponsiveFamily (+87 more)
+### Community 26 - "rules.ts"
+Cohesion: 0.15
+Nodes (26): canonicalPatternName(), SOURCES, Finding, NodeSnapshot, applyFindingPolicy(), classifyFinding(), collectDescendants(), collectBoundVariableIds() (+18 more)
 
-### Community 27 - "FigmaAdapter"
-Cohesion: 0.16
-Nodes (6): FigmaAdapter, summarizeSelection(), activeProjectStyleGuidePack(), currentProjectStyleGuideStatus(), initialize(), storedProjectStyleGuideBinding()
+### Community 27 - "handleMessage"
+Cohesion: 0.14
+Nodes (13): validateSessionPackUse(), FigmaAdapter, summarizeSelection(), historicalAuditContent(), assertDocumentMutationAllowed(), assertInitialized(), currentProjectStyleGuideStatus(), errorMessage() (+5 more)
 
-### Community 28 - "assertReferencePack"
-Cohesion: 0.32
-Nodes (11): ProjectStyleGuideBindingV1, assertProjectStyleGuideBinding(), assertReferencePack(), bindingMaterial(), buildProjectStyleGuideBinding(), buildReferencePack(), combineProjectStyleGuidePacks(), parseProjectStyleGuideBinding() (+3 more)
+### Community 28 - "history.ts"
+Cohesion: 0.23
+Nodes (11): GET(), runtime, GET(), runtime, dynamic, HistoryPage(), historyFilters(), historyResponse() (+3 more)
 
 ### Community 29 - "analyzeCurrentGraph"
-Cohesion: 0.22
-Nodes (15): isKnowledgeFresh(), analyzeCurrentGraph(), assertKnowledgeRevision(), assertScanNotCancelled(), assertVerifiedKnowledge(), auditPages(), ensureDocumentChangeWatcher(), ensureKnowledge() (+7 more)
+Cohesion: 0.21
+Nodes (14): analyzeCurrentGraph(), assertKnowledgeRevision(), assertScanNotCancelled(), assertVerifiedKnowledge(), auditPages(), ensureDocumentChangeWatcher(), handleDocumentChange(), markKnowledgeDirty() (+6 more)
 
 ### Community 30 - "messages.ts"
-Cohesion: 0.16
-Nodes (22): getPatternChecklist(), FindingGroup, ScanRequest, TokenCoverageDisposition, TokenCoverageField, TokenCoverageGroup, TokenCoverageReason, TokenCoveragePageQuery (+14 more)
+Cohesion: 0.15
+Nodes (22): ScanRequest, TokenCoverageDisposition, TokenCoverageField, TokenCoverageGroup, TokenCoverageReason, TokenCoveragePageQuery, isBindableField(), isAuditViewState() (+14 more)
 
 ### Community 31 - "layout.tsx"
 Cohesion: 0.33
 Nodes (4): metadata, viewport, CumulativeLogo(), CumulativeLogoProps
 
-### Community 39 - "context-cache.ts"
-Cohesion: 0.27
-Nodes (9): baseSnapshot(), ContextCachePort, contextFragment, newBuildDiagnostics(), readContextFragment(), record(), restPageFingerprint, restSubtreeCovers() (+1 more)
-
-### Community 40 - "VariableCollectionOption"
+### Community 39 - "databasePage"
 Cohesion: 0.24
-Nodes (9): PRODUCER_IDENTITY, BootstrapData, KnowledgeBuildResult, KnowledgeBuildDiagnostics, listVariableCollectionOptions(), loadRemoteCollections(), settleWithin(), VariableCollectionOption (+1 more)
+Nodes (9): GET(), runtime, dynamic, ImportAuditsPage(), dynamic, HistoryDetailPage(), databasePage(), auditDetail() (+1 more)
 
-### Community 41 - "text-style.ts"
-Cohesion: 0.25
-Nodes (5): mapConcurrent(), material(), mixedTypographyFields(), TextStyleEvidenceReader, TextStyleMaterial
+### Community 40 - "ProfileEditor.tsx"
+Cohesion: 0.20
+Nodes (14): CONFIGURABLE_POLICY_IDS, ConfigurablePolicyId, RuleMode, profileDomainErrors(), BootstrapData, VariableCollectionOption, PageRole, POLICY_LABELS (+6 more)
 
-### Community 42 - "profile.ts"
-Cohesion: 0.36
-Nodes (7): assertProfileSemantics(), cloneProfile(), normalizeReadinessProfile(), profileSemanticErrors(), ReadinessProfileV1, reconcileProfilePages(), validateContract()
+### Community 41 - "node-fields.ts"
+Cohesion: 0.17
+Nodes (27): assessIgnoringInstanceOwnership(), assessTokenProperty(), bindingCoverage, CODE_RELEVANT_FIELDS, documentationScaffoldNodeIds(), eligibleTokenFields(), fieldIsPresent(), hasRenderedStroke() (+19 more)
 
-### Community 43 - "finding-groups.ts"
+### Community 42 - "AuditImportForm.tsx"
+Cohesion: 0.19
+Nodes (9): AuditImportForm(), Preview, FileResult, ImportForm(), ImportResult, PackForm(), PackResult, CompanionActionResult (+1 more)
+
+### Community 43 - "Findings.tsx"
+Cohesion: 0.32
+Nodes (9): getPatternChecklist(), FindingGroup, Findings(), FindingsProps, TokenWizard(), statusClass(), defaultTokenCollectionId(), isWaiverReasonValid() (+1 more)
+
+### Community 44 - "ReadinessProfile"
 Cohesion: 0.24
-Nodes (15): FindingProvenance, attachFindingProvenance(), buildFindingGroups(), group(), groupsForFindings(), inheritedRootSource(), PROPERTY_BY_RULE, propertyForFinding() (+7 more)
+Nodes (11): PageSnapshot, ReadinessProfile, ScanScope, AUDIT_TARGET_NODE_TYPES, AuditTargetNodeType, isAuditTargetNodeType(), nestedComponentSources(), resolveTargetRoots() (+3 more)
 
-### Community 44 - "breakdown.ts"
-Cohesion: 0.50
-Nodes (7): Axis, FrameResult, VariantCoverage, IssueSummary, ModuleBreakdown, PageBreakdown, VariantBreakdown
+### Community 45 - "filesystem.ts"
+Cohesion: 0.38
+Nodes (10): acquireLock(), assertNoSymlink(), assertWithinRoot(), atomicWriteJson(), atomicWriteJsonAt(), ensureDirectory(), listFilesystemProjectGuidancePacks(), loadCandidates() (+2 more)
 
-### Community 45 - "schema.ts"
-Cohesion: 0.33
-Nodes (5): MultiFileReviewReportV1, ContractName, ContractValidationResult, reportRelationshipErrors(), validators
+### Community 46 - "knowledge.ts"
+Cohesion: 0.39
+Nodes (8): ResponsiveFamily, bindingSignature(), deriveRepeatedStructures(), deriveResponsiveFamilies(), finalizeKnowledgeGraph(), normalizedResponsiveRootName(), parseResponsiveName(), ResponsiveName
 
-### Community 46 - "componentSnapshot"
-Cohesion: 0.50
-Nodes (3): componentSnapshot(), canReadComponentPropertyDefinitions(), ComponentSnapshotNodeType
+### Community 47 - "ChangePlan"
+Cohesion: 0.48
+Nodes (6): ChangePlan, ApplyPlanResult, Cleanup(), CleanupProps, operationPreview(), STRUCTURAL_OPERATIONS
+
+### Community 48 - "rules/component.ts"
+Cohesion: 0.67
+Nodes (5): evaluateComponentRules(), hasDescription(), inheritsComponentSetDescription(), isDescribedComponent(), subtree()
+
+### Community 49 - "download/[id]/route.ts"
+Cohesion: 0.67
+Nodes (3): GET(), runtime, auditDownload()
 
 ## Knowledge Gaps
-- **160 isolated node(s):** `runtime`, `runtime`, `runtime`, `runtime`, `runtime` (+155 more)
+- **172 isolated node(s):** `runtime`, `runtime`, `runtime`, `runtime`, `runtime` (+167 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **3 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `hashValue()` connect `hashValue` to `adapter.ts`, `mutations.ts`, `repository.ts`, `audit-storage.ts`, `App.tsx`, `.buildKnowledge`, `plugin/main.ts`, `handleMessage`, `companion/main.ts`, `message-validation.ts`, `snapshotBase`, `review-source.ts`, `node-fields.ts`, `assertReferencePack`, `analyzeCurrentGraph`, `messages.ts`, `context-cache.ts`, `text-style.ts`, `finding-groups.ts`?**
-  _High betweenness centrality (0.082) - this node is a cross-community bridge._
+- **Why does `hashValue()` connect `knowledge-loop.ts` to `adapter.ts`, `repository.ts`, `audit-storage.ts`, `App.tsx`, `ProfileEditor.tsx`, `node-fields.ts`, `plugin/main.ts`, `ReadinessProfile`, `knowledge.ts`, `report.ts`, `ensureKnowledge`, `companion/main.ts`, `stable.ts`, `review-source.ts`, `handleMessage`, `messages.ts`?**
+  _High betweenness centrality (0.072) - this node is a cross-community bridge._
 - **Why does `version` connect `devDependencies` to `plugin/main.ts`?**
-  _High betweenness centrality (0.067) - this node is a cross-community bridge._
+  _High betweenness centrality (0.063) - this node is a cross-community bridge._
 - **What connects `runtime`, `runtime`, `runtime` to the rest of the system?**
-  _160 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _172 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `knowledge-loop.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.12 - nodes in this community are weakly interconnected._
 - **Should `adapter.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.14 - nodes in this community are weakly interconnected._
-- **Should `runtime.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.05759623861298854 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.052028732284993204 - nodes in this community are weakly interconnected._
+- **Should `requireRequestAccess` be split into smaller, more focused modules?**
+  _Cohesion score 0.12424242424242424 - nodes in this community are weakly interconnected._
 - **Should `mutations.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.08766803039158387 - nodes in this community are weakly interconnected._
-- **Should `audit-storage.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.08482523444160273 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.09292929292929293 - nodes in this community are weakly interconnected._

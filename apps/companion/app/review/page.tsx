@@ -1,3 +1,4 @@
+import { databasePage } from "@/lib/server/database-page";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { readKnowledgeState } from "../../../../src/companion/repository";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ReviewPage() {
   const paths = await requirePageAccess();
+  return databasePage(async () => {
   const candidates = reviewView(await readKnowledgeState(paths));
   return (
     <main id="main-content" className="page review-page">
@@ -23,4 +25,5 @@ export default async function ReviewPage() {
       </Suspense>
     </main>
   );
+  });
 }

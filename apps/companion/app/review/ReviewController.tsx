@@ -19,6 +19,8 @@ const decisionDateFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
+const PENDING_DECISION_KEY = "design-passport:pending-decision:v1";
+
 const REVIEW_DRAFTS_KEY = "design-passport:review-drafts:v1";
 
 interface LocalReviewDraft {
@@ -212,7 +214,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
           exceptions: normalizedExceptions(exceptions),
         }),
       });
-      const action = await response.json() as CompanionActionResult<{ candidate: ReviewCandidateView; rebuildRequired: boolean }>;
+      const action = await response.json() as CompanionActionResult<{ candidate: ReviewCandidateView }>;
       if (!action.ok) {
         setHasConflict(action.error.code === "conflict");
         throw new Error(action.error.message);
@@ -233,7 +235,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
       }
       reconcileReplacedCandidate(action.data.candidate, nextCandidates);
       setHasConflict(false);
-      setMessage(action.data.rebuildRequired ? "Draft saved. Knowledge still needs a rebuild." : "Draft saved. You can now record a decision.");
+      setMessage("Draft saved. You can now record a decision.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The draft could not be saved.");
       requestAnimationFrame(() => messageRef.current?.focus());
@@ -252,23 +254,30 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
     setWorking(true);
     setMessage(`Recording ${action} decision…`);
     try {
+      const intent = { candidateId: selected.id, candidateDigest: selected.revision, action, scope, rationale: rationale.normalize("NFKC").trim() };
+      const stored = sessionStorage.getItem(PENDING_DECISION_KEY);
+      let pending: { requestId: string; intent: typeof intent } | undefined;
+      try { pending = stored ? JSON.parse(stored) : undefined; } catch { /* Start a fresh request for corrupt local state. */ }
+      if (!pending || JSON.stringify(pending.intent) !== JSON.stringify(intent)) pending = { requestId: crypto.randomUUID(), intent };
+      sessionStorage.setItem(PENDING_DECISION_KEY, JSON.stringify(pending));
       const response = await fetch("/api/decisions", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ candidateId: selected.id, candidateDigest: selected.revision, action, scope, rationale }),
+        body: JSON.stringify({ ...pending.intent, requestId: pending.requestId }),
       });
-      const result = await response.json() as CompanionActionResult<{ candidate: ReviewCandidateView; rebuildRequired: boolean }>;
+      const result = await response.json() as CompanionActionResult<{ candidate: ReviewCandidateView }>;
       if (!result.ok) {
         setHasConflict(result.error.code === "conflict");
         throw new Error(result.error.message);
       }
+      sessionStorage.removeItem(PENDING_DECISION_KEY);
       const nextCandidates = replaceCandidate(result.data.candidate);
       setHasConflict(false);
       setRationale("");
       delete draftsRef.current[result.data.candidate.id];
       writeStoredDrafts();
       reconcileReplacedCandidate(result.data.candidate, nextCandidates);
-      setMessage(result.data.rebuildRequired ? "Decision saved. Knowledge still needs a rebuild." : `${statusLabels[result.data.candidate.status]} decision saved.`);
+      setMessage(`${statusLabels[result.data.candidate.status]} decision saved.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The decision could not be saved.");
       requestAnimationFrame(() => messageRef.current?.focus());

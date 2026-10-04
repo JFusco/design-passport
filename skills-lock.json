@@ -7,7 +7,7 @@
       "sourcePath": ".agents/skills/qa-security-review",
       "adaptedFor": "Design Passport local companion",
       "license": "UNLICENSED internal guidance",
-      "computedHash": "524e74f060a5f9a916453b55d8d358efc69dd31b2abfa90b0408fb0841e2b746"
+      "computedHash": "dfb312bb2e6688177d15f8278e4b9eea29d31903915f2d564d7a3f9427dc3f65"
     },
     "graphify": {
       "source": "JFusco/design-passport",
@@ -66,6 +66,26 @@
       "license": "MIT",
       "licenseEvidence": "https://github.com/vercel-labs/agent-skills/blob/main/README.md",
       "computedHash": "e90462d4f801d823603b12c345ad0ff91a7489415274432681d21c7129123c26"
+    },
+    "supabase": {
+      "source": "JFusco/qa-operations",
+      "sourcePath": ".agents/skills/supabase",
+      "ref": "c50b5c3344491d07e2a1792ea504f01c3cf3bc6e",
+      "upstream": "supabase/agent-skills",
+      "version": "0.1.2",
+      "license": "MIT",
+      "licenseEvidence": "https://github.com/supabase/agent-skills/blob/main/LICENSE",
+      "computedHash": "583344c20e90f3654dbb0632f088d89fd9f1dde8ac85e8a644dd12eee59b1380"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "JFusco/qa-operations",
+      "sourcePath": ".agents/skills/supabase-postgres-best-practices",
+      "ref": "c50b5c3344491d07e2a1792ea504f01c3cf3bc6e",
+      "upstream": "supabase/agent-skills",
+      "version": "1.1.1",
+      "license": "MIT",
+      "licenseEvidence": "https://github.com/supabase/agent-skills/blob/main/LICENSE",
+      "computedHash": "e14e276241805c97dbcfe40dcbea1a3035269cc7293cac4b1832dda41a835e60"
     }
   }
 }

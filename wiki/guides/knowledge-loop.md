@@ -34,7 +34,7 @@ The designer must choose **Contribute learnings**, inspect a plain-language prev
 
 The companion deduplicates envelopes by timestamp-independent content digest and groups only exact normalized observation keys and contexts. It generates draft wording, proposed scope, exceptions, and evidence counts. The local Knowledge Review interface shows supporting and contradictory evidence side by side and labels recurrence only as `unique contributions`.
 
-The maintainer chooses **Edit draft**, **Approve**, **Reject**, or **Defer**. Scope starts at **Project only** and can be explicitly changed to **Shared, client-neutral**. Decisions are append-only and bind to an exact candidate digest; editing the draft makes a prior approval stale. Current project approvals compile only to that project's pack. Current shared approvals compile to the pinned team pack for normal repository review and a later release.
+The maintainer chooses **Edit draft**, **Approve**, **Reject**, or **Defer**. Scope starts at **Project only** and can be explicitly changed to **Shared, client-neutral**. Decisions are append-only and bind to an exact candidate digest; editing the draft makes a prior approval stale. Current project approvals compile only to that project's pack. Current shared approvals remain staged in Supabase. Explicit `pnpm companion knowledge build` exports the pinned team pack for repository review and a later release.
 
 No recurrence count validates guidance, no project convention becomes shared automatically, and no advisory becomes a grading rule. A grading change requires its own measurable rule, scope/exceptions, fixtures, documentation, review, and `RULESET_VERSION` bump.
 
@@ -47,9 +47,9 @@ pnpm companion:build
 FIGMA_TOKEN=your_figma_personal_access_token pnpm companion knowledge review
 ```
 
-Open the private URL printed by the command. The process listens only on `127.0.0.1`; stopping it expires the capability. The dashboard supports three tasks: download a sanitized Figma reference pack, import learning exports, and record a human decision for each generated draft.
+Open the private URL printed by the command. The process listens only on `127.0.0.1`; stopping it expires the capability. The dashboard supports searchable audit and learning history and these tasks: download a sanitized Figma reference pack, import learning exports, and record a human decision for each generated draft.
 
-Each import accepts up to 10 JSON files, 1 MB per file, and 5 MB combined. The companion reports valid, duplicate, and invalid files independently. It keeps valid files when another file fails. If compilation fails after persistence, the dashboard shows **Retry rebuild** and retains the saved input.
+Learning imports accept up to 10 JSON files, 1 MB per file and 5 MB combined. The companion stores evidence and guidance derivations atomically in Supabase. It reports valid, duplicate, invalid and retryable files independently and retains earlier successful files in a mixed batch. Audit imports are separate and preserve recorded design metadata. See [database setup, history and recovery](../topics/supabase-companion.md).
 
 The decision queue disables approval, rejection, and deferral while a draft has unsaved edits. Each decision requires a note and binds to the displayed draft digest. A stale browser cannot overwrite a newer draft or decision.
 

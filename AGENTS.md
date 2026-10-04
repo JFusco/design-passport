@@ -60,6 +60,12 @@ Canonical skill sources live under `.agents/skills`; `.claude/skills` contains l
 
 `skills-lock.json` records the copied QA Operations snapshot, repository-local skill provenance, known upstream metadata, license evidence, and deterministic folder hashes. Run `pnpm skills:check` after modifying any skill. The check is offline and does not pin content fetched later by the web or writing guideline skills.
 
+For Supabase or Postgres work, read `.agents/skills/supabase/SKILL.md` and
+`.agents/skills/supabase-postgres-best-practices/SKILL.md`, including relevant
+references. Keep runtime credentials server-only, separate migration ownership,
+and verify exact migrations and restricted permissions. Database mutations use
+transactions; filesystem locks protect only explicit release and backup exports.
+
 ## Graphify repository workflow
 
 Use the repository-local [Graphify skill](.agents/skills/graphify/SKILL.md) when querying or maintaining the shared code map. It guides the Graphify CLI for current relationships in `src/` and `apps/companion/`; exact behavior comes from source, and rationale or history comes from the wiki. The map is maintainer tooling, separate from the plugin's design knowledge and the wiki's Markdown-only graph.

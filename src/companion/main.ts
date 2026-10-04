@@ -2,21 +2,19 @@ import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:net";
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type { MultiFileReviewReportV1, ReadinessReport, ReviewSourceV1 } from "../core/contracts";
 import { buildMultiFileReviewReport } from "../core/knowledge-loop";
 import { validateReviewBatch } from "../core/review-source";
 import { assertContract } from "../core/schema";
 import { hashValue } from "../core/stable";
 import { createReferencePack, fetchFigmaSource } from "./figma";
-import {
-  atomicWriteExternalJson,
-  importLearning,
-  readJsonFile,
-  rebuildKnowledge,
-  resolveWorkspaceRoot,
-  workspacePaths,
-} from "./repository";
+import { atomicWriteExternalJson, readJsonFile, resolveWorkspaceRoot, workspacePaths } from "./filesystem";
+import { importAudits, importLearning } from "./repository";
+import { exportKnowledge, exportRelease } from "./exports";
+import { readImportFiles } from "./imports";
+import { closeDatabases, loadRuntimeEnvironment, runtimeChildEnvironment } from "./database";
+import { safeErrorMessage } from "./errors";
 
 type Options = Record<string, string | true>;
 
@@ -125,16 +123,16 @@ async function ingest(options: Options): Promise<void> {
 
 async function importLearningFiles(files: string[], root: string): Promise<void> {
   if (files.length === 0) throw new Error("learning import requires at least one envelope file");
-  const inputs = await Promise.all(files.map(async (path) => ({ name: basename(path), content: await readFile(resolve(path), "utf8") })));
+  const inputs = await readImportFiles(files, "learning");
   const result = await importLearning(workspacePaths(root), inputs);
   process.stdout.write(`${result.imported} new unique contribution${result.imported === 1 ? "" : "s"}\n`);
   for (const file of result.files.filter((item) => item.status !== "imported")) process.stderr.write(`${file.name}: ${file.message}\n`);
-  if (result.invalid > 0 || result.rebuildRequired) process.exitCode = 2;
+  if (result.invalid > 0 || result.retryable > 0) process.exitCode = 2;
 }
 
 async function availablePort(requested: number): Promise<number> {
   if (requested > 0) return requested;
-  return new Promise((resolvePort, reject) => {
+  return new Promise<number>((resolvePort, reject) => {
     const server = createServer();
     server.once("error", reject);
     server.listen(0, "127.0.0.1", () => {
@@ -157,7 +155,7 @@ async function review(options: Options, root: string): Promise<void> {
   const origin = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, [nextBin, "start", "--hostname", "127.0.0.1", "--port", String(port)], {
     cwd: appRoot,
-    env: { ...process.env, DESIGN_PASSPORT_WORKSPACE_ROOT: root, DESIGN_PASSPORT_CAPABILITY: capability, DESIGN_PASSPORT_EXPECTED_ORIGIN: origin },
+    env: { ...runtimeChildEnvironment(), DESIGN_PASSPORT_WORKSPACE_ROOT: root, DESIGN_PASSPORT_CAPABILITY: capability, DESIGN_PASSPORT_EXPECTED_ORIGIN: origin },
     stdio: ["inherit", "pipe", "pipe"],
   });
   let announced = false;
@@ -181,22 +179,35 @@ async function review(options: Options, root: string): Promise<void> {
       else if (signal && signal !== "SIGINT" && signal !== "SIGTERM") reject(new Error(`Companion server stopped after ${signal}`));
       else resolveChild();
     });
-  });
+  }).finally(closeDatabases);
 }
 
 function usage(): string {
-  return `Design Passport local companion\n\nCommands:\n  pack create --url URL --source-id ID --project-scope ID --role style-guide|reference --out FILE\n  batch ingest --config FILE --out DIR\n  learning import FILE [FILE...]\n  knowledge build\n  knowledge review [--port 0]\n`;
+  return `Design Passport local companion\n\nCommands:\n  pack create --url URL --source-id ID --project-scope ID --role style-guide|reference --out FILE\n  batch ingest --config FILE --out DIR\n  learning import FILE [FILE...]\n  audit import FILE [FILE...] --project-scope ID\n  knowledge build\n  knowledge export --out DIR\n  knowledge review [--port 0]\n`;
 }
 
 export async function main(argv = process.argv.slice(2)): Promise<void> {
   const command = args(argv);
   const root = await resolveWorkspaceRoot(process.env.DESIGN_PASSPORT_WORKSPACE_ROOT ?? process.cwd());
+  await loadRuntimeEnvironment(root);
   if (command.area === "pack" && command.action === "create") return makePack(command.values);
   if (command.area === "batch" && command.action === "ingest") return ingest(command.values);
   if (command.area === "learning" && command.action === "import") return importLearningFiles(command.positional, root);
   if (command.area === "knowledge" && command.action === "build") {
-    const state = await rebuildKnowledge(workspacePaths(root));
+    const state = await exportRelease(workspacePaths(root));
     process.stdout.write(`${state.candidates.length} candidate draft${state.candidates.length === 1 ? "" : "s"}\n`);
+    return;
+  }
+  if (command.area === "audit" && command.action === "import") {
+    process.stderr.write("Audit imports persist design metadata, node paths, names, URLs and waiver information in your Supabase project.\n");
+    const result = await importAudits(workspacePaths(root), await readImportFiles(command.positional, "audit"), requiredOption(command.values, "project-scope"));
+    process.stdout.write(`${result.imported} audit source exports imported\n`);
+    for (const file of result.files) process.stdout.write(`${file.name}: ${file.message}\n`);
+    if (result.invalid || result.retryable) process.exitCode = 2;
+    return;
+  }
+  if (command.area === "knowledge" && command.action === "export") {
+    process.stdout.write(`${await exportKnowledge(workspacePaths(root), requiredOption(command.values, "out"))}\n`);
     return;
   }
   if (command.area === "knowledge" && command.action === "review") return review(command.values, root);
@@ -205,7 +216,7 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
 
 if (process.argv[1]?.endsWith("companion.mjs") || process.argv[1]?.endsWith("main.ts")) {
   main().catch((error) => {
-    process.stderr.write(`Companion error: ${error instanceof Error ? error.message : String(error)}\n`);
+    process.stderr.write(`Companion error: ${safeErrorMessage(error)}\n`);
     process.exitCode = 1;
-  });
+  }).finally(closeDatabases);
 }
