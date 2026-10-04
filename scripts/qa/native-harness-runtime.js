@@ -2,12 +2,16 @@
   const config = /*__QA_CONFIG__*/;
   const production = figma.ui.onmessage;
   if (typeof production !== "function") throw new Error("The production message handler must be initialized before Native QA");
+  // Keep the fixed QA controls reachable on short native displays.
+  figma.ui.resize?.(560, 420);
   const allowed = () => figma.editorType === "figma" && Boolean(figma.fileKey) && config.allowedWriteFileKeys.includes(figma.fileKey);
   const post = (type, data) => figma.ui.postMessage({ type, ...data });
   const writeCommands = new Set(["save-profile", "apply-plan", "apply-all", "import-project-style-guide", "remove-project-style-guide", "waive", "clear-waiver", "confirm-pattern", "create-token", "clear-file-cache", "forget-saved-audit"]);
   const readCommands = new Set(["initialize", "scan", "refresh-audit", "recheck-audit", "audit-pages", "open-saved-audit", "save-audit-view", "cancel-scan", "navigate", "add-session-reference", "clear-session-references", "preview-contribution", "export-contribution", "export"]);
   const measuredCommands = new Set(["scan", "refresh-audit", "recheck-audit", "audit-pages", "apply-plan", "apply-all", "waive", "clear-waiver", "confirm-pattern", "create-token", "import-project-style-guide", "remove-project-style-guide", "add-session-reference", "clear-session-references"]);
   let commandSequence = 0;
+  let activeProduction = 0;
+  let storageBusy = false;
   const assertWritable = () => { if (!allowed()) throw new Error("Native QA document writes are restricted to explicit private-copy file keys in the generated allowlist"); };
   const clone = (value) => JSON.parse(JSON.stringify(value));
   const inspectNode = (node) => node ? {
@@ -50,11 +54,25 @@
     if (measured) post("qa-command-started", { commandId, commandType: message.type, request: message, startedAt: new Date(started).toISOString() });
     let rejected = false;
     try {
+      if (message?.type === "qa-storage-checkpoint" || message?.type === "qa-storage-restore") {
+        if (!config.benchmarkFileKey || figma.editorType !== "figma" || figma.fileKey !== config.benchmarkFileKey
+          || figma.pluginId !== config.pluginIdentity?.developmentId) throw new Error("Storage QA requires the configured plugin identity and exact copy key");
+        if (activeProduction || storageBusy) throw new Error("Storage QA requires an idle plugin");
+        if (message.type === "qa-storage-restore" && (!config.pluginIdentity.isolatedStorage
+          || config.pluginIdentity.developmentId === config.pluginIdentity.productionId)) throw new Error("Storage restore is restricted to isolated development plugins");
+        storageBusy = true;
+        try {
+          if (message.type === "qa-storage-checkpoint") post("qa-storage-checkpoint", { checkpoint: await NativeQaStorage.capture(figma.fileKey) });
+          else post("qa-storage-restored", await NativeQaStorage.restore(message.checkpoint, figma.fileKey));
+        } finally { storageBusy = false; }
+        return;
+      }
+      if (storageBusy) throw new Error("Storage QA is active; wait for its completion");
       if (message?.type === "qa-inspect") {
         const ids = message.nodeIds === undefined ? figma.currentPage.selection.map((node) => node.id) : message.nodeIds;
         if (!Array.isArray(ids) || ids.length > 20 || ids.some((id) => typeof id !== "string" || id.length > 200)) throw new Error("Inspect accepts at most 20 explicit node IDs");
         post("qa-inspection", {
-          metadata: config, fileKey: figma.fileKey ?? null, fileName: figma.root.name, editorType: figma.editorType, canWrite: allowed(),
+          metadata: config, pluginId: figma.pluginId ?? null, fileKey: figma.fileKey ?? null, fileName: figma.root.name, editorType: figma.editorType, canWrite: allowed(),
           currentPageId: figma.currentPage.id, pages: figma.root.children.map((page) => ({ id: page.id, name: page.name })),
           nodes: await Promise.all(ids.map(async (id) => inspectNode(await figma.getNodeByIdAsync(id)))),
         });
@@ -93,7 +111,9 @@
       // an original or another ongoing QA file can never be cleared here.
       if (writeCommands.has(message.type)) assertWritable();
       else if (!readCommands.has(message.type)) throw new Error("Unrecognized production command is blocked by the QA write boundary");
-      return await production(message, properties);
+      activeProduction += 1;
+      try { return await production(message, properties); }
+      finally { activeProduction -= 1; }
     } catch (error) {
       rejected = true;
       post("qa-error", { at: new Date().toISOString(), commandId, message: error instanceof Error ? error.message : String(error) });

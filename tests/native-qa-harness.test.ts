@@ -10,7 +10,7 @@ const temporary: string[] = [];
 afterEach(async () => { await Promise.all(temporary.splice(0).map((directory) => rm(directory, { recursive: true, force: true }))); });
 const sha = (bytes: Uint8Array | string) => createHash("sha256").update(bytes).digest("hex");
 
-async function generate(developmentPluginId?: string) {
+async function generate(developmentPluginId?: string, benchmark = false) {
   const directory = await mkdtemp(path.join(os.tmpdir(), "passport-native-harness-test-"));
   temporary.push(directory);
   const source = path.join(directory, "source");
@@ -22,11 +22,64 @@ async function generate(developmentPluginId?: string) {
     writeFile(path.join(source, "manifest.json"), JSON.stringify({ name: "Design Passport", id: "same-plugin-id", main: "dist/code.js", ui: "dist/index.html", editorType: ["figma", "dev"] })),
     writeFile(path.join(source, "dist/code.js"), production), writeFile(path.join(source, "dist/index.html"), ui),
   ]);
-  execFileSync(process.execPath, ["scripts/qa/build-native-harness.mjs", "--source-dir", source, "--source-revision", "1111111111111111111111111111111111111111", "--out", output, "--allowed-write-files", "private-copy", ...(developmentPluginId ? ["--development-plugin-id", developmentPluginId] : [])], { cwd: process.cwd(), stdio: "pipe" });
+  execFileSync(process.execPath, ["scripts/qa/build-native-harness.mjs", "--source-dir", source, "--source-revision", "1111111111111111111111111111111111111111", "--out", output, "--allowed-write-files", "private-copy", ...(developmentPluginId ? ["--development-plugin-id", developmentPluginId] : []), ...(benchmark ? ["--benchmark-file-key", "private-copy"] : [])], { cwd: process.cwd(), stdio: "pipe" });
   return { source, output, production, ui, code: await readFile(path.join(output, "code.js"), "utf8"), metadata: JSON.parse(await readFile(path.join(output, "qa-build.json"), "utf8")) };
 }
 
 describe("native QA harness generation", () => {
+  it("permits exact-file idle checkpoints but restricts restore to the actual isolated identity", async () => {
+    for (const isolated of [false, true]) {
+      const fixture = await generate(isolated ? "1234567890123456789" : undefined, true);
+      const events: Array<Record<string, any>> = [];
+      const writes: string[] = [];
+      const storage = new Map<string, unknown>();
+      let release!: () => void;
+      const figma = {
+        pluginId: fixture.metadata.pluginIdentity.developmentId, fileKey: "private-copy", editorType: "figma",
+        clientStorage: { keysAsync: async () => [...storage.keys()], getAsync: async (key: string) => storage.get(key),
+          setAsync: async (key: string, value: unknown) => { writes.push(key); storage.set(key, value); },
+          deleteAsync: async (key: string) => { writes.push(key); storage.delete(key); } },
+        ui: { onmessage: undefined as unknown as (message: unknown) => Promise<void>, postMessage: (message: Record<string, unknown>) => events.push(message) },
+      };
+      const productionCalls: unknown[] = [];
+      new Script(fixture.code.replace(fixture.production, 'figma.ui.onmessage = async (message) => { productionCalls.push(message); await pending(); };\n')).runInNewContext({ figma, console: { info: () => undefined }, productionCalls, pending: () => new Promise<void>((resolve) => { release = resolve; }) }, { timeout: 2000 });
+      await figma.ui.onmessage({ type: "qa-storage-checkpoint" });
+      const checkpoint = events.at(-1)!.checkpoint;
+      expect(checkpoint).toMatchObject({ fileKey: "private-copy", records: [] });
+      await figma.ui.onmessage({ type: "qa-storage-restore", checkpoint });
+      expect(events.at(-1)!.type).toBe(isolated ? "qa-storage-restored" : "qa-error");
+      const pending = figma.ui.onmessage({ type: "scan", request: { scope: "page" } });
+      await figma.ui.onmessage({ type: "qa-storage-restore", checkpoint });
+      expect(events.at(-1)!.message).toContain("idle plugin");
+      release(); await pending;
+      figma.fileKey = "other-file";
+      await figma.ui.onmessage({ type: "qa-storage-restore", checkpoint });
+      expect(events.at(-1)!.message).toContain("exact copy key");
+      figma.fileKey = "private-copy";
+      figma.pluginId = "wrong-identity";
+      await figma.ui.onmessage({ type: "qa-storage-checkpoint" });
+      expect(events.at(-1)!.message).toContain("plugin identity");
+      expect(writes).toEqual([]);
+    }
+  });
+
+  it("blocks production commands while a storage checkpoint is pending", async () => {
+    const fixture = await generate("1234567890123456789", true);
+    const events: Array<Record<string, any>> = [];
+    const productionCalls: unknown[] = [];
+    let release!: (value: string[]) => void;
+    const figma = { pluginId: fixture.metadata.pluginIdentity.developmentId, fileKey: "private-copy", editorType: "figma",
+      clientStorage: { keysAsync: () => new Promise<string[]>((resolve) => { release = resolve; }) },
+      ui: { onmessage: undefined as unknown as (message: unknown) => Promise<void>, postMessage: (message: Record<string, unknown>) => events.push(message) } };
+    new Script(fixture.code).runInNewContext({ figma, console: { info: () => undefined }, productionCalls }, { timeout: 2000 });
+    const checkpoint = figma.ui.onmessage({ type: "qa-storage-checkpoint" });
+    await figma.ui.onmessage({ type: "scan", request: { scope: "page" } });
+    expect(productionCalls).toEqual([]);
+    expect(events).toContainEqual(expect.objectContaining({ type: "qa-error", message: expect.stringContaining("Storage QA is active") }));
+    release([]); await checkpoint;
+    expect(events.at(-1)!.type).toBe("qa-storage-checkpoint");
+  });
+
   it("retains exact production bytes, records build digests and preserves plugin/storage identity", async () => {
     const fixture = await generate();
     expect(fixture.code.startsWith(fixture.production)).toBe(true);

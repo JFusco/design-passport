@@ -35,3 +35,49 @@ Use only the authorized copy `nxRqnuVDvB93PKgiuEXaSa` for this retirement smoke 
 Retirement supersedes the two certification acceptance checks and certification speed/rollback work under [issue 53](https://github.com/JFusco/design-passport/issues/53), including its former timing and concurrent-edit-rollback procedure. Audit-cache semantic parity and the native performance and screen-saver matrix remain open there. Local fixtures do not establish native preservation or performance.
 
 Compare two completed runs with `node scripts/qa/compare-native-evidence.mjs LEFT.json RIGHT.json [LEFT_RUN RIGHT_RUN]`. Run numbers select entries in harness exports; without them the last completed report is used. The comparator retains document/knowledge hashes, findings, coverage, grades, readiness, groups and repairs. It verifies each original report hash before excluding the generation timestamp and the report hash derived from that timestamp. It rejects changed build identities when both are present. Ordinary report exports can establish report equality, but are explicitly insufficient for repair-plan or build parity. Batch parity and repeated, preflight-inclusive performance measurements require their own recorded cases.
+
+## Matched in-session refresh benchmark
+
+Generate both baseline and candidate with the same current harness, a real
+Figma-assigned `--development-plugin-id`, and
+`--benchmark-file-key PRIVATE_COPY_FILE_KEY`. Omit `--allowed-write-files` so
+document changes remain blocked. Keep both source revisions and byte digests;
+the runtime inspection also records the actual `figma.pluginId`.
+
+**Export file storage checkpoint** reads only audit/context/view records for
+the exact configured file and runtime plugin identity. A separate reader using
+the original identity can export its existing file records without restoring
+or clearing that namespace. Keep the resulting checkpoint privately. Checkpoint
+reads require an idle production handler.
+
+**Restore isolated QA storage** accepts that checkpoint only on the matching
+file, in an idle plugin whose actual ID matches the separately assigned
+development ID. It validates ordered scoped keys, digest, entry count, and the
+shared 4 MB budget before replacing any records. Other files and plugin keys
+are retained. Restore then reads back and verifies the exact checkpoint. A
+failed restore invalidates the attempt; preserve the checkpoint and diagnostics.
+Original/production storage cannot be restored. The controls do not change the
+production storage policy or add document-write authority.
+
+For each matched pair, launch the build and warm its ordinary audit on the same
+target. Wait for correlated handler completion, import the common checkpoint,
+wait for `qa-storage-restored`, then use **Recheck changes**. The evidence records
+the checkpoint digest/count/bytes on that timed run. Alternate baseline/candidate
+order across three pairs. Retain all attempts, diagnostic counters, actual
+cache coverage, and any lock intervals; exclude interrupted or unmatched cases
+from an uninterrupted speed claim.
+
+Use `compare-native-evidence.mjs --cross-build LEFT.json RIGHT.json LEFT_RUN
+RIGHT_RUN` for baseline/candidate semantic comparison. This explicit mode
+requires complete clean source/byte identities, the same harness, and a report
+producer SHA matching each source revision. It excludes only `producer.buildSha`
+in addition to the ordinary timestamp exclusions; plugin/ruleset/channel and
+all semantic report fields and repairs still match exactly. Strict comparison
+remains the default. Cross-build parity does not establish same-build release
+parity or a speed improvement by itself.
+
+The focused gate is median complete candidate handler duration at most 80% of
+baseline, with three matched successful pairs and exact semantic parity. It
+measures refreshes within an open session under quota-limited retained/mixed
+disk cache. Restart, cold-cache, screen-saver, and out-of-memory acceptance remain
+under issue 53; session reuse does not establish those outcomes.

@@ -35,7 +35,7 @@ import { resolveTextBackground } from "./operations/background";
 import { interactionPropertiesSnapshot } from "./operations/interaction-state";
 import { mixedTypographyFields, TextStyleEvidenceReader } from "./operations/text-style";
 export { resolveTextBackground } from "./operations/background";
-import { contextFragment, mapConcurrent, newBuildDiagnostics, readContextFragment, restPageFingerprint, restSubtreeCovers, restSubtreeNodes, type ContextCachePort, type KnowledgeBuildDiagnostics } from "./context-cache";
+import { baseSnapshot, contextFragment, mapConcurrent, newBuildDiagnostics, readContextFragment, restPageFingerprint, restSubtreeCovers, restSubtreeNodes, type ContextCachePort, type KnowledgeBuildDiagnostics } from "./context-cache";
 
 export type { ContextCachePort, KnowledgeBuildDiagnostics } from "./context-cache";
 
@@ -1608,10 +1608,22 @@ export class FigmaAdapter {
         }
         fingerprintMs += Date.now() - stageStarted;
         const key = `capture-v1:${page.id}:${root.id}`;
+        const previousInference = this.sessionInferences.get(key);
         let snapshots: NodeSnapshot[] | undefined;
         if (cache && fingerprint) {
-          try { snapshots = readContextFragment(await cache.get(key), fingerprint, entries.map(({ node }) => node.id)); }
-          catch { diagnostics.cacheReadFailures += 1; }
+          // The accepted session already retains these nodes for inference.
+          // Reuse only their sanitized base, under the persisted-cache fingerprint
+          // and explicit change journal; live evidence is refreshed below.
+          if (options.dirtyNodeIds !== undefined && previousInference?.fingerprint === fingerprint
+            && previousInference.nodes.length === entries.length
+            && entries.every(({ node }, index) => !dirty.has(node.id) && previousInference.nodes[index]?.id === node.id)) {
+            snapshots = previousInference.nodes.map(baseSnapshot);
+            diagnostics.sessionReusedFragments += 1;
+            diagnostics.sessionReusedNodes += snapshots.length;
+          } else {
+            try { snapshots = readContextFragment(await cache.get(key), fingerprint, entries.map(({ node }) => node.id)); }
+            catch { diagnostics.cacheReadFailures += 1; }
+          }
         }
         diagnostics.validationMs += Date.now() - stageStarted;
         if (this.cancelled) break;
@@ -1649,7 +1661,6 @@ export class FigmaAdapter {
           children.push(entry.node.id);
           occurrenceChildren.set(entry.owningInstanceId, children);
         }
-        const previousInference = this.sessionInferences.get(key);
         // Reuse only within an explicitly tracked session edit and a complete
         // local-variable epoch. Remote inference has no dependable revision token.
         const reuseInference = options.dirtyNodeIds !== undefined && !options.forceFullCapture

@@ -12,8 +12,8 @@ const args = process.argv.slice(2);
 const options = {};
 for (let index = 0; index < args.length; index += 2) {
   const key = args[index];
-  if (!["--source-dir", "--source-revision", "--out", "--allowed-write-files", "--development-plugin-id"].includes(key) || args[index + 1] === undefined || options[key] !== undefined) {
-    throw new Error("Usage: node scripts/qa/build-native-harness.mjs --source-dir DIR --out DIR [--source-revision COMMIT_SHA] [--allowed-write-files COPY_KEY,COPY_KEY] [--development-plugin-id FIGMA_ASSIGNED_ID]");
+  if (!["--source-dir", "--source-revision", "--out", "--allowed-write-files", "--development-plugin-id", "--benchmark-file-key"].includes(key) || args[index + 1] === undefined || options[key] !== undefined) {
+    throw new Error("Usage: node scripts/qa/build-native-harness.mjs --source-dir DIR --out DIR [--source-revision COMMIT_SHA] [--allowed-write-files COPY_KEY,COPY_KEY] [--development-plugin-id FIGMA_ASSIGNED_ID] [--benchmark-file-key COPY_KEY]");
   }
   options[key] = args[index + 1];
 }
@@ -23,6 +23,8 @@ const outputDirectory = path.resolve(options["--out"]);
 const manifest = JSON.parse(await readFile(path.join(sourceDirectory, "manifest.json"), "utf8"));
 const developmentPluginId = options["--development-plugin-id"];
 if (developmentPluginId !== undefined && !/^[0-9]{10,30}$/.test(developmentPluginId)) throw new Error("--development-plugin-id requires an ID assigned by Figma's development plugin creation flow");
+const benchmarkFileKey = options["--benchmark-file-key"];
+if (benchmarkFileKey !== undefined && !/^[A-Za-z0-9_-]{1,200}$/.test(benchmarkFileKey)) throw new Error("--benchmark-file-key requires one explicit Figma copy key");
 const sourceCodePath = path.resolve(sourceDirectory, manifest.main);
 const sourceUiPath = path.resolve(sourceDirectory, manifest.ui);
 if ([sourceCodePath, sourceUiPath].some((input) => ["code.js", "index.html"].some((name) => input === path.join(outputDirectory, name)))) {
@@ -34,9 +36,12 @@ const [productionCode, productionUi, runtime, controls] = await Promise.all([
   readFile(path.join(ownDirectory, "native-harness-ui.html"), "utf8"),
 ]);
 let fixtureBundle = "";
+let storageBundle;
 try {
   const result = await bundle({ entryPoints: [path.join(ownDirectory, "native-fixtures.ts")], bundle: true, write: false, format: "iife", globalName: "NativeQaFixtures", target: "es2020", platform: "browser", logLevel: "silent" });
   fixtureBundle = result.outputFiles[0].text;
+  const storage = await bundle({ entryPoints: [path.join(ownDirectory, "native-storage.ts")], bundle: true, write: false, format: "iife", globalName: "NativeQaStorage", target: "es2020", platform: "browser", logLevel: "silent" });
+  storageBundle = storage.outputFiles[0].text;
 } catch (error) {
   throw new Error("Build the QA fixture helper before generating the native harness", { cause: error });
 }
@@ -61,14 +66,15 @@ const metadata = {
   kind: "design-passport-native-qa", schemaVersion: 1,
   generatedAt: new Date().toISOString(),
   source: { revision, revisionSource, dirty, ...(diffSha256 ? { diffSha256 } : {}), productionCodeSha256: hash(productionCode), productionUiSha256: hash(productionUi) },
-  harnessSourceSha256: hash(runtime + controls + fixtureBundle),
+  harnessSourceSha256: hash(runtime + controls + fixtureBundle + storageBundle),
   capabilities: { targetedRecheck: productionCode.includes(Buffer.from('"recheck-audit"')), fixtureBuilder: Boolean(fixtureBundle) },
   allowedWriteFileKeys,
+  ...(benchmarkFileKey ? { benchmarkFileKey } : {}),
   pluginIdentity: { productionId: manifest.id, developmentId: developmentPluginId ?? manifest.id, isolatedStorage: Boolean(developmentPluginId && developmentPluginId !== manifest.id) },
   coldSessionNote: "First audit in this plugin session; persisted context is retained. A truly cold baseline requires a fresh private file key with no existing context.",
 };
 const config = JSON.stringify(metadata).replaceAll("<", "\\u003c");
-const code = Buffer.concat([productionCode, Buffer.from(`\n;/* Native QA wrapper; production bytes above are unchanged. */\n${fixtureBundle}\n${runtime.replace("/*__QA_CONFIG__*/", config)}\n`)]);
+const code = Buffer.concat([productionCode, Buffer.from(`\n;/* Native QA wrapper; production bytes above are unchanged. */\n${fixtureBundle}\n${storageBundle}\n${runtime.replace("/*__QA_CONFIG__*/", config)}\n`)]);
 const ui = Buffer.concat([productionUi, Buffer.from(`\n${controls.replace("/*__QA_CONFIG__*/", config)}\n`)]);
 const outputManifest = { ...manifest, ...(developmentPluginId ? { id: developmentPluginId } : {}), name: `${manifest.name} — Native QA`, main: "code.js", ui: "index.html" };
 const build = { ...metadata, output: { codeSha256: hash(code), uiSha256: hash(ui) } };
