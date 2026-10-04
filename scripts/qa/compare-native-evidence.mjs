@@ -14,7 +14,7 @@ function selectRun(input, number) {
     const build = source?.productionCodeSha256 && source?.productionUiSha256 && input.metadata.harnessSourceSha256
       ? { code: source.productionCodeSha256, ui: source.productionUiSha256, harness: input.metadata.harnessSourceSha256 }
       : undefined;
-    return { ...run, build };
+    return { ...run, build, source };
   }
   if (number !== undefined) throw new Error("Run numbers apply only to native harness exports");
   if (![1, 2, 3].includes(input?.schemaVersion) || !input.target || !Array.isArray(input.findings)) throw new Error("Expected a report or native harness export");
@@ -30,11 +30,29 @@ function reportMaterial(report) {
   return comparable;
 }
 
-export function compareNativeEvidence(leftInput, rightInput, leftNumber, rightNumber) {
+function validateBuildIdentity(run) {
+  const source = run.source;
+  const producer = run.report.producer;
+  if (!source || !/^[a-f0-9]{40}$/.test(source.revision ?? "") || !run.build
+    || !Object.values(run.build).every((value) => /^[a-f0-9]{64}$/.test(value))
+    || !(source.dirty === false || source.dirty === null && source.revisionSource === "explicit-archive")
+    || producer?.buildSha !== source.revision.slice(0, 12)) throw new Error("Cross-build comparison requires complete clean build identities matching each report producer");
+}
+
+export function compareNativeEvidence(leftInput, rightInput, leftNumber, rightNumber, options = {}) {
   const left = selectRun(leftInput, leftNumber);
   const right = selectRun(rightInput, rightNumber);
-  const leftReport = reportMaterial(left.report);
-  const rightReport = reportMaterial(right.report);
+  let leftReport = reportMaterial(left.report);
+  let rightReport = reportMaterial(right.report);
+  if (options.crossBuild) {
+    validateBuildIdentity(left);
+    validateBuildIdentity(right);
+    if (left.build.harness !== right.build.harness) throw new Error("Cross-build comparison requires the same QA harness");
+    // The producer SHA is expected to differ. Other producer fields remain exact.
+    const withoutBuildSha = ({ buildSha: _sha, ...producer }) => producer;
+    leftReport = { ...leftReport, producer: withoutBuildSha(leftReport.producer) };
+    rightReport = { ...rightReport, producer: withoutBuildSha(rightReport.producer) };
+  }
   const sameBuild = left.build && right.build ? isDeepStrictEqual(left.build, right.build) : null;
   const reportsMatch = isDeepStrictEqual(leftReport, rightReport);
   const plansAvailable = Array.isArray(left.plans) && Array.isArray(right.plans);
@@ -43,11 +61,15 @@ export function compareNativeEvidence(leftInput, rightInput, leftNumber, rightNu
     reportsMatch,
     plansMatch,
     sameBuild,
+    crossBuild: Boolean(options.crossBuild),
+    ...(options.crossBuild ? { buildIdentities: [left, right].map(({ source, build, report }) => ({ source, build, producer: report.producer })) } : {}),
+    sameStorageCheckpoint: left.storageCheckpoint && right.storageCheckpoint ? isDeepStrictEqual(left.storageCheckpoint, right.storageCheckpoint) : null,
     sameKnowledgeSnapshot: left.report.target.knowledgeSnapshotHash === right.report.target.knowledgeSnapshotHash,
     differingReportFields: [...new Set([...Object.keys(leftReport), ...Object.keys(rightReport)])].filter((field) => !isDeepStrictEqual(leftReport[field], rightReport[field])),
-    excluded: ["generatedAt", "snapshotHash (validated against complete original report, including generatedAt)"],
-    comparisonPassed: reportsMatch && plansMatch !== false && sameBuild !== false,
+    excluded: ["generatedAt", "snapshotHash (validated against complete original report, including generatedAt)", ...(options.crossBuild ? ["producer.buildSha (validated independently against each recorded source revision)"] : [])],
+    comparisonPassed: reportsMatch && plansMatch !== false && (sameBuild !== false || Boolean(options.crossBuild)),
     releaseParityEvidenceComplete: reportsMatch && plansMatch === true && sameBuild === true,
+    crossBuildParityEvidenceComplete: Boolean(options.crossBuild) && reportsMatch && plansMatch === true,
     timing: [left, right].map((run) => ({
       run: run.number ?? null,
       mode: run.refresh?.mode ?? null,
@@ -64,10 +86,13 @@ export function compareNativeEvidence(leftInput, rightInput, leftNumber, rightNu
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
-    const [leftPath, rightPath, leftRun, rightRun, ...extra] = process.argv.slice(2);
-    if (!leftPath || !rightPath || extra.length || [leftRun, rightRun].some((number) => number !== undefined && !/^[1-9][0-9]*$/.test(number))) throw new Error("Usage: node scripts/qa/compare-native-evidence.mjs LEFT.json RIGHT.json [LEFT_RUN RIGHT_RUN]");
+    const args = process.argv.slice(2);
+    const crossBuild = args[0] === "--cross-build";
+    if (crossBuild) args.shift();
+    const [leftPath, rightPath, leftRun, rightRun, ...extra] = args;
+    if (!leftPath || !rightPath || extra.length || [leftRun, rightRun].some((number) => number !== undefined && !/^[1-9][0-9]*$/.test(number))) throw new Error("Usage: node scripts/qa/compare-native-evidence.mjs [--cross-build] LEFT.json RIGHT.json [LEFT_RUN RIGHT_RUN]");
     const [left, right] = await Promise.all([leftPath, rightPath].map(async (file) => JSON.parse(await readFile(file, "utf8"))));
-    const comparison = compareNativeEvidence(left, right, leftRun ? Number(leftRun) : undefined, rightRun ? Number(rightRun) : undefined);
+    const comparison = compareNativeEvidence(left, right, leftRun ? Number(leftRun) : undefined, rightRun ? Number(rightRun) : undefined, { crossBuild });
     console.log(JSON.stringify(comparison, null, 2));
     if (!comparison.comparisonPassed) process.exitCode = 1;
   } catch (error) {

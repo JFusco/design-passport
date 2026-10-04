@@ -165,6 +165,34 @@ open; this guard does not establish native rollback, Undo, or speed acceptance.
 The [release-guard journal](../journal/2026-10-03-certification-release-guard.md)
 records the implementation and checks.
 
+## Validated session bases
+
+[Issue 67](https://github.com/JFusco/design-passport/issues/67) adds base reuse
+from the accepted session's existing snapshots before persisted-cache reads.
+An explicit change journal, matching validated fingerprint, identical ordered
+node IDs and a clean fragment are required. The base sanitizer creates an
+independent clone before live enrichment and verification. Invalid or missing
+inputs and forced-full capture keep the established disk/full fallback. The
+fragment release and successful-build publication lifecycle, schemas, storage
+budget and saved-history policy remain unchanged.
+
+Development-only checkpoint/restore and explicit cross-build comparison support
+matched retained/mixed-cache timings. Restore is confined to an idle, actual
+Figma-assigned isolated identity on the authorized file; original storage and
+document writes remain protected. The checkpoint preserves compressed binary
+types and reproduces unrelated storage's aggregate quota pressure in the
+isolated namespace without exporting its data.
+An initial QA JSON type-loss defect was corrected before any timed pair. The
+[session-reuse journal](../journal/2026-10-04-session-snapshot-reuse.md)
+records three matched native pairs with exact report, knowledge and repair-plan
+parity and no native errors. Median complete-handler duration improved from
+646.762 s to 615.856 s (4.8%), below the original 20% requirement. The user
+then made 20% an advisory optimization goal, not a release requirement. The
+measured result remains recorded; semantic parity and freshness checks remain
+required. PR 68 can proceed to review under the revised acceptance policy.
+The remaining restart, cold-cache, screen-saver and out-of-memory matrix stays
+in issue 53.
+
 ## Repository automation
 
 Since 2026-09-25, drafts and changes limited to wiki content or its generated graph use lightweight validation while ready product, workflow, script, documentation, and skill changes retain the full browser-backed suite. Wiki maintenance runs Mondays, audits missed merges in batches, updates bot pull requests through REST, and rejects duplicate or malformed frontmatter across the full wiki before writing history ([issue #35](https://github.com/JFusco/design-passport/issues/35)).

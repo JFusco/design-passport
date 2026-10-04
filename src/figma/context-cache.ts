@@ -21,6 +21,8 @@ export interface KnowledgeBuildDiagnostics {
   reusedFragments: number;
   capturedFragments: number;
   reusedNodes: number;
+  sessionReusedFragments: number;
+  sessionReusedNodes: number;
   capturedNodes: number;
   cacheReadFailures: number;
   cacheWriteFailures: number;
@@ -28,7 +30,7 @@ export interface KnowledgeBuildDiagnostics {
 }
 
 export function newBuildDiagnostics(): KnowledgeBuildDiagnostics {
-  return { totalMs: 0, pageLoadingMs: 0, validationMs: 0, captureMs: 0, inferenceMs: 0, devResourcesMs: 0, componentsMs: 0, variablesMs: 0, derivedMs: 0, reusedFragments: 0, capturedFragments: 0, reusedNodes: 0, capturedNodes: 0, cacheReadFailures: 0, cacheWriteFailures: 0, inferenceNodes: 0 };
+  return { totalMs: 0, pageLoadingMs: 0, validationMs: 0, captureMs: 0, inferenceMs: 0, devResourcesMs: 0, componentsMs: 0, variablesMs: 0, derivedMs: 0, reusedFragments: 0, capturedFragments: 0, reusedNodes: 0, sessionReusedFragments: 0, sessionReusedNodes: 0, capturedNodes: 0, cacheReadFailures: 0, cacheWriteFailures: 0, inferenceNodes: 0 };
 }
 
 interface ContextFragment {

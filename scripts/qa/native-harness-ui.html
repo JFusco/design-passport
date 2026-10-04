@@ -9,6 +9,8 @@
     <select id="native-qa-field" aria-label="QA edit field"><option>name</option><option>visible</option><option>opacity</option><option>width</option><option>height</option><option>cornerRadius</option><option>strokeWeight</option></select>
     <input id="native-qa-value" placeholder="New value" aria-label="QA edit value"><button id="native-qa-edit">Edit allowlisted copy</button>
     <button id="native-qa-export">Export collected evidence JSON</button>
+    <button id="native-qa-checkpoint">Export file storage checkpoint</button>
+    <input id="native-qa-checkpoint-file" type="file" accept="application/json,.json" aria-label="QA storage checkpoint JSON"><button id="native-qa-restore">Restore isolated QA storage</button>
     <button id="native-qa-fixtures">Create fixture page in allowlisted copy</button>
   </div>
   <pre id="native-qa-status" style="white-space:pre-wrap;max-height:100px;overflow:auto;margin:6px 0;font-size:10px"></pre>
@@ -23,8 +25,10 @@
   const overlappingCommands = new Set();
   let nextCommand = 1;
   let lastReport;
+  let storagePending = false;
+  let storageCheckpoint;
   const measureCommands = new Set(['scan', 'refresh-audit', 'recheck-audit', 'audit-pages']);
-  const beginRun = (request, timingOrigin, commandId) => ({ commandId, startedAt: new Date().toISOString(), start: performance.now(), request, timingOrigin, firstInSession: evidence.runs.length === 0 && evidence.droppedRuns === 0 });
+  const beginRun = (request, timingOrigin, commandId) => ({ commandId, startedAt: new Date().toISOString(), start: performance.now(), request, timingOrigin, ...(storageCheckpoint ? { storageCheckpoint } : {}), firstInSession: evidence.runs.length === 0 && evidence.droppedRuns === 0 });
   const retainRun = (run) => {
     delete run.start;
     run.number = evidence.runs.length + evidence.droppedRuns + 1;
@@ -34,6 +38,12 @@
   };
   const status = (message) => { byId('status').textContent = typeof message === 'string' ? message : JSON.stringify(message, null, 2); };
   const send = (message) => {
+    if ((measureCommands.has(message.type) || message.type.startsWith('qa-storage-')) && storagePending) { status('Storage QA is still active. Wait for completion.'); return; }
+    if (message.type.startsWith('qa-storage-')) {
+      if (activeRun) { status('Wait for the production handler to complete before storage QA.'); return; }
+      storagePending = true;
+      if (message.type === 'qa-storage-restore') storageCheckpoint = undefined;
+    }
     if (measureCommands.has(message.type)) {
       if (activeRun) { status('A measured command is still active. Wait for handler completion, including saved-result maintenance.'); return; }
       activeRecords = [];
@@ -47,6 +57,15 @@
   byId('full').onclick = () => send({ type: 'recheck-audit', request: { mode: 'full' } });
   byId('inspect').onclick = () => send({ type: 'qa-inspect', ...(byId('node').value.trim() ? { nodeIds: [byId('node').value.trim()] } : {}) });
   byId('fixtures').onclick = () => send({ type: 'qa-create-fixtures' });
+  byId('checkpoint').disabled = !metadata.benchmarkFileKey;
+  byId('restore').disabled = !metadata.benchmarkFileKey || !metadata.pluginIdentity?.isolatedStorage;
+  byId('checkpoint').onclick = () => send({ type: 'qa-storage-checkpoint' });
+  byId('restore').onclick = async () => {
+    const file = byId('checkpoint-file').files?.[0];
+    if (!file || file.size > 8_000_000) { status('Choose a checkpoint JSON file of at most 8 MB.'); return; }
+    try { send({ type: 'qa-storage-restore', checkpoint: JSON.parse(await file.text()) }); }
+    catch (error) { status('Checkpoint could not be read: ' + String(error)); }
+  };
   byId('component-run').onclick = () => send({ type: 'recheck-audit', request: { mode: 'component', componentId: byId('component').value.trim() } });
   byId('issue-run').onclick = () => send({ type: 'recheck-audit', request: { mode: 'issue', issueId: byId('issue').value.trim() || lastReport?.issueGroups?.[0]?.id || lastReport?.findings?.find((finding) => !['pass', 'not-applicable'].includes(finding.status))?.id || '' } });
   byId('edit').onclick = () => {
@@ -55,12 +74,13 @@
     const value = field === 'name' ? raw : field === 'visible' ? (raw === 'true' ? true : raw === 'false' ? false : null) : Number(raw);
     send({ type: 'qa-edit', nodeId: byId('node').value.trim(), field, value });
   };
-  byId('export').onclick = () => {
-    const blob = new Blob([JSON.stringify({ ...evidence, exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+  const download = (value, name) => {
+    const blob = new Blob([JSON.stringify(value)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'design-passport-native-qa-' + new Date().toISOString().replaceAll(':', '-') + '.json'; anchor.click();
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  byId('export').onclick = () => download({ ...evidence, exportedAt: new Date().toISOString() }, 'design-passport-native-qa-' + new Date().toISOString().replaceAll(':', '-') + '.json');
   if (!metadata.capabilities.targetedRecheck) {
     for (const id of ['full', 'component-run', 'issue-run']) { byId(id).disabled = true; byId(id).title = 'This baseline has no production command for targeted or forced-full rechecks'; }
   }
@@ -68,6 +88,17 @@
     const message = event.data?.pluginMessage;
     if (!message?.type) return;
     const at = new Date().toISOString();
+    if (message.type === 'qa-storage-checkpoint') {
+      storagePending = false;
+      status({ type: message.type, digest: message.checkpoint.digest, entries: message.checkpoint.records.length });
+      download(message.checkpoint, 'design-passport-storage-' + message.checkpoint.digest.replace(':', '-') + '.json');
+    }
+    if (message.type === 'qa-storage-restored') {
+      storagePending = false;
+      storageCheckpoint = { digest: message.digest, entries: message.entries, bytes: message.bytes, quotaPressureBytes: message.quotaPressureBytes };
+      status(message);
+    }
+    if (message.type === 'qa-error') storagePending = false;
     if (message.type === 'qa-command-started') {
       if (!activeRun) { activeRecords = []; activeRun = beginRun(message.request, 'qa-handler-start', message.commandId); }
       if (activeRun.commandId === message.commandId) activeRun.handlerStartedAt = message.startedAt;
@@ -113,7 +144,7 @@
       activeRecords = [];
     }
     if (message.type === 'qa-command-complete') overlappingCommands.delete(message.commandId);
-    const compact = message.type === 'scan-result' ? { type: message.type, reportSnapshotHash: message.report.snapshotHash, refresh: message.refresh } : message.type === 'restored-audit' ? { type: message.type, auditId: message.audit.id, generatedAt: message.audit.report.generatedAt } : message;
+    const compact = message.type === 'scan-result' ? { type: message.type, reportSnapshotHash: message.report.snapshotHash, refresh: message.refresh } : message.type === 'restored-audit' ? { type: message.type, auditId: message.audit.id, generatedAt: message.audit.report.generatedAt } : message.type === 'qa-storage-checkpoint' ? { type: message.type, digest: message.checkpoint.digest, entries: message.checkpoint.records.length } : message;
     evidence.events.push({ at, message: compact });
     if (evidence.events.length > 5000) { evidence.events.shift(); evidence.droppedEvents += 1; }
   });

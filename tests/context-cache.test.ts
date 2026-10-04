@@ -12,6 +12,113 @@ const withoutTime = <T extends { builtAt: string }>(value: T) => { const { built
 afterEach(() => { Reflect.deleteProperty(globalThis, "figma"); });
 
 describe("validated persisted context", () => {
+  it("reuses accepted session bases with no disk capacity and matches full reports and repairs", async () => {
+    const fixture = contextFixture(20, 4);
+    const tracked = () => fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache, dirtyNodeIds: [] });
+    await tracked();
+    fixture.cacheValues.clear();
+    fixture.cache.set = async () => undefined;
+    const reads = fixture.counts.cacheReads;
+    const refreshed = await tracked();
+    expect(refreshed.diagnostics).toMatchObject({ sessionReusedFragments: 20, sessionReusedNodes: 100, capturedNodes: 0 });
+    expect(fixture.counts.cacheReads).toBe(reads);
+    const full = await build(fixture, true);
+    expect(withoutTime(refreshed.graph)).toEqual(withoutTime(full.graph));
+    const report = (graph: typeof full.graph) => buildReadinessReport({ graph, profile: fixture.readinessProfile, scope: "file", targetRootIds: graph.sourceFrameIds, now: new Date("2026-10-04T12:00:00Z") });
+    const refreshedReport = report(refreshed.graph);
+    const fullReport = report(full.graph);
+    expect(refreshedReport).toEqual(fullReport);
+    expect(buildChangePlans(refreshedReport.findings)).toEqual(buildChangePlans(fullReport.findings));
+  });
+
+  it("mixes session bases, persisted fallback and live recapture without changing prior snapshots", async () => {
+    const fixture = contextFixture(3, 2);
+    const original = await build(fixture);
+    const frozen = JSON.stringify(original.graph);
+    fixture.pages[1]!.children[0]!.name = "Changed card";
+    fixture.cacheValues.delete("capture-v1:page:1:root:1");
+    const refreshed = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache, dirtyNodeIds: ["root:0", "root:1"] });
+    expect(refreshed.diagnostics).toMatchObject({ sessionReusedFragments: 1, sessionReusedNodes: 3, reusedFragments: 2, capturedFragments: 1, capturedNodes: 3 });
+    expect(JSON.stringify(original.graph)).toBe(frozen);
+    expect(withoutTime(refreshed.graph)).toEqual(withoutTime((await build(fixture, true)).graph));
+  });
+
+  it.each(["name", "profile", "file", "order", "bulk unavailable", "forced full", "untracked"])("rejects session reuse for %s inputs", async (change) => {
+    const fixture = contextFixture(1, 2);
+    await build(fixture);
+    fixture.cacheValues.clear();
+    if (change === "name") fixture.pages[0]!.children[0]!.name = "Changed";
+    if (change === "profile") fixture.readinessProfile.artifactKind = fixture.readinessProfile.artifactKind === "product" ? "library" : "product";
+    if (change === "file") fixture.figma.fileKey = "another-file";
+    if (change === "order") fixture.pages[0]!.children[0]!.children.reverse();
+    if (change === "bulk unavailable") fixture.pages[0]!.exportAsync = async () => { throw new Error("Unavailable"); };
+    const result = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, {
+      contextCache: fixture.cache, ...(change === "untracked" ? {} : { dirtyNodeIds: [] }), forceFullCapture: change === "forced full",
+    });
+    expect(result.diagnostics).toMatchObject({ sessionReusedFragments: 0, capturedNodes: 3 });
+    expect(withoutTime(result.graph)).toEqual(withoutTime((await build(fixture, true)).graph));
+  });
+
+  it("refreshes opaque evidence on session hits and retains resource and scene verification", async () => {
+    const fixture = contextFixture();
+    const root = fixture.pages[0]!.children[0]!;
+    root.type = "INSTANCE";
+    await build(fixture);
+    fixture.cacheValues.clear();
+    fixture.resources.push({ nodeId: root.id, name: "Code", url: "https://example.test/card" });
+    fixture.setInference({ width: [{ type: "VARIABLE_ALIAS", id: "var:new" }] });
+    fixture.setMainName("Updated main");
+    const refreshed = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache, dirtyNodeIds: [] });
+    expect(refreshed.diagnostics).toMatchObject({ sessionReusedFragments: 1, inferenceNodes: 1 });
+    expect(refreshed.graph.nodes[root.id]).toMatchObject({ devResourceCount: 1, inferredBindings: { width: ["var:new"] }, instance: { mainComponentName: "Updated main" } });
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(true);
+    root.boundVariables = { width: { type: "VARIABLE_ALIAS", id: "changed" } };
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
+  it("refreshes changed style evidence and newly uncovered inference fields on session hits", async () => {
+    const fixture = contextFixture();
+    fixture.readinessProfile.tokenSourceCollectionKeys = [];
+    const text = fixture.pages[0]!.children[0]!.children[0]!;
+    const style = { id: "style:1", type: "TEXT", key: "style:key", name: "Body", remote: true, fontSize: 18, fontName: { family: "Inter", style: "Regular" }, letterSpacing: { unit: "PIXELS", value: 0 }, lineHeight: { unit: "PIXELS", value: 24 }, paragraphSpacing: 0, paragraphIndent: 0 };
+    text.textStyleId = style.id;
+    const infer = vi.fn(() => ({ fills: [[{ type: "VARIABLE_ALIAS", id: "var:new" }]] }));
+    Object.defineProperty(text, "inferredVariables", { get: infer });
+    Object.assign(fixture.figma, { getStyleByIdAsync: async () => style });
+    const original = await build(fixture);
+    fixture.cacheValues.clear();
+    infer.mockClear();
+    style.fontSize = 20;
+    const refreshed = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache, dirtyNodeIds: [] });
+    expect(refreshed.diagnostics).toMatchObject({ sessionReusedFragments: 1, capturedNodes: 0, inferenceNodes: 1 });
+    expect(infer).toHaveBeenCalledOnce();
+    expect(refreshed.graph.nodes[text.id]?.text?.style?.overriddenFields).toContain("fontSize");
+    expect(refreshed.graph.nodes[text.id]?.fills[0]?.inferredVariableIds).toEqual(["var:new"]);
+    expect(original.graph.nodes[text.id]?.text?.style?.controlledFields).toContain("fontSize");
+    expect(withoutTime(refreshed.graph)).toEqual(withoutTime((await build(fixture, true)).graph));
+    style.fontSize = 22;
+    expect(await fixture.adapter.matchesVariableEnvironment()).toBe(false);
+  });
+
+  it("discards a cancelled session reuse attempt without mutating the accepted graph or publishing cache", async () => {
+    const fixture = contextFixture(2);
+    const original = await build(fixture);
+    const frozen = JSON.stringify(original.graph);
+    fixture.cacheValues.clear();
+    const writes = fixture.counts.cacheWrites;
+    const exportPage = fixture.pages[1]!.exportAsync;
+    fixture.pages[1]!.exportAsync = async () => { fixture.adapter.cancel(); return exportPage(); };
+    const cancelled = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache, dirtyNodeIds: [] });
+    expect(cancelled.diagnostics.sessionReusedFragments).toBe(1);
+    expect(cancelled.graph).toMatchObject({ cancelled: true, complete: false });
+    expect(JSON.stringify(original.graph)).toBe(frozen);
+    expect(fixture.counts.cacheWrites).toBe(writes);
+    fixture.adapter.beginScan();
+    fixture.pages[1]!.exportAsync = exportPage;
+    const recovered = await fixture.adapter.buildKnowledge(fixture.readinessProfile, () => undefined, { contextCache: fixture.cache, dirtyNodeIds: [] });
+    expect(withoutTime(recovered.graph)).toEqual(withoutTime((await build(fixture, true)).graph));
+  });
+
   it.each(["[Design Passport]", "[Figma AI Ready]"])("keeps %s stamps out of source annotations and preserves legacy cache evidence", async (prefix) => {
     const fixture = contextFixture();
     const root = fixture.pages[0]!.children[0]!;

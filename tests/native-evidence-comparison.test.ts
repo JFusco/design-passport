@@ -11,6 +11,41 @@ function reports() {
 }
 
 describe("native evidence comparison", () => {
+  const crossBuildRuns = () => reports().map((report, index) => {
+    const revision = (index ? "b" : "a").repeat(40);
+    report.producer!.buildSha = revision.slice(0, 12);
+    const { snapshotHash: _old, ...material } = report;
+    report.snapshotHash = hashValue(material);
+    return { kind: "design-passport-native-qa-evidence", metadata: {
+      source: { revision, dirty: false, productionCodeSha256: String(index + 1).repeat(64), productionUiSha256: "3".repeat(64) }, harnessSourceSha256: "4".repeat(64),
+    }, runs: [{ number: 1, status: "completed", report, plans: [], storageCheckpoint: { digest: "common", entries: 2, bytes: 100 } }] };
+  });
+
+  it("allows only an independently validated producer SHA difference in explicit cross-build mode", () => {
+    const [left, right] = crossBuildRuns();
+    expect(compareNativeEvidence(left, right, 1, 1).comparisonPassed).toBe(false);
+    expect(compareNativeEvidence(left, right, 1, 1, { crossBuild: true })).toMatchObject({ comparisonPassed: true, reportsMatch: true, plansMatch: true, sameBuild: false, sameStorageCheckpoint: true, crossBuildParityEvidenceComplete: true, releaseParityEvidenceComplete: false });
+    right!.runs[0]!.plans.push({ id: "different" } as never);
+    expect(compareNativeEvidence(left, right, 1, 1, { crossBuild: true }).comparisonPassed).toBe(false);
+  });
+
+  it.each(["producer", "version", "harness", "dirty", "missing digest", "corrupt report", "document"])("keeps cross-build comparison fail closed for %s changes", (change) => {
+    const [left, right] = crossBuildRuns();
+    const report = right!.runs[0]!.report;
+    if (change === "producer") report.producer!.buildSha = "wrong";
+    if (change === "version") report.producer!.rulesetVersion = "other";
+    if (change === "harness") right!.metadata.harnessSourceSha256 = "5".repeat(64);
+    if (change === "dirty") right!.metadata.source.dirty = true;
+    if (change === "missing digest") right!.metadata.source.productionCodeSha256 = "";
+    if (change === "document") report.target.knowledgeSnapshotHash = "other";
+    if (change !== "corrupt report") {
+      const { snapshotHash: _old, ...material } = report;
+      report.snapshotHash = hashValue(material);
+    } else report.producer!.buildSha = "corrupted";
+    if (change === "version" || change === "document") expect(compareNativeEvidence(left, right, 1, 1, { crossBuild: true }).comparisonPassed).toBe(false);
+    else expect(() => compareNativeEvidence(left, right, 1, 1, { crossBuild: true })).toThrow();
+  });
+
   it("excludes only generation identity while requiring repair and build evidence for complete parity", () => {
     const [left, right] = reports();
     expect(left!.snapshotHash).not.toBe(right!.snapshotHash);
