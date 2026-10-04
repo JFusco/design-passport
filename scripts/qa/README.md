@@ -83,8 +83,11 @@ all semantic report fields and repairs still match exactly. Strict comparison
 remains the default. Cross-build parity does not establish same-build release
 parity or a speed improvement by itself.
 
-The focused gate is median complete candidate handler duration at most 80% of
-baseline, with three matched successful pairs and exact semantic parity. It
-measures refreshes within an open session under quota-limited retained/mixed
-disk cache. Restart, cold-cache, screen-saver, and out-of-memory acceptance remain
-under issue 53; session reuse does not establish those outcomes.
+The focused performance goal is median complete candidate handler duration at
+most 80% of baseline (20% faster). This is an advisory optimization goal, not a
+release requirement. Three matched successful pairs, exact semantic parity and
+no native errors remain required; record the actual handler medians even when
+the speed goal is missed. It measures refreshes within an open session under
+quota-limited retained/mixed disk cache. Restart, cold-cache, screen-saver, and
+out-of-memory acceptance remain under issue 53; session reuse does not establish
+those outcomes.

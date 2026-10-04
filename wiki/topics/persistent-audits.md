@@ -179,13 +179,19 @@ budget and saved-history policy remain unchanged.
 Development-only checkpoint/restore and explicit cross-build comparison support
 matched retained/mixed-cache timings. Restore is confined to an idle, actual
 Figma-assigned isolated identity on the authorized file; original storage and
-document writes remain protected. The checkpoint preserves compressed binary types and reproduces unrelated storage's
-aggregate quota pressure in the isolated namespace without exporting its data.
+document writes remain protected. The checkpoint preserves compressed binary
+types and reproduces unrelated storage's aggregate quota pressure in the
+isolated namespace without exporting its data.
 An initial QA JSON type-loss defect was corrected before any timed pair. The
 [session-reuse journal](../journal/2026-10-04-session-snapshot-reuse.md)
-separates fixture parity from the outstanding native median speed gate. The
-focused in-session gate again requires a 20% improvement; the remaining restart,
-cold-cache and screen-saver matrix stays in issue 53.
+records three matched native pairs with exact report, knowledge and repair-plan
+parity and no native errors. Median complete-handler duration improved from
+646.762 s to 615.856 s (4.8%), below the original 20% requirement. The user
+then made 20% an advisory optimization goal, not a release requirement. The
+measured result remains recorded; semantic parity and freshness checks remain
+required. PR 68 can proceed to review under the revised acceptance policy.
+The remaining restart, cold-cache, screen-saver and out-of-memory matrix stays
+in issue 53.
 
 ## Repository automation
 
