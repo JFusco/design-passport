@@ -95,7 +95,7 @@
     }
     if (message.type === 'qa-storage-restored') {
       storagePending = false;
-      storageCheckpoint = { digest: message.digest, entries: message.entries, bytes: message.bytes };
+      storageCheckpoint = { digest: message.digest, entries: message.entries, bytes: message.bytes, quotaPressureBytes: message.quotaPressureBytes };
       status(message);
     }
     if (message.type === 'qa-error') storagePending = false;

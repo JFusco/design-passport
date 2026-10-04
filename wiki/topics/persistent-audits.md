@@ -179,7 +179,9 @@ budget and saved-history policy remain unchanged.
 Development-only checkpoint/restore and explicit cross-build comparison support
 matched retained/mixed-cache timings. Restore is confined to an idle, actual
 Figma-assigned isolated identity on the authorized file; original storage and
-document writes remain protected. The
+document writes remain protected. The checkpoint preserves compressed binary types and reproduces unrelated storage's
+aggregate quota pressure in the isolated namespace without exporting its data.
+An initial QA JSON type-loss defect was corrected before any timed pair. The
 [session-reuse journal](../journal/2026-10-04-session-snapshot-reuse.md)
 separates fixture parity from the outstanding native median speed gate. The
 focused in-session gate again requires a 20% improvement; the remaining restart,

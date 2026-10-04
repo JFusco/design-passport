@@ -53,14 +53,39 @@ and newly uncovered inference fields are refreshed; subsequent changes fail
 resource verification. Separate harness/storage/comparator fixtures exercise
 identity, file, idle, quota, digest, original-hash and producer boundaries.
 
-Native verification is pending. Figma assigned the isolated development ID
+Native verification remains pending. Figma assigned the isolated development ID
 through its New plugin flow; the source reader was imported. No matched timed
 refreshes have started. Native computer use then reported the Mac locked; the
 user was asked to unlock manually. The 20% median complete-handler gate and
 native cross-build semantic parity remain unproven. Failed startup and access
 attempts are retained privately, together with prior immutable native exports.
 
-`DESIGN_PASSPORT_E2E_PORT=5190 pnpm run verify:ci` passed: catalog/schema,
+After manual unlock, the source reader confirmed the authorized file and
+blocked document writes. A first isolated baseline warm-up completed with
+matching producer identity and no dropped records, but reused no disk context.
+It exposed a QA checkpoint defect: JSON serialization converted native binary
+packets to plain objects and overstated their storage cost. This warm-up is
+excluded from performance evidence. Original storage was never restored or
+cleared, and the failed checkpoint and diagnostics remain private.
+
+The correction uses tagged base64 for native binary packets, decoded-byte
+accounting and a new QA-only checkpoint schema. It rejects old JSON checkpoints
+instead of guessing their types. Only the aggregate byte pressure of unrelated
+records is exported; isolated restore reproduces it with a task-owned exact-file
+reserve while preserving actual unrelated data. Real compressed audit/context
+round-trips, binary padding/empty values and pressure readback have regression
+coverage. All native measurements must restart with the corrected common
+checkpoint; no speed acceptance is inferred from the discarded warm-up.
+
+A fresh native read-only export preserved 49 exact-file records, including
+45 compressed context packets, and recorded 3,627,272 bytes of unrelated
+quota pressure. Its native total is 3,969,161 bytes, below the unchanged
+4 MB budget. The original namespace remained untouched. The corrected
+helper passed 95 focused tests and the full `verify:ci` check: 542 unit tests,
+five Chromium tests, repository integrity, types, lint and builds.
+
+The initial implementation's `DESIGN_PASSPORT_E2E_PORT=5190 pnpm run verify:ci`
+passed: catalog/schema,
 knowledge/wiki/skill checks, types, companion lint, 536 unit tests, five
 Chromium tests and companion/plugin builds. The initial sandboxed Chromium
 attempt could not bind the local test port; the passing rerun used authorized

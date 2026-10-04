@@ -48,15 +48,22 @@ the runtime inspection also records the actual `figma.pluginId`.
 the exact configured file and runtime plugin identity. A separate reader using
 the original identity can export its existing file records without restoring
 or clearing that namespace. Keep the resulting checkpoint privately. Checkpoint
-reads require an idle production handler.
+reads require an idle production handler. Checkpoint schema 2 preserves native
+compressed `Uint8Array` packets with tagged base64 and counts their decoded
+bytes. Schema 1 JSON checkpoints are rejected because they lost binary types.
+Only a byte total is retained for unrelated storage; its keys/content are not
+exported. Restore represents that pressure with one exact-file QA reserve,
+subtracting real unrelated records already present in the isolated namespace.
 
 **Restore isolated QA storage** accepts that checkpoint only on the matching
 file, in an idle plugin whose actual ID matches the separately assigned
 development ID. It validates ordered scoped keys, digest, entry count, and the
-shared 4 MB budget before replacing any records. Other files and plugin keys
+shared 4 MB native-byte budget before replacing any records. Other files and plugin keys
 are retained. Restore then reads back and verifies the exact checkpoint. A
 failed restore invalidates the attempt; preserve the checkpoint and diagnostics.
-Original/production storage cannot be restored. The controls do not change the
+Original/production storage cannot be restored. The reserve is replaced only
+by isolated QA restore; normal audit saving retains it as non-context pressure.
+The controls do not change the
 production storage policy or add document-write authority.
 
 For each matched pair, launch the build and warm its ordinary audit on the same
