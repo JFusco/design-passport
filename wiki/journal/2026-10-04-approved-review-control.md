@@ -2,6 +2,8 @@
 title: Reflect saved approvals in the review action
 topics: [supabase-companion]
 plans: [2026-10-04-reflect-current-approvals-in-the-companion-review-action-ddaf4fbd15.md]
+issue: 'https://github.com/jfusco/design-passport/issues/75'
+issues: ['https://github.com/jfusco/design-passport/issues/75']
 ---
 
 # Reflect saved approvals in the review action
