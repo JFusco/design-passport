@@ -88,6 +88,9 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
     || scope !== selected.proposedScope
     || JSON.stringify(normalizedExceptions(exceptions)) !== JSON.stringify([...selected.exceptions].sort())
   ) : false;
+  const alreadyApproved = !editorialDirty
+    && selected?.currentDecision?.action === "approve"
+    && selected.currentDecision.scope === scope;
   const hasUnsavedWork = editorialDirty || Boolean(rationale.trim());
 
   function writeStoredDrafts() {
@@ -245,7 +248,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
   }
 
   async function decide(action: "approve" | "reject" | "defer") {
-    if (!selected || editorialDirty) return;
+    if (!selected || editorialDirty || (action === "approve" && alreadyApproved)) return;
     if (!rationale.trim()) {
       setMessage("Add a short decision note.");
       rationaleRef.current?.focus();
@@ -336,7 +339,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
               <label className="field decision-note"><span>Decision note</span><input name="decision-note" autoComplete="off" ref={rationaleRef} value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="Reason for this decision…" /></label>
               <div className="decision-actions">
                 <button type="button" className="button" onClick={saveDraft} disabled={!editorialDirty || working}>Save changes</button>
-                <button type="button" className="button primary" onClick={() => decide("approve")} disabled={editorialDirty || working}>Approve</button>
+                <button type="button" className="button primary" onClick={() => decide("approve")} disabled={editorialDirty || working || alreadyApproved}>{alreadyApproved ? "Approved" : "Approve"}</button>
                 <button type="button" className="button danger" onClick={() => decide("reject")} disabled={editorialDirty || working}>Reject</button>
                 <button type="button" className="button" onClick={() => decide("defer")} disabled={editorialDirty || working}>Defer</button>
               </div>
