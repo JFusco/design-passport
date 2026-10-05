@@ -123,7 +123,7 @@ describe("companion SQL repository", () => {
     }
     await expect(sql`create table design_passport.forbidden(id int)`).rejects.toMatchObject({ code: "42501" });
     const rows = await sql`select relname, relrowsecurity from pg_class join pg_namespace on pg_namespace.oid = relnamespace where nspname = 'design_passport' and relkind = 'r'`;
-    expect(rows).toHaveLength(10); expect(rows.every((row) => row.relrowsecurity)).toBe(true);
+    expect(rows).toHaveLength(20); expect(rows.every((row) => row.relrowsecurity)).toBe(true);
     expect((await sql`select has_schema_privilege('anon', 'design_passport', 'USAGE') as allowed`)[0]?.allowed).toBe(false);
     await expect(sql`update design_passport.projects set scope = 'other'`).rejects.toMatchObject({ code: "42501" });
     await closeDatabases();
@@ -187,7 +187,7 @@ describe("companion SQL repository", () => {
     await importAudits(paths, [audit(changed)], "project:companion-test");
     expect((await learningDetail(paths, learningFixture().digest)).ambiguous).toBe(true);
     const sql = await database(paths.root);
-    await expect(sql`insert into design_passport.audit_exports(id, project_scope, audit_id, payload_sha256, payload) values (${randomUUID()}, 'project:other', ${rows[0]!.id}, ${"0".repeat(64)}, '{}')`).rejects.toMatchObject({ code: "23503" });
+    await expect(sql.begin(async (tx) => { await tx`insert into design_passport.audit_exports(id, project_scope, audit_id, payload_sha256, payload) values (${randomUUID()}, 'project:other', ${rows[0]!.id}, ${"0".repeat(64)}, '{}')`; })).rejects.toMatchObject({ code: "23503" });
     expect((await sql`select count(*)::int as count from design_passport.findings where project_scope = 'project:companion-test'`)[0]?.count).toBe(report.findings.length * 2);
   });
   it("rejects stale writes, replays committed decisions and revisions, and preserves edits with stale approvals", async () => {

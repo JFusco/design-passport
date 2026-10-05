@@ -28,7 +28,7 @@ export const EMPTY_TEAM_KNOWLEDGE_PACK: TeamKnowledgePackV1 = {
   digest: hashValue({ schemaVersion: 1, knowledgeVersion: "1.0.0", entries: [] }),
 };
 
-function assertNoUnsafeStrings(value: unknown, path = "$"): void {
+export function assertNoUnsafeStrings(value: unknown, path = "$"): void {
   if (typeof value === "string") {
     if (/https?:\/\//iu.test(value)) throw new Error(`Unsafe URL found at ${path}`);
     if (/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/iu.test(value)) throw new Error(`Unsafe email found at ${path}`);

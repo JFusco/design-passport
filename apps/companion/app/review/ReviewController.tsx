@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { REVIEW_DRAFTS_KEY, storedDrafts, type LocalReviewDraft } from "@/lib/review-drafts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ReviewCandidateView, ReviewStatus } from "../../../../src/companion/view-models";
@@ -21,16 +23,6 @@ const decisionDateFormatter = new Intl.DateTimeFormat("en-US", {
 
 const PENDING_DECISION_KEY = "design-passport:pending-decision:v1";
 
-const REVIEW_DRAFTS_KEY = "design-passport:review-drafts:v1";
-
-interface LocalReviewDraft {
-  revision: string;
-  wording: string;
-  scope: "project" | "shared";
-  exceptions: string;
-  rationale: string;
-}
-
 function humanize(value: string): string {
   const words = value.replace(/^[^:]+:/u, "").replace(/[._-]+/gu, " ").trim();
   return words ? words[0]!.toUpperCase() + words.slice(1) : "Design review";
@@ -44,15 +36,6 @@ function matchesCandidate(candidate: ReviewCandidateView, status: string, query:
   const matchesStatus = status === "all" || candidate.status === status;
   const needle = query.trim().toLocaleLowerCase("en-US");
   return matchesStatus && (!needle || `${candidate.context} ${candidate.projectScope} ${candidate.wording}`.toLocaleLowerCase("en-US").includes(needle));
-}
-
-function storedDrafts(): Record<string, LocalReviewDraft> {
-  try {
-    const parsed = JSON.parse(sessionStorage.getItem(REVIEW_DRAFTS_KEY) ?? "{}") as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, LocalReviewDraft> : {};
-  } catch {
-    return {};
-  }
 }
 
 export function ReviewController({ initialCandidates }: { initialCandidates: ReviewCandidateView[] }) {
@@ -72,6 +55,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
   const [exceptions, setExceptions] = useState(initialCandidate?.exceptions.join("\n") ?? "");
   const [rationale, setRationale] = useState("");
   const [message, setMessage] = useState("");
+  const [recoveredDraft, setRecoveredDraft] = useState<LocalReviewDraft | null>(null);
   const [hasConflict, setHasConflict] = useState(false);
   const [working, setWorking] = useState(false);
   const [draftsReady, setDraftsReady] = useState(false);
@@ -100,10 +84,8 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
   function loadCandidate(candidate: ReviewCandidateView) {
     const saved = draftsRef.current[candidate.id];
     const draft = saved?.revision === candidate.revision ? saved : undefined;
-    if (saved && !draft) {
-      delete draftsRef.current[candidate.id];
-      writeStoredDrafts();
-    }
+
+    setRecoveredDraft(saved && !draft ? saved : null);
     setSelectedId(candidate.id);
     setWording(draft?.wording ?? candidate.wording);
     setScope(draft?.scope ?? candidate.proposedScope);
@@ -114,7 +96,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
   }
 
   function persistCurrentDraft() {
-    if (!draftsReady || !selected) return;
+    if (!draftsReady || !selected || (draftsRef.current[selected.id] && draftsRef.current[selected.id]?.revision !== selected.revision)) return;
     if (hasUnsavedWork) {
       draftsRef.current[selected.id] = { revision: selected.revision, wording, scope, exceptions, rationale };
     } else {
@@ -128,6 +110,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
     const candidate = initialCandidateRef.current;
     if (candidate) {
       const saved = draftsRef.current[candidate.id];
+      if (saved && saved.revision !== candidate.revision) setRecoveredDraft(saved);
       if (saved?.revision === candidate.revision) {
         setWording(saved.wording);
         setScope(saved.scope);
@@ -147,7 +130,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
   }, [query, router, selectedId, statusFilter]);
 
   useEffect(() => {
-    if (!draftsReady || !selected) return;
+    if (!draftsReady || !selected || (draftsRef.current[selected.id] && draftsRef.current[selected.id]?.revision !== selected.revision)) return;
     if (hasUnsavedWork) {
       draftsRef.current[selected.id] = { revision: selected.revision, wording, scope, exceptions, rationale };
     } else {
@@ -292,7 +275,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
   return (
     <section className="review-workspace">
       <aside className="review-queue">
-        <div className="queue-tools">
+        <div className="queue-tools"><Link className="button" href="/model-reviews" onClick={persistCurrentDraft}>Model review by project</Link>
           <label><span className="sr-only">Search drafts</span><input name="candidate-search" autoComplete="off" type="search" value={query} onChange={(event) => changeQuery(event.target.value)} placeholder="Search drafts…" /></label>
           <label><span className="sr-only">Filter by status</span><select name="candidate-status" value={statusFilter} onChange={(event) => changeStatus(event.target.value)}><option value="all">All statuses</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         </div>
@@ -317,12 +300,13 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
               <span className={`status-pill ${selected.status}`}>{statusLabels[selected.status]}</span>
             </header>
             <div className="review-body">
-              <label className="field full"><span>Guidance</span><textarea name="guidance" autoComplete="off" value={wording} onChange={(event) => setWording(event.target.value)} /><small>Edit the generated draft into clear, reusable guidance.</small></label>
+              {recoveredDraft ? <div className="notice warning"><p>A saved draft belongs to an older revision. Its text is preserved for recovery.</p><pre>{JSON.stringify(recoveredDraft,null,2)}</pre><button type="button" className="button" onClick={() => { delete draftsRef.current[selected.id]; writeStoredDrafts(); loadCandidate(selected); }}>Discard recovered draft</button></div> : null}
+              <label className="field full"><span>Guidance</span><textarea name="guidance" disabled={!!recoveredDraft} autoComplete="off" value={wording} onChange={(event) => setWording(event.target.value)} /><small>Edit the generated draft into clear, reusable guidance.</small></label>
               <div className="review-grid">
-                <label className="field"><span>Publication scope</span><select name="publication-scope" value={scope} onChange={(event) => setScope(event.target.value as "project" | "shared")}><option value="project">Project only</option><option value="shared">Shared, client-neutral</option></select><small>Shared guidance requires an explicit human choice.</small></label>
+                <label className="field"><span>Publication scope</span><select name="publication-scope" disabled={!!recoveredDraft} value={scope} onChange={(event) => setScope(event.target.value as "project" | "shared")}><option value="project">Project only</option><option value="shared">Shared, client-neutral</option></select><small>Shared guidance requires an explicit human choice.</small></label>
                 <div className="evidence-card"><strong>Evidence summary</strong><div><span><b>{selected.supportCount}</b> supporting</span><span><b>{selected.contradictCount}</b> contradictory</span><span><b>{selected.contributionCount}</b> unique</span></div></div>
               </div>
-              <label className="field full"><span>Exceptions</span><textarea name="exceptions" autoComplete="off" className="short" value={exceptions} onChange={(event) => setExceptions(event.target.value)} placeholder="One exception per line…" /><small>Record where this guidance should not apply.</small></label>
+              <label className="field full"><span>Exceptions</span><textarea name="exceptions" disabled={!!recoveredDraft} autoComplete="off" className="short" value={exceptions} onChange={(event) => setExceptions(event.target.value)} placeholder="One exception per line…" /><small>Record where this guidance should not apply.</small></label>
               <details className="evidence-details">
                 <summary>Why this draft?</summary>
                 <p>These sanitized observations explain the draft. Counts show recurrence, not approval.</p>
@@ -336,12 +320,12 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
               </details>
             </div>
             <footer className="decision-panel">
-              <label className="field decision-note"><span>Decision note</span><input name="decision-note" autoComplete="off" ref={rationaleRef} value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="Reason for this decision…" /></label>
+              <label className="field decision-note"><span>Decision note</span><input name="decision-note" disabled={!!recoveredDraft} autoComplete="off" ref={rationaleRef} value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="Reason for this decision…" /></label>
               <div className="decision-actions">
-                <button type="button" className="button" onClick={saveDraft} disabled={!editorialDirty || working}>Save changes</button>
-                <button type="button" className="button primary" onClick={() => decide("approve")} disabled={editorialDirty || working || alreadyApproved}>{alreadyApproved ? "Approved" : "Approve"}</button>
-                <button type="button" className="button danger" onClick={() => decide("reject")} disabled={editorialDirty || working}>Reject</button>
-                <button type="button" className="button" onClick={() => decide("defer")} disabled={editorialDirty || working}>Defer</button>
+                <button type="button" className="button" onClick={saveDraft} disabled={!editorialDirty || working || !!recoveredDraft}>Save changes</button>
+                <button type="button" className="button primary" onClick={() => decide("approve")} disabled={editorialDirty || working || alreadyApproved || !!recoveredDraft}>{alreadyApproved ? "Approved" : "Approve"}</button>
+                <button type="button" className="button danger" onClick={() => decide("reject")} disabled={editorialDirty || working || !!recoveredDraft}>Reject</button>
+                <button type="button" className="button" onClick={() => decide("defer")} disabled={editorialDirty || working || !!recoveredDraft}>Defer</button>
               </div>
               {editorialDirty ? <p className="dirty-note">Save changes before recording a decision.</p> : null}
               {selected.currentDecision ? <p className="previous-decision">Current decision: {statusLabels[selected.status]} · {selected.currentDecision.scope === "shared" ? "Shared, client-neutral" : "Project only"} · <time dateTime={selected.currentDecision.decidedAt}>{decisionDateFormatter.format(new Date(selected.currentDecision.decidedAt))} UTC</time><br />Reason: {selected.currentDecision.rationale}</p> : null}

@@ -29,3 +29,5 @@ supabase/.branches/
 .graphify_ast.json
 .graphify_old.json
 *.graphify-bak
+
+apps/companion/.next-model-review-dev/

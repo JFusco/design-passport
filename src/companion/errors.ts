@@ -1,4 +1,5 @@
 export type CompanionErrorCode =
+  | "already_approved"
   | "busy"
   | "conflict"
   | "invalid-input"

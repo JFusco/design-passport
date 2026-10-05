@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { MODEL_TABLES } from "./model-review/repository";
 import type postgres from "postgres";
 import type { TransactionSql } from "postgres";
 import type { DesignReferencePackV1, KnowledgeCandidateV1, KnowledgeDecisionV1, ReadinessReport, ReviewLearningEnvelopeV1, TeamKnowledgePackV1 } from "../core/contracts";
@@ -16,7 +17,7 @@ const epoch = "1970-01-01T00:00:00.000Z";
 function json(sql: TransactionSql, value: unknown) { return sql.json(value as postgres.JSONValue); }
 function emptyPack(): TeamKnowledgePackV1 { return compileTeamKnowledgePack({ knowledgeVersion: "1.0.0", candidates: [], decisions: [], now: new Date(epoch) }); }
 
-async function stateIn(sql: TransactionSql): Promise<KnowledgeState> {
+export async function stateIn(sql: TransactionSql): Promise<KnowledgeState> {
   const envelopes = (await sql`select payload from design_passport.contributions order by source_at, id`).map((row) => row.payload as ReviewLearningEnvelopeV1);
   const candidates = (await sql`select payload from design_passport.candidates order by id`).map((row) => row.payload as KnowledgeCandidateV1);
   const decisions = (await sql`select payload from design_passport.decisions order by source_at, id`).map((row) => row.payload as KnowledgeDecisionV1);
@@ -31,14 +32,14 @@ async function packsIn(sql: TransactionSql): Promise<DesignReferencePackV1[]> {
 export async function listProjectGuidancePacks(paths: WorkspacePaths): Promise<DesignReferencePackV1[]> { return transaction(paths.root, packsIn); }
 export async function readDashboard(paths: WorkspacePaths) { return transaction(paths.root, async (sql) => ({ state: await stateIn(sql), projectPacks: await packsIn(sql) })); }
 
-async function retainCandidate(sql: TransactionSql, candidate: KnowledgeCandidateV1, parent?: KnowledgeCandidateV1): Promise<void> {
+export async function retainCandidate(sql: TransactionSql, candidate: KnowledgeCandidateV1, parent?: KnowledgeCandidateV1): Promise<void> {
   if (parent) {
     const updated = await sql`update design_passport.candidates set digest = ${candidate.digest}, payload = ${json(sql, candidate)} where id = ${candidate.candidateId} and project_scope = ${candidate.projectScope} and digest = ${parent.digest} returning id`;
     if (!updated.length) throw new CompanionError("conflict", "This draft changed. Reload it before saving.", 409);
   } else await sql`insert into design_passport.candidates(id, project_scope, observation_key, digest, payload) values (${candidate.candidateId}, ${candidate.projectScope}, ${candidate.observationKey}, ${candidate.digest}, ${json(sql, candidate)})`;
   await sql`insert into design_passport.candidate_revisions(project_scope, candidate_id, digest, source_at, payload) values (${candidate.projectScope}, ${candidate.candidateId}, ${candidate.digest}, ${candidate.generatedAt}, ${json(sql, candidate)}) on conflict do nothing`;
 }
-async function derive(sql: TransactionSql, regenerate: boolean): Promise<void> {
+export async function derive(sql: TransactionSql, regenerate: boolean): Promise<void> {
   const state = await stateIn(sql);
   if (regenerate) {
     const envelopeTime = state.envelopes.map((item) => item.generatedAt).sort().at(-1) ?? epoch;
@@ -274,7 +275,7 @@ export async function learningDetail(paths: WorkspacePaths, id: string) {
 }
 export async function databaseSnapshot(paths: WorkspacePaths) {
   return transaction(paths.root, async (sql) => {
-    const tables = ["projects", "audits", "audit_exports", "findings", "contributions", "observations", "candidates", "candidate_revisions", "decisions", "guidance_packs"] as const;
+    const tables = ["projects", "audits", "audit_exports", "findings", "contributions", "observations", "candidates", "candidate_revisions", "decisions", "guidance_packs", ...MODEL_TABLES] as const;
     const records: Record<string, Record<string, unknown>[]> = {};
     for (const table of tables) records[table] = await sql`select * from ${sql(`design_passport.${table}`)}`;
     return { state: await stateIn(sql), projectPacks: await packsIn(sql), records };

@@ -136,6 +136,10 @@ The review command starts the production companion on `127.0.0.1` and prints its
 
 The review screen generates draft wording automatically. A maintainer may edit it and must explicitly approve, reject, or defer it. Scope defaults to project-only; shared scope is an explicit client-neutral choice. See [the knowledge-loop guide](wiki/guides/knowledge-loop.md).
 
+**Model review by project** adds an optional GPT-6.1 Sol review. Select one to eight candidates, inspect the local sanitized disclosure, set a lifetime USD allowance (initially zero), and explicitly Start. Recommendations require a separate human Apply action. The view shows elapsed seconds, estimated costs, held reservations, and lifetime project totals. See [model review and recovery](wiki/topics/model-assisted-learning-review.md).
+
+The CLI runner reads an inherited `OPENAI_API_KEY`; an `.env` file is not required. Keep this key out of shared and Next environment files. As an optional alternative, use the ignored `.design-passport-local/model-review.env` with mode `600` in a mode `700` directory. Restart the CLI after changing credentials. Only the runner loads the key; the Next child receives a non-secret configuration flag.
+
 ## Deterministic generated inputs
 
 `pnpm catalog:sync` reads only the exact locked package and generates `src/generated/ui-design-brain.catalog.json`, including the authority digest and pattern guidance. It fails unless the package is exactly version 1.17.0 with 80 patterns.

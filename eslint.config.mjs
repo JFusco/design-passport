@@ -5,7 +5,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  globalIgnores(["**/node_modules/**", "**/.next/**", "dist/**", "coverage/**", "playwright-report/**", "test-results/**", "apps/companion/next-env.d.ts"]),
+  globalIgnores(["**/node_modules/**", "**/.next/**", "**/.next-model-review-dev/**", "dist/**", "coverage/**", "playwright-report/**", "test-results/**", "apps/companion/next-env.d.ts"]),
   { files: ["apps/companion/**/*.{ts,tsx}", "src/companion/**/*.ts", "playwright.config.ts", "tests/companion-*.test.ts", "tests/e2e/**/*.ts"], extends: [js.configs.recommended, ...tseslint.configs.recommended] },
   {
     files: ["apps/companion/**/*.{ts,tsx}"],

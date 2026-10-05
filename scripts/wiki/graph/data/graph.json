@@ -2,13 +2,13 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 87,
-    "edges": 269,
+    "nodes": 90,
+    "edges": 281,
     "byType": {
       "index": 19,
-      "journal": 32,
-      "plan": 26,
-      "topic": 10
+      "journal": 33,
+      "plan": 27,
+      "topic": 11
     }
   },
   "nodes": [
@@ -20,8 +20,8 @@
       "githubRefs": [],
       "bytes": 162,
       "degree": 3,
-      "x": 0.989587,
-      "y": 0.143939,
+      "x": 0.990268,
+      "y": 0.139173,
       "size": 12
     },
     {
@@ -39,8 +39,8 @@
       ],
       "bytes": 6250,
       "degree": 3,
-      "x": 0.976621,
-      "y": 0.21497,
+      "x": 0.978148,
+      "y": 0.207912,
       "size": 12
     },
     {
@@ -58,8 +58,8 @@
       ],
       "bytes": 10158,
       "degree": 3,
-      "x": 0.958563,
-      "y": 0.284881,
+      "x": 0.961262,
+      "y": 0.275637,
       "size": 12
     },
     {
@@ -70,8 +70,8 @@
       "githubRefs": [],
       "bytes": 9443,
       "degree": 1,
-      "x": 0.907575,
-      "y": 0.419889,
+      "x": 0.913545,
+      "y": 0.406737,
       "size": 12
     },
     {
@@ -82,8 +82,8 @@
       "githubRefs": [],
       "bytes": 335,
       "degree": 8,
-      "x": 0.935508,
-      "y": 0.353306,
+      "x": 0.939693,
+      "y": 0.34202,
       "size": 12
     },
     {
@@ -94,8 +94,8 @@
       "githubRefs": [],
       "bytes": 5812,
       "degree": 3,
-      "x": 0.874911,
-      "y": 0.484283,
+      "x": 0.882948,
+      "y": 0.469472,
       "size": 12
     },
     {
@@ -113,8 +113,8 @@
       ],
       "bytes": 19515,
       "degree": 4,
-      "x": 0.837686,
-      "y": 0.546152,
+      "x": 0.848048,
+      "y": 0.529919,
       "size": 12
     },
     {
@@ -125,8 +125,8 @@
       "githubRefs": [],
       "bytes": 6801,
       "degree": 1,
-      "x": 0.796093,
-      "y": 0.605174,
+      "x": 0.809017,
+      "y": 0.587785,
       "size": 12
     },
     {
@@ -137,8 +137,8 @@
       "githubRefs": [],
       "bytes": 3739,
       "degree": 2,
-      "x": 0.75035,
-      "y": 0.661041,
+      "x": 0.766044,
+      "y": 0.642788,
       "size": 12
     },
     {
@@ -147,8 +147,8 @@
       "type": "index",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 1780,
-      "degree": 7,
+      "bytes": 1930,
+      "degree": 8,
       "x": 1,
       "y": 0,
       "size": 12
@@ -161,8 +161,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.700695,
-      "y": 0.713461,
+      "x": 0.71934,
+      "y": 0.694658,
       "size": 8
     },
     {
@@ -173,8 +173,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.647386,
-      "y": 0.762162,
+      "x": 0.669131,
+      "y": 0.743145,
       "size": 8
     },
     {
@@ -192,8 +192,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.590703,
-      "y": 0.806889,
+      "x": 0.615661,
+      "y": 0.788011,
       "size": 8
     },
     {
@@ -217,8 +217,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.53094,
-      "y": 0.84741,
+      "x": 0.559193,
+      "y": 0.829038,
       "size": 8
     },
     {
@@ -229,8 +229,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.468408,
-      "y": 0.883512,
+      "x": 0.5,
+      "y": 0.866025,
       "size": 8
     },
     {
@@ -254,8 +254,8 @@
       ],
       "bytes": 2463,
       "degree": 3,
-      "x": 0.403435,
-      "y": 0.915008,
+      "x": 0.438371,
+      "y": 0.898794,
       "size": 8
     },
     {
@@ -273,8 +273,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": 0.336359,
-      "y": 0.941734,
+      "x": 0.374607,
+      "y": 0.927184,
       "size": 8
     },
     {
@@ -292,8 +292,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": 0.267528,
-      "y": 0.96355,
+      "x": 0.309017,
+      "y": 0.951057,
       "size": 8
     },
     {
@@ -304,8 +304,8 @@
       "githubRefs": [],
       "bytes": 2327,
       "degree": 5,
-      "x": 0.197303,
-      "y": 0.980342,
+      "x": 0.241922,
+      "y": 0.970296,
       "size": 8
     },
     {
@@ -316,8 +316,8 @@
       "githubRefs": [],
       "bytes": 3437,
       "degree": 7,
-      "x": 0.12605,
-      "y": 0.992024,
+      "x": 0.173648,
+      "y": 0.984808,
       "size": 8
     },
     {
@@ -328,8 +328,8 @@
       "githubRefs": [],
       "bytes": 2405,
       "degree": 6,
-      "x": 0.054139,
-      "y": 0.998533,
+      "x": 0.104528,
+      "y": 0.994522,
       "size": 8
     },
     {
@@ -347,8 +347,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": -0.018054,
-      "y": 0.999837,
+      "x": 0.034899,
+      "y": 0.999391,
       "size": 8
     },
     {
@@ -366,8 +366,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": -0.090153,
-      "y": 0.995928,
+      "x": -0.034899,
+      "y": 0.999391,
       "size": 8
     },
     {
@@ -385,8 +385,8 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": -0.161782,
-      "y": 0.986827,
+      "x": -0.104528,
+      "y": 0.994522,
       "size": 8
     },
     {
@@ -404,8 +404,8 @@
       ],
       "bytes": 5487,
       "degree": 4,
-      "x": -0.232567,
-      "y": 0.97258,
+      "x": -0.173648,
+      "y": 0.984808,
       "size": 8
     },
     {
@@ -423,8 +423,8 @@
       ],
       "bytes": 5249,
       "degree": 6,
-      "x": -0.30214,
-      "y": 0.953263,
+      "x": -0.241922,
+      "y": 0.970296,
       "size": 8
     },
     {
@@ -442,8 +442,8 @@
       ],
       "bytes": 3810,
       "degree": 4,
-      "x": -0.370138,
-      "y": 0.928977,
+      "x": -0.309017,
+      "y": 0.951057,
       "size": 8
     },
     {
@@ -461,8 +461,8 @@
       ],
       "bytes": 2962,
       "degree": 5,
-      "x": -0.436206,
-      "y": 0.899847,
+      "x": -0.374607,
+      "y": 0.927184,
       "size": 8
     },
     {
@@ -486,8 +486,8 @@
       ],
       "bytes": 1022,
       "degree": 2,
-      "x": -0.5,
-      "y": 0.866025,
+      "x": -0.438371,
+      "y": 0.898794,
       "size": 8
     },
     {
@@ -505,8 +505,8 @@
       ],
       "bytes": 418,
       "degree": 0,
-      "x": -0.561187,
-      "y": 0.827689,
+      "x": -0.5,
+      "y": 0.866025,
       "size": 8
     },
     {
@@ -524,8 +524,8 @@
       ],
       "bytes": 1472,
       "degree": 2,
-      "x": -0.619448,
-      "y": 0.785037,
+      "x": -0.559193,
+      "y": 0.829038,
       "size": 8
     },
     {
@@ -543,8 +543,8 @@
       ],
       "bytes": 943,
       "degree": 4,
-      "x": -0.67448,
-      "y": 0.738293,
+      "x": -0.615661,
+      "y": 0.788011,
       "size": 8
     },
     {
@@ -562,8 +562,8 @@
       ],
       "bytes": 2049,
       "degree": 4,
-      "x": -0.725995,
-      "y": 0.687699,
+      "x": -0.669131,
+      "y": 0.743145,
       "size": 8
     },
     {
@@ -581,8 +581,8 @@
       ],
       "bytes": 30914,
       "degree": 4,
-      "x": -0.773726,
-      "y": 0.633521,
+      "x": -0.71934,
+      "y": 0.694658,
       "size": 8
     },
     {
@@ -606,8 +606,8 @@
       ],
       "bytes": 2413,
       "degree": 3,
-      "x": -0.817422,
-      "y": 0.576039,
+      "x": -0.766044,
+      "y": 0.642788,
       "size": 8
     },
     {
@@ -631,8 +631,8 @@
       ],
       "bytes": 7669,
       "degree": 4,
-      "x": -0.856857,
-      "y": 0.515554,
+      "x": -0.809017,
+      "y": 0.587785,
       "size": 8
     },
     {
@@ -662,8 +662,8 @@
       ],
       "bytes": 4344,
       "degree": 8,
-      "x": -0.891825,
-      "y": 0.452381,
+      "x": -0.848048,
+      "y": 0.529919,
       "size": 8
     },
     {
@@ -681,8 +681,8 @@
       ],
       "bytes": 2278,
       "degree": 2,
-      "x": -0.922143,
-      "y": 0.38685,
+      "x": -0.882948,
+      "y": 0.469472,
       "size": 8
     },
     {
@@ -700,8 +700,8 @@
       ],
       "bytes": 2842,
       "degree": 3,
-      "x": -0.947653,
-      "y": 0.319302,
+      "x": -0.913545,
+      "y": 0.406737,
       "size": 8
     },
     {
@@ -719,8 +719,8 @@
       ],
       "bytes": 2279,
       "degree": 3,
-      "x": -0.968223,
-      "y": 0.250089,
+      "x": -0.939693,
+      "y": 0.34202,
       "size": 8
     },
     {
@@ -750,8 +750,8 @@
       ],
       "bytes": 10139,
       "degree": 4,
-      "x": -0.983745,
-      "y": 0.179572,
+      "x": -0.961262,
+      "y": 0.275637,
       "size": 8
     },
     {
@@ -775,8 +775,27 @@
       ],
       "bytes": 11238,
       "degree": 3,
-      "x": -0.994138,
-      "y": 0.108119,
+      "x": -0.978148,
+      "y": 0.207912,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-10-05-model-assisted-learning-review.md",
+      "label": "Model review, elapsed time and lifetime project budgets",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 78,
+          "url": "https://github.com/jfusco/design-passport/issues/78"
+        }
+      ],
+      "bytes": 4016,
+      "degree": 6,
+      "x": -0.990268,
+      "y": 0.139173,
       "size": 8
     },
     {
@@ -787,8 +806,8 @@
       "githubRefs": [],
       "bytes": 3126,
       "degree": 2,
-      "x": 0.997393,
-      "y": 0.072158,
+      "x": 0.997564,
+      "y": 0.069756,
       "size": 12
     },
     {
@@ -799,8 +818,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.999348,
-      "y": 0.036102,
+      "x": -0.997564,
+      "y": 0.069756,
       "size": 8
     },
     {
@@ -811,8 +830,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.999348,
-      "y": -0.036102,
+      "x": -1,
+      "y": 0,
       "size": 8
     },
     {
@@ -823,8 +842,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.994138,
-      "y": -0.108119,
+      "x": -0.997564,
+      "y": -0.069756,
       "size": 8
     },
     {
@@ -842,8 +861,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.983745,
-      "y": -0.179572,
+      "x": -0.990268,
+      "y": -0.139173,
       "size": 8
     },
     {
@@ -854,8 +873,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.968223,
-      "y": -0.250089,
+      "x": -0.978148,
+      "y": -0.207912,
       "size": 8
     },
     {
@@ -866,8 +885,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.947653,
-      "y": -0.319302,
+      "x": -0.961262,
+      "y": -0.275637,
       "size": 8
     },
     {
@@ -878,8 +897,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.922143,
-      "y": -0.38685,
+      "x": -0.939693,
+      "y": -0.34202,
       "size": 8
     },
     {
@@ -890,8 +909,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.891825,
-      "y": -0.452381,
+      "x": -0.913545,
+      "y": -0.406737,
       "size": 8
     },
     {
@@ -902,8 +921,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.856857,
-      "y": -0.515554,
+      "x": -0.882948,
+      "y": -0.469472,
       "size": 8
     },
     {
@@ -921,8 +940,8 @@
       ],
       "bytes": 6239,
       "degree": 3,
-      "x": -0.817422,
-      "y": -0.576039,
+      "x": -0.848048,
+      "y": -0.529919,
       "size": 8
     },
     {
@@ -933,8 +952,8 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.773726,
-      "y": -0.633521,
+      "x": -0.809017,
+      "y": -0.587785,
       "size": 8
     },
     {
@@ -945,8 +964,8 @@
       "githubRefs": [],
       "bytes": 11833,
       "degree": 5,
-      "x": -0.725995,
-      "y": -0.687699,
+      "x": -0.766044,
+      "y": -0.642788,
       "size": 8
     },
     {
@@ -964,8 +983,8 @@
       ],
       "bytes": 2158,
       "degree": 4,
-      "x": -0.67448,
-      "y": -0.738293,
+      "x": -0.71934,
+      "y": -0.694658,
       "size": 8
     },
     {
@@ -976,8 +995,8 @@
       "githubRefs": [],
       "bytes": 1840,
       "degree": 3,
-      "x": -0.619448,
-      "y": -0.785037,
+      "x": -0.669131,
+      "y": -0.743145,
       "size": 8
     },
     {
@@ -995,8 +1014,8 @@
       ],
       "bytes": 1410,
       "degree": 3,
-      "x": -0.561187,
-      "y": -0.827689,
+      "x": -0.615661,
+      "y": -0.788011,
       "size": 8
     },
     {
@@ -1014,8 +1033,8 @@
       ],
       "bytes": 1654,
       "degree": 3,
-      "x": -0.5,
-      "y": -0.866025,
+      "x": -0.559193,
+      "y": -0.829038,
       "size": 8
     },
     {
@@ -1026,8 +1045,8 @@
       "githubRefs": [],
       "bytes": 3932,
       "degree": 5,
-      "x": -0.436206,
-      "y": -0.899847,
+      "x": -0.5,
+      "y": -0.866025,
       "size": 8
     },
     {
@@ -1038,8 +1057,8 @@
       "githubRefs": [],
       "bytes": 2203,
       "degree": 4,
-      "x": -0.370138,
-      "y": -0.928977,
+      "x": -0.438371,
+      "y": -0.898794,
       "size": 8
     },
     {
@@ -1050,8 +1069,8 @@
       "githubRefs": [],
       "bytes": 4752,
       "degree": 3,
-      "x": -0.30214,
-      "y": -0.953263,
+      "x": -0.374607,
+      "y": -0.927184,
       "size": 8
     },
     {
@@ -1069,8 +1088,8 @@
       ],
       "bytes": 6224,
       "degree": 4,
-      "x": -0.232567,
-      "y": -0.97258,
+      "x": -0.309017,
+      "y": -0.951057,
       "size": 8
     },
     {
@@ -1088,8 +1107,8 @@
       ],
       "bytes": 12464,
       "degree": 3,
-      "x": -0.161782,
-      "y": -0.986827,
+      "x": -0.241922,
+      "y": -0.970296,
       "size": 8
     },
     {
@@ -1100,8 +1119,8 @@
       "githubRefs": [],
       "bytes": 30260,
       "degree": 3,
-      "x": -0.090153,
-      "y": -0.995928,
+      "x": -0.173648,
+      "y": -0.984808,
       "size": 8
     },
     {
@@ -1119,8 +1138,8 @@
       ],
       "bytes": 1661,
       "degree": 3,
-      "x": -0.018054,
-      "y": -0.999837,
+      "x": -0.104528,
+      "y": -0.994522,
       "size": 8
     },
     {
@@ -1144,8 +1163,8 @@
       ],
       "bytes": 4267,
       "degree": 3,
-      "x": 0.054139,
-      "y": -0.998533,
+      "x": -0.034899,
+      "y": -0.999391,
       "size": 8
     },
     {
@@ -1169,8 +1188,8 @@
       ],
       "bytes": 3627,
       "degree": 3,
-      "x": 0.12605,
-      "y": -0.992024,
+      "x": 0.034899,
+      "y": -0.999391,
       "size": 8
     },
     {
@@ -1181,8 +1200,20 @@
       "githubRefs": [],
       "bytes": 1968,
       "degree": 3,
-      "x": 0.197303,
-      "y": -0.980342,
+      "x": 0.104528,
+      "y": -0.994522,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-10-05-model-assisted-learning-review-timing-and-project-budgets-401a62b4a9.md",
+      "label": "Model-assisted learning review, timing, and project budgets",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 34217,
+      "degree": 4,
+      "x": 0.173648,
+      "y": -0.984808,
       "size": 8
     },
     {
@@ -1234,10 +1265,10 @@
           "url": "https://github.com/jfusco/design-passport/pull/54"
         }
       ],
-      "bytes": 25776,
-      "degree": 28,
-      "x": 0.267528,
-      "y": -0.96355,
+      "bytes": 26193,
+      "degree": 29,
+      "x": 0.241922,
+      "y": -0.970296,
       "size": 12
     },
     {
@@ -1248,8 +1279,8 @@
       "githubRefs": [],
       "bytes": 211,
       "degree": 2,
-      "x": 0.336359,
-      "y": -0.941734,
+      "x": 0.309017,
+      "y": -0.951057,
       "size": 12
     },
     {
@@ -1260,8 +1291,8 @@
       "githubRefs": [],
       "bytes": 21674,
       "degree": 1,
-      "x": 0.403435,
-      "y": -0.915008,
+      "x": 0.374607,
+      "y": -0.927184,
       "size": 12
     },
     {
@@ -1279,8 +1310,8 @@
       ],
       "bytes": 13899,
       "degree": 4,
-      "x": 0.53094,
-      "y": -0.84741,
+      "x": 0.5,
+      "y": -0.866025,
       "size": 12
     },
     {
@@ -1298,8 +1329,8 @@
       ],
       "bytes": 12257,
       "degree": 4,
-      "x": 0.590703,
-      "y": -0.806889,
+      "x": 0.559193,
+      "y": -0.829038,
       "size": 12
     },
     {
@@ -1317,8 +1348,8 @@
       ],
       "bytes": 5995,
       "degree": 3,
-      "x": 0.647386,
-      "y": -0.762162,
+      "x": 0.615661,
+      "y": -0.788011,
       "size": 12
     },
     {
@@ -1329,8 +1360,8 @@
       "githubRefs": [],
       "bytes": 366,
       "degree": 6,
-      "x": 0.468408,
-      "y": -0.883512,
+      "x": 0.438371,
+      "y": -0.898794,
       "size": 12
     },
     {
@@ -1341,8 +1372,8 @@
       "githubRefs": [],
       "bytes": 7744,
       "degree": 3,
-      "x": 0.700695,
-      "y": -0.713461,
+      "x": 0.669131,
+      "y": -0.743145,
       "size": 12
     },
     {
@@ -1360,8 +1391,8 @@
       ],
       "bytes": 719,
       "degree": 5,
-      "x": 0.75035,
-      "y": -0.661041,
+      "x": 0.71934,
+      "y": -0.694658,
       "size": 8
     },
     {
@@ -1379,8 +1410,8 @@
       ],
       "bytes": 8014,
       "degree": 44,
-      "x": 0.796093,
-      "y": -0.605174,
+      "x": 0.766044,
+      "y": -0.642788,
       "size": 8
     },
     {
@@ -1398,8 +1429,8 @@
       ],
       "bytes": 6658,
       "degree": 23,
-      "x": 0.837686,
-      "y": -0.546152,
+      "x": 0.809017,
+      "y": -0.587785,
       "size": 8
     },
     {
@@ -1423,8 +1454,8 @@
       ],
       "bytes": 20188,
       "degree": 43,
-      "x": 0.874911,
-      "y": -0.484283,
+      "x": 0.848048,
+      "y": -0.529919,
       "size": 8
     },
     {
@@ -1442,8 +1473,27 @@
       ],
       "bytes": 1973,
       "degree": 6,
-      "x": 0.907575,
-      "y": -0.419889,
+      "x": 0.882948,
+      "y": -0.469472,
+      "size": 8
+    },
+    {
+      "id": "wiki/topics/model-assisted-learning-review.md",
+      "label": "Model-assisted learning review",
+      "type": "topic",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 78,
+          "url": "https://github.com/jfusco/design-passport/issues/78"
+        }
+      ],
+      "bytes": 8599,
+      "degree": 7,
+      "x": 0.913545,
+      "y": -0.406737,
       "size": 8
     },
     {
@@ -1454,8 +1504,8 @@
       "githubRefs": [],
       "bytes": 4694,
       "degree": 24,
-      "x": 0.935508,
-      "y": -0.353306,
+      "x": 0.939693,
+      "y": -0.34202,
       "size": 8
     },
     {
@@ -1503,8 +1553,8 @@
       ],
       "bytes": 15543,
       "degree": 15,
-      "x": 0.958563,
-      "y": -0.284881,
+      "x": 0.961262,
+      "y": -0.275637,
       "size": 8
     },
     {
@@ -1513,10 +1563,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 4803,
-      "degree": 16,
-      "x": 0.976621,
-      "y": -0.21497,
+      "bytes": 5332,
+      "degree": 19,
+      "x": 0.978148,
+      "y": -0.207912,
       "size": 8
     },
     {
@@ -1526,9 +1576,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 12043,
-      "degree": 13,
-      "x": 0.989587,
-      "y": -0.143939,
+      "degree": 15,
+      "x": 0.990268,
+      "y": -0.139173,
       "size": 8
     },
     {
@@ -1539,8 +1589,8 @@
       "githubRefs": [],
       "bytes": 4946,
       "degree": 28,
-      "x": 0.997393,
-      "y": -0.072158,
+      "x": 0.997564,
+      "y": -0.069756,
       "size": 8
     }
   ],
@@ -1763,6 +1813,13 @@
       "relation": "topic"
     },
     {
+      "id": "26de2b912f23571b",
+      "source": "wiki/topics/project-scoped-knowledge-loop.md",
+      "target": "wiki/topics/model-assisted-learning-review.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "272ef91f8e484468",
       "source": "wiki/journal/2026-09-08-design-passport-v1.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
@@ -1810,6 +1867,13 @@
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "2aaab0d1998f752c",
+      "source": "wiki/journal/2026-10-05-model-assisted-learning-review.md",
+      "target": "wiki/plans/2026-10-05-model-assisted-learning-review-timing-and-project-budgets-401a62b4a9.md",
+      "type": "plan",
+      "relation": "plan"
     },
     {
       "id": "2b45856d757efeaf",
@@ -2008,6 +2072,13 @@
       "relation": "topic"
     },
     {
+      "id": "4721c8cce3693cd4",
+      "source": "wiki/plans/2026-10-05-model-assisted-learning-review-timing-and-project-budgets-401a62b4a9.md",
+      "target": "wiki/topics/model-assisted-learning-review.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "4b4b2b14594d43bc",
       "source": "wiki/journal/2026-10-03-retire-certification.md",
       "target": "wiki/plans/2026-10-03-retire-frame-certification-and-use-the-audit-grade-as-the-goal-73e1660f88.md",
@@ -2097,6 +2168,13 @@
       "target": "wiki/topics/mutation-certification-safety.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "51a9c6759ab12e09",
+      "source": "wiki/journal/2026-10-05-model-assisted-learning-review.md",
+      "target": "wiki/plans/2026-10-05-model-assisted-learning-review-timing-and-project-budgets-401a62b4a9.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "527f59ebd315bed9",
@@ -2288,6 +2366,13 @@
       "relation": "topic"
     },
     {
+      "id": "7286a1b3312deb56",
+      "source": "wiki/topics/model-assisted-learning-review.md",
+      "target": "wiki/topics/supabase-companion.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "729d5bfcd2aeae63",
       "source": "wiki/journal/2026-09-10-project-scoped-knowledge-loop.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -2379,6 +2464,13 @@
       "relation": "plan"
     },
     {
+      "id": "7b6ecc3e6cf89901",
+      "source": "wiki/journal/2026-10-05-model-assisted-learning-review.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "7c266c255a898b3d",
       "source": "wiki/journal/2026-09-10-project-scoped-knowledge-loop.md",
       "target": "wiki/topics/project-scoped-knowledge-loop.md",
@@ -2398,6 +2490,13 @@
       "target": "wiki/guides/knowledge-loop.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "80dd579b8732443d",
+      "source": "wiki/journal/2026-10-05-model-assisted-learning-review.md",
+      "target": "wiki/topics/model-assisted-learning-review.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "8211e31a9b46b70a",
@@ -2580,6 +2679,13 @@
       "target": "wiki/topics/mutation-certification-safety.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "99758e63d2c3fad4",
+      "source": "wiki/INDEX.md",
+      "target": "wiki/topics/model-assisted-learning-review.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "9a1c6ccdbc228fdc",
@@ -2848,6 +2954,13 @@
       "relation": "link"
     },
     {
+      "id": "b85fbcde470b22e0",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-10-05-model-assisted-learning-review-timing-and-project-budgets-401a62b4a9.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "b8e1f54c4f4edc97",
       "source": "wiki/journal/2026-09-29-graphify-codebase-map.md",
       "target": "wiki/topics/graphify-codebase-map.md",
@@ -2942,6 +3055,13 @@
       "id": "c4f463ba63916bbc",
       "source": "wiki/topics/design-readiness-standard.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "c538835ea752780d",
+      "source": "wiki/journal/2026-10-05-model-assisted-learning-review.md",
+      "target": "wiki/topics/supabase-companion.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -3345,6 +3465,13 @@
       "relation": "topic"
     },
     {
+      "id": "f744f67f5f5b674a",
+      "source": "wiki/journal/2026-10-05-model-assisted-learning-review.md",
+      "target": "wiki/topics/model-assisted-learning-review.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "f82e946ab269ad60",
       "source": "wiki/topics/figma-runtime-qa.md",
       "target": "wiki/topics/design-passport-architecture.md",
@@ -3411,6 +3538,13 @@
       "id": "fe4f75c16ad39366",
       "source": "wiki/journal/2026-09-09-certification-annotation-cleanup.md",
       "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "fe74c7a61dee8bf2",
+      "source": "wiki/topics/model-assisted-learning-review.md",
+      "target": "wiki/topics/project-scoped-knowledge-loop.md",
       "type": "topic",
       "relation": "topic"
     },

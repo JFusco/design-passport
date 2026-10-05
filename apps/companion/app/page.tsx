@@ -59,6 +59,7 @@ export default async function DashboardPage() {
         </article>
       </section>
 
+      <p><Link className="button" href="/model-reviews">Open project model review and budgets</Link></p>
       <section className="delivery-card" aria-labelledby="delivery-heading">
         <div>
           <span className="eyebrow">Approved guidance</span>

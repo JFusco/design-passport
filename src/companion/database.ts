@@ -6,7 +6,9 @@ import { isAbsolute, join, resolve } from "node:path";
 import { CompanionError } from "./errors";
 
 const runtimeKeys = ["DESIGN_PASSPORT_DATABASE_URL", "DESIGN_PASSPORT_DATABASE_CA_PATH", "FIGMA_TOKEN"];
-const pools = new Map<string, Sql>();
+// Route bundles and development reloads must share the fixture's one connection.
+const processState = globalThis as typeof globalThis & { designPassportPools?: Map<string, Sql> };
+const pools = processState.designPassportPools ??= new Map<string, Sql>();
 
 export async function loadRuntimeEnvironment(root: string): Promise<void> {
   // Disposable fixtures never read a user's runtime file.
@@ -86,6 +88,6 @@ export async function transaction<T>(root: string, operation: (sql: TransactionS
 
 export function runtimeChildEnvironment(): NodeJS.ProcessEnv {
   const env = { ...process.env };
-  for (const key of Object.keys(env)) if (/^(SUPABASE_|PGPASSWORD$|DATABASE_URL$|DESIGN_PASSPORT_MIGRATION_)/u.test(key)) delete env[key];
+  for (const key of Object.keys(env)) if (/^(SUPABASE_|PGPASSWORD$|DATABASE_URL$|OPENAI_API_KEY$|DESIGN_PASSPORT_TEST_MODEL_REVIEW$|DESIGN_PASSPORT_DEV_OUTPUT$|DESIGN_PASSPORT_MIGRATION_)/u.test(key)) delete env[key];
   return env;
 }
