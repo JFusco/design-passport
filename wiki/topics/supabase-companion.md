@@ -187,3 +187,23 @@ no findings; performance advisors reported only informational unused indexes on
 the newly provisioned database. Keep the indexes supporting history, joins and text
 queries; reassess them after representative usage rather than deleting them based
 on an initial empty-database statistic.
+
+
+## Existing export verification and source cleanup
+
+The [2026-10-04 hosted capture and architecture review](../qa/companion-database-plumbing-review.md)
+imported four explicitly selected existing exports. Full payloads, source/receipt
+stamps, all findings/observations, candidate derivation, retries and protected
+history/downloads verified against the database. The selected audits and learning
+files have different semantic identities and remain unlinked; import never guesses
+from filenames, scope names or dates.
+
+After verifying complete private backups outside the project, the selected source
+files were deleted at the user's request. Uploaded evidence remains authoritative
+in Supabase. Delete only selected, verified source exports; schemas, configuration,
+committed plugin packs and unimported reference/batch inputs have separate purposes.
+Future batch runs need a fresh report when their previous local report was removed.
+
+This assessment found no high-confidence security flaw in the current single-operator
+scope. It does not establish team authorization or capacity. Team authentication,
+hosting, production/test separation and measured scaling remain separate work.
