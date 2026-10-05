@@ -70,13 +70,13 @@
     "semantic_hash": "e67ec14a6996e03de0a27562707bea1a"
   },
   "apps/companion/app/page.tsx": {
-    "mtime": 1791144314.497729,
-    "ast_hash": "c94d7320ee043ff0a577b92660fcb49c",
+    "mtime": 1791207020.0646803,
+    "ast_hash": "539e1c4abff0549374d352ce630d465b",
     "semantic_hash": ""
   },
   "apps/companion/app/review/ReviewController.tsx": {
-    "mtime": 1791167996.257689,
-    "ast_hash": "198a2adb655391063841a4a1b4452149",
+    "mtime": 1791219954.8396087,
+    "ast_hash": "4d5a55e0e34ea8f90d32142e41e02581",
     "semantic_hash": ""
   },
   "apps/companion/app/review/page.tsx": {
@@ -110,8 +110,8 @@
     "semantic_hash": "8acf4649d93953734783ca0580a003c5"
   },
   "apps/companion/next.config.ts": {
-    "mtime": 1791143532.9419553,
-    "ast_hash": "a81ee705c484af861fde42330d30a193",
+    "mtime": 1791207450.220529,
+    "ast_hash": "a56ae6c9ddef44649ffd4d5c7aee49d0",
     "semantic_hash": ""
   },
   "apps/companion/package.json": {
@@ -130,13 +130,13 @@
     "semantic_hash": "827523590b125d83f91efbe2cc866f48"
   },
   "apps/companion/tsconfig.json": {
-    "mtime": 1790253366.1298368,
-    "ast_hash": "f5e80f4f9c3f7ad9afde9215c63e8b9b",
-    "semantic_hash": "f5e80f4f9c3f7ad9afde9215c63e8b9b"
+    "mtime": 1791209464.869808,
+    "ast_hash": "d71fddd9ab9b3af672aec29a2b3607b4",
+    "semantic_hash": ""
   },
   "src/companion/errors.ts": {
-    "mtime": 1791143015.46432,
-    "ast_hash": "7a584d72630e4b5fe22f3044ecd3c519",
+    "mtime": 1791206923.0138533,
+    "ast_hash": "4048ae5480723012543bbbe233d27aee",
     "semantic_hash": ""
   },
   "src/companion/figma.ts": {
@@ -145,13 +145,13 @@
     "semantic_hash": "3d42de5f59e24d616c6fb71143e935bc"
   },
   "src/companion/main.ts": {
-    "mtime": 1791143533.3324862,
-    "ast_hash": "bb20173508f98918aa0f04b31a0417a4",
+    "mtime": 1791206893.2610557,
+    "ast_hash": "159d4312b54484ab7db1b6112b32d1b1",
     "semantic_hash": ""
   },
   "src/companion/repository.ts": {
-    "mtime": 1791154056.9446504,
-    "ast_hash": "831c156ee9d7a7e4401e82c9d6709e20",
+    "mtime": 1791206794.954809,
+    "ast_hash": "4ed8f09922606a20d2eb2dad4483ffd7",
     "semantic_hash": ""
   },
   "src/companion/view-models.ts": {
@@ -200,8 +200,8 @@
     "semantic_hash": "6032ae9c13bbb285860191f1a203a4a9"
   },
   "src/core/knowledge-loop.ts": {
-    "mtime": 1791142924.16712,
-    "ast_hash": "8d73609b4775580d181f582cc52ac90d",
+    "mtime": 1791206409.2083864,
+    "ast_hash": "988f9274f9d4f5896e8841f861794601",
     "semantic_hash": ""
   },
   "src/core/knowledge.ts": {
@@ -655,8 +655,8 @@
     "semantic_hash": ""
   },
   "src/companion/database.ts": {
-    "mtime": 1791154472.4492588,
-    "ast_hash": "aed956160dcdc6881449a1f42786dc98",
+    "mtime": 1791207962.1114762,
+    "ast_hash": "b75033688f231cfb73032264ac574a65",
     "semantic_hash": ""
   },
   "src/companion/exports.ts": {
@@ -672,6 +672,66 @@
   "src/companion/imports.ts": {
     "mtime": 1791143532.9402764,
     "ast_hash": "6bdd04fcb6c06c5be2d26dd14a9b8fbb",
+    "semantic_hash": ""
+  },
+  "apps/companion/app/api/model-reviews/route.ts": {
+    "mtime": 1791208859.949368,
+    "ast_hash": "a2929a8b4d669f5fe3f8162a953b114d",
+    "semantic_hash": ""
+  },
+  "apps/companion/app/model-reviews/ModelReviewController.tsx": {
+    "mtime": 1791208427.530529,
+    "ast_hash": "c99cc993e33444a24206291f21f1a264",
+    "semantic_hash": ""
+  },
+  "apps/companion/app/model-reviews/page.tsx": {
+    "mtime": 1791207893.3274212,
+    "ast_hash": "038f1bd03688d779bd11cffa853d8e86",
+    "semantic_hash": ""
+  },
+  "apps/companion/lib/review-drafts.ts": {
+    "mtime": 1791207893.3657575,
+    "ast_hash": "ce64771a9c2398f550b65b188ae87824",
+    "semantic_hash": ""
+  },
+  "apps/companion/lib/server/model-review.ts": {
+    "mtime": 1791207893.3577309,
+    "ast_hash": "bed7aca3e5d8f9e803a93d4babb5d828",
+    "semantic_hash": ""
+  },
+  "src/companion/model-review/contracts.ts": {
+    "mtime": 1791217423.6841383,
+    "ast_hash": "c1ec0fef85bfc6875858dc3f9b5dbdf4",
+    "semantic_hash": ""
+  },
+  "src/companion/model-review/fixture.ts": {
+    "mtime": 1791208295.2008317,
+    "ast_hash": "0efa407bc41aad5945c92bfc3484b5b3",
+    "semantic_hash": ""
+  },
+  "src/companion/model-review/policy.ts": {
+    "mtime": 1791211714.9006832,
+    "ast_hash": "80a50c2071e61fcf6de835a739ddd31a",
+    "semantic_hash": ""
+  },
+  "src/companion/model-review/repository.ts": {
+    "mtime": 1791217423.7201085,
+    "ast_hash": "09c212e0d186c0d0849e7d2adea62f28",
+    "semantic_hash": ""
+  },
+  "src/companion/model-review/runner.ts": {
+    "mtime": 1791211788.1940885,
+    "ast_hash": "0f64eb3c47766b05445e74812a774a4a",
+    "semantic_hash": ""
+  },
+  "src/companion/model-review/snapshot.ts": {
+    "mtime": 1791211714.9328163,
+    "ast_hash": "e672ba48eb7216bf904d7a92b8d7263b",
+    "semantic_hash": ""
+  },
+  "src/companion/model-review/transport.ts": {
+    "mtime": 1791207893.2062228,
+    "ast_hash": "d7af07f0b4e77f7dc4a768a3cbffa636",
     "semantic_hash": ""
   }
 }

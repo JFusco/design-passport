@@ -15,6 +15,8 @@ import { exportKnowledge, exportRelease } from "./exports";
 import { readImportFiles } from "./imports";
 import { closeDatabases, loadRuntimeEnvironment, runtimeChildEnvironment } from "./database";
 import { safeErrorMessage } from "./errors";
+import { ModelReviewRunner } from "./model-review/runner";
+import { loadModelKey, openAITransport } from "./model-review/transport";
 
 type Options = Record<string, string | true>;
 
@@ -144,6 +146,7 @@ async function availablePort(requested: number): Promise<number> {
 }
 
 async function review(options: Options, root: string): Promise<void> {
+  if (process.env.DESIGN_PASSPORT_TEST_MODEL_REVIEW !== undefined) throw new Error("Production CLI startup refuses model fixtures.");
   const requested = Number(options.port ?? 0);
   if (!Number.isInteger(requested) || requested < 0 || requested > 65_535) throw new Error("--port must be between 0 and 65535");
   const port = await availablePort(requested);
@@ -153,11 +156,14 @@ async function review(options: Options, root: string): Promise<void> {
   const nextBin = join(appRoot, "node_modules", "next", "dist", "bin", "next");
   const capability = randomBytes(32).toString("hex");
   const origin = `http://127.0.0.1:${port}`;
+  const modelKey = await loadModelKey(root);
+  const runner = modelKey ? new ModelReviewRunner(workspacePaths(root), openAITransport(modelKey)) : undefined;
   const child = spawn(process.execPath, [nextBin, "start", "--hostname", "127.0.0.1", "--port", String(port)], {
     cwd: appRoot,
-    env: { ...runtimeChildEnvironment(), DESIGN_PASSPORT_WORKSPACE_ROOT: root, DESIGN_PASSPORT_CAPABILITY: capability, DESIGN_PASSPORT_EXPECTED_ORIGIN: origin },
+    env: { ...runtimeChildEnvironment(), DESIGN_PASSPORT_MODEL_REVIEW_CONFIGURED: String(Boolean(modelKey)), DESIGN_PASSPORT_WORKSPACE_ROOT: root, DESIGN_PASSPORT_CAPABILITY: capability, DESIGN_PASSPORT_EXPECTED_ORIGIN: origin },
     stdio: ["inherit", "pipe", "pipe"],
   });
+  runner?.start();
   let announced = false;
   const announce = () => {
     if (announced) return;
@@ -166,8 +172,8 @@ async function review(options: Options, root: string): Promise<void> {
   };
   child.stdout.on("data", (chunk: Buffer) => { process.stdout.write(chunk); if (/ready/iu.test(chunk.toString("utf8"))) announce(); });
   child.stderr.on("data", (chunk: Buffer) => process.stderr.write(chunk));
-  const forwardInterrupt = () => child.kill("SIGINT");
-  const forwardTermination = () => child.kill("SIGTERM");
+  const forwardInterrupt = () => { void runner?.stop(); child.kill("SIGINT"); };
+  const forwardTermination = () => { void runner?.stop(); child.kill("SIGTERM"); };
   process.once("SIGINT", forwardInterrupt);
   process.once("SIGTERM", forwardTermination);
   await new Promise<void>((resolveChild, reject) => {
@@ -179,7 +185,7 @@ async function review(options: Options, root: string): Promise<void> {
       else if (signal && signal !== "SIGINT" && signal !== "SIGTERM") reject(new Error(`Companion server stopped after ${signal}`));
       else resolveChild();
     });
-  }).finally(closeDatabases);
+  }).finally(async () => { await runner?.stop(); await closeDatabases(); });
 }
 
 function usage(): string {

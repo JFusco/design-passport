@@ -239,3 +239,18 @@ input:focus, select:focus, textarea:focus { border-color: var(--orange); outline
 .history-list small { display: block; }
 .history-findings li { content-visibility: auto; contain-intrinsic-size: auto 180px; padding: 1rem 0; overflow-wrap: anywhere; }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.model-review-content { display: grid; gap: 1.5rem; }
+.model-controls, .model-run { padding: 1.5rem; border: 1px solid var(--border, #d5d5d5); border-radius: 12px; }
+.model-controls form { display: flex; align-items: end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.model-budget { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.model-budget strong { font-size: 1.2rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.model-candidates { list-style: none; padding: 0; display: grid; gap: 0.75rem; }
+.model-candidates label { display: flex; gap: 0.5rem; align-items: start; }
+.model-review-content input[type=checkbox] { flex-shrink: 0; width: 1rem; height: 1rem; margin-right: 0.5rem; }
+.model-disclosure pre, .model-review-content pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; overflow: auto; padding: 1rem; }
+.model-recommendation { border-top: 1px solid var(--border, #d5d5d5); padding: 1.5rem 0; }
+.model-diff { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.model-diff > div { padding: 1rem; background: var(--surface, #fafafa); border: 1px solid var(--border, #d5d5d5); border-radius: 8px; }
+.model-review-content .field { margin: 1rem 0; }
+@media (max-width: 600px) { .model-diff { grid-template-columns: 1fr; } }

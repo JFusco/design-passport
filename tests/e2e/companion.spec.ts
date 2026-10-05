@@ -123,6 +123,9 @@ test("completes the local reference, import, conflict recovery, and decision wor
   await expect(guidance).toHaveValue(retainedEdit);
   await page.getByRole("button", { name: "Reload current draft" }).click();
   await expect(page.getByRole("textbox", { name: /^Guidance /u })).toHaveValue(currentServerGuidance);
+  await expect(page.locator('.notice pre')).toContainText('Keep this local edit.');
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Discard recovered draft' }).click();
   await expect(page).toHaveURL(/candidate=/u);
   await concurrentPage.close();
 

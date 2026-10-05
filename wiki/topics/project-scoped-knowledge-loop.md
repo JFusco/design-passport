@@ -24,6 +24,15 @@ The companion deduplicates timestamp-independent learning envelopes and groups o
 
 Every publication requires an append-only maintainer decision bound to the exact candidate digest. Editing a candidate makes the earlier approval stale. Current project approvals compile only into that project pack; explicitly shared, client-neutral approvals compile into the pinned team pack for repository review and a later normal release. Runtime never fetches an unpinned latest pack.
 
+## Model-assisted review, 2026-10-05
+
+The local companion can review an explicitly selected project snapshot using
+GPT-6.1 Sol. A local disclosure precedes paid Start; a lifetime project allowance
+starts at zero. Recommendations remain separate from human decisions and require
+explicit selection and atomic application. Stable context checks protect saved
+revisions and decisions; session drafts remain recoverable across conflicting
+revisions. See [model review, accounting and recovery](./model-assisted-learning-review.md).
+
 ## Local companion application, 2026-09-23
 
 The maintainer journey now runs in a repository-owned Next.js application started by `pnpm companion knowledge review`. The process binds to `127.0.0.1`, creates a fresh capability, exchanges it for an HttpOnly, SameSite cookie, and authorizes every protected page and mutation. The Figma token remains server-only.

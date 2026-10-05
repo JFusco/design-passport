@@ -27,6 +27,7 @@ src/generated/
 apps/companion/next-env.d.ts
 apps/companion/node_modules/
 apps/companion/.next/
+apps/companion/.next-model-review-dev/
 apps/companion/out/
 apps/companion/coverage/
 apps/companion/test-results/

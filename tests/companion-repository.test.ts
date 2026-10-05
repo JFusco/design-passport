@@ -14,6 +14,7 @@ import { reviewView } from "../src/companion/view-models";
 import { createTestDatabase } from "./helpers/companion-database.mjs";
 import { auditFixture, fileScopeFixture, learningFixture } from "./helpers/companion-fixtures";
 import { assertContract } from "../src/core/schema";
+import { MODEL_TABLES } from "../src/companion/model-review/repository";
 
 let harness: Awaited<ReturnType<typeof createTestDatabase>>;
 let paths: ReturnType<typeof workspacePaths>;
@@ -117,15 +118,20 @@ describe("companion SQL repository", () => {
     const limits = await transaction(paths.root, async (tx) => (await tx`select current_setting('statement_timeout') as statement_timeout, current_setting('lock_timeout') as lock_timeout`)[0]);
     expect(limits).toEqual({ statement_timeout: "15s", lock_timeout: "2s" });
     await firstCandidate();
-    for (const table of ["audits", "audit_exports", "findings", "contributions", "observations", "candidate_revisions", "decisions"]) {
-      await expect(sql.unsafe(`update design_passport.${table} set payload = '{}'`)).rejects.toMatchObject({ code: "42501" });
-      await expect(sql.unsafe(`delete from design_passport.${table}`)).rejects.toMatchObject({ code: "42501" });
-    }
-    await expect(sql`create table design_passport.forbidden(id int)`).rejects.toMatchObject({ code: "42501" });
+    // Inspect before rejected statements can leave the shared PGlite protocol out of sync.
     const rows = await sql`select relname, relrowsecurity from pg_class join pg_namespace on pg_namespace.oid = relnamespace where nspname = 'design_passport' and relkind = 'r'`;
-    expect(rows).toHaveLength(10); expect(rows.every((row) => row.relrowsecurity)).toBe(true);
+    expect(rows.map((row) => row.relname).sort()).toEqual([
+      "projects", "audits", "audit_exports", "findings", "contributions", "observations",
+      "candidates", "candidate_revisions", "decisions", "guidance_packs", ...MODEL_TABLES,
+    ].sort());
+    expect(rows.every((row) => row.relrowsecurity)).toBe(true);
     expect((await sql`select has_schema_privilege('anon', 'design_passport', 'USAGE') as allowed`)[0]?.allowed).toBe(false);
-    await expect(sql`update design_passport.projects set scope = 'other'`).rejects.toMatchObject({ code: "42501" });
+    for (const table of ["audits", "audit_exports", "findings", "contributions", "observations", "candidate_revisions", "decisions"]) {
+      await expect(sql.begin((tx) => tx.unsafe(`update design_passport.${table} set payload = '{}'`))).rejects.toMatchObject({ code: "42501" });
+      await expect(sql.begin((tx) => tx.unsafe(`delete from design_passport.${table}`))).rejects.toMatchObject({ code: "42501" });
+    }
+    await expect(sql.begin((tx) => tx`create table design_passport.forbidden(id int)`)).rejects.toMatchObject({ code: "42501" });
+    await expect(sql.begin((tx) => tx`update design_passport.projects set scope = 'other'`)).rejects.toMatchObject({ code: "42501" });
     await closeDatabases();
     await harness.db.exec("reset role; create table public.future_grant_probe(id int); create function public.future_function_probe() returns int language sql as 'select 1'; set role design_passport_test;");
     const defaults = await (await database(paths.root))`select has_table_privilege('anon', 'public.future_grant_probe', 'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') as table_access, has_function_privilege('anon', 'public.future_function_probe()', 'EXECUTE') as function_access`;
@@ -187,7 +193,7 @@ describe("companion SQL repository", () => {
     await importAudits(paths, [audit(changed)], "project:companion-test");
     expect((await learningDetail(paths, learningFixture().digest)).ambiguous).toBe(true);
     const sql = await database(paths.root);
-    await expect(sql`insert into design_passport.audit_exports(id, project_scope, audit_id, payload_sha256, payload) values (${randomUUID()}, 'project:other', ${rows[0]!.id}, ${"0".repeat(64)}, '{}')`).rejects.toMatchObject({ code: "23503" });
+    await expect(sql.begin(async (tx) => { await tx`insert into design_passport.audit_exports(id, project_scope, audit_id, payload_sha256, payload) values (${randomUUID()}, 'project:other', ${rows[0]!.id}, ${"0".repeat(64)}, '{}')`; })).rejects.toMatchObject({ code: "23503" });
     expect((await sql`select count(*)::int as count from design_passport.findings where project_scope = 'project:companion-test'`)[0]?.count).toBe(report.findings.length * 2);
   });
   it("rejects stale writes, replays committed decisions and revisions, and preserves edits with stale approvals", async () => {

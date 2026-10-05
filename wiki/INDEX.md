@@ -8,6 +8,7 @@ This wiki is the durable project record for decisions, executed plans, and subst
 - [Plan ledger](./plans/INDEX.md) — executed-plan archives and historical audit results.
 - [Commit message standard](./topics/commit-message-standard.md) — scoped Conventional Commit writing guidance.
 - [Current guides](./guides/INDEX.md) — architecture, operating, ruleset, and security references.
+- [Model-assisted learning review](./topics/model-assisted-learning-review.md) — local disclosure, project budgets, human application and recovery.
 - [QA evidence](./qa/INDEX.md) and [benchmark evidence](./benchmarks/INDEX.md) — sanitized verification records.
 - [Open proposals](./proposals/INDEX.md) — reviewed plans that have not been executed.
 - `wiki/topics/` — durable decision and domain pages.
