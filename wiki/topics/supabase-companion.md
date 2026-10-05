@@ -39,6 +39,9 @@ messages; permanent failures show a non-outage error. Decisions use a
 client request UUID and compare replay contents before freshness; edits retry only
 when the complete expected successor remains current. New evidence and editorial
 changes stale older approvals. Ordinary decisions never write release files.
+The review action shows a disabled Approved button only for the saved revision and
+publication scope with a current approval. Reject and Defer remain available.
+Unsaved edits cannot be decided; saving a new revision restores Approve.
 
 Project guidance derives from scopes represented by current candidates. Audit-only
 projects retain their exact scope without creating learning or derived guidance.

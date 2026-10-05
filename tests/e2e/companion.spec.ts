@@ -139,6 +139,37 @@ test("completes the local reference, import, conflict recovery, and decision wor
   await expectNoSeriousAccessibilityIssues(page);
   await page.reload();
   await expect(page.getByText(/Current decision: Approved/u)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Approved", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Reject", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Defer", exact: true })).toBeEnabled();
+
+  await page.getByLabel("Publication scope").selectOption("shared");
+  await expect(page.getByRole("button", { name: "Approve", exact: true })).toBeDisabled();
+  await page.getByLabel("Publication scope").selectOption("project");
+  await expect(page.getByRole("button", { name: "Approved", exact: true })).toBeDisabled();
+
+  const revisedGuidance = `${currentServerGuidance} Reviewed revision.`;
+  await guidance.fill(revisedGuidance);
+  await expect(page.getByRole("button", { name: "Approve", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Draft saved. You can now record a decision.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Approve", exact: true })).toBeEnabled();
+  await expect(page.getByText(/Previous decision requires review/u)).toBeVisible();
+  const withdrawnPack = await page.request.get("/api/guidance?scope=project%3Acompanion-e2e");
+  expect(withdrawnPack.status()).toBe(404);
+  expect(await withdrawnPack.json()).toMatchObject({ ok: false, error: { code: "not-found" } });
+  await page.getByLabel("Decision note").fill("Reviewed the saved revision.");
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Approved", exact: true })).toBeDisabled();
+
+  for (const action of ["Reject", "Defer"] as const) {
+    await page.getByLabel("Decision note").fill(`Changed the decision to ${action.toLowerCase()}.`);
+    await page.getByRole("button", { name: action, exact: true }).click();
+    await expect(page.getByRole("button", { name: "Approve", exact: true })).toBeEnabled();
+    await page.getByLabel("Decision note").fill(`Reapproved after ${action.toLowerCase()}.`);
+    await page.getByRole("button", { name: "Approve", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Approved", exact: true })).toBeDisabled();
+  }
 
   await page.goto("/");
   const guidanceDownloadPromise = page.waitForEvent("download");
@@ -146,9 +177,10 @@ test("completes the local reference, import, conflict recovery, and decision wor
   const guidanceDownload = await guidanceDownloadPromise;
   expect(guidanceDownload.suggestedFilename()).toBe("design-passport-guidance-project-companion-e2e.json");
   const guidanceDownloadPath = await guidanceDownload.path();
-  const approvedPack = JSON.parse(await readFile(guidanceDownloadPath!, "utf8")) as { source: { role: string; projectScope: string }; facts: Array<{ provenance: string }> };
+  const approvedPack = JSON.parse(await readFile(guidanceDownloadPath!, "utf8")) as { source: { role: string; projectScope: string }; facts: Array<{ provenance: string; guidance: string }> };
   expect(approvedPack.source).toMatchObject({ role: "style-guide", projectScope: "project:companion-e2e" });
   expect(approvedPack.facts.every((fact) => fact.provenance === "approved-project")).toBe(true);
+  expect(approvedPack.facts.map((fact) => fact.guidance)).toEqual([revisedGuidance]);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
@@ -286,6 +318,7 @@ test("retains unsaved input when the database is unavailable and replays a lost 
   await page.getByRole("button", { name: "Validate and import" }).click();
   await expect(page.getByText("1 duplicate", { exact: true })).toBeVisible();
   await page.goto("/review");
+  await page.getByLabel("Filter by status").selectOption("awaiting");
   await page.getByLabel("Decision note").fill("Synthetic lost response replay.");
   let requestId = "";
   let calls = 0;
