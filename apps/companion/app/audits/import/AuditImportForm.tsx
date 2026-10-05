@@ -45,7 +45,7 @@ export function AuditImportForm({ projects }: { projects: Array<{ scope: string;
     finally { setWorking(false); }
   }
   return <section className="form-card"><form onSubmit={submit}>
-    <label className="field full"><span>Audit files</span><input ref={fileInputRef} aria-label="Audit files" name="audit-files" type="file" accept="application/json,.json" multiple onChange={(event) => { setFiles(Array.from(event.target.files ?? [])); setPreview(undefined); setResult(undefined); }} /><small>Up to 10 files · 10 MB each · 25 MB combined</small></label>
+    <label className="field full"><span>Audit files</span><input ref={fileInputRef} aria-label="Audit files" name="audit-files" type="file" accept="application/json,.json" multiple disabled={working} onChange={(event) => { setFiles(Array.from(event.target.files ?? [])); setScope(""); setPreview(undefined); setResult(undefined); }} /><small>Up to 10 files · 10 MB each · 25 MB combined</small></label>
     {files.length ? <ul aria-label="Selected audit files">{files.map((file, index) => <li key={index}>{file.name} · {new Intl.NumberFormat().format(file.size)} bytes</li>)}</ul> : null}
     <button className="button" type="button" disabled={working || !files.length} onClick={inspect}>Preview audit files</button>
     {preview ? <><ul>{preview.files.map((file, index) => <li key={index}>{file.name}: {file.valid ? file.scopes.length ? `Matching projects: ${file.scopes.join(", ")}` : "No matching contribution. Select or create a project." : "Invalid export; valid files can still be imported."}</li>)}</ul>

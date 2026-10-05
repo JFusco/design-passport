@@ -32,11 +32,18 @@ model does not claim multi-user tenant isolation; project-qualified foreign keys
 prevent cross-project relationships.
 
 Mutations acquire the same transaction-scoped advisory lock before mutable reads.
-Each valid file commits its evidence and derivations atomically. Failures retain
-previously committed batch files and return safe retry messages. Decisions use a
+Each valid file commits its evidence and derivations atomically. Invalid files roll
+back individually while valid batch files remain committed and processing continues.
+Only connectivity or availability failures and lock contention return retryable
+messages; permanent failures show a non-outage error. Decisions use a
 client request UUID and compare replay contents before freshness; edits retry only
 when the complete expected successor remains current. New evidence and editorial
 changes stale older approvals. Ordinary decisions never write release files.
+
+Project guidance derives from scopes represented by current candidates. Audit-only
+projects retain their exact scope without creating learning or derived guidance.
+Candidate scopes with no current approvals still get empty replacement packs, so
+withdrawing the final approval removes published project guidance.
 
 ## Configure and migrate
 
@@ -53,7 +60,8 @@ Settings → SSL. Use the Connect dialog's session pooler host on port 5432, wit
 `design_passport_runtime.<project-ref>` as username. The server requires verified
 TLS, the project CA and hostname verification. Postgres.js 3.4.9 has a two-connection
 pool, 10-second connection timeout, 20-second idle timeout, 15-second statement
-timeout and 2-second lock timeout. Connections are lazy; builds need no database.
+timeout and 2-second lock timeout. Concurrent cold requests reuse the same client
+after the awaited CA read. Connections are lazy; builds need no database.
 Every repository transaction also sets the statement and lock limits locally before
 queries or lock acquisition. Hosted acceptance found that the session pooler can
 ignore startup parameters or retain backend defaults; client options alone do not
@@ -106,6 +114,9 @@ Learning limits: 10 files, 1,000,000 bytes per file, 5,000,000 combined file byt
 25,000,000 combined file bytes and 26,000,000 request bytes. Actual streamed request
 bytes are bounded before parsing, even without reliable Content-Length. Next's
 proxy buffer is 27,000,000 bytes. Oversized requests return 413 without imports.
+The audit file picker stays disabled during preview/import. Selecting new files
+clears the old preview and project choice; the next file requires its own preview
+and an explicit or newly matched project scope.
 
 A representative synthetic v3 file-scope report measures 3,435,447 bytes for 100
 roots and 3,200 findings. This verifies initial sizing, not a universal maximum.

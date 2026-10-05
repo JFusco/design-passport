@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { importLearning, importAudits, auditDetail, auditDownload, learningDetail, listHistory, previewAuditProjects, readKnowledgeState, recordDecision, reviseCandidate, workspacePaths } from "../src/companion/repository";
-import { closeDatabases, database, transaction } from "../src/companion/database";
+import { closeDatabases, database, databaseError, transaction } from "../src/companion/database";
+import { CompanionError } from "../src/companion/errors";
 import { readFilesystemKnowledgeState, listFilesystemProjectGuidancePacks, withWorkspaceWrite } from "../src/companion/filesystem";
 import * as filesystem from "../src/companion/filesystem";
 import { exportKnowledge, exportRelease, verifyKnowledgeExport } from "../src/companion/exports";
@@ -16,20 +17,97 @@ import { assertContract } from "../src/core/schema";
 
 let harness: Awaited<ReturnType<typeof createTestDatabase>>;
 let paths: ReturnType<typeof workspacePaths>;
-beforeEach(async () => {
-  harness = await createTestDatabase();
-  for (const [key, value] of Object.entries(harness.env)) vi.stubEnv(key, value);
-  paths = workspacePaths(await realpath(await mkdtemp(join(tmpdir(), "dp-sql-"))));
-});
-afterEach(async () => {
-  vi.restoreAllMocks(); await closeDatabases(); await harness.close();
-  await rm(paths.root, { recursive: true, force: true }); vi.unstubAllEnvs();
-});
 function learning(identity = "base", projectScope?: string) { return { name: "learning.json", content: JSON.stringify(learningFixture(identity, projectScope)) }; }
 function audit(report = auditFixture()) { return { name: "audit.json", content: JSON.stringify(report) }; }
 async function firstCandidate() { await importLearning(paths, [learning()]); return (await readKnowledgeState(paths)).candidates[0]!; }
 
+describe("companion database errors and pool", () => {
+  afterEach(async () => { vi.restoreAllMocks(); await closeDatabases(); vi.unstubAllEnvs(); });
+  it("distinguishes deterministic failures from availability and contention without exposing details", () => {
+    for (const code of [undefined, "22P02", "23514", "54000", "42501"]) {
+      const error = databaseError(Object.assign(new Error("private fixture detail"), { code }));
+      expect(error).toBeInstanceOf(CompanionError);
+      expect(error).toMatchObject({ code: "invalid-input", status: 422 });
+      expect(error.message).not.toContain("private fixture detail");
+    }
+    for (const code of ["08006", "08P01", "53300", "57P01", "57P02", "57P03", "57P04", "57P05", "ECONNREFUSED", "ETIMEDOUT", "ECONNRESET", "ENOTFOUND", "EAI_AGAIN", "EPIPE", "EHOSTUNREACH", "ENETUNREACH", "CONNECT_TIMEOUT", "CONNECTION_CLOSED", "CONNECTION_DESTROYED", "CONNECTION_ENDED"]) {
+      expect(databaseError({ code })).toMatchObject({ code: "unavailable", status: 503 });
+    }
+    for (const code of ["55P03", "57014", "40P01"]) expect(databaseError({ code })).toMatchObject({ code: "busy", status: 423 });
+    const conflict = new CompanionError("conflict", "This draft changed.", 409);
+    expect(databaseError(conflict)).toBe(conflict);
+  });
+  it("keeps an ended Postgres.js client retryable and rejects malformed audit IDs before querying", async () => {
+    vi.stubEnv("DESIGN_PASSPORT_DATABASE_TEST_MODE", "pglite");
+    vi.stubEnv("DESIGN_PASSPORT_DATABASE_URL", "postgres://design_passport_test@127.0.0.1:1/pglite");
+    const synthetic = workspacePaths(join(process.cwd(), "synthetic-closed-pool"));
+    const sql = await database(synthetic.root);
+    // End the lazy client before any query so this probe never opens a socket.
+    await sql.end({ timeout: 5 });
+    await expect(readKnowledgeState(synthetic)).rejects.toMatchObject({ code: "unavailable", status: 503 });
+    expect(await importLearning(synthetic, [learning()])).toMatchObject({ imported: 0, invalid: 0, retryable: 1, files: [{ status: "retryable" }] });
+    await expect(auditDetail(synthetic, "-".repeat(36))).rejects.toMatchObject({ code: "not-found", status: 404 });
+    await expect(auditDownload(synthetic, "-".repeat(36))).rejects.toMatchObject({ code: "not-found", status: 404 });
+  });
+  it("shares one hosted client across concurrent CA reads and closes it once", async () => {
+    const root = join(process.cwd(), "synthetic-pool");
+    let releaseCA!: (value: string) => void;
+    const ca = new Promise<string>((resolve) => { releaseCA = resolve; });
+    let reads = 0;
+    const read = vi.fn(async (path: string) => {
+      if (path === join(root, ".env.local")) return "";
+      if (path === join(root, "fixture-ca.pem")) { reads += 1; return ca; }
+      throw new Error("Unexpected synthetic configuration path");
+    });
+    const end = vi.fn().mockResolvedValue(undefined);
+    const client = { end };
+    const factory = vi.fn(() => client);
+    vi.stubEnv("DESIGN_PASSPORT_DATABASE_TEST_MODE", "");
+    vi.stubEnv("DESIGN_PASSPORT_DATABASE_URL", "postgres://design_passport_runtime.abcdefghijklmnopqrst@synthetic.pooler.supabase.com:5432/postgres");
+    vi.stubEnv("DESIGN_PASSPORT_DATABASE_CA_PATH", "fixture-ca.pem");
+    vi.resetModules();
+    vi.doMock("postgres", () => ({ default: factory }));
+    vi.doMock("node:fs/promises", () => ({ readFile: read }));
+    const isolated = await import("../src/companion/database");
+    const calls = [isolated.database(root), isolated.database(root)];
+    try {
+      await vi.waitFor(() => expect(reads).toBe(2));
+      expect(factory).not.toHaveBeenCalled();
+      releaseCA("synthetic CA");
+      const [first, second] = await Promise.all(calls);
+      expect(first).toBe(client); expect(second).toBe(first);
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(factory.mock.calls[0]).toEqual([process.env.DESIGN_PASSPORT_DATABASE_URL, expect.objectContaining({
+        ssl: { ca: "synthetic CA", rejectUnauthorized: true }, max: 2, connect_timeout: 10, idle_timeout: 20,
+        connection: { statement_timeout: 15_000, lock_timeout: 2_000, application_name: "design-passport" },
+      })]);
+      await isolated.closeDatabases();
+      expect(end).toHaveBeenCalledExactlyOnceWith({ timeout: 5 });
+    } finally {
+      releaseCA("synthetic CA"); await Promise.allSettled(calls); await isolated.closeDatabases();
+      vi.doUnmock("postgres"); vi.doUnmock("node:fs/promises"); vi.resetModules();
+    }
+  });
+});
+
 describe("companion SQL repository", () => {
+  beforeEach(async () => {
+    harness = await createTestDatabase();
+    for (const [key, value] of Object.entries(harness.env)) vi.stubEnv(key, value);
+    paths = workspacePaths(await realpath(await mkdtemp(join(tmpdir(), "dp-sql-"))));
+  });
+  afterEach(async () => {
+    vi.restoreAllMocks(); await closeDatabases(); await harness.close();
+    await rm(paths.root, { recursive: true, force: true }); vi.unstubAllEnvs();
+  });
+  it("rolls back a plain transaction error as non-retryable invalid input", async () => {
+    const sql = await database(paths.root);
+    await expect(transaction(paths.root, async (tx) => {
+      await tx`insert into design_passport.projects(scope) values ('project:rolled-back')`;
+      throw new Error("private fixture failure");
+    }, true)).rejects.toMatchObject({ code: "invalid-input", status: 422, message: "The request contains invalid data or exceeds a supported limit." });
+    expect(await sql`select scope from design_passport.projects where scope = 'project:rolled-back'`).toHaveLength(0);
+  });
   it("uses the restricted role and denies evidence mutation, deletion, DDL and public access", async () => {
     const sql = await database(paths.root);
     expect((await sql`select current_user`)[0]?.current_user).toBe("design_passport_test");
@@ -60,6 +138,33 @@ describe("companion SQL repository", () => {
     expect(before.envelopes).toHaveLength(1);
     expect((await readKnowledgeState(paths)).candidates).toEqual(before.candidates);
     expect(await stat(paths.teamPack).catch(() => null)).toBeNull();
+  });
+  it("preserves a long audit-only scope while learning mutations and approval withdrawal succeed elsewhere", async () => {
+    const scope = `project:${"a".repeat(192)}`;
+    expect(scope).toHaveLength(200);
+    expect(await importAudits(paths, [audit()], scope)).toMatchObject({ imported: 1 });
+    const original = await firstCandidate();
+    const { candidate } = await reviseCandidate(paths, { candidateId: original.candidateId, candidateDigest: original.digest,
+      wording: "Use the reviewed project pattern.", proposedScope: "project", exceptions: [] });
+    const decision = { candidateId: candidate.candidateId, candidateDigest: candidate.digest, scope: "project" as const, rationale: "Reviewed project evidence." };
+    await recordDecision(paths, { ...decision, requestId: randomUUID(), action: "approve" });
+    const sql = await database(paths.root);
+    const approved = (await sql`select payload from design_passport.guidance_packs where project_scope = ${candidate.projectScope}`)[0]!.payload;
+    expect(approved.facts).toHaveLength(1);
+    await recordDecision(paths, { ...decision, requestId: randomUUID(), action: "defer" });
+    const withdrawn = (await sql`select payload from design_passport.guidance_packs where project_scope = ${candidate.projectScope}`)[0]!.payload;
+    expect(withdrawn.facts).toEqual([]);
+    expect(withdrawn.source.projectScope).toBe(candidate.projectScope);
+    const state = await readKnowledgeState(paths);
+    expect(state.envelopes).toHaveLength(1);
+    expect(state.envelopes.every((envelope) => envelope.projectScope === candidate.projectScope)).toBe(true);
+    expect(state.candidates.every((item) => item.projectScope === candidate.projectScope)).toBe(true);
+    expect(await sql`select scope from design_passport.projects where scope = ${scope}`).toEqual([{ scope }]);
+    expect(await sql`select id from design_passport.guidance_packs where project_scope = ${scope}`).toHaveLength(0);
+    const row = (await listHistory(paths, "audit", { project: scope })).rows[0]!;
+    const detail = await auditDetail(paths, row.id);
+    expect(detail.projectScope).toBe(scope); expect(detail.contributionIds).toEqual([]);
+    expect(await auditDownload(paths, detail.exports[0]!.id)).toEqual(auditFixture());
   });
   it("preserves distinct wrappers and metadata, links within project in either order and surfaces ambiguity", async () => {
     const report = auditFixture();
@@ -110,14 +215,20 @@ describe("companion SQL repository", () => {
     await harness.db.exec("reset role; alter table design_passport.guidance_packs add constraint fixture_pack_failure check (payload->>'generatedAt' <> '2026-09-24T12:00:00.000Z'); set role design_passport_test;");
     const later = { ...learningFixture("later"), generatedAt: "2026-09-24T12:00:00.000Z" };
     const retry = { name: "later.json", content: JSON.stringify(later) };
-    const result = await importLearning(paths, [learning(), retry]);
-    expect(result).toMatchObject({ retryable: 1, imported: 1 });
+    const following = learning("after-invalid", "project:after-invalid");
+    const result = await importLearning(paths, [learning(), retry, following]);
+    expect(result).toMatchObject({ retryable: 0, invalid: 1, imported: 2, files: [{ status: "imported" }, { name: "later.json", status: "invalid" }, { status: "imported" }] });
+    expect(result.files[1]!.message).not.toContain("fixture_pack_failure");
     const retained = await readKnowledgeState(paths);
-    expect(retained.envelopes.map((envelope) => envelope.digest)).toEqual([learningFixture().digest]);
+    expect(retained.envelopes.map((envelope) => envelope.digest).sort()).toEqual([learningFixture().digest, learningFixture("after-invalid", "project:after-invalid").digest].sort());
     expect(retained.candidates.every((candidate) => candidate.supportCount === 1)).toBe(true);
+    const sql = await database(paths.root);
+    expect(await sql`select id from design_passport.contributions where id = ${later.digest}`).toHaveLength(0);
+    expect(await sql`select contribution_id from design_passport.observations where contribution_id = ${later.digest}`).toHaveLength(0);
+    expect((await sql`select payload from design_passport.candidate_revisions`).every((row) => row.payload.supportCount === 1)).toBe(true);
     await closeDatabases(); await harness.db.exec("reset role; alter table design_passport.guidance_packs drop constraint fixture_pack_failure; set role design_passport_test;");
     expect(await importLearning(paths, [learning(), retry])).toMatchObject({ imported: 1, duplicates: 1 });
-    expect((await readKnowledgeState(paths)).envelopes).toHaveLength(2);
+    expect((await readKnowledgeState(paths)).envelopes).toHaveLength(3);
   });
   it("filters history with stable cursors and validates historical and v1-v3 audit contracts", async () => {
     const base = auditFixture();

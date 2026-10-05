@@ -2,7 +2,7 @@
 title: Supabase companion persistence implementation
 date: 2026-10-04
 topics: [supabase-companion]
-plans: [2026-10-04-provision-supabase-and-build-the-companion-to-qa-operations-standards-946bafe335.md]
+plans: [2026-10-04-provision-supabase-and-build-the-companion-to-qa-operations-standards-946bafe335.md, 2026-10-04-repair-supabase-companion-review-findings-c8b67d5345.md]
 ---
 
 # Supabase companion persistence implementation
@@ -108,3 +108,58 @@ revision history all passed verification. The final full CI rerun passes the sam
 Security review traced uploads, local access, SQL transactions, protected downloads,
 server-only configuration and backup writes. No high-confidence vulnerabilities were
 identified in that scope. Hosted evidence is separate from the offline harness.
+
+## Independent review and persistence repairs
+
+[PR JFusco/design-passport#71](https://github.com/JFusco/design-passport/pull/71)
+received its authorized implementation review after 18:20 Eastern. The initial
+run passed CI but stopped before model review because duplicated fixture logs
+exceeded its packet limit. A fresh run retained the full scope and sources while
+suppressing fixture logging. Its reviewer and coordinator accepted three repairs;
+the designated Codex implementer made them once. The revised host-local gate passed
+551 repository tests and eight production browser tests. The writer's earlier
+socket-denied checks remain failed environment evidence, distinct from that pass.
+
+The first three repairs classify permanent validation/SQL failures as non-retryable
+and preserve valid batch files, reject malformed audit UUIDs before SQL, derive
+project guidance only for candidate scopes while still replacing withdrawn packs,
+and reuse one client after concurrent awaited CA reads. A 200-character audit-only
+scope remains intact without breaking learning mutations in another project.
+
+The Claude recheck then hit its subscription limit. That frozen run remains blocked.
+The user explicitly requested Codex and authorized final commit, push, merging and
+linked issue closure. The deferred Claude job was cancelled. A separate fresh
+read-only Codex recheck passed all three repairs and identified an audit-preview
+race: the picker could replace files while an earlier preview later applied its
+project choice. That completed review remains recorded as unresolved.
+
+The designated Codex implementer then addressed that new, narrowly accepted finding:
+file selection is disabled during preview/import, and a new selection clears the
+previous project scope. Its production browser regression holds the real first
+preview response, verifies selection stays fixed, and requires a fresh preview and
+explicit scope for the next file. Database read-back verifies both assignments.
+
+A local development probe with a disposable restricted PGlite database also passed
+that flow. Next 16.3.6/Turbopack MCP reported no compilation or runtime errors;
+agent-browser and React inspection showed the working/preview state transitions.
+The invalid history cursor displayed the permanent-error message and dashboard link.
+The owned browser/server and disposable workspace were closed afterward.
+
+A final fresh read-only Codex recheck (`96799c01-709e-4342-bb4f-b39759f5ac79`)
+verified all four accepted findings with no new actionable gaps. It checked all 52
+present scoped source hashes and the full archived CI output digest. The reviewed
+target is `b3d7f1cd81445edda3d1b68101674cb1e098a5947c29a53c012f9a676cf54644`.
+The earlier blocked Claude and unresolved Codex runs remain unchanged.
+
+The final exact `DESIGN_PASSPORT_E2E_PORT=5290 pnpm run verify:ci` passed all 551
+tests across 52 files, eight production browser tests, both builds, type checks,
+lint, catalog/schema/release consistency, wiki and skill checks. These repair checks
+use local synthetic fixtures. Hosted TLS, restart persistence, real concurrency,
+permissions, migrations, advisors and backup evidence above were recorded earlier;
+they were not rerun by the independent reviewers. Real exports remain preserved
+and unimported. The repository Graphify map was refreshed without model calls.
+
+Plan discovery inspected 900 candidates and flagged one historical cross-repository
+Actions-plan variant for association review. The final Actions plan already has an
+implemented archive dated 2026-09-26; historical backfill is outside issue #70.
+This delivery archives the Supabase implementation and accepted repair plan.

@@ -40,6 +40,8 @@ export async function database(root: string): Promise<Sql> {
     try { ca = await readFile(isAbsolute(path) ? path : resolve(root, path), "utf8"); }
     catch { throw new CompanionError("not-configured", "The project database CA could not be read.", 503); }
   }
+  const configured = pools.get(root);
+  if (configured) return configured;
   const sql = postgres(value, {
     ssl: test ? false : { ca: ca!, rejectUnauthorized: true },
     max: test ? 1 : 2, connect_timeout: 10, idle_timeout: 20,
@@ -60,7 +62,11 @@ export function databaseError(error: unknown): CompanionError {
   if (error instanceof CompanionError) return error;
   const code = (error as { code?: string })?.code;
   if (code === "55P03" || code === "57014" || code === "40P01") return new CompanionError("busy", "The database is busy. Retry the same action in a moment.", 423);
-  return new CompanionError("unavailable", "The database is unavailable. Check connectivity and the Supabase project status, then retry the same action; it may already have committed.", 503);
+  if (typeof code === "string" && (/^(?:08[0-9A-Z]{3}|53[0-9A-Z]{3}|57P0[0-9A-Z])$/u.test(code)
+    || ["ECONNREFUSED", "ETIMEDOUT", "ECONNRESET", "ENOTFOUND", "EAI_AGAIN", "EPIPE", "EHOSTUNREACH", "ENETUNREACH", "CONNECT_TIMEOUT", "CONNECTION_CLOSED", "CONNECTION_DESTROYED", "CONNECTION_ENDED"].includes(code))) {
+    return new CompanionError("unavailable", "The database is unavailable. Check connectivity and the Supabase project status, then retry the same action; it may already have committed.", 503);
+  }
+  return new CompanionError("invalid-input", "The request contains invalid data or exceeds a supported limit.", 422);
 }
 
 export async function transaction<T>(root: string, operation: (sql: TransactionSql) => Promise<T>, write = false): Promise<T> {

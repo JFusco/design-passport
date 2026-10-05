@@ -59,14 +59,14 @@ async function derive(sql: TransactionSql, regenerate: boolean): Promise<void> {
   await sql`insert into design_passport.guidance_packs(id, payload) values ('shared', ${json(sql, teamPack)}) on conflict(id) do update set payload = excluded.payload`;
   const latest = new Map<string, KnowledgeDecisionV1>();
   for (const decision of state.decisions) latest.set(decision.candidateId, decision);
-  const projects = await sql`select scope from design_passport.projects order by scope`;
-  for (const { scope } of projects) {
+  const scopes = [...new Set(state.candidates.map((candidate) => candidate.projectScope))].sort();
+  for (const scope of scopes) {
     const approved = state.candidates.filter((candidate) => {
       const decision = latest.get(candidate.candidateId);
       return candidate.projectScope === scope && decision?.action === "approve" && decision.scope === "project" && decision.candidateDigest === candidate.digest;
     });
     const facts = approved.map(projectGuidanceFact);
-    const source = { schemaVersion: 1 as const, sourceId: `project-guidance:${scope}`, projectScope: scope as string, role: "style-guide" as const,
+    const source = { schemaVersion: 1 as const, sourceId: `project-guidance:${scope}`, projectScope: scope, role: "style-guide" as const,
       contentDigest: hashValue(approved.map((candidate) => candidate.digest).sort()), completeness: { complete: true, availableDomains: [...new Set(facts.map((fact) => fact.domain))].sort(), warnings: [] } };
     const pack = buildReferencePack({ packVersion: "1.0.0", source, facts }, new Date(buildTime));
     await sql`insert into design_passport.guidance_packs(id, project_scope, payload) values (${`project:${scope}`}, ${scope}, ${json(sql, pack)}) on conflict(id) do update set payload = excluded.payload`;
@@ -89,8 +89,8 @@ async function importBatch<T>(inputs: ImportInput[], validate: (value: unknown) 
       const imported = await save(value);
       files.push({ name: input.name, status: imported ? "imported" : "duplicate", message: imported ? "Imported." : "Already imported." });
     } catch (error) {
-      if (!(error instanceof CompanionError) || !["unavailable", "busy"].includes(error.code)) throw error;
-      files.push({ name: input.name, status: "retryable", message: error.message });
+      if (!(error instanceof CompanionError) || !["invalid-input", "unavailable", "busy"].includes(error.code)) throw error;
+      files.push({ name: input.name, status: error.code === "invalid-input" ? "invalid" : "retryable", message: error.message });
     }
   }
   return batch(files);
@@ -239,7 +239,7 @@ export async function listHistory(paths: WorkspacePaths, kind: "audit" | "learni
   });
 }
 export async function auditDetail(paths: WorkspacePaths, id: string) {
-  if (!/^[a-f0-9-]{36}$/iu.test(id)) throw new CompanionError("not-found", "Audit not found.", 404);
+  if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iu.test(id)) throw new CompanionError("not-found", "Audit not found.", 404);
   return transaction(paths.root, async (sql) => {
     const audit = (await sql`select * from design_passport.audits where id = ${id}`)[0];
     if (!audit) throw new CompanionError("not-found", "Audit not found.", 404);
@@ -251,7 +251,7 @@ export async function auditDetail(paths: WorkspacePaths, id: string) {
   });
 }
 export async function auditDownload(paths: WorkspacePaths, id: string): Promise<unknown> {
-  if (!/^[a-f0-9-]{36}$/iu.test(id)) throw new CompanionError("not-found", "Audit source not found.", 404);
+  if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iu.test(id)) throw new CompanionError("not-found", "Audit source not found.", 404);
   return transaction(paths.root, async (sql) => {
     const row = (await sql`select payload from design_passport.audit_exports where id = ${id}`)[0];
     if (!row) throw new CompanionError("not-found", "Audit source not found.", 404);

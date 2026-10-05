@@ -174,6 +174,14 @@ test("rejects requests without the process capability or same origin", async ({ 
 });
 
 test("imports audit history, filters records, inspects provenance and downloads preserved payloads", async ({ page, browser }) => {
+  for (const path of ["/api/audits/------------------------------------", "/api/audits/download/------------------------------------"]) {
+    const response = await page.request.get(path);
+    expect(response.status()).toBe(404);
+    expect((await response.json()).error.code).toBe("not-found");
+  }
+  await page.goto("/history/audit?cursor=invalid");
+  await expect(page.getByRole("heading", { name: "Request could not be completed" })).toBeVisible();
+  await expect(page.getByText("The history cursor is invalid.")).toBeVisible();
   const report = auditFixture();
   const wrapper = { schemaVersion: 1, kind: "historical-audit", freshness: "historical", savedAt: "2026-09-24T12:00:00Z", target: { scope: "selection", nodeIds: ["root:desktop"] }, provenance: { pluginVersion: "synthetic", knowledgeVersion: "1" }, report };
   await page.goto("/history/audit");
@@ -184,13 +192,62 @@ test("imports audit history, filters records, inspects provenance and downloads 
     { name: "historical.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(wrapper)) },
     { name: "bad.json", mimeType: "application/json", buffer: Buffer.from("{") },
   ]);
+  let releasePreview!: () => void;
+  const previewHeld = new Promise<void>((resolve) => { releasePreview = resolve; });
+  let previewReached!: () => void;
+  const previewReady = new Promise<void>((resolve) => { previewReached = resolve; });
+  await page.route("**/api/audits/preview", async (route) => {
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    previewReached();
+    await previewHeld;
+    await route.fulfill({ response });
+  }, { times: 1 });
   await page.getByRole("button", { name: "Preview audit files" }).click();
+  await previewReady;
+  try {
+    const auditFiles = page.getByLabel("Audit files", { exact: true });
+    await expect(auditFiles).toBeDisabled();
+    let chooserOpened = false;
+    const onFileChooser = () => { chooserOpened = true; };
+    page.on("filechooser", onFileChooser);
+    await auditFiles.click({ force: true });
+    page.off("filechooser", onFileChooser);
+    expect(chooserOpened).toBe(false);
+    expect(await auditFiles.evaluate((input) => Array.from((input as HTMLInputElement).files ?? [], (file) => file.name))).toEqual(["report.json", "historical.json", "bad.json"]);
+  } finally { releasePreview(); }
   await expect(page.getByText("Invalid export; valid files can still be imported.", { exact: false })).toBeVisible();
   await page.getByLabel("Project scope", { exact: true }).fill("project:audit-browser");
   await page.getByRole("button", { name: "Import audit files", exact: true }).click();
   await expect(page.getByText("2 imported", { exact: true })).toBeVisible();
   await expect(page.getByText("1 invalid", { exact: true })).toBeVisible();
   await expectNoSeriousAccessibilityIssues(page);
+  const nextReport = { ...report, generatedAt: "2026-09-24T12:00:00.000Z", target: { ...report.target, knowledgeSnapshotHash: "h53:00000000000002" } };
+  await page.getByLabel("Audit files", { exact: true }).setInputFiles({ name: "next-report.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(nextReport)) });
+  await expect(page.getByLabel("Project scope", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Import audit files", exact: true })).toHaveCount(0);
+  const nextPreview = page.waitForResponse("**/api/audits/preview");
+  await page.getByRole("button", { name: "Preview audit files" }).click();
+  expect((await (await nextPreview).json()).data).toMatchObject({ files: [{ name: "next-report.json", valid: true, scopes: [] }], suggestedScope: null });
+  const projectScope = page.getByLabel("Project scope", { exact: true });
+  await expect(projectScope).toHaveValue("");
+  let nextImports = 0;
+  await page.route("**/api/audits/import", async (route) => { nextImports += 1; await route.continue(); });
+  await page.getByRole("button", { name: "Import audit files", exact: true }).click();
+  await expect(projectScope).toBeFocused();
+  expect(nextImports).toBe(0);
+  await projectScope.fill("project:audit-preview-next");
+  await page.getByRole("button", { name: "Import audit files", exact: true }).click();
+  await expect(page.getByText("1 imported", { exact: true })).toBeVisible();
+  expect(nextImports).toBe(1);
+  await page.unroute("**/api/audits/import");
+  const originalRows = (await (await page.request.get("/api/audits?project=project%3Aaudit-browser")).json()).data.rows;
+  expect(originalRows).toHaveLength(1);
+  expect(originalRows[0]).toMatchObject({ projectScope: "project:audit-browser", sourceAt: report.generatedAt });
+  const nextRows = (await (await page.request.get("/api/audits?project=project%3Aaudit-preview-next")).json()).data.rows;
+  expect(nextRows).toHaveLength(1);
+  const nextDetail = (await (await page.request.get(`/api/audits/${nextRows[0].id}`)).json()).data;
+  expect(nextDetail).toMatchObject({ projectScope: "project:audit-preview-next", report: nextReport });
   await page.goto("/history/audit");
   await page.getByRole("combobox", { name: "Project", exact: true }).selectOption("project:audit-browser");
   await page.getByRole("combobox", { name: "Grade", exact: true }).selectOption(report.grade.letter);

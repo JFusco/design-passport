@@ -1,7 +1,7 @@
 # Graph Report - design-passport  (2026-10-04)
 
 ## Corpus Check
-- 134 files · ~75,707 words
+- 134 files · ~75,777 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `26de3b6b`
+- Built from commit: `433ce630`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

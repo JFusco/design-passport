@@ -1,8 +1,12 @@
 ---
 topics: [persistent-audits, figma-runtime-qa]
 plans: [2026-10-04-reuse-validated-session-snapshots-for-53-232f64d68f.md]
-issue: 'https://github.com/JFusco/design-passport/issues/67'
-issues: ['https://github.com/JFusco/design-passport/issues/67', 'https://github.com/JFusco/design-passport/issues/53']
+issue: 'https://github.com/jfusco/design-passport/issues/67'
+issues:
+  [
+    'https://github.com/jfusco/design-passport/issues/67',
+    'https://github.com/jfusco/design-passport/issues/53',
+  ]
 ---
 
 # Reuse validated session snapshots during audit refresh
