@@ -110,7 +110,9 @@ export class ModelReviewRunner {
   }
   private async execute(lease: Lease, alive: () => boolean): Promise<void> {
     let response: ProviderResponse | undefined,
-      dispatched = lease.dispatchAt !== null;
+      dispatched = lease.dispatchAt !== null,
+      cancelling = false,
+      cancelStarted = 0;
     try {
       const reconciliation = await this.repository.pendingReconciliation(
         this.paths,
@@ -173,11 +175,23 @@ export class ModelReviewRunner {
             response = retrieved;
             await this.repository.observe(this.paths, lease, response);
           } catch {
-            if (this.clock.now() >= deadline)
-              throw new TransportError("retrieve");
-            await this.clock.sleep(
-              Math.min(15_000, 2000 * 2 ** Math.min(failures++, 3)),
-            );
+            const current = await this.repository.runDetail(this.paths, lease.id);
+            if (
+              lease.cancel ||
+              current.events.some((e) => e.kind === "cancel-requested") ||
+              this.clock.now() >= deadline
+            ) {
+              cancelling = true;
+              cancelStarted = this.clock.now();
+              response = await this.transport.cancel(lease.providerId);
+              if (response.id !== lease.providerId || !response.status)
+                throw new TransportError("cancel");
+              await this.repository.observe(this.paths, lease, response);
+            } else {
+              await this.clock.sleep(
+                Math.min(15_000, 2000 * 2 ** Math.min(failures++, 3)),
+              );
+            }
           }
         }
       } else {
@@ -202,13 +216,12 @@ export class ModelReviewRunner {
             ?.recorded_at ??
           latest.registeredAt,
       );
-      let failures = 0,
-        cancelling = false,
-        cancelStarted = 0;
+      let failures = 0;
       while (!terminal(response)) {
         if (this.stopping || !alive()) return;
         const current = await this.repository.runDetail(this.paths, lease.id);
         const cancelRequested =
+          lease.cancel ||
           current.events.some((e) => e.kind === "cancel-requested") ||
           this.clock.now() - dispatchTime >= 15 * 60_000;
         if (cancelRequested && !cancelling) {

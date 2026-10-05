@@ -275,7 +275,7 @@ export async function buildSnapshot(
     payload: Record<string, unknown>,
     findingIds?: string[],
   ) => {
-    const ref = `e_${digest({ kind, id, payload }).slice(0, 24)}`;
+    const ref = `e_${digest({ kind, id, payload, ...(findingIds ? { findingIds } : {}) }).slice(0, 24)}`;
     evidence.push({ ref, kind, ...payload });
     mappings[ref] = { kind, id, ...(findingIds ? { findingIds } : {}) };
     return ref;

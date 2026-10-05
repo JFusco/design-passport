@@ -76,6 +76,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
     && selected?.currentDecision?.action === "approve"
     && selected.currentDecision.scope === scope;
   const hasUnsavedWork = editorialDirty || Boolean(rationale.trim());
+  const locked = !draftsReady || !!recoveredDraft;
 
   function writeStoredDrafts() {
     sessionStorage.setItem(REVIEW_DRAFTS_KEY, JSON.stringify(draftsRef.current));
@@ -301,12 +302,12 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
             </header>
             <div className="review-body">
               {recoveredDraft ? <div className="notice warning"><p>A saved draft belongs to an older revision. Its text is preserved for recovery.</p><pre>{JSON.stringify(recoveredDraft,null,2)}</pre><button type="button" className="button" onClick={() => { delete draftsRef.current[selected.id]; writeStoredDrafts(); loadCandidate(selected); }}>Discard recovered draft</button></div> : null}
-              <label className="field full"><span>Guidance</span><textarea name="guidance" disabled={!!recoveredDraft} autoComplete="off" value={wording} onChange={(event) => setWording(event.target.value)} /><small>Edit the generated draft into clear, reusable guidance.</small></label>
+              <label className="field full"><span>Guidance</span><textarea name="guidance" disabled={locked} autoComplete="off" value={wording} onChange={(event) => setWording(event.target.value)} /><small>Edit the generated draft into clear, reusable guidance.</small></label>
               <div className="review-grid">
-                <label className="field"><span>Publication scope</span><select name="publication-scope" disabled={!!recoveredDraft} value={scope} onChange={(event) => setScope(event.target.value as "project" | "shared")}><option value="project">Project only</option><option value="shared">Shared, client-neutral</option></select><small>Shared guidance requires an explicit human choice.</small></label>
+                <label className="field"><span>Publication scope</span><select name="publication-scope" disabled={locked} value={scope} onChange={(event) => setScope(event.target.value as "project" | "shared")}><option value="project">Project only</option><option value="shared">Shared, client-neutral</option></select><small>Shared guidance requires an explicit human choice.</small></label>
                 <div className="evidence-card"><strong>Evidence summary</strong><div><span><b>{selected.supportCount}</b> supporting</span><span><b>{selected.contradictCount}</b> contradictory</span><span><b>{selected.contributionCount}</b> unique</span></div></div>
               </div>
-              <label className="field full"><span>Exceptions</span><textarea name="exceptions" disabled={!!recoveredDraft} autoComplete="off" className="short" value={exceptions} onChange={(event) => setExceptions(event.target.value)} placeholder="One exception per line…" /><small>Record where this guidance should not apply.</small></label>
+              <label className="field full"><span>Exceptions</span><textarea name="exceptions" disabled={locked} autoComplete="off" className="short" value={exceptions} onChange={(event) => setExceptions(event.target.value)} placeholder="One exception per line…" /><small>Record where this guidance should not apply.</small></label>
               <details className="evidence-details">
                 <summary>Why this draft?</summary>
                 <p>These sanitized observations explain the draft. Counts show recurrence, not approval.</p>
@@ -320,12 +321,12 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
               </details>
             </div>
             <footer className="decision-panel">
-              <label className="field decision-note"><span>Decision note</span><input name="decision-note" disabled={!!recoveredDraft} autoComplete="off" ref={rationaleRef} value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="Reason for this decision…" /></label>
+              <label className="field decision-note"><span>Decision note</span><input name="decision-note" disabled={locked} autoComplete="off" ref={rationaleRef} value={rationale} onChange={(event) => setRationale(event.target.value)} placeholder="Reason for this decision…" /></label>
               <div className="decision-actions">
-                <button type="button" className="button" onClick={saveDraft} disabled={!editorialDirty || working || !!recoveredDraft}>Save changes</button>
-                <button type="button" className="button primary" onClick={() => decide("approve")} disabled={editorialDirty || working || alreadyApproved || !!recoveredDraft}>{alreadyApproved ? "Approved" : "Approve"}</button>
-                <button type="button" className="button danger" onClick={() => decide("reject")} disabled={editorialDirty || working || !!recoveredDraft}>Reject</button>
-                <button type="button" className="button" onClick={() => decide("defer")} disabled={editorialDirty || working || !!recoveredDraft}>Defer</button>
+                <button type="button" className="button" onClick={saveDraft} disabled={!editorialDirty || working || locked}>Save changes</button>
+                <button type="button" className="button primary" onClick={() => decide("approve")} disabled={editorialDirty || working || alreadyApproved || locked}>{alreadyApproved ? "Approved" : "Approve"}</button>
+                <button type="button" className="button danger" onClick={() => decide("reject")} disabled={editorialDirty || working || locked}>Reject</button>
+                <button type="button" className="button" onClick={() => decide("defer")} disabled={editorialDirty || working || locked}>Defer</button>
               </div>
               {editorialDirty ? <p className="dirty-note">Save changes before recording a decision.</p> : null}
               {selected.currentDecision ? <p className="previous-decision">Current decision: {statusLabels[selected.status]} · {selected.currentDecision.scope === "shared" ? "Shared, client-neutral" : "Project only"} · <time dateTime={selected.currentDecision.decidedAt}>{decisionDateFormatter.format(new Date(selected.currentDecision.decidedAt))} UTC</time><br />Reason: {selected.currentDecision.rationale}</p> : null}

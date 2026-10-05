@@ -156,14 +156,14 @@ export interface ProviderResponse {
   status?: string;
   model?: string;
   service_tier?: string;
-  completed_at?: number;
-  usage?: Record<string, unknown>;
+  completed_at?: number | null;
+  usage?: Record<string, unknown> | null;
   output?: Array<{
     type?: string;
     content?: Array<{ type?: string; text?: string }>;
   }>;
-  incomplete_details?: { reason?: string };
-  error?: { type?: string; code?: string };
+  incomplete_details?: { reason?: string } | null;
+  error?: { type?: string; code?: string } | null;
   requestId?: string;
 }
 export interface SourceMaterial {

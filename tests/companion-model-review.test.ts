@@ -29,6 +29,7 @@ import {
   MODEL_TABLES,
   observe,
   preview,
+  providerEvidence,
   projectSummary,
   reconcile,
   runDetail,
@@ -41,8 +42,10 @@ import {
   digest,
   estimate,
   generationBody,
+  INSTRUCTIONS,
   money,
   POLICY,
+  PROMPT_VERSION,
   projection,
   recommendations,
   RESPONSE_SCHEMA,
@@ -73,6 +76,8 @@ import {
   verifyKnowledgeExport,
 } from "../src/companion/exports";
 import { auditFixture, learningFixture } from "./helpers/companion-fixtures";
+import { buildFindingGroups } from "../src/core/finding-groups";
+import { validateContract } from "../src/core/schema";
 const usage = {
   input_tokens: 4000,
   input_tokens_details: { cached_tokens: 1000, cache_write_tokens: 500 },
@@ -80,6 +85,15 @@ const usage = {
   output_tokens_details: { reasoning_tokens: 200 },
   total_tokens: 4600,
 };
+const invalidProviderTimes = [
+  "1",
+  1.5,
+  -1,
+  8_640_000_000_001,
+  Number.MAX_SAFE_INTEGER + 1,
+  NaN,
+  Infinity,
+];
 function response(extra: Partial<ProviderResponse> = {}): ProviderResponse {
   return {
     id: "resp_test",
@@ -90,7 +104,54 @@ function response(extra: Partial<ProviderResponse> = {}): ProviderResponse {
     ...extra,
   };
 }
+function deferredResponse(snapshot: Snapshot, extra: Partial<ProviderResponse> = {}) {
+  return response({
+    output: [{ content: [{ type: "output_text", text: JSON.stringify({
+      recommendations: snapshot.candidates.map((c) => ({
+        candidateId: c.candidateId,
+        candidateDigest: c.digest,
+        disposition: "defer",
+        reason: "Source policy is missing; defer until authoritative guidance is supplied.",
+        evidenceRefs: [c.ref],
+        priority: "normal",
+        edit: null,
+      })),
+    }) }] }],
+    ...extra,
+  });
+}
 describe("model review data and provider boundaries", () => {
+  it.each(["queued", "in_progress", "failed", "incomplete", "cancelled"])(
+    "retains nullable provider timing and usage for %s evidence",
+    (status) => {
+      const nullable: ProviderResponse = response({
+        status,
+        completed_at: null,
+        usage: null,
+        incomplete_details: null,
+        error: null,
+      });
+      expect(providerEvidence(nullable)).toEqual({
+        id: "resp_test",
+        status,
+        model: "gpt-6.1-sol",
+        service_tier: "default",
+        completed_at: null,
+        usage: null,
+        incomplete_details: null,
+      });
+      expect(estimate(nullable, POLICY)).toBeNull();
+    },
+  );
+  it("rejects malformed non-null provider completion times", () => {
+    for (const completed_at of invalidProviderTimes) {
+      // Malformed JSON can violate the typed provider boundary.
+      expect(() =>
+        providerEvidence(response({ completed_at: completed_at as number })),
+      ).toThrow("Provider timing is invalid.");
+    }
+    expect(providerEvidence(response())).not.toHaveProperty("completed_at");
+  });
   it("calculates fixed-scale costs, cache writes and reasoning once with frozen exact model/tier matching", () => {
     expect(estimate(response(), POLICY)).toBe("0.012350000000");
     expect(decimal(money("0.000000000001") + money("0.323840"))).toBe(
@@ -293,6 +354,11 @@ async function register(count = 1) {
   };
   return { run: await start(paths, input), input, candidates };
 }
+async function expireLease(runId: string) {
+  await transaction(paths.root, async (sql) => {
+    await sql`update design_passport.model_runs set lease_expires_at=clock_timestamp()-interval '1 second' where id=${runId}`;
+  }, true);
+}
 async function completed(
   count = 1,
   disposition: Recommendation["disposition"] = "defer",
@@ -457,6 +523,41 @@ describe("transactional model review and runner", () => {
     expect((await preview(paths, project, selected)).contextDigest).not.toBe(
       before.contextDigest,
     );
+  });
+  it("keeps identical finding samples distinct and mapped to their original findings across previews", async () => {
+    const report = auditFixture("identical-samples");
+    const finding = { ...report.findings[0]!, id: "finding:identical:a" };
+    report.findings = [finding, { ...finding, id: "finding:identical:b" }];
+    report.issueGroups = buildFindingGroups(report.findings);
+    expect(validateContract("readiness-report", report).valid).toBe(true);
+    const envelope = buildLearningEnvelope({ projectScope: project, report, pluginVersion: "test", knowledgeVersion: "1.0.0" });
+    await expect(importLearning(paths, [{ name: "identical-learning", content: JSON.stringify(envelope) }])).resolves.toMatchObject({ imported: 1 });
+    await expect(importAudits(paths, [{ name: "identical-audit", content: JSON.stringify(report) }], project)).resolves.toMatchObject({ imported: 1, invalid: 0 });
+    const candidate = (await readKnowledgeState(paths)).candidates.find((c) =>
+      envelope.observations.some((o) => o.ruleId === finding.ruleId && o.observationKey === c.observationKey),
+    )!;
+    const selection = [{ candidateId: candidate.candidateId, digest: candidate.digest }];
+    const disclosure = await preview(paths, project, selection);
+    const repeated = await preview(paths, project, selection);
+    expect(repeated).toEqual(disclosure);
+    const samples = disclosure.snapshot.evidence.filter((e) => e.kind === "finding");
+    expect(samples).toHaveLength(2);
+    expect(new Set(samples.map((e) => e.ref)).size).toBe(2);
+    const { ref: firstRef, ...firstPayload } = samples[0]!;
+    const { ref: secondRef, ...secondPayload } = samples[1]!;
+    expect(firstPayload).toEqual(secondPayload);
+    const group = disclosure.snapshot.evidence.find((e) => e.kind === "aggregate")!;
+    expect(group).toMatchObject({ representedCount: 2, sampledCount: 2, samples: [firstRef, secondRef] });
+    const auditId = (await transaction(paths.root, (sql) => sql`select id from design_passport.audits where project_scope=${project}`))[0]!.id;
+    const run = await start(paths, { requestId: randomUUID(), project, selection, previewDigest: disclosure.digest });
+    expect(samples.map((e) => run.frozen.mappings[e.ref])).toEqual([
+      { kind: "finding", id: auditId, findingIds: ["finding:identical:a"] },
+      { kind: "finding", id: auditId, findingIds: ["finding:identical:b"] },
+    ]);
+    for (const id of report.findings.map((f) => f.id)) {
+      expect(JSON.stringify(disclosure)).not.toContain(id);
+      expect(run.frozen.projection.input).not.toContain(id);
+    }
   });
   it("applies a multi-candidate batch once, rolls invalid rationale back, advances context and preserves project scope", async () => {
     const { run } = await completed(2);
@@ -746,9 +847,181 @@ describe("transactional model review and runner", () => {
       code: "conflict",
     });
   });
-  it("keeps frozen prompt/schema during ID recovery and settles output-limit failure without partial recommendations", async () => {
-    const { run } = await register(),
-      first = (await claim(paths, randomUUID()))!;
+  it("polls nullable queued and in-progress responses through completed retrieval with estimated accounting", async () => {
+    const { run } = await register();
+    const queued: ProviderResponse = response({
+      status: "queued",
+      completed_at: null,
+      usage: null,
+      incomplete_details: null,
+      error: null,
+    });
+    const terminal = deferredResponse(run.frozen.snapshot, {
+      completed_at: Math.floor(Date.parse(run.registeredAt) / 1000) + 4,
+      incomplete_details: null,
+      error: null,
+    });
+    let reads = 0,
+      now = Date.parse(run.registeredAt);
+    const sleeps: number[] = [];
+    const transport: Transport = {
+      count: vi.fn(async () => 4000),
+      generate: vi.fn(async () => queued),
+      retrieve: vi.fn(async () =>
+        ++reads === 1 ? { ...queued, status: "in_progress" } : terminal,
+      ),
+      cancel: vi.fn(async () => response({ status: "cancelled" })),
+      delete: vi.fn(async () => {}),
+    };
+    const runner = new ModelReviewRunner(paths, transport, {
+      now: () => now,
+      sleep: async (ms) => { sleeps.push(ms); now += ms; },
+    });
+    expect(await runner.step()).toBe(true);
+    const detail = await runDetail(paths, run.id);
+    expect(detail).toMatchObject({
+      outcome: "completed",
+      providerId: "resp_test",
+      providerStatus: "completed",
+      providerCompletedAt: new Date(terminal.completed_at! * 1000).toISOString(),
+      error: null,
+      accounting: { version: 2, status: "estimated", amount: "0.012350000000" },
+    });
+    expect(detail.recommendations).toHaveLength(1);
+    for (const status of ["queued", "in_progress"])
+      expect(detail.events.filter((e) => e.kind === "provider").map((e) => e.payload)).toContainEqual({
+        id: "resp_test", status, model: "gpt-6.1-sol", service_tier: "default",
+        completed_at: null, usage: null, incomplete_details: null,
+      });
+    expect(detail.events.filter((e) => e.kind === "provider").at(-1)?.payload).toMatchObject({
+      id: "resp_test", status: "completed", completed_at: terminal.completed_at, usage,
+    });
+    expect((await projectSummary(paths, project)).reservations).toBe("0.000000000000");
+    expect(sleeps).toEqual([2000, 2000]);
+    expect(transport.count).toHaveBeenCalledExactlyOnceWith(run.frozen.projection);
+    expect(transport.generate).toHaveBeenCalledExactlyOnceWith(run.frozen.projection);
+    expect(transport.retrieve).toHaveBeenCalledTimes(2);
+    expect(transport.retrieve).toHaveBeenCalledWith("resp_test");
+    expect(transport.cancel).not.toHaveBeenCalled();
+    expect(transport.delete).toHaveBeenCalledExactlyOnceWith("resp_test");
+  });
+  it("retains failed nullable retrieval evidence with unknown cost, a held reservation and frozen observed duration", async () => {
+    const { run } = await register();
+    const queued: ProviderResponse = response({
+      status: "queued",
+      completed_at: null,
+      usage: null,
+      incomplete_details: null,
+      error: null,
+    });
+    const failed: ProviderResponse = {
+      id: "resp_test",
+      status: "failed",
+      model: "gpt-6.1-sol",
+      service_tier: "default",
+      completed_at: null,
+      usage: null,
+      incomplete_details: null,
+      error: { code: "credit_balance_exhausted" },
+    };
+    let now = Date.parse(run.registeredAt);
+    const transport: Transport = {
+      count: vi.fn(async () => 4000),
+      generate: vi.fn(async () => queued),
+      retrieve: vi.fn(async () => failed),
+      cancel: vi.fn(async () => response({ status: "cancelled" })),
+      delete: vi.fn(async () => {}),
+    };
+    const runner = new ModelReviewRunner(paths, transport, {
+      now: () => now,
+      sleep: async (ms) => { now += ms; },
+    });
+    expect(await runner.step()).toBe(true);
+    const detail = await runDetail(paths, run.id);
+    expect(detail).toMatchObject({
+      outcome: "failed",
+      registeredAt: run.registeredAt,
+      providerId: "resp_test",
+      providerStatus: "failed",
+      providerCompletedAt: null,
+      accounting: { version: 2, status: "unknown", amount: null, settlementId: null },
+      recommendations: [],
+    });
+    expect(detail.endedAt).not.toBeNull();
+    expect(detail.durationMs).toBe(Math.max(0, Date.parse(detail.endedAt!) - Date.parse(detail.registeredAt)));
+    expect(detail.events.filter((e) => e.kind === "provider").at(-1)?.payload).toMatchObject({
+      id: "resp_test", status: "failed", model: "gpt-6.1-sol", service_tier: "default",
+      completed_at: null, usage: null, incomplete_details: null,
+    });
+    const rows = await transaction(paths.root, (sql) => sql`select version,status,amount::text from design_passport.model_accounting where run_id=${run.id} order by version`);
+    expect(rows).toEqual([
+      { version: 1, status: "reserved", amount: null },
+      { version: 2, status: "unknown", amount: null },
+    ]);
+    expect(await projectSummary(paths, project)).toMatchObject({
+      knownCost: "0.000000000000", reservations: RESERVATION, unresolvedCostCount: 1,
+    });
+    now += 60_000;
+    await expireLease(run.id);
+    expect(await runner.step()).toBe(false);
+    const later = await runDetail(paths, run.id);
+    expect(later).toMatchObject({
+      outcome: "failed",
+      endedAt: detail.endedAt, durationMs: detail.durationMs, accounting: detail.accounting,
+      providerId: "resp_test", providerStatus: "failed", providerCompletedAt: null,
+    });
+    expect(Date.parse(later.serverNow)).toBeGreaterThanOrEqual(Date.parse(detail.serverNow));
+    expect(transport.count).toHaveBeenCalledOnce();
+    expect(transport.generate).toHaveBeenCalledOnce();
+    expect(transport.retrieve).toHaveBeenCalledExactlyOnceWith("resp_test");
+    expect(transport.cancel).not.toHaveBeenCalled();
+    expect(transport.delete).not.toHaveBeenCalled();
+  });
+  it("rejects malformed non-null timing in observations without persisting provider evidence", async () => {
+    const { run } = await register();
+    const lease = (await claim(paths, randomUUID()))!;
+    await dispatch(paths, lease, 4000);
+    const before = await runDetail(paths, run.id);
+    for (const completed_at of invalidProviderTimes)
+      await expect(observe(paths, lease, response({ completed_at: completed_at as number })))
+        .rejects.toThrow("Provider timing is invalid.");
+    const after = await runDetail(paths, run.id);
+    expect(after.events).toEqual(before.events);
+    expect(after.accounting).toEqual(before.accounting);
+    expect(after.outcome).toBe("running");
+    expect(after.providerId).toBeNull();
+  });
+  it("keeps a registered v1 prompt/schema during recovery after defaults advance to v2", async () => {
+    const noGuideRule = "When authoritativeRefs is empty, every recommendation must be defer and must name the missing source policy. ";
+    const oldInstructions = INSTRUCTIONS.replace(noGuideRule, "");
+    vi.doMock("../src/companion/model-review/policy", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("../src/companion/model-review/policy")>();
+      return {
+        ...actual,
+        PROMPT_VERSION: "learning-review-v1",
+        INSTRUCTIONS: oldInstructions,
+        projection: (snapshot: Snapshot) => ({ ...actual.projection(snapshot), instructions: oldInstructions }),
+      };
+    });
+    vi.resetModules();
+    const candidates = (await readKnowledgeState(paths)).candidates.slice(0, 1);
+    const selection = candidates.map((c) => ({ candidateId: c.candidateId, digest: c.digest }));
+    let run: Awaited<ReturnType<typeof start>>;
+    try {
+      const historical = await import("../src/companion/model-review/repository");
+      const disclosure = await historical.preview(paths, project, selection);
+      run = await historical.start(paths, { requestId: randomUUID(), project, selection, previewDigest: disclosure.digest });
+    } finally {
+      vi.doUnmock("../src/companion/model-review/policy");
+      vi.resetModules();
+    }
+    const current = await import("../src/companion/model-review/repository");
+    const newPreview = await current.preview(paths, project, selection);
+    expect(newPreview.promptVersion).toBe("learning-review-v2");
+    expect(newPreview.projection.instructions).toContain(noGuideRule.trim());
+    expect(run.frozen.promptVersion).toBe("learning-review-v1");
+    expect(run.frozen.projection.instructions).toBe(oldInstructions);
+    const first = (await claim(paths, randomUUID()))!;
     await dispatch(paths, first, 4000);
     await observe(paths, first, response({ status: "in_progress" }));
     await transaction(
@@ -779,11 +1052,18 @@ describe("transactional model review and runner", () => {
     expect(saved.recommendations).toEqual([]);
     expect(saved.accounting.amount).toBe("0.012350000000");
     expect(saved.frozen.projection).toEqual(run.frozen.projection);
+    expect(saved.frozen.promptVersion).toBe("learning-review-v1");
   });
   it("validates all eight complete edits, rejects missing/duplicate/invented/refused/unsafe output and requires evidence for policy", async () => {
     await manyCandidates();
     const { run, candidates } = await register(8);
     const snapshot = run.frozen.snapshot;
+    expect(snapshot.authoritativeRefs).toEqual([]);
+    expect(run.frozen.promptVersion).toBe(PROMPT_VERSION);
+    expect(PROMPT_VERSION).toBe("learning-review-v2");
+    expect(run.frozen.projection.instructions).toContain(
+      "When authoritativeRefs is empty, every recommendation must be defer and must name the missing source policy.",
+    );
     const list = candidates.map((c) => ({
       candidateId: c.candidateId,
       candidateDigest: c.digest,
@@ -829,6 +1109,7 @@ describe("transactional model review and runner", () => {
       list.map((r) => ({ ...r, edit: { wording: " ", exceptions: [] } })),
       list.map((r) => ({ ...r, reason: "Bearer syntheticCredential1234" })),
       list.map((r) => ({ ...r, disposition: "approve" })),
+      list.map((r) => ({ ...r, disposition: "reject" })),
     ])
       expect(() =>
         recommendations(provider(bad), snapshot, candidates, RESPONSE_SCHEMA),
@@ -1033,6 +1314,112 @@ describe("transactional model review and runner", () => {
     expect(saved.tables.model_runs[0].frozen.projection).toEqual(
       run.frozen.projection,
     );
+  });
+  it("keeps unknown accounting stable through failed recovery and settles a reconciliation queued during recovery", async () => {
+    const { run } = await register();
+    const lease = (await claim(paths, randomUUID()))!;
+    await dispatch(paths, lease, 4000);
+    await observe(paths, lease, response({ status: "in_progress" }));
+    await finish(paths, lease, { outcome: "interrupted", error: "Original confirmation failed." });
+    const original = await runDetail(paths, run.id);
+    expect(original.accounting).toMatchObject({ version: 2, status: "unknown", amount: null });
+    const billed = { requestId: randomUUID(), runId: run.id, expectedVersion: original.accounting.version,
+      action: "billed" as const, amount: "0.2", evidenceNote: "Final synthetic provider invoice." };
+    let reads = 0;
+    const transport: Transport = {
+      count: vi.fn(async () => 4000),
+      generate: vi.fn(async () => response()),
+      retrieve: vi.fn(async () => {
+        // pendingReconciliation() has already returned null for this step.
+        if (++reads === 2) expect(await reconcile(paths, billed)).toEqual({ queued: true });
+        throw new TransportError("retrieve");
+      }),
+      cancel: vi.fn(async () => { throw new TransportError("cancel"); }),
+      delete: vi.fn(async () => {}),
+    };
+    const runner = new ModelReviewRunner(paths, transport, {
+      now: () => Date.parse(original.events.find((e) => e.kind === "dispatch-intent")!.recorded_at) + 16 * 60_000,
+      sleep: async () => { throw new Error("Expired recovery must attempt cancellation immediately"); },
+    });
+    for (let step = 0; step < 2; step++) {
+      await expireLease(run.id);
+      expect(await runner.step()).toBe(true);
+      const detail = await runDetail(paths, run.id);
+      expect(detail.accounting).toEqual(original.accounting);
+      expect(detail).toMatchObject({ outcome: original.outcome, endedAt: original.endedAt,
+        durationMs: original.durationMs, providerId: "resp_test", providerStatus: "in_progress", error: original.error });
+    }
+    const rows = await transaction(paths.root, (sql) => sql`select version,status,amount::text from design_passport.model_accounting where run_id=${run.id} order by version`);
+    expect(rows).toEqual([{ version: 1, status: "reserved", amount: null }, { version: 2, status: "unknown", amount: null }]);
+    expect((await projectSummary(paths, project)).reservations).toBe(RESERVATION);
+    await expireLease(run.id);
+    expect(await runner.step()).toBe(true);
+    expect(await reconcile(paths, billed)).toEqual({ billed: "0.200000000000" });
+    expect((await runDetail(paths, run.id)).accounting).toMatchObject({ version: 3, status: "billed", amount: "0.200000000000" });
+    expect(transport.retrieve).toHaveBeenCalledTimes(3);
+    expect(transport.cancel).toHaveBeenCalledTimes(2);
+    expect(transport.count).not.toHaveBeenCalled();
+    expect(transport.generate).not.toHaveBeenCalled();
+    expect(transport.delete).not.toHaveBeenCalled();
+  });
+  it.each(["requested", "deadline"] as const)("cancels known-ID recovery after failed retrieval (%s) and retains confirmed terminal evidence", async (trigger) => {
+    const { run } = await register();
+    const lease = (await claim(paths, randomUUID()))!;
+    await dispatch(paths, lease, 4000);
+    await observe(paths, lease, response({ status: "in_progress" }));
+    if (trigger === "requested") await cancel(paths, run.id);
+    await expireLease(run.id);
+    let now = Date.now() + (trigger === "deadline" ? 16 * 60_000 : 0);
+    const sleeps: number[] = [];
+    const terminal = trigger === "requested" ? deferredResponse(run.frozen.snapshot) : response({ status: "cancelled" });
+    const transport: Transport = {
+      count: vi.fn(async () => 4000),
+      generate: vi.fn(async () => response()),
+      retrieve: vi.fn(async () => { throw new TransportError("retrieve"); }),
+      cancel: vi.fn(async () => terminal),
+      delete: vi.fn(async () => {}),
+    };
+    await new ModelReviewRunner(paths, transport, { now: () => now, sleep: async (ms) => { sleeps.push(ms); now += ms; } }).step();
+    const detail = await runDetail(paths, run.id);
+    expect(transport.retrieve).toHaveBeenCalledExactlyOnceWith("resp_test");
+    expect(transport.cancel).toHaveBeenCalledExactlyOnceWith("resp_test");
+    expect(transport.count).not.toHaveBeenCalled();
+    expect(transport.generate).not.toHaveBeenCalled();
+    expect(sleeps).toEqual([]);
+    expect(detail.outcome).toBe(trigger === "requested" ? "completed" : "cancelled");
+    expect(detail.providerStatus).toBe(terminal.status);
+    expect(detail.accounting).toMatchObject({ status: "estimated", amount: "0.012350000000" });
+    expect(detail.recommendations).toHaveLength(trigger === "requested" ? 1 : 0);
+    expect(detail.events.filter((e) => e.kind === "provider").at(-1)?.payload).toMatchObject({ id: "resp_test", status: terminal.status, usage });
+    expect(transport.delete).toHaveBeenCalledExactlyOnceWith("resp_test");
+  });
+  it("bounds cancellation confirmation after failed initial recovery without releasing its reservation", async () => {
+    const { run } = await register();
+    const lease = (await claim(paths, randomUUID()))!;
+    await dispatch(paths, lease, 4000);
+    await observe(paths, lease, response({ status: "in_progress" }));
+    await cancel(paths, run.id);
+    await expireLease(run.id);
+    let now = Date.now();
+    const began = now;
+    const transport: Transport = {
+      count: vi.fn(async () => 4000),
+      generate: vi.fn(async () => response()),
+      retrieve: vi.fn(async () => { throw new TransportError("retrieve"); }),
+      cancel: vi.fn(async () => response({ status: "in_progress" })),
+      delete: vi.fn(async () => {}),
+    };
+    await new ModelReviewRunner(paths, transport, { now: () => now, sleep: async (ms) => { now += ms; } }).step();
+    const detail = await runDetail(paths, run.id);
+    expect(transport.cancel).toHaveBeenCalledExactlyOnceWith("resp_test");
+    expect(now - began).toBeGreaterThan(30_000);
+    expect(now - began).toBeLessThanOrEqual(45_000);
+    expect(detail).toMatchObject({ outcome: "interrupted", providerId: "resp_test", providerStatus: "in_progress" });
+    expect(detail.accounting).toMatchObject({ status: "unknown", amount: null });
+    expect((await projectSummary(paths, project)).reservations).toBe(RESERVATION);
+    expect(transport.count).not.toHaveBeenCalled();
+    expect(transport.generate).not.toHaveBeenCalled();
+    expect(transport.delete).not.toHaveBeenCalled();
   });
   it("keeps the dispatch reservation through cancellation and lets confirmed completion win", async () => {
     const { run } = await register();

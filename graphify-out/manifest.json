@@ -75,8 +75,8 @@
     "semantic_hash": ""
   },
   "apps/companion/app/review/ReviewController.tsx": {
-    "mtime": 1791208816.3475878,
-    "ast_hash": "1dd5ebb7b029f98c1d1b9f14f592ecc0",
+    "mtime": 1791219954.8396087,
+    "ast_hash": "4d5a55e0e34ea8f90d32142e41e02581",
     "semantic_hash": ""
   },
   "apps/companion/app/review/page.tsx": {
@@ -700,8 +700,8 @@
     "semantic_hash": ""
   },
   "src/companion/model-review/contracts.ts": {
-    "mtime": 1791207892.9588199,
-    "ast_hash": "0a678a4fee6a6f281fd397ca53d8e3ce",
+    "mtime": 1791217423.6841383,
+    "ast_hash": "c1ec0fef85bfc6875858dc3f9b5dbdf4",
     "semantic_hash": ""
   },
   "src/companion/model-review/fixture.ts": {
@@ -710,23 +710,23 @@
     "semantic_hash": ""
   },
   "src/companion/model-review/policy.ts": {
-    "mtime": 1791209294.9720237,
-    "ast_hash": "0b1a285af4108e31ad2d680c25930d88",
+    "mtime": 1791211714.9006832,
+    "ast_hash": "80a50c2071e61fcf6de835a739ddd31a",
     "semantic_hash": ""
   },
   "src/companion/model-review/repository.ts": {
-    "mtime": 1791209077.0291903,
-    "ast_hash": "14538a1c15882a8318038ce07ab463b9",
+    "mtime": 1791217423.7201085,
+    "ast_hash": "09c212e0d186c0d0849e7d2adea62f28",
     "semantic_hash": ""
   },
   "src/companion/model-review/runner.ts": {
-    "mtime": 1791208990.040869,
-    "ast_hash": "55970094e95677eadcc88efadfcd0100",
+    "mtime": 1791211788.1940885,
+    "ast_hash": "0f64eb3c47766b05445e74812a774a4a",
     "semantic_hash": ""
   },
   "src/companion/model-review/snapshot.ts": {
-    "mtime": 1791208582.3871696,
-    "ast_hash": "d3d22a13873458ab7cee85b9cad0bcd6",
+    "mtime": 1791211714.9328163,
+    "ast_hash": "e672ba48eb7216bf904d7a92b8d7263b",
     "semantic_hash": ""
   },
   "src/companion/model-review/transport.ts": {

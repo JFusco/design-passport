@@ -3,7 +3,10 @@ import AxeBuilder from "@axe-core/playwright";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { hashValue } from "../../src/core/stable";
-import type { ReviewLearningEnvelopeV1 } from "../../src/core/contracts";
+import type {
+  KnowledgeCandidateV1,
+  ReviewLearningEnvelopeV1,
+} from "../../src/core/contracts";
 import type { RunDetail } from "../../src/companion/model-review/contracts";
 const origin = `http://127.0.0.1:${process.env.DESIGN_PASSPORT_E2E_PORT ?? 5180}`;
 const original = JSON.parse(
@@ -38,17 +41,59 @@ test("authorizes disclosure, displays elapsed and costs, preserves drafts and ap
   });
   await page.getByRole("button", { name: "Validate and import" }).click();
   await expect(page.getByText(/1 (imported|duplicate)/u).first()).toBeVisible();
-  await page.goto("/review");
-  await page
-    .locator(".queue-item")
-    .filter({ hasText: fixture.projectScope })
-    .first()
-    .click();
+  const learning = await page.request.get(`/api/learnings/${fixture.digest}`);
+  expect(learning.ok()).toBe(true);
+  const { candidates } = (await learning.json()).data as {
+    candidates: KnowledgeCandidateV1[];
+  };
+  expect(candidates.length).toBeGreaterThan(0);
+  const candidate = candidates[0]!.candidateId;
   const guidance = page.getByRole("textbox", { name: /^Guidance /u });
+  const decisionNote = page.getByRole("textbox", { name: "Decision note" });
+  // Hold client scripts to observe the server-rendered editor before hydration.
+  let resumeScripts!: () => void;
+  const scriptsReady = new Promise<void>((resolve) => {
+    resumeScripts = resolve;
+  });
+  const scripts = "**/_next/static/**/*.js";
+  await page.route(scripts, async (route) => {
+    await scriptsReady;
+    await route.continue();
+  });
+  try {
+    await page.goto(`/review?candidate=${encodeURIComponent(candidate)}`, {
+      waitUntil: "commit",
+    });
+    for (const control of [
+      guidance,
+      page.getByRole("combobox", { name: /^Publication scope/u }),
+      page.getByRole("textbox", { name: /^Exceptions/u }),
+      decisionNote,
+      ...["Save changes", "Approve", "Reject", "Defer"].map((name) =>
+        page.getByRole("button", { name, exact: true }),
+      ),
+    ])
+      await expect(control).toBeDisabled();
+  } finally {
+    resumeScripts();
+    await page.unrouteAll({ behavior: "wait" });
+  }
+  const note = "Preserve my unsaved decision note.";
+  await decisionNote.fill(note);
   const text = await guidance.inputValue();
   await guidance.fill(`${text} Preserve my unsaved text.`);
-  const candidate = new URL(page.url()).searchParams.get("candidate")!;
+  await expect(
+    page.getByRole("button", { name: "Save changes", exact: true }),
+  ).toBeEnabled();
   await page.getByRole("link", { name: "Model review by project" }).click();
+  await expect(page).toHaveURL("/model-reviews");
+  expect(await page.evaluate(
+    (id) => JSON.parse(sessionStorage.getItem("design-passport:review-drafts:v1") ?? "{}")[id],
+    candidate,
+  )).toMatchObject({
+    wording: `${text} Preserve my unsaved text.`,
+    rationale: note,
+  });
   await page
     .getByRole("link", { name: fixture.projectScope, exact: true })
     .click();
@@ -120,6 +165,7 @@ test("authorizes disclosure, displays elapsed and costs, preserves drafts and ap
     })
     .click();
   await expect(guidance).toHaveValue(`${text} Preserve my unsaved text.`);
+  await expect(decisionNote).toHaveValue(note);
   // A second tab changes the server revision; the draft remains recoverable on reload.
   const response = await page.request.get("/api/learnings");
   expect(response.ok()).toBe(true);
@@ -141,6 +187,7 @@ test("authorizes disclosure, displays elapsed and costs, preserves drafts and ap
   await expect(page.locator(".notice pre")).toContainText(
     "Preserve my unsaved text",
   );
+  await expect(page.locator(".notice pre")).toContainText(note);
   await page.getByRole("button", { name: "Discard recovered draft" }).click();
   await other.close();
   // Re-review the new revision rather than applying stale output.

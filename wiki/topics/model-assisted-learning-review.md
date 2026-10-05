@@ -28,6 +28,11 @@ and never publishes shared guidance. An unchanged current approval requires an
 effective edit. Manual drafts must be saved or explicitly discarded first; older
 drafts remain recoverable after another tab changes the saved revision.
 
+Manual inputs and decisions stay disabled until stored drafts finish loading.
+Navigation flushes the accepted wording and decision note. The maintained browser
+journey holds client scripts to verify the initial disabled state before testing
+real input, preservation and revision recovery.
+
 ## Runner configuration and disclosure
 
 The CLI parent owns the runner; Next routes only enqueue and read production runs.
@@ -45,6 +50,10 @@ is limited to 64,000 tokens and the full request to 1 MB. Oversized selections
 fail visibly. Invalid, refused or incomplete output exposes no partial
 recommendations and triggers no paid repair.
 
+New requests use `learning-review-v2`: when `authoritativeRefs` is empty, every
+recommendation must defer and identify the missing source policy. Recovery keeps
+the registered instructions and response schema, including frozen v1 runs.
+
 Snapshots retain candidate revisions, decision history, project/shared guidance,
 observations, positively linked audits, versions and guide provenance. Opaque
 references map back to local evidence. Finding aggregates preserve exact counts,
@@ -52,6 +61,10 @@ numeric ranges, boolean counts and at most three samples per audit/rule/status/
 severity group. Failed, waived and successful findings remain distinct. Repeated
 exports retain one semantic recurrence identity. Versions, positive titles,
 waivers and suggested fixes do not establish retirement or success.
+
+Finding references include each finding's identity, so identical sanitized
+payloads retain distinct references and private mappings to their original
+findings. Raw finding IDs stay out of disclosure; retained snapshots are unchanged.
 
 An explicit allowlist excludes raw reports, node identifiers/paths, URLs, source
 references and waiver metadata. Recognizable credentials are rejected before
@@ -74,9 +87,15 @@ are never repriced. Money uses fixed-scale arithmetic and decimal JSON strings.
 Known totals include usage-derived estimates and explicit billed reconciliations.
 Incomplete totals are not a final bill. Missing or inconsistent usage, unpriced
 categories, unknown actual models or a tier mismatch keep cost unknown and the
-reservation held. Counting/admission failures and recognized pre-inference
+reservation held. Provider timing, usage, incomplete-details and error fields may
+be null. Null timing uses observed duration; null usage does not establish a zero
+charge. Counting/admission failures and recognized pre-inference
 generation rejections release the reservation with known zero generation cost.
 Ambiguous dispatch or termination retains it.
+
+Repeated recovery with unchanged unknown cost does not append another accounting
+version. A billed reconciliation queued during retrieval keeps its expected
+version unless new accounting evidence arrives.
 
 Leases last 60 seconds, renew every 10 seconds and use increasing fencing
 generations. Dispatch and queued cancellation use the same database lock. There
@@ -86,6 +105,11 @@ seconds, backs off to 15 seconds on read failures and uses 30-second HTTP bounds
 A 15-minute generation deadline initiates confirmed cancellation. Completion
 winning cancellation remains completed. Disconnecting the browser does not
 cancel; graceful shutdown preserves recovery evidence.
+
+Pending cancellation or an expired deadline also triggers cancellation after
+failed initial retrieval of a known response ID. Confirmation uses the existing
+30-second window with polling backoff; failure retains the recoverable ID,
+reservation and any terminal seal without another count or generation request.
 
 Use **Retrieve accounting** first for unresolved costs. If retrieval is unavailable
 or terminal accounting is unusable, an operator may record the final billed amount
@@ -115,10 +139,25 @@ reconciliation and backups. Production-built browser fixtures cover disclosure,
 timing, application, access and draft recovery. Fixtures are not provider proof
 or cross-session hosted locking proof.
 
-Hosted migration activation and a bounded paid synthetic smoke are separately
-authorized rollout actions. The optional hosted locking probe requires stopped
-companion runners, the restricted session-pooler configuration and explicit
-authorization:
+The restricted-role regression checks the exact 20-table RLS set and retains all
+anonymous-access and default-privilege checks. Every deliberate denial runs in
+its own transaction with the original `42501` assertion. The identical-findings
+regression rebuilds valid issue groups and checks learning and audit import
+success before preview; a length assertion guards its indexed samples.
+See [repair history and check receipts](../journal/2026-10-05-model-assisted-learning-review.md)
+for historical results and the current verification boundary.
+
+Hosted activation and paid synthetic testing require separate authorization.
+The operator authorized and completed both on 2026-10-05. Exact migration readback,
+restricted-runtime preflight and the two-connection locking probe passed. Four
+real-provider browser runs covered no-guide deferral, guided decisions,
+cancellation and crash recovery. Retrieved cancellation usage settled once;
+application and reconciliation replays preserved receipts and totals.
+See [the dated execution receipts](../journal/2026-10-05-model-assisted-learning-review.md)
+for costs, the earlier unresolved account attempt and local versus hosted proof.
+
+The optional hosted locking probe requires stopped companion runners, the
+restricted session-pooler configuration and explicit authorization:
 
 ```sh
 pnpm exec esbuild scripts/test-model-review-hosted-locks.ts \
@@ -130,8 +169,8 @@ DESIGN_PASSPORT_HOSTED_MODEL_LOCK_PROBE=authorized \
 
 The probe requires two distinct hosted connections, creates retained synthetic
 project history, exercises concurrent reservation and claim admission, and
-issues no provider request. It refuses fixture mode. It has not been executed
-as part of this delivery.
+issues no provider request. It refuses fixture mode. The authorized execution
+passed with one reservation and one claim across two distinct connections.
 
 Rollback disables **Allow new starts** per project while retaining history and
 reservations. Leave the runner available to reconcile known responses; never

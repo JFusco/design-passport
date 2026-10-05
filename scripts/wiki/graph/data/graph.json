@@ -3,7 +3,7 @@
   "wikiRoot": "wiki",
   "counts": {
     "nodes": 90,
-    "edges": 281,
+    "edges": 282,
     "byType": {
       "index": 19,
       "journal": 33,
@@ -792,8 +792,8 @@
           "url": "https://github.com/jfusco/design-passport/issues/78"
         }
       ],
-      "bytes": 4016,
-      "degree": 6,
+      "bytes": 14568,
+      "degree": 7,
       "x": -0.990268,
       "y": 0.139173,
       "size": 8
@@ -1490,8 +1490,8 @@
           "url": "https://github.com/jfusco/design-passport/issues/78"
         }
       ],
-      "bytes": 8599,
-      "degree": 7,
+      "bytes": 11155,
+      "degree": 8,
       "x": 0.913545,
       "y": -0.406737,
       "size": 8
@@ -3022,6 +3022,13 @@
       "target": "wiki/topics/design-passport-architecture.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "c2dfbaad5fc1fc8e",
+      "source": "wiki/topics/model-assisted-learning-review.md",
+      "target": "wiki/journal/2026-10-05-model-assisted-learning-review.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "c344c2eedaedc2a8",

@@ -110,7 +110,11 @@ async function settle(
   evidence: Record<string, unknown>,
 ): Promise<void> {
   const previous = await accountIn(sql, run);
-  if (previous.amount !== null) return;
+  if (
+    previous.amount !== null ||
+    (amount === null && previous.status === status)
+  )
+    return;
   await sql`insert into design_passport.model_accounting(id,project_scope,run_id,version,status,amount,evidence) values (${randomUUID()},${run.project_scope},${run.id},${previous.version + 1},${status},${amount},${json(sql, evidence)})`;
 }
 async function summaryIn(
@@ -579,6 +583,7 @@ export function providerEvidence(
     invalid("Provider status is invalid.");
   if (
     response.completed_at !== undefined &&
+    response.completed_at !== null &&
     (!Number.isSafeInteger(response.completed_at) ||
       response.completed_at < 0 ||
       response.completed_at > 8_640_000_000_000)
