@@ -3,6 +3,8 @@ title: Supabase companion persistence implementation
 date: 2026-10-04
 topics: [supabase-companion]
 plans: [2026-10-04-provision-supabase-and-build-the-companion-to-qa-operations-standards-946bafe335.md, 2026-10-04-repair-supabase-companion-review-findings-c8b67d5345.md]
+issue: 'https://github.com/jfusco/design-passport/issues/70'
+issues: ['https://github.com/jfusco/design-passport/issues/70']
 ---
 
 # Supabase companion persistence implementation
