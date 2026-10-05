@@ -6,7 +6,7 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
       <div className="state-card" role="alert">
         <span className="eyebrow">Workspace unavailable</span>
         <h1>We could not load the companion</h1>
-        <p>The local workspace may be busy or unavailable. Your files were not changed by this page load.</p>
+        <p>Check connectivity and your Supabase project status, then try again. Page loads do not change stored evidence.</p>
         <button className="button primary" onClick={reset}>Try again</button>
       </div>
     </main>

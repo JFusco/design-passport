@@ -2,13 +2,13 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 78,
-    "edges": 246,
+    "nodes": 82,
+    "edges": 256,
     "byType": {
       "index": 18,
-      "journal": 29,
-      "plan": 22,
-      "topic": 9
+      "journal": 30,
+      "plan": 24,
+      "topic": 10
     }
   },
   "nodes": [
@@ -20,8 +20,8 @@
       "githubRefs": [],
       "bytes": 162,
       "degree": 3,
-      "x": 0.98705,
-      "y": 0.160411,
+      "x": 0.98828,
+      "y": 0.152649,
       "size": 12
     },
     {
@@ -39,8 +39,8 @@
       ],
       "bytes": 6250,
       "degree": 3,
-      "x": 0.970942,
-      "y": 0.239316,
+      "x": 0.973695,
+      "y": 0.227854,
       "size": 12
     },
     {
@@ -58,8 +58,8 @@
       ],
       "bytes": 10158,
       "degree": 3,
-      "x": 0.948536,
-      "y": 0.316668,
+      "x": 0.953396,
+      "y": 0.301721,
       "size": 12
     },
     {
@@ -70,8 +70,8 @@
       "githubRefs": [],
       "bytes": 9443,
       "degree": 1,
-      "x": 0.885456,
-      "y": 0.464723,
+      "x": 0.896166,
+      "y": 0.44372,
       "size": 12
     },
     {
@@ -80,10 +80,10 @@
       "type": "index",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 260,
-      "degree": 7,
-      "x": 0.919979,
-      "y": 0.391967,
+      "bytes": 335,
+      "degree": 8,
+      "x": 0.927502,
+      "y": 0.373817,
       "size": 12
     },
     {
@@ -92,10 +92,10 @@
       "type": "index",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 5586,
-      "degree": 2,
-      "x": 0.84519,
-      "y": 0.534466,
+      "bytes": 5812,
+      "degree": 3,
+      "x": 0.85957,
+      "y": 0.511019,
       "size": 12
     },
     {
@@ -113,8 +113,8 @@
       ],
       "bytes": 19515,
       "degree": 4,
-      "x": 0.799443,
-      "y": 0.600742,
+      "x": 0.817929,
+      "y": 0.575319,
       "size": 12
     },
     {
@@ -125,8 +125,8 @@
       "githubRefs": [],
       "bytes": 6801,
       "degree": 1,
-      "x": 0.748511,
-      "y": 0.663123,
+      "x": 0.771489,
+      "y": 0.636242,
       "size": 12
     },
     {
@@ -135,10 +135,10 @@
       "type": "index",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 2899,
-      "degree": 1,
-      "x": 0.692724,
-      "y": 0.721202,
+      "bytes": 3739,
+      "degree": 2,
+      "x": 0.720522,
+      "y": 0.693433,
       "size": 12
     },
     {
@@ -161,8 +161,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.632445,
-      "y": 0.774605,
+      "x": 0.665326,
+      "y": 0.746553,
       "size": 8
     },
     {
@@ -173,8 +173,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.568065,
-      "y": 0.822984,
+      "x": 0.606225,
+      "y": 0.795293,
       "size": 8
     },
     {
@@ -192,8 +192,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.5,
-      "y": 0.866025,
+      "x": 0.543568,
+      "y": 0.839365,
       "size": 8
     },
     {
@@ -217,8 +217,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.428693,
-      "y": 0.90345,
+      "x": 0.47772,
+      "y": 0.878512,
       "size": 8
     },
     {
@@ -229,8 +229,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.354605,
-      "y": 0.935016,
+      "x": 0.409069,
+      "y": 0.912504,
       "size": 8
     },
     {
@@ -254,8 +254,8 @@
       ],
       "bytes": 2463,
       "degree": 3,
-      "x": 0.278217,
-      "y": 0.960518,
+      "x": 0.338017,
+      "y": 0.94114,
       "size": 8
     },
     {
@@ -273,8 +273,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": 0.200026,
-      "y": 0.979791,
+      "x": 0.264982,
+      "y": 0.964253,
       "size": 8
     },
     {
@@ -292,8 +292,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": 0.120537,
-      "y": 0.992709,
+      "x": 0.190391,
+      "y": 0.981708,
       "size": 8
     },
     {
@@ -304,8 +304,8 @@
       "githubRefs": [],
       "bytes": 2327,
       "degree": 5,
-      "x": 0.040266,
-      "y": 0.999189,
+      "x": 0.114683,
+      "y": 0.993402,
       "size": 8
     },
     {
@@ -316,8 +316,8 @@
       "githubRefs": [],
       "bytes": 3437,
       "degree": 7,
-      "x": -0.040266,
-      "y": 0.999189,
+      "x": 0.038303,
+      "y": 0.999266,
       "size": 8
     },
     {
@@ -328,8 +328,8 @@
       "githubRefs": [],
       "bytes": 2405,
       "degree": 6,
-      "x": -0.120537,
-      "y": 0.992709,
+      "x": -0.038303,
+      "y": 0.999266,
       "size": 8
     },
     {
@@ -347,8 +347,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": -0.200026,
-      "y": 0.979791,
+      "x": -0.114683,
+      "y": 0.993402,
       "size": 8
     },
     {
@@ -366,8 +366,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": -0.278217,
-      "y": 0.960518,
+      "x": -0.190391,
+      "y": 0.981708,
       "size": 8
     },
     {
@@ -385,8 +385,8 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": -0.354605,
-      "y": 0.935016,
+      "x": -0.264982,
+      "y": 0.964253,
       "size": 8
     },
     {
@@ -404,8 +404,8 @@
       ],
       "bytes": 5487,
       "degree": 4,
-      "x": -0.428693,
-      "y": 0.90345,
+      "x": -0.338017,
+      "y": 0.94114,
       "size": 8
     },
     {
@@ -423,8 +423,8 @@
       ],
       "bytes": 5249,
       "degree": 6,
-      "x": -0.5,
-      "y": 0.866025,
+      "x": -0.409069,
+      "y": 0.912504,
       "size": 8
     },
     {
@@ -442,8 +442,8 @@
       ],
       "bytes": 3810,
       "degree": 4,
-      "x": -0.568065,
-      "y": 0.822984,
+      "x": -0.47772,
+      "y": 0.878512,
       "size": 8
     },
     {
@@ -461,8 +461,8 @@
       ],
       "bytes": 2962,
       "degree": 5,
-      "x": -0.632445,
-      "y": 0.774605,
+      "x": -0.543568,
+      "y": 0.839365,
       "size": 8
     },
     {
@@ -486,8 +486,8 @@
       ],
       "bytes": 1022,
       "degree": 2,
-      "x": -0.692724,
-      "y": 0.721202,
+      "x": -0.606225,
+      "y": 0.795293,
       "size": 8
     },
     {
@@ -505,8 +505,8 @@
       ],
       "bytes": 418,
       "degree": 0,
-      "x": -0.748511,
-      "y": 0.663123,
+      "x": -0.665326,
+      "y": 0.746553,
       "size": 8
     },
     {
@@ -524,8 +524,8 @@
       ],
       "bytes": 1472,
       "degree": 2,
-      "x": -0.799443,
-      "y": 0.600742,
+      "x": -0.720522,
+      "y": 0.693433,
       "size": 8
     },
     {
@@ -543,8 +543,8 @@
       ],
       "bytes": 943,
       "degree": 4,
-      "x": -0.84519,
-      "y": 0.534466,
+      "x": -0.771489,
+      "y": 0.636242,
       "size": 8
     },
     {
@@ -562,8 +562,8 @@
       ],
       "bytes": 2049,
       "degree": 4,
-      "x": -0.885456,
-      "y": 0.464723,
+      "x": -0.817929,
+      "y": 0.575319,
       "size": 8
     },
     {
@@ -581,8 +581,8 @@
       ],
       "bytes": 30914,
       "degree": 4,
-      "x": -0.919979,
-      "y": 0.391967,
+      "x": -0.85957,
+      "y": 0.511019,
       "size": 8
     },
     {
@@ -606,8 +606,8 @@
       ],
       "bytes": 2413,
       "degree": 3,
-      "x": -0.948536,
-      "y": 0.316668,
+      "x": -0.896166,
+      "y": 0.44372,
       "size": 8
     },
     {
@@ -631,8 +631,8 @@
       ],
       "bytes": 7669,
       "degree": 4,
-      "x": -0.970942,
-      "y": 0.239316,
+      "x": -0.927502,
+      "y": 0.373817,
       "size": 8
     },
     {
@@ -662,8 +662,8 @@
       ],
       "bytes": 4344,
       "degree": 8,
-      "x": -0.98705,
-      "y": 0.160411,
+      "x": -0.953396,
+      "y": 0.301721,
       "size": 8
     },
     {
@@ -681,8 +681,8 @@
       ],
       "bytes": 2278,
       "degree": 2,
-      "x": -0.996757,
-      "y": 0.080467,
+      "x": -0.973695,
+      "y": 0.227854,
       "size": 8
     },
     {
@@ -712,8 +712,33 @@
       ],
       "bytes": 10139,
       "degree": 4,
-      "x": -1,
-      "y": 0,
+      "x": -0.98828,
+      "y": 0.152649,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-10-04-supabase-companion.md",
+      "label": "Supabase companion persistence implementation",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 70,
+          "url": "https://github.com/jfusco/design-passport/issues/70"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "pull-request",
+          "number": 71,
+          "url": "https://github.com/jfusco/design-passport/pull/71"
+        }
+      ],
+      "bytes": 11113,
+      "degree": 3,
+      "x": -0.997066,
+      "y": 0.076549,
       "size": 8
     },
     {
@@ -724,8 +749,8 @@
       "githubRefs": [],
       "bytes": 3126,
       "degree": 2,
-      "x": 0.996757,
-      "y": 0.080467,
+      "x": 0.997066,
+      "y": 0.076549,
       "size": 12
     },
     {
@@ -736,8 +761,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.996757,
-      "y": -0.080467,
+      "x": -1,
+      "y": 0,
       "size": 8
     },
     {
@@ -748,8 +773,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.98705,
-      "y": -0.160411,
+      "x": -0.997066,
+      "y": -0.076549,
       "size": 8
     },
     {
@@ -760,8 +785,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.970942,
-      "y": -0.239316,
+      "x": -0.98828,
+      "y": -0.152649,
       "size": 8
     },
     {
@@ -779,8 +804,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.948536,
-      "y": -0.316668,
+      "x": -0.973695,
+      "y": -0.227854,
       "size": 8
     },
     {
@@ -791,8 +816,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.919979,
-      "y": -0.391967,
+      "x": -0.953396,
+      "y": -0.301721,
       "size": 8
     },
     {
@@ -803,8 +828,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.885456,
-      "y": -0.464723,
+      "x": -0.927502,
+      "y": -0.373817,
       "size": 8
     },
     {
@@ -815,8 +840,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.84519,
-      "y": -0.534466,
+      "x": -0.896166,
+      "y": -0.44372,
       "size": 8
     },
     {
@@ -827,8 +852,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.799443,
-      "y": -0.600742,
+      "x": -0.85957,
+      "y": -0.511019,
       "size": 8
     },
     {
@@ -839,8 +864,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.748511,
-      "y": -0.663123,
+      "x": -0.817929,
+      "y": -0.575319,
       "size": 8
     },
     {
@@ -858,8 +883,8 @@
       ],
       "bytes": 6239,
       "degree": 3,
-      "x": -0.692724,
-      "y": -0.721202,
+      "x": -0.771489,
+      "y": -0.636242,
       "size": 8
     },
     {
@@ -870,8 +895,8 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.632445,
-      "y": -0.774605,
+      "x": -0.720522,
+      "y": -0.693433,
       "size": 8
     },
     {
@@ -882,8 +907,8 @@
       "githubRefs": [],
       "bytes": 11833,
       "degree": 5,
-      "x": -0.568065,
-      "y": -0.822984,
+      "x": -0.665326,
+      "y": -0.746553,
       "size": 8
     },
     {
@@ -901,8 +926,8 @@
       ],
       "bytes": 2158,
       "degree": 4,
-      "x": -0.5,
-      "y": -0.866025,
+      "x": -0.606225,
+      "y": -0.795293,
       "size": 8
     },
     {
@@ -913,8 +938,8 @@
       "githubRefs": [],
       "bytes": 1840,
       "degree": 3,
-      "x": -0.428693,
-      "y": -0.90345,
+      "x": -0.543568,
+      "y": -0.839365,
       "size": 8
     },
     {
@@ -932,8 +957,8 @@
       ],
       "bytes": 1410,
       "degree": 3,
-      "x": -0.354605,
-      "y": -0.935016,
+      "x": -0.47772,
+      "y": -0.878512,
       "size": 8
     },
     {
@@ -951,8 +976,8 @@
       ],
       "bytes": 1654,
       "degree": 3,
-      "x": -0.278217,
-      "y": -0.960518,
+      "x": -0.409069,
+      "y": -0.912504,
       "size": 8
     },
     {
@@ -963,8 +988,8 @@
       "githubRefs": [],
       "bytes": 3932,
       "degree": 5,
-      "x": -0.200026,
-      "y": -0.979791,
+      "x": -0.338017,
+      "y": -0.94114,
       "size": 8
     },
     {
@@ -975,8 +1000,8 @@
       "githubRefs": [],
       "bytes": 2203,
       "degree": 4,
-      "x": -0.120537,
-      "y": -0.992709,
+      "x": -0.264982,
+      "y": -0.964253,
       "size": 8
     },
     {
@@ -987,8 +1012,8 @@
       "githubRefs": [],
       "bytes": 4752,
       "degree": 3,
-      "x": -0.040266,
-      "y": -0.999189,
+      "x": -0.190391,
+      "y": -0.981708,
       "size": 8
     },
     {
@@ -1006,8 +1031,8 @@
       ],
       "bytes": 6224,
       "degree": 4,
-      "x": 0.040266,
-      "y": -0.999189,
+      "x": -0.114683,
+      "y": -0.993402,
       "size": 8
     },
     {
@@ -1025,8 +1050,45 @@
       ],
       "bytes": 12464,
       "degree": 3,
-      "x": 0.120537,
-      "y": -0.992709,
+      "x": -0.038303,
+      "y": -0.999266,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-10-04-provision-supabase-and-build-the-companion-to-qa-operations-standards-946bafe335.md",
+      "label": "Provision Supabase and build the companion to QA Operations’ standards",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 30260,
+      "degree": 3,
+      "x": 0.038303,
+      "y": -0.999266,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-10-04-repair-supabase-companion-review-findings-c8b67d5345.md",
+      "label": "Repair Supabase companion review findings",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 70,
+          "url": "https://github.com/jfusco/design-passport/issues/70"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "pull-request",
+          "number": 71,
+          "url": "https://github.com/jfusco/design-passport/pull/71"
+        }
+      ],
+      "bytes": 4267,
+      "degree": 3,
+      "x": 0.114683,
+      "y": -0.993402,
       "size": 8
     },
     {
@@ -1050,8 +1112,8 @@
       ],
       "bytes": 3627,
       "degree": 3,
-      "x": 0.200026,
-      "y": -0.979791,
+      "x": 0.190391,
+      "y": -0.981708,
       "size": 8
     },
     {
@@ -1103,10 +1165,10 @@
           "url": "https://github.com/jfusco/design-passport/pull/54"
         }
       ],
-      "bytes": 24186,
-      "degree": 24,
-      "x": 0.278217,
-      "y": -0.960518,
+      "bytes": 25067,
+      "degree": 26,
+      "x": 0.264982,
+      "y": -0.964253,
       "size": 12
     },
     {
@@ -1117,8 +1179,8 @@
       "githubRefs": [],
       "bytes": 211,
       "degree": 2,
-      "x": 0.354605,
-      "y": -0.935016,
+      "x": 0.338017,
+      "y": -0.94114,
       "size": 12
     },
     {
@@ -1129,8 +1191,8 @@
       "githubRefs": [],
       "bytes": 21674,
       "degree": 1,
-      "x": 0.428693,
-      "y": -0.90345,
+      "x": 0.409069,
+      "y": -0.912504,
       "size": 12
     },
     {
@@ -1148,8 +1210,8 @@
       ],
       "bytes": 13899,
       "degree": 4,
-      "x": 0.568065,
-      "y": -0.822984,
+      "x": 0.543568,
+      "y": -0.839365,
       "size": 12
     },
     {
@@ -1167,8 +1229,8 @@
       ],
       "bytes": 5995,
       "degree": 3,
-      "x": 0.632445,
-      "y": -0.774605,
+      "x": 0.606225,
+      "y": -0.795293,
       "size": 12
     },
     {
@@ -1179,8 +1241,8 @@
       "githubRefs": [],
       "bytes": 264,
       "degree": 5,
-      "x": 0.5,
-      "y": -0.866025,
+      "x": 0.47772,
+      "y": -0.878512,
       "size": 12
     },
     {
@@ -1191,8 +1253,8 @@
       "githubRefs": [],
       "bytes": 7744,
       "degree": 3,
-      "x": 0.692724,
-      "y": -0.721202,
+      "x": 0.665326,
+      "y": -0.746553,
       "size": 12
     },
     {
@@ -1210,8 +1272,8 @@
       ],
       "bytes": 719,
       "degree": 5,
-      "x": 0.748511,
-      "y": -0.663123,
+      "x": 0.720522,
+      "y": -0.693433,
       "size": 8
     },
     {
@@ -1229,8 +1291,8 @@
       ],
       "bytes": 8014,
       "degree": 44,
-      "x": 0.799443,
-      "y": -0.600742,
+      "x": 0.771489,
+      "y": -0.636242,
       "size": 8
     },
     {
@@ -1248,8 +1310,8 @@
       ],
       "bytes": 6658,
       "degree": 23,
-      "x": 0.84519,
-      "y": -0.534466,
+      "x": 0.817929,
+      "y": -0.575319,
       "size": 8
     },
     {
@@ -1273,8 +1335,8 @@
       ],
       "bytes": 20188,
       "degree": 43,
-      "x": 0.885456,
-      "y": -0.464723,
+      "x": 0.85957,
+      "y": -0.511019,
       "size": 8
     },
     {
@@ -1292,8 +1354,8 @@
       ],
       "bytes": 1973,
       "degree": 6,
-      "x": 0.919979,
-      "y": -0.391967,
+      "x": 0.896166,
+      "y": -0.44372,
       "size": 8
     },
     {
@@ -1304,8 +1366,8 @@
       "githubRefs": [],
       "bytes": 4694,
       "degree": 24,
-      "x": 0.948536,
-      "y": -0.316668,
+      "x": 0.927502,
+      "y": -0.373817,
       "size": 8
     },
     {
@@ -1353,8 +1415,8 @@
       ],
       "bytes": 15543,
       "degree": 15,
-      "x": 0.970942,
-      "y": -0.239316,
+      "x": 0.953396,
+      "y": -0.301721,
       "size": 8
     },
     {
@@ -1365,8 +1427,20 @@
       "githubRefs": [],
       "bytes": 4803,
       "degree": 16,
-      "x": 0.98705,
-      "y": -0.160411,
+      "x": 0.973695,
+      "y": -0.227854,
+      "size": 8
+    },
+    {
+      "id": "wiki/topics/supabase-companion.md",
+      "label": "Companion database persistence",
+      "type": "topic",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 10624,
+      "degree": 6,
+      "x": 0.98828,
+      "y": -0.152649,
       "size": 8
     },
     {
@@ -1377,12 +1451,19 @@
       "githubRefs": [],
       "bytes": 4946,
       "degree": 28,
-      "x": 0.996757,
-      "y": -0.080467,
+      "x": 0.997066,
+      "y": -0.076549,
       "size": 8
     }
   ],
   "edges": [
+    {
+      "id": "0592e40437707d34",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-10-04-provision-supabase-and-build-the-companion-to-qa-operations-standards-946bafe335.md",
+      "type": "link",
+      "relation": "link"
+    },
     {
       "id": "05f1fd6a7183f5fc",
       "source": "wiki/journal/2026-09-11-scoped-audit-clarity.md",
@@ -1401,6 +1482,13 @@
       "id": "071519ae2bf4627f",
       "source": "wiki/journal/2026-09-29-commit-message-standard.md",
       "target": "wiki/plans/2026-09-29-standardize-commit-messages-and-graphify-across-eight-repositories-e4b953bbda.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "0b590bf95901c41f",
+      "source": "wiki/guides/knowledge-loop.md",
+      "target": "wiki/topics/supabase-companion.md",
       "type": "link",
       "relation": "link"
     },
@@ -1902,6 +1990,13 @@
       "relation": "link"
     },
     {
+      "id": "52abda75ad0d4036",
+      "source": "wiki/guides/INDEX.md",
+      "target": "wiki/topics/supabase-companion.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "52d9234dfdfa4df0",
       "source": "wiki/plans/2026-09-09-clean-up-certification-annotations-eab120d954.md",
       "target": "wiki/topics/mutation-certification-safety.md",
@@ -2175,6 +2270,13 @@
       "relation": "link"
     },
     {
+      "id": "82a419dd8dae3c1f",
+      "source": "wiki/plans/2026-10-04-provision-supabase-and-build-the-companion-to-qa-operations-standards-946bafe335.md",
+      "target": "wiki/topics/supabase-companion.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "8473ccbff4c6216b",
       "source": "wiki/journal/2026-09-23-designer-feedback-review-remediation.md",
       "target": "wiki/topics/design-passport-architecture.md",
@@ -2357,6 +2459,13 @@
       "relation": "plan"
     },
     {
+      "id": "9e4fb7b8c738d003",
+      "source": "wiki/guides/security.md",
+      "target": "wiki/topics/supabase-companion.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "9e59ebf1d9717f0f",
       "source": "wiki/journal/2026-09-11-glean-release-documentation-order.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -2427,6 +2536,13 @@
       "relation": "topic"
     },
     {
+      "id": "a619c2e01e4e3826",
+      "source": "wiki/journal/2026-10-04-supabase-companion.md",
+      "target": "wiki/plans/2026-10-04-provision-supabase-and-build-the-companion-to-qa-operations-standards-946bafe335.md",
+      "type": "plan",
+      "relation": "plan"
+    },
+    {
       "id": "a7139f1dfeb8e83d",
       "source": "wiki/topics/persistent-audits.md",
       "target": "wiki/journal/2026-10-03-postmerge-native-acceptance.md",
@@ -2460,6 +2576,13 @@
       "target": "wiki/plans/2026-09-09-variant-level-readiness-visibility-479be6bc3d.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "acb009d64fe8769c",
+      "source": "wiki/plans/2026-10-04-repair-supabase-companion-review-findings-c8b67d5345.md",
+      "target": "wiki/topics/supabase-companion.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "acf0cc5c23321f4f",
@@ -2784,6 +2907,13 @@
       "relation": "topic"
     },
     {
+      "id": "d738fcf0556253da",
+      "source": "wiki/journal/2026-10-04-supabase-companion.md",
+      "target": "wiki/topics/supabase-companion.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "d82595bd5cc5bc18",
       "source": "wiki/journal/2026-09-30-audit-memory-and-certification.md",
       "target": "wiki/topics/persistent-audits.md",
@@ -2794,6 +2924,13 @@
       "id": "da3ec3fd0d9f10d1",
       "source": "wiki/journal/2026-09-29-graphify-codebase-map.md",
       "target": "wiki/plans/2026-09-29-install-graphify-skill-and-code-map-for-design-passport-21417fc984.md",
+      "type": "plan",
+      "relation": "plan"
+    },
+    {
+      "id": "db678a1da927dc97",
+      "source": "wiki/journal/2026-10-04-supabase-companion.md",
+      "target": "wiki/plans/2026-10-04-repair-supabase-companion-review-findings-c8b67d5345.md",
       "type": "plan",
       "relation": "plan"
     },
@@ -3048,6 +3185,13 @@
       "target": "wiki/topics/mutation-certification-safety.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "f9f76a4be989c423",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-10-04-repair-supabase-companion-review-findings-c8b67d5345.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "fa836817760befce",

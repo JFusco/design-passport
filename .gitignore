@@ -13,6 +13,8 @@ playwright-report/
 test-results/
 .playwright-cli/
 *.tsbuildinfo
+supabase/.temp/
+supabase/.branches/
 
 # Share the code map; keep Graphify's machine-local state out of Git.
 /graphify-out/*

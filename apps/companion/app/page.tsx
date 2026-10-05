@@ -1,5 +1,6 @@
+import { databasePage } from "@/lib/server/database-page";
 import Link from "next/link";
-import { listProjectGuidancePacks, readKnowledgeState } from "../../../src/companion/repository";
+import { readDashboard } from "../../../src/companion/repository";
 import { reviewView } from "../../../src/companion/view-models";
 import { requirePageAccess } from "@/lib/server/runtime";
 
@@ -7,7 +8,8 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const paths = await requirePageAccess();
-  const [state, projectPacks] = await Promise.all([readKnowledgeState(paths), listProjectGuidancePacks(paths)]);
+  return databasePage(async () => {
+  const { state, projectPacks } = await readDashboard(paths);
   const candidates = reviewView(state);
   const awaiting = candidates.filter((candidate) => candidate.status === "awaiting" || candidate.status === "changed").length;
   const figmaReady = Boolean(process.env.FIGMA_TOKEN);
@@ -23,15 +25,9 @@ export default async function DashboardPage() {
         </div>
         <div className="readiness-card">
           <span className="status-dot ready" aria-hidden="true" />
-          <div><strong>Workspace ready</strong><span>Private local files are available.</span></div>
+          <div><strong>Workspace ready</strong><span>Supabase persistence is available.</span></div>
         </div>
       </section>
-
-      {state.rebuildRequired ? (
-        <div className="notice warning" role="status">
-          <strong>Knowledge rebuild required.</strong> Your latest change was saved. Open Import to retry the rebuild.
-        </div>
-      ) : null}
 
       <section className="metrics" aria-label="Knowledge summary">
         <div><strong>{uniqueContributions}</strong><span>Unique contributions</span></div>
@@ -69,7 +65,7 @@ export default async function DashboardPage() {
           <h2 id="delivery-heading">Put reviewed guidance back into the plugin.</h2>
           <p>
             Project approvals are available immediately as reference packs. Download a pack, then import it in the plugin’s
-            project context. Shared approvals are staged for the team knowledge pack and arrive in the plugin with a release.
+            project context. Shared approvals are staged for the team knowledge pack and arrive in the plugin after an explicit knowledge build and release.
           </p>
           <span className="delivery-status">{sharedApprovals} shared {sharedApprovals === 1 ? "approval" : "approvals"} staged for a plugin release</span>
         </div>
@@ -88,4 +84,5 @@ export default async function DashboardPage() {
       </section>
     </main>
   );
+  });
 }
