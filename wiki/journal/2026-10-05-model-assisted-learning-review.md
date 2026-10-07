@@ -1,6 +1,8 @@
 ---
 topics: [model-assisted-learning-review, project-scoped-knowledge-loop, supabase-companion]
 plans: [2026-10-05-model-assisted-learning-review-timing-and-project-budgets-401a62b4a9.md]
+issue: 'https://github.com/jfusco/design-passport/issues/78'
+issues: ['https://github.com/jfusco/design-passport/issues/78']
 ---
 
 # Model review, elapsed time and lifetime project budgets
