@@ -1,6 +1,8 @@
 ---
 topics: [plugin-style-parity, stepped-audits-micro-fixes]
 plans: [2026-10-07-correct-the-figma-grade-card-and-shared-style-values-fb40cb78bc.md]
+issue: 'https://github.com/jfusco/design-passport/issues/88'
+issues: ['https://github.com/jfusco/design-passport/issues/88']
 ---
 
 # Correct the grade card's Figma parity
