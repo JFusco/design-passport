@@ -1,3 +1,5 @@
+import { actionableFinding, stableIssueKey } from "../core/issue-key";
+import { mergeIssueReview, resolvedIssueKeys, type IssueReviewState } from "./issue-review";
 import { CATALOG_DIGEST, CATALOG_VERSION } from "../core/catalog";
 import { PRODUCT_NAME } from "../core/constants";
 import { RULESET_VERSION } from "../core/constants";
@@ -11,7 +13,7 @@ import type {
   ReviewLearningEnvelopeV1,
   ScanScope,
 } from "../core/contracts";
-import { isKnowledgeFresh } from "../core/knowledge";
+import { hasCompleteKnowledge } from "../core/knowledge";
 import {
   buildKnowledgeInsights,
   buildLearningEnvelope,
@@ -28,13 +30,13 @@ import { buildChangePlans } from "../core/planner";
 import { buildReadinessReport } from "../core/report";
 import { evaluateRules } from "../core/rules";
 import { hashValue, stableStringify } from "../core/stable";
-import { applyWaivers, sanitizeWaiverStore, type WaiverStore } from "../core/waivers";
+import { applyWaivers, reanchorWaivers, sanitizeWaiverStore, type WaiverStore } from "../core/waivers";
 import { FigmaAdapter, FullKnowledgeRebuildRequired, type BootstrapData, type CapturedAuditTarget, type ProjectStyleGuideStatus, type VariableCollectionOption } from "../figma/adapter";
 import { applyChangePlan, createSemanticTokenAndBind } from "../figma/mutations";
 import { buildKnowledgeSummary } from "./knowledge-summary";
 import { parseUiMessage } from "./message-validation";
-import type { AuditRecheckRequest, AuditRefreshResult, PluginToUiMessage, UiToPluginMessage } from "./messages";
-import { captureRecheckFindings, recheckCounts } from "./recheck";
+import type { AuditRecheckRequest, AuditRefreshResult, AuditResultData, ContextStatus, PluginToUiMessage, UiToPluginMessage } from "./messages";
+import { captureRecheckFindings, recheckCounts, selectedMicroFields } from "./recheck";
 import { version as PLUGIN_VERSION } from "../../package.json";
 import { resolveAuditTarget, runCapturedAuditAttempt, scanFailureMessages } from "./scan-lifecycle";
 import { ScanCancelledError } from "./scan-errors";
@@ -78,6 +80,7 @@ let sessionStyleGuidePack: DesignReferencePackV1 | undefined;
 let pendingContribution: ReviewLearningEnvelopeV1 | undefined;
 let historicalAudit: SavedAuditV1 | undefined;
 let exportSnapshot: HistoricalAuditSource | undefined;
+let issueReviewState: IssueReviewState | undefined;
 let activeSavedAuditId: string | undefined;
 let activeViewState: AuditViewState | undefined;
 let displayRevision = 0;
@@ -122,6 +125,7 @@ function restoreAudit(audit: SavedAuditV1): void {
   activeTarget = audit.target;
   activeSavedAuditId = audit.id;
   activeViewState = audit.viewState;
+  issueReviewState = audit.issueReviewState;
   appliedChanges = [];
   pendingContribution = undefined;
   post({ type: "restored-audit", audit });
@@ -153,7 +157,7 @@ async function restoreLastAudit(generation: number, revision: number): Promise<v
 
 function currentKnowledgeAvailable(): boolean {
   return Boolean(graph && !knowledgeState.dirty && adapter.matchesDocumentTopology(graph)
-    && isKnowledgeFresh(graph) && graphProfileHash === hashValue(profile));
+    && hasCompleteKnowledge(graph) && knowledgeState.validationFresh() && graphProfileHash === hashValue(profile));
 }
 
 async function verifiedKnowledgeAvailable(): Promise<boolean> {
@@ -211,14 +215,15 @@ async function waiverKey(): Promise<string> {
 }
 
 async function loadWaivers(): Promise<WaiverStore> {
-  return sanitizeWaiverStore(await figma.clientStorage.getAsync(await waiverKey()));
+  const saved = sanitizeWaiverStore(await figma.clientStorage.getAsync(await waiverKey()));
+  return report && !historicalAudit ? reanchorWaivers(saved, report.findings) : saved;
 }
 
 async function saveWaivers(waivers: WaiverStore): Promise<void> {
   await figma.clientStorage.setAsync(await waiverKey(), waivers);
 }
 
-async function runDocumentMutation<T>(expectedNodeIds: readonly string[], mutation: () => Promise<T>, includesTransientNodes = false): Promise<T> {
+async function runDocumentMutation<T>(expectedNodeIds: readonly string[], mutation: () => Promise<T>, includesTransientNodes = false, operations?: ChangePlan["operations"]): Promise<T> {
   assertDocumentMutationAllowed();
   try {
     const result = await mutation();
@@ -226,7 +231,20 @@ async function runDocumentMutation<T>(expectedNodeIds: readonly string[], mutati
     return result;
   } finally {
     mutationRecheckPending = true;
-    knowledgeState.markDirty(expectedNodeIds, includesTransientNodes ? "structural-mutation" : undefined);
+    if (operations && !includesTransientNodes) {
+      const fields = (operation: ChangePlan["operations"][number]): string[] => {
+        switch (operation.kind) {
+          case "rename-node": case "normalize-export-name": return ["name"];
+          case "bind-variable": return ["boundVariables"];
+          case "set-annotation": return ["annotations"];
+          case "confirm-pattern": case "acknowledge-detachment": case "clear-detachment-acknowledgement": return ["pluginData"];
+          default: return ["unknown"];
+        }
+      };
+      knowledgeState.recordChanges(operations.map((operation) => ({ id: operation.nodeId, origin: "LOCAL" as const, properties: fields(operation) })),
+        operations.some((operation) => fields(operation).includes("unknown")) ? "unsupported-mutation" : undefined);
+    } else knowledgeState.markDirty(expectedNodeIds, includesTransientNodes ? "structural-mutation" : "resource-mutation");
+    post({ type: "knowledge-stale" });
   }
 }
 
@@ -279,12 +297,12 @@ function handleDocumentChange(event: DocumentChangeEvent): void {
   ]);
   const unknown = changes.some((change) => change.type !== "PROPERTY_CHANGE" || !change.properties?.length
     || change.properties.some((property) => !supportedProperties.has(property)
-      // A new binding or applied style can introduce a resource that the
-      // previous graph did not reference. Rebuild so candidate inventories and
-      // the resource fingerprint advance together.
-      || ["boundVariables", "explicitVariableModes", "resolvedVariableModes", "textStyleId"].includes(property))
+      // Binding and applied-style edits are staged by micro-checks. Mode
+      // changes still require whole-context capture.
+      || ["explicitVariableModes", "resolvedVariableModes"].includes(property))
     || !graph?.nodes[change.id]);
-  markKnowledgeDirty(changes.map((change) => change.id), unknown ? "structural-or-unknown-change" : undefined);
+  knowledgeState.recordChanges(changes, unknown ? "structural-or-unknown-change" : undefined);
+  post({ type: "knowledge-stale" });
 }
 
 async function ensureDocumentChangeWatcher(): Promise<void> {
@@ -316,11 +334,39 @@ async function assertCurrentReport(action: string): Promise<{ graph: DesignKnowl
   return { graph, report };
 }
 
+async function postContextStatus(outcome?: ContextStatus["outcome"], reason?: string): Promise<void> {
+  const state: ContextStatus["state"] = graph ? currentKnowledgeAvailable() ? "current" : "outdated"
+    : figma.fileKey && await auditStorage.hasContext(figma.fileKey).catch(() => false) ? "cached" : "missing";
+  post({ type: "context-status", status: { state,
+    ...(reason ? { reason } : state === "cached" ? { reason: "Cached, will validate on audit." } : state === "outdated" ? { reason: knowledgeState.dirty ? "The design changed. Check supported issues or regenerate context." : "Context validation expired." } : {}),
+    ...(graph ? { knowledge: buildKnowledgeSummary(graph) } : {}),
+    ...(knowledgeState.wholeContextValidatedAt === undefined ? {} : { validatedAt: new Date(knowledgeState.wholeContextValidatedAt).toISOString() }),
+    ...(outcome ? { outcome } : {}) } });
+}
+
+async function generateContext(regenerate: boolean): Promise<void> {
+  adapter.beginScan();
+  post({ type: "context-status", status: { state: "generating" } });
+  try {
+    await ensureKnowledge(regenerate, regenerate);
+    await postContextStatus("completed");
+  } catch (error) {
+    await postContextStatus(adapter.isScanCancelled() ? "cancelled" : "failed", errorMessage(error));
+  }
+}
+
 async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutationRetry = false): Promise<DesignKnowledgeGraph> {
   assertScanNotCancelled();
+  // An explicit audit/context boundary can validate an aged, unchanged capture.
+  if (graph && !refresh && !knowledgeState.dirty && adapter.matchesDocumentTopology(graph) && graphProfileHash === hashValue(profile) && hasCompleteKnowledge(graph)) {
+    const revision = knowledgeState.documentRevision;
+    const unchanged = await adapter.matchesVariableEnvironment();
+    assertScanNotCancelled();
+    if (unchanged && revision === knowledgeState.documentRevision && !knowledgeState.dirty) knowledgeState.validateWholeContext(revision);
+  }
   let rebuildReason = !graph ? "not-loaded" : refresh ? "requested-refresh" : knowledgeState.dirty ? "document-changed"
     : !adapter.matchesDocumentTopology(graph) ? "page-topology-changed" : graphProfileHash !== hashValue(profile) ? "profile-changed"
-      : !isKnowledgeFresh(graph) ? "expired" : undefined;
+      : !knowledgeState.validationFresh() ? "expired" : undefined;
   if (graph && !rebuildReason && !await verifiedKnowledgeAvailable()) rebuildReason = "variable-environment-changed";
   if (!graph || rebuildReason) {
     await ensureDocumentChangeWatcher();
@@ -367,6 +413,7 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
       }
       assertScanNotCancelled();
       const resourcesMatch = await adapter.matchesVariableEnvironment();
+      assertScanNotCancelled();
       const accepted = knowledgeState.completeBuild(token, result.graph.complete && resourcesMatch);
       if (!accepted) {
         if (result.graph.cancelled) throw new ScanCancelledError();
@@ -395,6 +442,10 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
       if (fileKey && !adapter.isScanCancelled() && !knowledgeState.dirty) {
         await stagedFragments?.flush();
       }
+      assertScanNotCancelled();
+      if (!await adapter.matchesVariableEnvironment()) throw new Error("Resources changed while context was being accepted. Generate context again.");
+      assertScanNotCancelled();
+      knowledgeState.validateWholeContext(token.revision);
       console.info("[Design Passport] context build", {
         producer: PRODUCER_IDENTITY, reason: rebuildReason, ...result.diagnostics,
         contextStorageMs: Date.now() - contextStorageStarted, codec: { ...codecMetrics },
@@ -408,15 +459,23 @@ async function ensureKnowledge(refresh: boolean, forceFullCapture = false, mutat
     console.info("[Design Passport] context reuse", { producer: PRODUCER_IDENTITY, source: "current-session" });
   }
   assertScanNotCancelled();
+  await postContextStatus();
   return graph;
 }
 
-async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[], cancellable = false, capturedTarget = activeTarget, recheck?: ReturnType<typeof captureRecheckFindings>): Promise<AuditSaveStatus> {
-  if (!graph) throw new Error("Build whole-file knowledge before analyzing targets");
+async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[], cancellable = false, capturedTarget = activeTarget, recheck?: ReturnType<typeof captureRecheckFindings>, micro?: {
+  graph: DesignKnowledgeGraph; assertRevision(): void; assertCurrent(): Promise<void>; commit(): void;
+  verification: NonNullable<ReadinessReport["verification"]>; checkedKeys: string[];
+  request: Extract<AuditRecheckRequest, { mode: "issue" | "component" }>; selectedKeys: string[];
+}): Promise<AuditSaveStatus> {
+  const currentGraph = micro?.graph ?? graph;
+  const assertRevision = () => micro ? micro.assertRevision() : assertKnowledgeRevision();
+  const assertCurrent = () => micro ? micro.assertCurrent() : assertVerifiedKnowledge();
+  if (!currentGraph) throw new Error("Build whole-file knowledge before analyzing targets");
   if (!capturedTarget) throw new Error("Capture an audit target before evaluating the design");
   // This preparation cannot publish or mutate the document. Full resource
   // verification follows the asynchronous waiver read and surrounds saving.
-  assertKnowledgeRevision();
+  assertRevision();
   if (cancellable) assertScanNotCancelled();
   const rootIds = [...targetIds];
   if (rootIds.length === 0) {
@@ -425,10 +484,10 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
   }
   post({ type: "progress", progress: { phase: "analyzing", completed: 0, total: rootIds.length, message: `Evaluating ${rootIds.length} source target${rootIds.length === 1 ? "" : "s"}` } });
   const analysisStarted = Date.now();
-  const rawFindings = evaluateRules(graph, profile, rootIds);
+  const rawFindings = evaluateRules(currentGraph, profile, rootIds);
   const waivers = await loadWaivers();
   if (cancellable) assertScanNotCancelled();
-  await assertVerifiedKnowledge();
+  await assertCurrent();
   const findings = applyWaivers(rawFindings, waivers);
   const requestedNodeIds = capturedTarget.scope === "selection" ? [...new Set(capturedTarget.nodeIds)] : [];
   const excludedNodeIds = requestedNodeIds.filter((id) => !rootIds.includes(id));
@@ -437,11 +496,13 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
     requestedNodeIds,
     excludedNodeIds,
   };
-  const nextReport = buildReadinessReport({ graph, profile, scope, targetRootIds: rootIds, appliedChanges, findings, targetResolution });
+  const nextReport = buildReadinessReport({ graph: currentGraph, profile, scope, targetRootIds: rootIds, appliedChanges, findings, targetResolution, ...(micro ? { verification: micro.verification } : {}) });
+  const sameReview = report?.profileHash === nextReport.profileHash && activeTarget && canonicalAuditTargetKey(activeTarget) === canonicalAuditTargetKey(capturedTarget);
+  const nextReview = mergeIssueReview(sameReview ? issueReviewState : undefined, sameReview ? report : undefined, nextReport, micro?.checkedKeys ?? (sameReview && report ? [...new Set(report.findings.filter(actionableFinding).map(stableIssueKey))] : []));
   const nextPlans = buildChangePlans(findings);
   const projectPack = activeProjectStyleGuidePack();
   const insights = buildKnowledgeInsights({
-    graph,
+    graph: currentGraph,
     targetRootIds: rootIds,
     findings,
     operations: nextPlans.flatMap((plan) => plan.operations),
@@ -450,7 +511,7 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
     teamPack: TEAM_KNOWLEDGE_PACK,
   });
   bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
-  const knowledge = buildKnowledgeSummary(graph);
+  const knowledge = buildKnowledgeSummary(currentGraph);
   console.info("[Design Passport] report evaluation", { elapsedMs: Date.now() - analysisStarted, targets: rootIds.length, findings: findings.length });
   let saveStatus: AuditSaveStatus = { state: "session-only", message: "This file has no stable file key. Results are available for this session only." };
   let savedAuditId: string | undefined;
@@ -459,6 +520,8 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
   const publish = (status: AuditSaveStatus, audit?: SavedAuditV1): void => {
     savedAuditId = audit?.id;
     savedAt = audit?.savedAt;
+    micro?.commit();
+    issueReviewState = nextReview;
     report = nextReport;
     plans = nextPlans;
     historicalAudit = undefined;
@@ -468,19 +531,19 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
     activeSavedAuditId = savedAuditId;
     pendingContribution = undefined;
     published = true;
-    post({
-      type: "scan-result",
-      report,
-      plans,
-      knowledge,
-      collections,
-      insights,
-      projectStyleGuide: bootstrap.projectStyleGuide,
-      sessionReferenceCount: sessionReferencePacks.length,
-      saveStatus: status,
+    const data: AuditResultData = {
+      report: nextReport, plans: nextPlans, knowledge, collections, insights, projectStyleGuide: bootstrap.projectStyleGuide,
+      sessionReferenceCount: sessionReferencePacks.length, saveStatus: status, issueReviewState: nextReview, waivers,
       ...(savedAuditId ? { savedAuditId } : {}),
       ...(recheck ? { refresh: { ...lastRefresh, requested: recheck.request.mode, ...recheckCounts(recheck, nextReport) } } : {}),
-    });
+    };
+    if (micro) {
+      const actionable = new Set(nextReport.findings.filter(actionableFinding).map(stableIssueKey));
+      const resolved = micro.selectedKeys.every((key) => !actionable.has(key));
+      const limiting = nextReport.frames.find((frame) => frame.grade.score === nextReport.grade.score);
+      post({ type: "micro-check-result", requestId: micro.request.requestId, reportHash: micro.request.reportHash, checkedKeys: micro.checkedKeys,
+        outcome: resolved ? "resolved" : "unresolved", reason: resolved ? `Verified fixes. ${nextReport.grade.capReason ?? `The hero follows the limiting module, ${limiting?.rootName ?? "this target"}. Supporting rows have no independent point award.`}` : "Verified fields. This issue still needs work or remains waived with its deduction.", data });
+    } else post({ type: "scan-result", ...data });
   };
   if (figma.fileKey && capturedTarget) {
     const started = Date.now();
@@ -492,11 +555,12 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
       knowledge,
       insights,
       profile,
+      issueReviewState: nextReview,
       provenance: { pluginVersion: PLUGIN_VERSION, knowledgeVersion: KNOWLEDGE_VERSION },
       ...(activeViewState && activeTarget && canonicalAuditTargetKey(activeTarget) === canonicalAuditTargetKey(capturedTarget)
         ? { viewState: activeViewState } : {}),
     }, {
-      assertCurrent: async (phase) => { if (phase === "prepare") assertKnowledgeRevision(); else await assertVerifiedKnowledge(); },
+      assertCurrent: async (phase) => { if (phase === "prepare") assertRevision(); else await assertCurrent(); },
       commit: (audit) => publish({ state: "saved" }, audit),
     });
     console.info("[Design Passport] report persistence", { elapsedMs: Date.now() - started, state: saved.status.state });
@@ -508,7 +572,7 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
   }
   if (!published) {
     // Session-only results and storage failures still require a current revision.
-    await assertVerifiedKnowledge();
+    await assertCurrent();
     publish(saveStatus);
   }
   await postSavedAudits();
@@ -527,6 +591,7 @@ async function runScan(
     execute: async (capturedTarget) => {
       assertScanNotCancelled();
       const current = await ensureKnowledge(refreshKnowledge, recheckRequest?.mode === "full");
+      await adapter.assertTargetSources(capturedTarget, current);
       const rootIds = adapter.targetRootIds(capturedTarget, current);
       await analyzeCurrentGraph(capturedTarget.scope, rootIds, true, capturedTarget, recheck);
     },
@@ -537,14 +602,59 @@ async function runScan(
   });
 }
 
-async function rescanActiveTarget(refreshKnowledge: boolean): Promise<void> {
-  if (!activeTarget) throw new Error("Run an audit before rescanning after changes");
-  await runScan(activeTarget, refreshKnowledge);
+async function runMicroCheck(request: Extract<AuditRecheckRequest, { mode: "issue" | "component" }>): Promise<void> {
+  adapter.beginScan();
+  let checkedKeys: string[] = [];
+  try {
+    const captured = captureRecheckFindings(request, report, graph, Boolean(historicalAudit));
+    checkedKeys = captured.findingIds;
+    post({ type: "micro-check-started", requestId: request.requestId, reportHash: request.reportHash, checkedKeys });
+    const started = Date.now();
+    if (!graph || !report || !activeTarget || report.target.knowledgeSnapshotHash !== graph.snapshotHash || graphProfileHash !== hashValue(profile)
+      || !adapter.matchesDocumentTopology(graph) || !hasCompleteKnowledge(graph) || !knowledgeState.validationFresh() || knowledgeState.changes.fullBuildReason) throw new Error("Supporting context changed or expired. Regenerate audit to verify.");
+    const selected = selectedMicroFields(captured, report);
+    if (selected.size === 0) throw new Error("This issue needs a full regeneration to verify.");
+    const revision = knowledgeState.documentRevision;
+    const journal = knowledgeState.changes;
+    const staged = await adapter.stageMicroCheck(graph, profile, journal.properties, selected);
+    const verified = new Map(staged.nodeIds.map((id) => [id, new Set(journal.properties[id] ?? [])]));
+    const target = activeTarget;
+    const oldReport = report;
+    const roots = adapter.targetRootIds(target, staged.graph);
+    if (stableStringify([...roots].sort()) !== stableStringify([...oldReport.target.rootIds].sort())) throw new Error("The captured target changed. Regenerate audit to verify.");
+    await adapter.assertTargetSources(target, staged.graph);
+    checkedKeys = [...new Set(oldReport.findings.filter(actionableFinding).map(stableIssueKey))];
+    const assertRevision = (): void => {
+      assertScanNotCancelled();
+      if (report !== oldReport || historicalAudit || graphProfileHash !== hashValue(profile) || !knowledgeState.validationFresh()
+        || !adapter.matchesDocumentTopology(staged.graph) || !knowledgeState.canCommitMicroCheck(revision, verified)) throw new Error("The design changed or context expired during Check again. Regenerate audit to verify.");
+    };
+    const assertCurrent = async (): Promise<void> => { assertRevision(); if (!await staged.verify()) throw new Error("Checked evidence changed. Regenerate audit to verify."); assertRevision(); };
+    await assertCurrent();
+    const remaining = 100 - (Date.now() - started);
+    if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+    await analyzeCurrentGraph(target.scope, roots, true, target, captured, {
+      graph: staged.graph, assertRevision, assertCurrent, checkedKeys, request, selectedKeys: captured.findingIds,
+      verification: { kind: "micro-check", verifiedAt: new Date().toISOString(), checkedKeys, predecessorReportHash: oldReport.snapshotHash },
+      commit: () => { assertRevision(); staged.commit(); knowledgeState.commitMicroCheck(revision, verified); graph = staged.graph; mutationRecheckPending = false; },
+    });
+    await postContextStatus();
+  } catch (error) {
+    post({ type: "micro-check-result", requestId: request.requestId, reportHash: request.reportHash, checkedKeys, outcome: "requires-regeneration", reason: errorMessage(error) });
+  }
+}
+
+async function verifyAppliedChanges(changes: readonly ChangePlan[]): Promise<void> {
+  if (!report) return;
+  const issueId = changes.flatMap((plan) => plan.findingIds).find((id) => report!.findings.some((finding) => finding.id === id));
+  if (issueId) await runMicroCheck({ mode: "issue", issueId, reportHash: report.snapshotHash, requestId: `mutation:${knowledgeState.documentRevision}` });
+  else if (report.target.rootIds[0]) await runMicroCheck({ mode: "component", componentId: report.target.rootIds[0], reportHash: report.snapshotHash, requestId: `mutation:${knowledgeState.documentRevision}` });
 }
 
 async function auditPages(pageIds: readonly string[]): Promise<void> {
   if (!figma.fileKey) throw new Error("Page batches need local saving to retain each result. This file supports session-only results; use Current page or Audit selection instead.");
   const pages = new Map(figma.root.children.map((page) => [page.id, page.name]));
+  if (pageIds.some((id) => profile.excludedPageIds.includes(id))) throw new Error("An excluded page was requested. Include it and regenerate context first.");
   if (pageIds.some((id) => !pages.has(id))) throw new Error("A selected page no longer exists. Choose the pages again.");
   adapter.beginScan();
   post({ type: "batch-progress", completed: 0, total: pageIds.length, skipped: 0 });
@@ -557,6 +667,7 @@ async function auditPages(pageIds: readonly string[]): Promise<void> {
     yield: () => new Promise((resolve) => setTimeout(resolve, 0)),
     auditPage: async (pageId) => {
       const target: CapturedAuditTarget = { scope: "page", pageId };
+      await adapter.assertTargetSources(target, current);
       const rootIds = adapter.targetRootIds(target, current);
       if (rootIds.length === 0) return false;
       const saveStatus = await analyzeCurrentGraph("page", rootIds, true, target);
@@ -585,6 +696,7 @@ async function initialize(): Promise<void> {
   exportSnapshot = undefined;
   activeSavedAuditId = undefined;
   activeViewState = undefined;
+  issueReviewState = undefined;
   sessionReferencePacks = [];
   sessionStyleGuidePack = undefined;
   pendingContribution = undefined;
@@ -593,6 +705,8 @@ async function initialize(): Promise<void> {
   collections = bootstrap.collections;
   initialized = true;
   post({ type: "bootstrap", data: bootstrap, rulesetVersion: RULESET_VERSION, catalogVersion: CATALOG_VERSION, catalogDigest: CATALOG_DIGEST });
+  void postContextStatus();
+  void loadWaivers().then((waivers) => { if (generation === initializeGeneration) post({ type: "waivers-result", waivers }); }).catch(() => undefined);
   void restoreLastAudit(generation, revision).catch(() => {
     if (generation !== initializeGeneration || revision !== displayRevision) return;
     post({ type: "audit-save-status", status: { state: "not-saved", message: "Saved audits could not be restored. You can still run and export an audit." } });
@@ -613,7 +727,21 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
   assertInitialized();
   if (message.type === "scan" || message.type === "refresh-audit" || message.type === "recheck-audit" || message.type === "audit-pages"
     || message.type === "open-saved-audit" || message.type === "forget-saved-audit" || message.type === "clear-file-cache"
-    || message.type === "save-profile") displayRevision += 1;
+    || message.type === "save-profile" || message.type === "generate-context") displayRevision += 1;
+  if (message.type === "generate-context") {
+    if (invalidateProfileIfNeeded()) return;
+    await generateContext(message.regenerate); return;
+  }
+  if (message.type === "clear-issue") {
+    if (!report || report.snapshotHash !== message.reportHash || message.auditId !== activeSavedAuditId) throw new Error("This displayed result changed");
+    const resolved = resolvedIssueKeys(issueReviewState, report);
+    if (!issueReviewState || message.keys.some((key) => !resolved.has(key))) throw new Error("Only verified resolved issues can be cleared");
+    issueReviewState = { ...issueReviewState, clearedKeys: [...new Set([...issueReviewState.clearedKeys, ...message.keys])].sort() };
+    const persistence: AuditSaveStatus = figma.fileKey && activeSavedAuditId
+      ? await auditStorage.updateIssueReview(figma.fileKey, activeSavedAuditId, report.snapshotHash, message.keys)
+      : { state: "session-only", message: "Issue cleared for this session. This result has no saved copy." };
+    post({ type: "issue-cleared", reportHash: report.snapshotHash, keys: message.keys, persistence }); return;
+  }
   if (message.type === "open-saved-audit") {
     if (!figma.fileKey) throw new Error("Saved audits need a stable file key");
     const audit = await auditStorage.loadAudit(figma.fileKey, message.id);
@@ -648,7 +776,9 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
     return;
   }
   if (message.type === "audit-pages") {
+    if (!figma.fileKey) throw new Error("Page batches require local saving; this file supports session-only results.");
     if (invalidateProfileIfNeeded()) return;
+    if (!graph && !(figma.fileKey && await auditStorage.hasContext(figma.fileKey))) throw new Error("Generate context before running an audit.");
     await auditPages(message.pageIds);
     return;
   }
@@ -663,8 +793,10 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       pendingContribution = undefined;
       knowledgeState.markDirty();
       post({ type: "profile-saved", data: bootstrap });
+      await postContextStatus();
     } else if (message.type === "scan") {
       if (invalidateProfileIfNeeded()) return;
+      if (!graph && !(figma.fileKey && await auditStorage.hasContext(figma.fileKey))) throw new Error("Generate context before running an audit.");
       const target = resolveAuditTarget(
         { kind: "capture", scope: message.request.scope },
         activeTarget,
@@ -678,7 +810,8 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         activeTarget,
         (scope) => adapter.captureAuditTarget(scope),
       );
-      await runScan(target, true, message.type === "recheck-audit" ? message.request : { mode: "changes" });
+      if (message.type === "recheck-audit" && (message.request.mode === "issue" || message.request.mode === "component")) await runMicroCheck(message.request);
+      else await runScan(target, true, message.type === "recheck-audit" ? message.request : { mode: "full" });
     } else if (message.type === "navigate") {
       await adapter.navigate(message.nodeId);
     } else if (message.type === "token-coverage-page") {
@@ -699,15 +832,15 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         const result = await runDocumentMutation(
           plan.operations.map((operation) => operation.nodeId),
           () => applyChangePlan(plan, { undoOnlyAcknowledged: message.undoOnlyAcknowledged }),
-          requiresTransientMutationGuard(plan.risk),
+          requiresTransientMutationGuard(plan.risk), plan.operations,
         );
         appliedChanges.push(plan);
-        post({ type: "mutation-result", message: `Applied ${result.appliedOperationCount} operations${result.checkpointCreated ? " after a version-history checkpoint" : ""}. Rescanning the complete file…` });
+        post({ type: "mutation-result", message: `Applied ${result.appliedOperationCount} operations${result.checkpointCreated ? " after a version-history checkpoint" : ""}. Checking supported fields…` });
       } catch (error) {
         post({ type: "knowledge-stale" });
         throw error;
       }
-      await rescanActiveTarget(true);
+      await verifyAppliedChanges([plan]);
     } else if (message.type === "apply-all") {
       if (invalidateProfileIfNeeded()) return;
       await assertCurrentReport("applying all cleanup");
@@ -740,7 +873,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
             const result = await runDocumentMutation(batchNodeIds, () => applyChangePlan(plan, {
               undoOnlyAcknowledged: message.undoOnlyAcknowledged,
               structuralCheckpointSatisfied: structuralBatch && (sharedCheckpointCreated || message.undoOnlyAcknowledged),
-            }), structuralBatch);
+            }), structuralBatch, plan.operations);
             appliedChanges.push(plan);
             appliedOperationCount += result.appliedOperationCount;
           } catch (error) {
@@ -753,13 +886,13 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
           ? ` ${failedPlanCount} unsafe plan${failedPlanCount === 1 ? " was" : "s were"} rolled back${failedPlanMessages.length > 0 ? ` (${failedPlanMessages.join("; ")})` : ""}.`
           : "";
         post({ type: "mutation-result", message: structuralBatch
-          ? `Applied ${appliedOperationCount} validated structural operation${appliedOperationCount === 1 ? "" : "s"} in isolated undo groups.${failureSummary} Rescanning the complete file…`
-          : `Applied ${appliedOperationCount} safe or guarded operations in ${approvedPlans.length} undo group${approvedPlans.length === 1 ? "" : "s"}. Rescanning the complete file…` });
+          ? `Applied ${appliedOperationCount} validated structural operation${appliedOperationCount === 1 ? "" : "s"} in isolated undo groups.${failureSummary} Checking supported fields…`
+          : `Applied ${appliedOperationCount} safe or guarded operations in ${approvedPlans.length} undo group${approvedPlans.length === 1 ? "" : "s"}. Checking supported fields…` });
       } catch (error) {
         post({ type: "knowledge-stale" });
         throw new Error(`Fix all stopped after ${appliedOperationCount} completed operations. ${errorMessage(error)}`);
       }
-      await rescanActiveTarget(true);
+      await verifyAppliedChanges(approvedPlans);
     } else if (message.type === "import-project-style-guide") {
       const binding = adapter.importProjectStyleGuide(message.raw);
       sessionStyleGuidePack = undefined;
@@ -820,11 +953,14 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       const current = await assertCurrentReport("managing waivers");
       if (!current.report.findings.some((finding) => finding.id === message.findingId)) throw new Error("The finding is stale; rescan before managing its waiver");
       const waivers = await loadWaivers();
+      const finding = current.report.findings.find((finding) => finding.id === message.findingId)!;
+      const issueKey = stableIssueKey(finding);
       if (message.type === "waive") {
         const reason = message.reason.normalize("NFKC").trim().slice(0, 500);
         if (!reason) throw new Error("A waiver requires a reason");
-        waivers[message.findingId] = { reason, createdAt: new Date().toISOString(), createdBy: "local designer" };
+        waivers[issueKey] = { reason, createdAt: new Date().toISOString(), createdBy: "local designer" };
       } else {
+        delete waivers[issueKey];
         delete waivers[message.findingId];
       }
       await saveWaivers(waivers);
@@ -856,10 +992,10 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         expectedPostconditions: operations.map((operation) => `${operation.nodeId}:${operation.kind}`),
         rollbackBoundary: "risk-group",
       };
-      await runDocumentMutation(plan.operations.map((operation) => operation.nodeId), () => applyChangePlan(plan, { undoOnlyAcknowledged: false }));
+      await runDocumentMutation(plan.operations.map((operation) => operation.nodeId), () => applyChangePlan(plan, { undoOnlyAcknowledged: false }), false, plan.operations);
       appliedChanges.push(plan);
-      post({ type: "mutation-result", message: contextual ? `Renamed the contextual alias to ${name}. Rescanning the complete file…` : `Accepted ${name} as an intentional project term. Rescanning the complete file…` });
-      await rescanActiveTarget(true);
+      post({ type: "mutation-result", message: contextual ? `Renamed the contextual alias to ${name}. Checking supported fields…` : `Accepted ${name} as an intentional project term. Checking supported fields…` });
+      await verifyAppliedChanges([plan]);
     } else if (message.type === "acknowledge-detachment" || message.type === "clear-detachment-acknowledgement") {
       if (invalidateProfileIfNeeded()) return;
       const current = await assertCurrentReport("reviewing a detached design");
@@ -876,10 +1012,10 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         expectedPostconditions: [`${operation.nodeId}:${operation.kind}`],
         rollbackBoundary: "risk-group",
       };
-      await runDocumentMutation([finding.nodeId], () => applyChangePlan(plan, { undoOnlyAcknowledged: false }));
+      await runDocumentMutation([finding.nodeId], () => applyChangePlan(plan, { undoOnlyAcknowledged: false }), false, plan.operations);
       appliedChanges.push(plan);
-      post({ type: "mutation-result", message: message.type === "acknowledge-detachment" ? "Marked the detached layer as an intentional standalone design. Rescanning…" : "Cleared the standalone-design acknowledgement. Rescanning…" });
-      await rescanActiveTarget(true);
+      post({ type: "mutation-result", message: message.type === "acknowledge-detachment" ? "Marked the detached layer as an intentional standalone design. Checking supported fields…" : "Cleared the standalone-design acknowledgement. Checking supported fields…" });
+      await verifyAppliedChanges([plan]);
     } else if (message.type === "create-token") {
       if (invalidateProfileIfNeeded()) return;
       const current = await assertCurrentReport("creating a token");
@@ -901,8 +1037,9 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
           nodeIds: message.nodeIds,
           rawValue: message.rawValue,
         }));
-      post({ type: "mutation-result", message: `Created one semantic token and bound ${result.boundCount} repeated uses. Rescanning the complete file…` });
-      await rescanActiveTarget(true);
+      post({ type: "mutation-result", message: `Created one semantic token and bound ${result.boundCount} repeated uses. Checking supported fields…` });
+      post({ type: "knowledge-stale" });
+      post({ type: "mutation-result", message: "Token created. Regenerate audit to verify the changed variable inventory." });
     } else if (message.type === "export") {
       if (!report || !exportSnapshot) throw new Error("Run or open an audit before exporting a report");
       if (historicalAudit || !await verifiedKnowledgeAvailable() || report.profileHash !== hashValue(profile)

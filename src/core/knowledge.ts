@@ -108,6 +108,7 @@ export function finalizeKnowledgeGraph(graph: Omit<DesignKnowledgeGraph, "respon
   const repeatedStructureGroups = deriveRepeatedStructures(graph.nodes);
   const snapshotMaterial = {
     complete: graph.complete,
+    excludedPageIds: graph.excludedPageIds ?? [],
     resourceFingerprint: graph.resourceFingerprint,
     profile,
     pages: graph.pages.map(({ id, name, role, loaded, nodeCount, rootNodeIds }) => ({ id, name, role, loaded, nodeCount, rootNodeIds })),
@@ -180,8 +181,14 @@ export function isKnowledgeFresh(graph: DesignKnowledgeGraph, now = Date.now(), 
   return maximumAgeMs >= 0
     && graph.complete
     && !graph.cancelled
-    && graph.loadedPageCount === graph.pageCount
+    && graph.loadedPageCount === graph.pageCount - (graph.excludedPageIds?.length ?? 0)
     && Number.isFinite(builtAt)
     && builtAt <= now
     && now - builtAt <= maximumAgeMs;
+}
+
+/** Capture completeness is scoped; page watcher loading is not evidence. */
+export function hasCompleteKnowledge(graph: DesignKnowledgeGraph): boolean {
+  return graph.complete && !graph.cancelled
+    && graph.loadedPageCount === graph.pageCount - (graph.excludedPageIds?.length ?? 0);
 }

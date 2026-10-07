@@ -96,7 +96,7 @@ describe("persistent audit presentation", () => {
     const pages = Array.from({ length: 65 }, (_, index) => ({ id: `page:${index}`, name: `Page ${index + 1}` }));
     const markup = renderToStaticMarkup(createElement(PageBatch, { pages, disabled: false, onReview: noop }));
     expect(markup.match(/type="checkbox"/g)).toHaveLength(66);
-    expect(markup).toContain("Select all (65)");
+    expect(markup).toContain("Select all included (65)");
     expect(markup).toContain("Page 65");
     expect(button(markup, "Review selected pages \\(0\\)")).toContain("disabled");
     expect(markup).toContain("stop between pages");
@@ -131,7 +131,7 @@ describe("persistent audit presentation", () => {
   });
 
   it("restores a useful display default without mutation drafts or acknowledgements", () => {
-    expect(defaultAuditView()).toEqual({ activeTab: "overview", showPassing: false, axisFilter: "all", pageFilter: "all", rootFilter: "all", variantFilter: "all" });
+    expect(defaultAuditView()).toEqual({ activeTab: "report", reportSection: "summary", showPassing: false, axisFilter: "all", pageFilter: "all", rootFilter: "all", variantFilter: "all" });
     expect(JSON.stringify(defaultAuditView())).not.toMatch(/waiver|token|acknowledged|profile/i);
   });
 

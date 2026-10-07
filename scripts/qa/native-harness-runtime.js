@@ -6,9 +6,9 @@
   figma.ui.resize?.(560, 420);
   const allowed = () => figma.editorType === "figma" && Boolean(figma.fileKey) && config.allowedWriteFileKeys.includes(figma.fileKey);
   const post = (type, data) => figma.ui.postMessage({ type, ...data });
-  const writeCommands = new Set(["save-profile", "apply-plan", "apply-all", "import-project-style-guide", "remove-project-style-guide", "waive", "clear-waiver", "confirm-pattern", "create-token", "clear-file-cache", "forget-saved-audit"]);
-  const readCommands = new Set(["initialize", "scan", "refresh-audit", "recheck-audit", "audit-pages", "open-saved-audit", "save-audit-view", "cancel-scan", "navigate", "add-session-reference", "clear-session-references", "preview-contribution", "export-contribution", "export"]);
-  const measuredCommands = new Set(["scan", "refresh-audit", "recheck-audit", "audit-pages", "apply-plan", "apply-all", "waive", "clear-waiver", "confirm-pattern", "create-token", "import-project-style-guide", "remove-project-style-guide", "add-session-reference", "clear-session-references"]);
+  const writeCommands = new Set(["save-profile", "apply-plan", "apply-all", "import-project-style-guide", "remove-project-style-guide", "waive", "clear-waiver", "confirm-pattern", "create-token", "acknowledge-detachment", "clear-detachment-acknowledgement", "clear-issue", "clear-file-cache", "forget-saved-audit"]);
+  const readCommands = new Set(["initialize", "generate-context", "scan", "refresh-audit", "recheck-audit", "audit-pages", "open-saved-audit", "save-audit-view", "cancel-scan", "navigate", "add-session-reference", "clear-session-references", "preview-contribution", "export-contribution", "export"]);
+  const measuredCommands = new Set(["generate-context", "scan", "refresh-audit", "recheck-audit", "audit-pages", "apply-plan", "apply-all", "waive", "clear-waiver", "confirm-pattern", "create-token", "import-project-style-guide", "remove-project-style-guide", "add-session-reference", "clear-session-references"]);
   let commandSequence = 0;
   let activeProduction = 0;
   let storageBusy = false;
@@ -87,7 +87,7 @@
         const value = message.value;
         if (field === "name" ? typeof value !== "string" || !value || value.length > 300
           : field === "visible" ? typeof value !== "boolean"
-            : !["opacity", "width", "height", "cornerRadius", "strokeWeight"].includes(field)
+            : !["opacity", "width", "height", "cornerRadius", "strokeWeight", "itemSpacing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft"].includes(field)
               || typeof value !== "number" || !Number.isFinite(value) || value < (field === "width" || field === "height" ? 1 : 0)
               || value > (field === "opacity" ? 1 : 10000)) throw new Error("Unsupported or invalid controlled property edit");
         if (!(field in node) || ((field === "width" || field === "height") && typeof node.resize !== "function")) throw new Error("This node does not own the editable property");

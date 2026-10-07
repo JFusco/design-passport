@@ -10,7 +10,8 @@ export function shouldRestoreAudit(request: RestoreRequest, id: string): boolean
 
 export function defaultAuditView(): AuditViewState {
   return {
-    activeTab: "overview",
+    activeTab: "report",
+    reportSection: "summary",
     showPassing: false,
     axisFilter: "all",
     pageFilter: "all",
@@ -26,4 +27,10 @@ export function reportTargetIdentity(report: ReadinessReport): string {
 export function batchCompletionNotice(result: { completed: number; total: number; skipped: number; cancelled: boolean }): string {
   const skipped = result.skipped > 0 ? ` ${result.skipped} page${result.skipped === 1 ? " was" : "s were"} skipped because no audit targets were found.` : "";
   return `${result.cancelled ? "Page review stopped" : "Page review complete"}: ${result.completed} of ${result.total} pages audited.${skipped} Saved results remain available within this device’s local storage limit.`;
+}
+
+export function normalizeAuditView(view: AuditViewState): AuditViewState {
+  const sections = { overview: "summary", findings: "issues", modules: "modules", guidance: "guidance" } as const;
+  const section = sections[view.activeTab as keyof typeof sections];
+  return section ? { ...view, activeTab: "report", reportSection: section } : view;
 }

@@ -1,3 +1,4 @@
+import { MicroCheckRequired, microClosure, type MicroFieldGroup } from "./micro-check";
 import type {
   BindableField,
   CertificationSummary,
@@ -1101,6 +1102,7 @@ export class FigmaAdapter {
   private styleEvidence: TextStyleEvidenceReader | undefined;
   private verifyLibraries: (() => Promise<boolean>) | undefined;
   private sceneSignatures = new Map<string, string>();
+  private libraryMaterial: { libraries: string; librarySummaries: Array<[string, string | undefined]> } | undefined;
   private sessionInferences = new Map<string, { fingerprint: string; nodes: NodeSnapshot[] }>();
 
   async matchesVariableEnvironment(): Promise<boolean> {
@@ -1128,6 +1130,135 @@ export class FigmaAdapter {
     return verified;
   }
 
+  /** Stage supported fields and proven consumers; never exports a page or captures a fragment. */
+  async stageMicroCheck(
+    previous: DesignKnowledgeGraph,
+    profile: ReadinessProfile,
+    journal: Record<string, string[]>,
+    selected: ReadonlyMap<string, readonly MicroFieldGroup[]>,
+  ): Promise<{ graph: DesignKnowledgeGraph; nodeIds: string[]; verify(): Promise<boolean>; commit(): void }> {
+    const fail = (message: string): never => { throw new MicroCheckRequired(`${message} Regenerate audit to verify.`); };
+    if (!this.verifyResourceEnvironment || !this.variableDependencies || !this.styleEvidence || !this.verifyLibraries || !this.libraryMaterial) return fail("Resource evidence is unavailable.");
+    if (!await this.verifyResourceEnvironment()) return fail("Variables, styles or libraries changed.");
+    const closure = microClosure(previous, journal, selected);
+    const ignored = new Set(closure.keys());
+    if (!await this.matchesSceneSignatures(ignored)) return fail("A binding changed outside the verified fields.");
+    const environment = await variableEnvironmentReader(() => this.cancelled, this.variableDependencies);
+    if (!environment) return fail("Variable provenance is unavailable.");
+    const styles = this.styleEvidence.fork();
+    const nodes = Object.fromEntries(Object.entries(previous.nodes).map(([id, node]) => [id, { ...node }]));
+    const signatures = new Map<string, string>();
+    const checked = new Map<string, string>();
+    const liveById = new Map<string, SceneNode>();
+    const read = async (live: SceneNode, prior: NodeSnapshot, fields: ReadonlySet<MicroFieldGroup>): Promise<NodeSnapshot> => {
+      const next: NodeSnapshot = { ...prior };
+      if (fields.has("name")) next.name = live.name;
+      if (fields.has("tokens") || fields.has("rendering")) {
+        const properties = await tokenPropertySnapshot(live);
+        if (prior.layout?.mode !== properties.layout?.mode) return fail("A layout conversion changed structure.");
+        // Preserve identity, ownership, graph links and non-token evidence.
+        for (const key of ["fills", "strokes", "boundFields", "boundVariableIds", "boundGeometryFields", "cornerRadius", "cornerRadii", "strokeWeight", "strokeWeights", "text", "layout",
+          "width", "height", "x", "y", "opacity", "absoluteBounds", "renderVisible"] as const) {
+          delete next[key]; Object.assign(next, properties[key] === undefined ? {} : { [key]: properties[key] });
+        }
+        enrichLiveEvidence(live, next);
+        if (live.type === "TEXT" && next.text) {
+          const style = await styles.evidence(live, next.text);
+          if (style?.status === "unavailable") return fail("The applied text style could not be resolved.");
+          if (style) next.text.style = style;
+          else delete next.text.style;
+        }
+        enrichInferences(live, next, tokenInferenceFields(next));
+        const signature = structuralSignature(live);
+        if (signature) next.structuralSignature = signature;
+        if (live.type === "INSTANCE") {
+          const main = await live.getMainComponentAsync().catch(() => null);
+          if (!main || main.id !== prior.instance?.mainComponentId) return fail("A component source changed.");
+          const evidence = captureInstanceEvidence(live);
+          next.instance = { ...prior.instance, detached: false, ...evidence.provenance, mainComponentId: main.id, mainComponentName: main.name, mainComponentKey: main.key };
+        }
+      }
+      if (fields.has("annotations")) {
+        const annotations = "annotations" in live ? live.annotations.map(annotationText) : [];
+        next.hasAnnotations = annotations.some((annotation) => ![CERTIFICATION_ANNOTATION_PREFIX, LEGACY_CERTIFICATION_ANNOTATION_PREFIX].some((prefix) => annotation.startsWith(prefix)));
+        next.sourceMarked = annotations.includes(AI_SOURCE_FRAME_ANNOTATION);
+      }
+      if (fields.has("exports")) next.exportSettings = "exportSettings" in live ? live.exportSettings.map((setting) => ({ format: setting.format, suffix: "suffix" in setting ? setting.suffix : "" })) : [];
+      if (fields.has("metadata")) {
+        delete next.confirmedPattern; delete next.intentionalDetachment;
+        const pattern = confirmedPattern(live), detachment = intentionalDetachment(live);
+        if (pattern) next.confirmedPattern = pattern;
+        if (detachment) next.intentionalDetachment = detachment;
+      }
+      return next;
+    };
+    const identityMatches = (live: SceneNode, prior: NodeSnapshot): boolean => {
+      if (live.removed || live.type !== prior.type || findPage(live)?.id !== prior.pageId) return false;
+      if (!prior.owningInstanceId && live.parent?.id !== prior.parentId) return false;
+      if (prior.owningInstanceId) {
+        let ancestor = live.parent;
+        while (ancestor && ancestor.type !== "PAGE" && ancestor.id !== prior.owningInstanceId) ancestor = ancestor.parent;
+        if (ancestor?.id !== prior.owningInstanceId) return false;
+      } else if (live.type !== "INSTANCE" && hasChildren(live)
+        && hashValue(live.children.map((child) => child.id)) !== hashValue(prior.childIds)) return false;
+      return true;
+    };
+    for (const [id, fields] of closure) {
+      if (this.cancelled) return fail("Check cancelled.");
+      const live = await figma.getNodeByIdAsync(id).catch(() => null);
+      const prior = previous.nodes[id]!;
+      if (!live || !isSceneNode(live) || !identityMatches(live, prior)) return fail("A required layer changed structure.");
+      liveById.set(id, live);
+      nodes[id] = await read(live, prior, fields);
+      checked.set(id, hashValue(nodes[id]));
+      signatures.set(id, bindingSignature(live));
+    }
+    for (const [id, live] of liveById) if (live.type === "INSTANCE") {
+      const evidence = captureInstanceEvidence(live);
+      annotateInstanceDescendants(nodes[id]!.childIds.map((child) => nodes[child]).filter((node): node is NodeSnapshot => Boolean(node)), id, evidence);
+    }
+    const referenced = referencedVariableIds(nodes);
+    const previousReferences = new Set(referencedVariableIds(previous.nodes));
+    const newReferences = referenced.filter((id) => !previousReferences.has(id) && !previous.variables.some((variable) => variable.id === id && variable.evidenceLevel === "full"));
+    // A new global candidate can alter inference beyond this closure. Require an explicit capture.
+    if (newReferences.length) return fail("A newly referenced variable changes the candidate inventory.");
+    const fingerprint = await environment.fingerprint(referenced.map((id) => ({ type: "VARIABLE_ALIAS", id })));
+    if (!fingerprint) return fail("A variable or alias could not be resolved.");
+    // Apply deeper renamed prefixes first so nested renames also reach
+    // descendants whose unchanged fields were not read live.
+    const renamed = [...closure].filter(([, fields]) => fields.has("name"))
+      .sort(([a], [b]) => previous.nodes[b]!.path.length - previous.nodes[a]!.path.length);
+    const pathFor = (node: NodeSnapshot): string => {
+      const names: string[] = []; let live = liveById.get(node.id) as BaseNode | undefined;
+      if (live) { while (live && live.type !== "PAGE" && live.type !== "DOCUMENT") { names.push(live.name); live = live.parent ?? undefined; } return `${previous.pages.find((page) => page.id === node.pageId)?.name} / ${names.reverse().join(" / ")}`; }
+      let path = node.path;
+      for (const [id] of renamed) { const old = previous.nodes[id]!, next = nodes[id]!; if (path === old.path || path.startsWith(`${old.path} / `)) path = `${old.path.slice(0, old.path.length - old.name.length)}${next.name}${path.slice(old.path.length)}`; }
+      return path;
+    };
+    for (const node of Object.values(nodes)) node.path = pathFor(node);
+    populateGraphMetrics(nodes);
+    const library = this.libraryMaterial;
+    const candidate = finalizeKnowledgeGraph({ ...previous, nodes, sourceFrameIds: sourceFrameIds({ ...previous, nodes }, profile),
+      resourceFingerprint: hashValue({ variables: fingerprint, styles: await styles.fingerprint(), ...library }) }, profile);
+    const verify = async (): Promise<boolean> => {
+      if (this.cancelled || !this.matchesDocumentTopology(previous) || !await environment.verify() || !await styles.verify() || !await this.verifyLibraries!() || !await this.matchesSceneSignatures(ignored)) return false;
+      for (const [id, fields] of closure) {
+        const live = await figma.getNodeByIdAsync(id).catch(() => null);
+        if (!live || !isSceneNode(live) || !identityMatches(live, previous.nodes[id]!)
+          || bindingSignature(live) !== signatures.get(id) || hashValue(await read(live, previous.nodes[id]!, fields)) !== checked.get(id)) return false;
+      }
+      return !this.cancelled && await environment.verify() && await styles.verify() && await this.verifyLibraries!();
+    };
+    if (!await verify()) return fail("Evidence changed during Check again.");
+    return { graph: candidate, nodeIds: [...closure.keys()], verify, commit: () => {
+      this.variableDependencies = environment.dependencies;
+      this.styleEvidence = styles;
+      this.verifyResourceEnvironment = async () => await environment.verify() && await this.verifyLibraries!() && await styles.verify();
+      for (const [id, signature] of signatures) this.sceneSignatures.set(id, signature);
+      this.sessionInferences.clear();
+    } };
+  }
+
   beginScan(): void {
     this.cancelled = false;
   }
@@ -1147,7 +1278,8 @@ export class FigmaAdapter {
   async getBootstrap(): Promise<BootstrapData> {
     const pages = figma.root.children;
     const collections = await this.getCollectionOptions(false);
-    const stored = figma.root.getSharedPluginData("verndaleAiReady", "profile-v2")
+    const stored = figma.root.getSharedPluginData("verndaleAiReady", "profile-v3")
+      || figma.root.getSharedPluginData("verndaleAiReady", "profile-v2")
       || figma.root.getSharedPluginData("verndaleAiReady", "profile-v1");
     const profileSuggestion = inferProfileFromPages(pages, collections);
     let profile = profileSuggestion;
@@ -1253,7 +1385,7 @@ export class FigmaAdapter {
 
   async saveProfile(profile: ReadinessProfile): Promise<void> {
     assertProfileSemantics(profile, new Set(figma.root.children.map((page) => page.id)));
-    figma.root.setSharedPluginData("verndaleAiReady", "profile-v2", JSON.stringify(profile));
+    figma.root.setSharedPluginData("verndaleAiReady", "profile-v3", JSON.stringify(profile));
   }
 
   reconcileProfile(
@@ -1500,7 +1632,8 @@ export class FigmaAdapter {
       fileName: figma.root.name,
       ...(figma.fileKey ? { fileKey: figma.fileKey } : {}),
       builtAt: new Date().toISOString(), complete: true, cancelled: false,
-      pageCount: pages.length, loadedPageCount: pages.length, pages, nodes: previous.nodes,
+      excludedPageIds: [...profile.excludedPageIds],
+      pageCount: pages.length, loadedPageCount: pages.length - profile.excludedPageIds.length, pages, nodes: previous.nodes,
       variables: previous.variables, componentIds, instanceIds, sourceFrameIds: [] as string[],
     };
     partial.sourceFrameIds = sourceFrameIds(partial, profile);
@@ -1559,7 +1692,7 @@ export class FigmaAdapter {
     const nextSceneSignatures = new Map<string, string>();
     const dirty = new Set(options.dirtyNodeIds ?? []);
     // A root id is not a file identity. Files without a stable key use live capture.
-    const cache = figma.fileKey && !options.forceFullCapture ? options.contextCache : undefined;
+    const cache = figma.fileKey ? options.contextCache : undefined;
     let loadedPageCount = 0;
     const environmentStarted = Date.now();
     const variableEnvironment = await variableEnvironmentReader(() => this.cancelled);
@@ -1567,7 +1700,11 @@ export class FigmaAdapter {
 
     for (const [pageIndex, page] of pages.entries()) {
       if (this.cancelled) break;
-      onProgress({ phase: "loading-pages", completed: pageIndex, total: pages.length, pageName: page.name, message: `Loading ${page.name}` });
+      if (profile.excludedPageIds.includes(page.id)) {
+        pageSnapshots.push({ id: page.id, name: page.name, role: roleForPage(page.id, profile), loaded: false, nodeCount: 0, rootNodeIds: [] });
+        continue;
+      }
+      onProgress({ phase: "loading-pages", completed: loadedPageCount, total: pages.length - profile.excludedPageIds.length, pageName: page.name, message: `Loading ${page.name}` });
       let stageStarted = Date.now();
       await page.loadAsync();
       diagnostics.pageLoadingMs += Date.now() - stageStarted;
@@ -1610,7 +1747,7 @@ export class FigmaAdapter {
         const key = `capture-v1:${page.id}:${root.id}`;
         const previousInference = this.sessionInferences.get(key);
         let snapshots: NodeSnapshot[] | undefined;
-        if (cache && fingerprint) {
+        if (cache && fingerprint && !options.forceFullCapture) {
           // The accepted session already retains these nodes for inference.
           // Reuse only their sanitized base, under the persisted-cache fingerprint
           // and explicit change journal; live evidence is refreshed below.
@@ -1637,7 +1774,7 @@ export class FigmaAdapter {
             if (this.cancelled) break;
             snapshots.push(snapshotBase(entry.node, entry.rootId, page.id, entry.path));
             if ((index + 1) % 500 === 0) {
-              onProgress({ phase: "indexing", completed: pageIndex, total: pages.length, pageName: page.name, message: `Capturing ${(pageNodeCount + index + 1).toLocaleString()} nodes on ${page.name}` });
+              onProgress({ phase: "indexing", completed: Math.max(0, loadedPageCount - 1), total: pages.length - profile.excludedPageIds.length, pageName: page.name, message: `Capturing ${(pageNodeCount + index + 1).toLocaleString()} nodes on ${page.name}` });
               await new Promise((resolve) => setTimeout(resolve, 0));
             }
           }
@@ -1707,7 +1844,7 @@ export class FigmaAdapter {
             instances.push({ scene: entry.node, snapshot });
           }
           if (pageNodeCount % 500 === 0) {
-            onProgress({ phase: "indexing", completed: pageIndex, total: pages.length, pageName: page.name, message: `Indexed ${pageNodeCount.toLocaleString()} nodes on ${page.name}` });
+            onProgress({ phase: "indexing", completed: Math.max(0, loadedPageCount - 1), total: pages.length - profile.excludedPageIds.length, pageName: page.name, message: `Indexed ${pageNodeCount.toLocaleString()} nodes on ${page.name}` });
             await new Promise((resolve) => setTimeout(resolve, 0));
           }
         }
@@ -1755,7 +1892,7 @@ export class FigmaAdapter {
     diagnostics.componentsMs = Date.now() - stageStarted;
     logBuildPhase("instance resolution finished", { instanceCount: instances.length, durationMs: diagnostics.componentsMs });
 
-    onProgress({ phase: "indexing", completed: loadedPageCount, total: pages.length, message: "Resolving variables and cross-file relationships" });
+    onProgress({ phase: "indexing", completed: loadedPageCount, total: pages.length - profile.excludedPageIds.length, message: "Resolving variables and cross-file relationships" });
     stageStarted = Date.now();
     logBuildPhase("variable resolution started", { nodeCount: pageSnapshots.reduce((count, page) => count + page.nodeCount, 0) });
     const collections = await this.getCollectionOptions(true, 4_000, true);
@@ -1814,7 +1951,8 @@ export class FigmaAdapter {
       fileName: figma.root.name,
       ...(figma.fileKey ? { fileKey: figma.fileKey } : {}),
       builtAt: new Date().toISOString(),
-      complete: !this.cancelled && loadedPageCount === pages.length,
+      excludedPageIds: [...profile.excludedPageIds],
+      complete: !this.cancelled && loadedPageCount === pages.length - profile.excludedPageIds.length,
       cancelled: this.cancelled,
       pageCount: pages.length,
       loadedPageCount,
@@ -1835,6 +1973,7 @@ export class FigmaAdapter {
     if (graph.complete && variableEnvironment) {
       // Resource maps retain a single epoch; scene signatures still cover
       // binding and plugin-data changes that the document journal cannot prove.
+      this.libraryMaterial = { libraries: expectedLibraries, librarySummaries: [...librarySummaries].sort(([left], [right]) => left.localeCompare(right)) };
       this.variableDependencies = variableEnvironment.dependencies;
       this.styleEvidence = styles;
       this.verifyLibraries = verifyLibraries;
@@ -1843,7 +1982,7 @@ export class FigmaAdapter {
       this.sessionInferences = nextSessionInferences;
     }
     diagnostics.totalMs = Date.now() - started;
-    onProgress({ phase: "complete", completed: loadedPageCount, total: pages.length, message: graph.complete ? "Whole-file knowledge is complete" : "Whole-file knowledge is incomplete" });
+    onProgress({ phase: "complete", completed: loadedPageCount, total: pages.length - profile.excludedPageIds.length, message: graph.complete ? "Included-page context is complete" : "Included-page context is incomplete" });
     return { graph, collections, diagnostics };
   }
 
@@ -1862,8 +2001,37 @@ export class FigmaAdapter {
       }
       return roots;
     }
-    if (target.scope === "page") return targetRootIds(target.scope, graph, target.pageId, []);
+    if (target.scope === "page") {
+      if (graph.excludedPageIds?.includes(target.pageId)) throw new Error("This page is excluded. Include it and regenerate context before auditing it.");
+      return targetRootIds(target.scope, graph, target.pageId, []);
+    }
     return targetRootIds(target.scope, graph, "", []);
+  }
+
+  async assertTargetSources(target: CapturedAuditTarget, graph: DesignKnowledgeGraph): Promise<void> {
+    const excluded = new Set(graph.excludedPageIds ?? []);
+    if (target.scope === "selection") for (const id of target.nodeIds) {
+      const live = await figma.getNodeByIdAsync(id);
+      const page = live ? findPage(live) : undefined;
+      if (page && excluded.has(page.id)) throw new Error(`Include “${page.name}” and regenerate context before auditing this selection.`);
+    }
+    const roots = this.targetRootIds(target, graph);
+    const pending = [...roots];
+    const seen = new Set<string>();
+    while (pending.length) {
+      const id = pending.pop()!;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const node = graph.nodes[id];
+      if (!node) throw new Error("Required source evidence is unavailable. Regenerate context to verify.");
+      pending.push(...node.childIds);
+      const sourceId = node.instance?.mainComponentId;
+      if (!sourceId || graph.nodes[sourceId]) continue;
+      const source = await figma.getNodeByIdAsync(sourceId).catch(() => null);
+      const page = source ? findPage(source) : undefined;
+      if (page && excluded.has(page.id)) throw new Error(`Required component source is on excluded page “${page.name}”. Include that page and regenerate context.`);
+      if (!source || source.type !== "COMPONENT" || !source.remote) throw new Error(`Required component source${page ? ` on “${page.name}”` : ""} is unavailable. Regenerate context to verify.`);
+    }
   }
 
   async navigate(nodeId: string): Promise<void> {

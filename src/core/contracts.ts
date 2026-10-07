@@ -41,7 +41,8 @@ export interface PageRoleBinding {
 }
 
 export interface ReadinessProfile {
-  schemaVersion: 2;
+  schemaVersion: 3;
+  excludedPageIds: string[];
   profileId: "verndale-web-v1";
   artifactKind: "product" | "library";
   pageRoles: {
@@ -253,7 +254,7 @@ export interface FrameResult {
 }
 
 export interface ReadinessReport {
-  schemaVersion: 1 | 2 | 3;
+  schemaVersion: 1 | 2 | 3 | 4;
   producer?: ProducerIdentity;
   rulesetVersion: string;
   catalogVersion: string;
@@ -264,6 +265,7 @@ export interface ReadinessReport {
     rootIds: string[];
     knowledgeSnapshotHash: string;
     knowledgeComplete: boolean;
+    excludedPageIds?: string[];
     resolution?: {
       mode: "exact" | "component-sources";
       requestedNodeIds: string[];
@@ -280,6 +282,7 @@ export interface ReadinessReport {
   issueGroups?: FindingGroup[];
   appliedChanges: ChangePlan[];
   generatedAt: string;
+  verification?: { kind: "audit" | "micro-check"; verifiedAt: string; checkedKeys?: string[]; predecessorReportHash?: string };
   snapshotHash: string;
 }
 
@@ -478,6 +481,7 @@ export interface ResponsiveFamily {
 
 export interface DesignKnowledgeGraph {
   schemaVersion: 1;
+  excludedPageIds?: string[];
   /** Hash of variable values, modes, aliases, applied styles and library inventory. */
   resourceFingerprint?: string;
   fileName: string;

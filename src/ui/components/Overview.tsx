@@ -6,12 +6,16 @@ import type { AuditRecheckRequest } from "../../plugin/messages";
 import { actionableIssueSummary } from "../operations/breakdown";
 import { BrandMark } from "../BrandMark";
 import { auditedTargetSummary, selectionEligibility } from "../operations/audit-scope";
-import { gradeClass } from "../operations/presentation";
+import { gradeClass, designerText } from "../operations/presentation";
 import { PageBatch } from "./PageBatch";
 import { TokenCoverage } from "./TokenCoverage";
 
 export interface OverviewProps {
   report: ReadinessReport | undefined;
+  auditOnly?: boolean;
+  reportOnly?: boolean;
+  excludedPageIds?: readonly string[];
+  onCleanup?: () => void;
   selectionSummary: SelectionSummary;
   stale: boolean;
   scanning: boolean;
@@ -37,34 +41,34 @@ export function Overview(props: OverviewProps) {
   const status = props.stale
     ? props.report?.ready ? "Grade passed · refresh required" : "Refresh required to confirm readiness"
     : props.report?.ready
-      ? "Ready for MCP/API consumption"
-      : "Not ready for MCP/API consumption";
+      ? "Ready for handoff"
+      : "Needs attention before handoff";
   return (
     <section className="panel stack">
-      <div className="scope-card">
+      {!props.reportOnly && <div className="scope-card">
         <div><span className="section-label">Audit target</span><p>Aim for B or better and a ready result. Choose what to audit. The rest of the file is used only as supporting context; the grade and findings apply only to your chosen target.</p></div>
         <div className="scope-actions">
           <button
-            className="button primary"
+            className="button"
             disabled={props.actionsBlocked || props.scanning || !eligibility.canAudit}
             aria-describedby={eligibility.guidance ? "selection-guidance" : undefined}
             onClick={() => props.onScan("selection")}
           >
             Audit selection ({props.selectionSummary.eligibleCount})
           </button>
-          <button className="button" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan("page")}>Current page</button>
+          <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan("page")}>Run audit · Current page</button>
           <button className="button" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan("file")}>Source frames</button>
         </div>
         {eligibility.guidance ? <p id="selection-guidance" className="selection-guidance" aria-live="polite">{eligibility.guidance}</p> : null}
-      </div>
-      {props.pages && props.onReviewPages ? <PageBatch pages={props.pages} canSave={props.fileKeyAvailable ?? true} disabled={props.actionsBlocked || props.scanning} onReview={props.onReviewPages} /> : null}
-      {!props.report ? (
+      </div>}
+      {!props.reportOnly && props.pages && props.onReviewPages ? <PageBatch excludedPageIds={props.excludedPageIds ?? []} pages={props.pages} canSave={props.fileKeyAvailable ?? true} disabled={props.actionsBlocked || props.scanning} onReview={props.onReviewPages} /> : null}
+      {!props.auditOnly && (!props.report ? (
         <div className="empty-state"><div className="empty-mark"><BrandMark /></div><h2>Build a trustworthy handoff signal</h2><p>Choose an audit target to see its readiness. The rest of the file informs the analysis without becoming part of the grade.</p></div>
       ) : (
         <>
           <div className="result-hero">
-            <div className={gradeClass(props.report.grade.letter)}>{props.report.grade.letter}</div>
-            <div><span className="section-label">{historicalExport ? "Historical readiness" : "Overall readiness"}</span><h2>{props.report.grade.score.toFixed(1)} / 100</h2><p className={props.stale ? "needs-refresh" : props.report.ready ? "ready" : "not-ready"}>{status}</p><small>{props.report.producer ? `Audit producer: ${producerLabel(props.report.producer)}` : `Historical pre-v3 report · Ruleset ${props.report.rulesetVersion}`}</small>{props.report.grade.capReason && <small>{props.report.grade.capReason}</small>}</div>
+            <div className={gradeClass(props.report.grade.letter)}><strong>{props.report.grade.letter}</strong><span>{props.report.grade.score.toFixed(1)} / 100</span></div>
+            <div><span className="section-label">{historicalExport ? "Historical readiness" : "Overall readiness"}</span><h2>{props.report.ready ? "Looking good" : "Let’s improve your design"}</h2><p className="hero-summary">{reportSummary(props.report)}</p><p className={props.stale ? "needs-refresh" : props.report.ready ? "ready" : "not-ready"}>{status}</p><small>{props.report.producer ? `Audit producer: ${producerLabel(props.report.producer)}` : `Historical pre-v3 report · Ruleset ${props.report.rulesetVersion}`}</small>{props.report.grade.capReason && <small>{props.report.grade.capReason}</small>}</div>
           </div>
           <div className="audited-target-summary">
             <div>
@@ -82,21 +86,28 @@ export function Overview(props: OverviewProps) {
             <div><strong>{issues.actionableCount} actionable issue{issues.actionableCount === 1 ? "" : "s"}</strong><p>{issues.occurrenceCount} affected occurrence{issues.occurrenceCount === 1 ? "" : "s"}. {issues.relatedGroupCount > 0 ? `${issues.relatedGroupCount} related group${issues.relatedGroupCount === 1 ? " needs" : "s need"} individual review; a shared fix is unverified.` : props.report.schemaVersion >= 2 ? "Verified common sources are counted once." : "Historical findings retain their original counts."}</p></div>
           </div> : null}
           {props.onRecheck ? <div className="scope-card">
-            <div><span className="section-label">Verify this audit</span><p>Refresh the audited target shown above. Design Passport reuses safe context and rebuilds it automatically when needed.</p></div>
+            <div><span className="section-label">Verify this audit</span><p>Regenerate the captured target when context or unsupported changes need a full verification.</p></div>
             <div className="scope-actions">
-              <button className="button primary" disabled={recheckDisabled} onClick={() => props.onRecheck?.({ mode: "changes" })}>Refresh audit</button>
+              <button className="button primary" disabled={recheckDisabled} onClick={() => props.onRecheck?.({ mode: "full" })}>Regenerate audit to verify</button>
             </div>
           </div> : null}
           {props.report.blockers.length > 0 && <div className="blocker-card"><strong>{props.report.blockers.length} hard blocker{props.report.blockers.length === 1 ? "" : "s"}</strong>{props.report.blockers.map((blocker) => <span key={blocker}>{blocker}</span>)}</div>}
-          <div className="axis-grid">
+          <details className="report-diagnostics"><summary>Stats for nerds</summary><p>Report {props.report.snapshotHash} · Verified {props.report.verification?.verifiedAt ?? props.report.generatedAt}</p><p>{props.report.grade.capReason ? designerText(props.report.grade.capReason) : "No grade cap"}</p><div className="axis-grid">
             {props.report.axes.map((axis) => <div className="axis-row" key={axis.axis}><div><span>{AXIS_LABELS[axis.axis]}</span><strong>{axis.score.toFixed(1)}</strong></div><div className="score-track"><span style={{ width: `${axis.score}%` }} /></div></div>)}
-          </div>
+          </div></details>
+          {props.onCleanup ? <button className="button" onClick={props.onCleanup}>Review available cleanup</button> : null}
           <div className="footer-actions">
             <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("json")}>{historicalExport ? "Export historical JSON" : "Export JSON"}</button>
             <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("markdown")}>{historicalExport ? "Export historical Markdown" : "Export Markdown"}</button>
           </div>
         </>
-      )}
+      ))}
     </section>
   );
+}
+
+export function reportSummary(report: ReadinessReport): string {
+  const count = actionableIssueSummary(report).actionableCount;
+  const weakest = [...report.frames].sort((a, b) => a.grade.score - b.grade.score)[0];
+  return (count === 0 ? "Your audited design meets the readiness requirements." : `${count} issues to address. ${weakest?.rootName ?? "The lowest-scoring module"} sets your overall score.`).slice(0, 120);
 }

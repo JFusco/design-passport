@@ -1,3 +1,4 @@
+import { validClearedKeys } from "./issue-review";
 import type { JsonValue, ReadinessProfile, TokenCoverageDisposition, TokenCoverageField, TokenCoverageReason } from "../core/contracts";
 import { isBindableField } from "../core/operations/planning";
 import { normalizeReadinessProfile } from "../core/profile";
@@ -49,6 +50,15 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
     if (!isAuditViewState(message.viewState)) throw new Error("Saved audit view is invalid");
     return { type: message.type, id: text(message.id, "id", 1_000), viewState: message.viewState };
   }
+  if (message.type === "generate-context") {
+    if (typeof message.regenerate !== "boolean") throw new Error("regenerate must be boolean");
+    return { type: message.type, regenerate: message.regenerate };
+  }
+  if (message.type === "clear-issue") {
+    if (!validClearedKeys(message.keys) || message.keys.length === 0) throw new Error("Resolved issue keys are invalid");
+    return { type: message.type, reportHash: text(message.reportHash, "reportHash", 200), keys: message.keys,
+      ...(message.auditId === undefined ? {} : { auditId: text(message.auditId, "auditId", 1_000) }) };
+  }
   if (message.type === "audit-pages") {
     if (!Array.isArray(message.pageIds) || message.pageIds.length === 0 || message.pageIds.length > 1_000) throw new Error("Choose between 1 and 1,000 pages");
     const pageIds = message.pageIds.map((id) => text(id, "pageId", 200));
@@ -62,11 +72,11 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
     if ((request.mode === "changes" || request.mode === "full") && Object.keys(request).length === 1) {
       return { type: message.type, request: { mode: request.mode } };
     }
-    if (request.mode === "component" && Object.keys(request).every((key) => key === "mode" || key === "componentId")) {
-      return { type: message.type, request: { mode: "component", componentId: text(request.componentId, "componentId", 200) } };
+    if (request.mode === "component" && Object.keys(request).every((key) => ["mode", "componentId", "reportHash", "requestId"].includes(key))) {
+      return { type: message.type, request: { mode: "component", componentId: text(request.componentId, "componentId", 200), reportHash: text(request.reportHash, "reportHash", 200), requestId: text(request.requestId, "requestId", 200) } };
     }
-    if (request.mode === "issue" && Object.keys(request).every((key) => key === "mode" || key === "issueId")) {
-      return { type: message.type, request: { mode: "issue", issueId: text(request.issueId, "issueId", 500) } };
+    if (request.mode === "issue" && Object.keys(request).every((key) => ["mode", "issueId", "reportHash", "requestId"].includes(key))) {
+      return { type: message.type, request: { mode: "issue", issueId: text(request.issueId, "issueId", 500), reportHash: text(request.reportHash, "reportHash", 200), requestId: text(request.requestId, "requestId", 200) } };
     }
     throw new Error("recheck request is invalid");
   }

@@ -7,7 +7,7 @@ export function profileDomainErrors(profile: ReadinessProfile, availablePageIds?
   const duplicatePages = [...new Set(assignedPages.filter((pageId, index) => assignedPages.indexOf(pageId) !== index))];
   if (duplicatePages.length > 0) errors.push(`Pages may have only one role: ${duplicatePages.join(", ")}`);
   if (availablePageIds) {
-    const missing = assignedPages.filter((pageId) => !availablePageIds.has(pageId));
+    const missing = [...assignedPages, ...(profile.excludedPageIds ?? [])].filter((pageId) => !availablePageIds.has(pageId));
     if (missing.length > 0) errors.push(`Mapped pages no longer exist: ${[...new Set(missing)].join(", ")}`);
   }
   if (profile.artifactKind === "product" && profile.pageRoles.screens.pageIds.length === 0) {

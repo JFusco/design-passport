@@ -1,3 +1,4 @@
+import type { IssueReviewState } from "./issue-review";
 import type { BootstrapData, SelectionSummary, VariableCollectionOption } from "../figma/adapter";
 import type { AuditSaveStatus, AuditViewState, SavedAuditSummary, SavedAuditV1 } from "./audit-state";
 import type {
@@ -40,6 +41,7 @@ export interface KnowledgeSummary {
   snapshotHash: string;
   pageCount: number;
   loadedPageCount: number;
+  excludedPageIds?: string[];
   nodeCount: number;
   componentCount: number;
   instanceCount: number;
@@ -61,8 +63,8 @@ export interface AuditTargetSummary {
 export type AuditRecheckRequest =
   | { mode: "changes" }
   | { mode: "full" }
-  | { mode: "component"; componentId: string }
-  | { mode: "issue"; issueId: string };
+  | { mode: "component"; componentId: string; reportHash: string; requestId: string }
+  | { mode: "issue"; issueId: string; reportHash: string; requestId: string };
 
 export interface AuditRefreshResult {
   mode: "session" | "incremental" | "full";
@@ -72,8 +74,32 @@ export interface AuditRefreshResult {
   remainingCount: number;
 }
 
+export interface ContextStatus {
+  state: "missing" | "cached" | "current" | "outdated" | "generating";
+  reason?: string;
+  validatedAt?: string;
+  knowledge?: KnowledgeSummary;
+  outcome?: "completed" | "failed" | "cancelled";
+}
+export interface AuditResultData {
+  report: ReadinessReport;
+  plans: ChangePlan[];
+  knowledge: KnowledgeSummary;
+  collections: VariableCollectionOption[];
+  insights: KnowledgeInsight[];
+  projectStyleGuide: BootstrapData["projectStyleGuide"];
+  sessionReferenceCount: number;
+  savedAuditId?: string;
+  saveStatus?: AuditSaveStatus;
+  refresh?: AuditRefreshResult;
+  issueReviewState?: IssueReviewState;
+  waivers?: import("../core/waivers").WaiverStore;
+}
+
 export type UiToPluginMessage =
   | { type: "initialize" }
+  | { type: "generate-context"; regenerate: boolean }
+  | { type: "clear-issue"; auditId?: string; reportHash: string; keys: string[] }
   | { type: "save-profile"; profile: ReadinessProfile }
   | { type: "scan"; request: ScanRequest }
   | { type: "audit-pages"; pageIds: string[] }
@@ -111,6 +137,7 @@ export type UiToPluginMessage =
 
 export type PluginToUiMessage =
   | { type: "bootstrap"; data: BootstrapData; rulesetVersion: string; catalogVersion: string; catalogDigest: string }
+  | { type: "waivers-result"; waivers: import("../core/waivers").WaiverStore }
   | { type: "collections-result"; collections: VariableCollectionOption[] }
   | { type: "audit-started"; target: AuditTargetSummary }
   | { type: "progress"; progress: ScanProgress }
@@ -120,19 +147,11 @@ export type PluginToUiMessage =
   | { type: "batch-progress"; completed: number; total: number; skipped: number; pageName?: string }
   | { type: "batch-complete"; completed: number; total: number; skipped: number; cancelled: boolean }
   | { type: "token-coverage-page"; result: TokenCoveragePageResult }
-  | {
-    type: "scan-result";
-    report: ReadinessReport;
-    plans: ChangePlan[];
-    knowledge: KnowledgeSummary;
-    collections: VariableCollectionOption[];
-    insights: KnowledgeInsight[];
-    projectStyleGuide: BootstrapData["projectStyleGuide"];
-    sessionReferenceCount: number;
-    savedAuditId?: string;
-    saveStatus?: AuditSaveStatus;
-    refresh?: AuditRefreshResult;
-  }
+  | ({ type: "scan-result" } & AuditResultData)
+  | { type: "micro-check-started"; requestId: string; reportHash: string; checkedKeys: string[] }
+  | { type: "micro-check-result"; requestId: string; reportHash: string; checkedKeys: string[]; outcome: "resolved" | "unresolved" | "requires-regeneration"; reason: string; data?: AuditResultData }
+  | { type: "context-status"; status: ContextStatus }
+  | { type: "issue-cleared"; reportHash: string; keys: string[]; persistence: AuditSaveStatus }
   | { type: "knowledge-stale" }
   | { type: "selection"; summary: SelectionSummary }
   | { type: "profile-saved"; data: BootstrapData }

@@ -31,6 +31,7 @@ export function buildKnowledgeSummary(value: DesignKnowledgeGraph): KnowledgeSum
     snapshotHash: value.snapshotHash,
     pageCount: value.pageCount,
     loadedPageCount: value.loadedPageCount,
+    excludedPageIds: [...(value.excludedPageIds ?? [])],
     nodeCount: Object.keys(value.nodes).length,
     componentCount: value.componentIds.length,
     instanceCount: value.instanceIds.length,

@@ -4,81 +4,497 @@
   "title": "ReadinessReport",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "rulesetVersion", "catalogVersion", "catalogDigest", "profileHash", "target", "axes", "frames", "grade", "ready", "blockers", "findings", "appliedChanges", "generatedAt", "snapshotHash"],
+  "required": [
+    "schemaVersion",
+    "rulesetVersion",
+    "catalogVersion",
+    "catalogDigest",
+    "profileHash",
+    "target",
+    "axes",
+    "frames",
+    "grade",
+    "ready",
+    "blockers",
+    "findings",
+    "appliedChanges",
+    "generatedAt",
+    "snapshotHash"
+  ],
   "properties": {
-    "schemaVersion": {"type": "integer", "enum": [1, 2, 3]},
+    "schemaVersion": {
+      "type": "integer",
+      "enum": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
     "producer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["pluginVersion", "rulesetVersion", "buildSha", "channel"],
+      "required": [
+        "pluginVersion",
+        "rulesetVersion",
+        "buildSha",
+        "channel"
+      ],
       "properties": {
-        "pluginVersion": { "type": "string", "minLength": 1 },
-        "rulesetVersion": { "type": "string", "minLength": 1 },
-        "buildSha": { "type": "string", "minLength": 1 },
-        "channel": { "type": "string", "enum": ["production", "development"] }
+        "pluginVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rulesetVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "buildSha": {
+          "type": "string",
+          "minLength": 1
+        },
+        "channel": {
+          "type": "string",
+          "enum": [
+            "production",
+            "development"
+          ]
+        }
       }
     },
-    "rulesetVersion": { "type": "string", "minLength": 1 },
-    "catalogVersion": { "type": "string", "minLength": 1 },
-    "catalogDigest": { "type": "string", "pattern": "^sha256:" },
-    "profileHash": { "type": "string", "minLength": 1 },
+    "rulesetVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "catalogVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "catalogDigest": {
+      "type": "string",
+      "pattern": "^sha256:"
+    },
+    "profileHash": {
+      "type": "string",
+      "minLength": 1
+    },
     "target": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["scope", "rootIds", "knowledgeSnapshotHash", "knowledgeComplete"],
+      "required": [
+        "scope",
+        "rootIds",
+        "knowledgeSnapshotHash",
+        "knowledgeComplete"
+      ],
       "properties": {
-        "scope": { "type": "string", "enum": ["selection", "page", "file"] },
-        "rootIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-        "knowledgeSnapshotHash": { "type": "string", "minLength": 1 },
-        "knowledgeComplete": { "type": "boolean" },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "selection",
+            "page",
+            "file"
+          ]
+        },
+        "rootIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "knowledgeSnapshotHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "knowledgeComplete": {
+          "type": "boolean"
+        },
         "resolution": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["mode", "requestedNodeIds", "excludedNodeIds"],
+          "required": [
+            "mode",
+            "requestedNodeIds",
+            "excludedNodeIds"
+          ],
           "properties": {
-            "mode": { "type": "string", "enum": ["exact", "component-sources"] },
-            "requestedNodeIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-            "excludedNodeIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+            "mode": {
+              "type": "string",
+              "enum": [
+                "exact",
+                "component-sources"
+              ]
+            },
+            "requestedNodeIds": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "excludedNodeIds": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "excludedPageIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }
     },
-    "axes": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "$ref": "#/$defs/axisScore" } },
-    "frames": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/frameResult" } },
-    "grade": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/grade" },
-    "ready": { "type": "boolean" },
-    "blockers": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-    "issueGroups": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["id", "kind", "primaryFindingId", "findingIds", "occurrenceCount"], "properties": {"id": {"type": "string", "minLength": 1}, "primaryFindingId": {"type": "string", "minLength": 1}, "sourceNodeId": {"type": "string", "minLength": 1}, "sourceStyleId": {"type": "string", "minLength": 1}, "sourceLabel": {"type": "string", "minLength": 1}, "property": {"type": "string", "minLength": 1}, "contextKey": {"type": "string", "minLength": 1}, "kind": {"type": "string", "enum": ["source", "related"]}, "findingIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}, "occurrenceCount": {"type": "integer", "minimum": 1}}}},
-    "findings": { "type": "array", "items": { "$ref": "https://verndale.com/schemas/figma-ai-ready/finding.schema.json" } },
-    "appliedChanges": { "type": "array", "items": { "$ref": "https://verndale.com/schemas/figma-ai-ready/change-plan.schema.json" } },
-    "generatedAt": { "type": "string", "format": "date-time" },
-    "snapshotHash": { "type": "string", "minLength": 1 }
+    "axes": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "$ref": "#/$defs/axisScore"
+      }
+    },
+    "frames": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/frameResult"
+      }
+    },
+    "grade": {
+      "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/grade"
+    },
+    "ready": {
+      "type": "boolean"
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "issueGroups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "primaryFindingId",
+          "findingIds",
+          "occurrenceCount"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "primaryFindingId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceNodeId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceStyleId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sourceLabel": {
+            "type": "string",
+            "minLength": 1
+          },
+          "property": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contextKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "source",
+              "related"
+            ]
+          },
+          "findingIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "occurrenceCount": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "https://verndale.com/schemas/figma-ai-ready/finding.schema.json"
+      }
+    },
+    "appliedChanges": {
+      "type": "array",
+      "items": {
+        "$ref": "https://verndale.com/schemas/figma-ai-ready/change-plan.schema.json"
+      }
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "snapshotHash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "verifiedAt"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "audit",
+            "micro-check"
+          ]
+        },
+        "verifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "checkedKeys": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "predecessorReportHash": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "micro-check"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "checkedKeys",
+              "predecessorReportHash"
+            ],
+            "properties": {
+              "checkedKeys": {},
+              "predecessorReportHash": {}
+            }
+          }
+        }
+      ]
+    }
   },
   "allOf": [
-    {"if": {"properties": {"schemaVersion": {"enum": [2, 3]}}, "required": ["schemaVersion"]}, "then": {"required": ["issueGroups"], "properties": {"findings": {"type": "array", "items": {"type": "object", "required": ["category"], "properties": {"category": {"type": "string", "enum": ["requirement", "recommendation", "governance"]}}}}, "issueGroups": {}}}},
-    {"if": {"properties": {"schemaVersion": {"const": 3}}, "required": ["schemaVersion"]}, "then": {"required": ["producer"], "properties": {"producer": {}, "frames": {"type": "array", "items": {"type": "object", "required": ["tokenCoverage"], "properties": {"tokenCoverage": {}}}}}}}
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "enum": [
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        "required": [
+          "schemaVersion"
+        ]
+      },
+      "then": {
+        "required": [
+          "issueGroups"
+        ],
+        "properties": {
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "category"
+              ],
+              "properties": {
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "requirement",
+                    "recommendation",
+                    "governance"
+                  ]
+                }
+              }
+            }
+          },
+          "issueGroups": {}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "enum": [
+              3,
+              4
+            ]
+          }
+        },
+        "required": [
+          "schemaVersion"
+        ]
+      },
+      "then": {
+        "required": [
+          "producer"
+        ],
+        "properties": {
+          "producer": {},
+          "frames": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "tokenCoverage"
+              ],
+              "properties": {
+                "tokenCoverage": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 4
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "verification"
+        ],
+        "properties": {
+          "target": {
+            "required": [
+              "excludedPageIds"
+            ],
+            "type": "object",
+            "properties": {
+              "excludedPageIds": {}
+            }
+          },
+          "verification": {}
+        }
+      }
+    }
   ],
   "$defs": {
     "axisScore": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["axis", "score", "passedWeight", "applicableWeight", "multiplier", "statusCounts"],
+      "required": [
+        "axis",
+        "score",
+        "passedWeight",
+        "applicableWeight",
+        "multiplier",
+        "statusCounts"
+      ],
       "properties": {
-        "axis": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/axis" },
-        "score": { "type": "number", "minimum": 0, "maximum": 100 },
-        "passedWeight": { "type": "number", "minimum": 0 },
-        "applicableWeight": { "type": "number", "minimum": 0 },
-        "multiplier": { "type": "integer", "enum": [1, 2] },
+        "axis": {
+          "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/axis"
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "passedWeight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "applicableWeight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "multiplier": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ]
+        },
         "statusCounts": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["pass", "fail", "needs-review", "waived", "not-applicable"],
+          "required": [
+            "pass",
+            "fail",
+            "needs-review",
+            "waived",
+            "not-applicable"
+          ],
           "properties": {
-            "pass": { "type": "integer", "minimum": 0 },
-            "fail": { "type": "integer", "minimum": 0 },
-            "needs-review": { "type": "integer", "minimum": 0 },
-            "waived": { "type": "integer", "minimum": 0 },
-            "not-applicable": { "type": "integer", "minimum": 0 }
+            "pass": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "fail": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "needs-review": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "waived": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "not-applicable": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         }
       }
@@ -86,30 +502,101 @@
     "frameResult": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["rootId", "rootName", "rootType", "pageId", "pageName", "grade", "ready", "blockerIds", "axisScores"],
+      "required": [
+        "rootId",
+        "rootName",
+        "rootType",
+        "pageId",
+        "pageName",
+        "grade",
+        "ready",
+        "blockerIds",
+        "axisScores"
+      ],
       "properties": {
-        "rootId": { "type": "string", "minLength": 1 },
-        "rootName": { "type": "string", "minLength": 1 },
-        "rootType": { "type": "string", "minLength": 1 },
-        "pageId": { "type": "string", "minLength": 1 },
-        "pageName": { "type": "string", "minLength": 1 },
-        "grade": { "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/grade" },
-        "ready": { "type": "boolean" },
-        "blockerIds": { "type": "array", "items": { "type": "string", "minLength": 1 } },
-        "axisScores": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "$ref": "#/$defs/axisScore" } },
-        "tokenCoverage": { "$ref": "#/$defs/tokenCoverage" },
+        "rootId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rootName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rootType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pageId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pageName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grade": {
+          "$ref": "https://verndale.com/schemas/figma-ai-ready/definitions.schema.json#/$defs/grade"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "blockerIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "axisScores": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/axisScore"
+          }
+        },
+        "tokenCoverage": {
+          "$ref": "#/$defs/tokenCoverage"
+        },
         "variantCoverage": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["variantId", "variantName", "variantProperties", "nodeCount", "findingIds"],
+            "required": [
+              "variantId",
+              "variantName",
+              "variantProperties",
+              "nodeCount",
+              "findingIds"
+            ],
             "properties": {
-              "variantId": { "type": "string", "minLength": 1 },
-              "variantName": { "type": "string", "minLength": 1 },
-              "variantProperties": { "type": "object", "additionalProperties": { "type": "string" } },
-              "nodeCount": { "type": "integer", "minimum": 1 },
-              "findingIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+              "variantId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "variantName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "variantProperties": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "nodeCount": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "findingIds": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
             }
           }
         }
@@ -118,46 +605,125 @@
     "tokenCoverage": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["counts", "applicable", "coverage", "groups"],
+      "required": [
+        "counts",
+        "applicable",
+        "coverage",
+        "groups"
+      ],
       "properties": {
         "counts": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["bound", "inherited", "ignored", "missing"],
+          "required": [
+            "bound",
+            "inherited",
+            "ignored",
+            "missing"
+          ],
           "properties": {
-            "bound": { "type": "integer", "minimum": 0 },
-            "inherited": { "type": "integer", "minimum": 0 },
-            "ignored": { "type": "integer", "minimum": 0 },
-            "missing": { "type": "integer", "minimum": 0 }
+            "bound": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "inherited": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ignored": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "missing": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         },
-        "applicable": { "type": "integer", "minimum": 0 },
-        "coverage": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "applicable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
         "groups": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["disposition", "field", "reason", "count", "samples", "truncated"],
+            "required": [
+              "disposition",
+              "field",
+              "reason",
+              "count",
+              "samples",
+              "truncated"
+            ],
             "properties": {
-              "disposition": { "type": "string", "enum": ["bound", "inherited", "ignored", "missing"] },
-              "field": { "type": "string", "minLength": 1 },
-              "reason": { "type": "string", "enum": ["variable", "text-style", "component-instance", "not-rendered", "inert-default", "not-owner", "unresolved-style", "mixed", "unsupported-unit", "documentation-scaffold", "unbound"] },
-              "count": { "type": "integer", "minimum": 1 },
+              "disposition": {
+                "type": "string",
+                "enum": [
+                  "bound",
+                  "inherited",
+                  "ignored",
+                  "missing"
+                ]
+              },
+              "field": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "variable",
+                  "text-style",
+                  "component-instance",
+                  "not-rendered",
+                  "inert-default",
+                  "not-owner",
+                  "unresolved-style",
+                  "mixed",
+                  "unsupported-unit",
+                  "documentation-scaffold",
+                  "unbound"
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              },
               "samples": {
                 "type": "array",
                 "maxItems": 50,
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["nodeId", "nodePath"],
+                  "required": [
+                    "nodeId",
+                    "nodePath"
+                  ],
                   "properties": {
-                    "nodeId": { "type": "string", "minLength": 1 },
-                    "nodePath": { "type": "string", "minLength": 1 }
+                    "nodeId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "nodePath": {
+                      "type": "string",
+                      "minLength": 1
+                    }
                   }
                 }
               },
-              "truncated": { "type": "boolean" }
+              "truncated": {
+                "type": "boolean"
+              }
             }
           }
         }

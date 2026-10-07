@@ -1,3 +1,4 @@
+import type { IssueReviewState } from "./issue-review";
 import { AXES, type Axis, type ChangePlan, type FindingCategory, type Grade, type KnowledgeInsight, type ReadinessProfile, type ReadinessReport } from "../core/contracts";
 import { hashValue } from "../core/stable";
 import type { CapturedAuditTarget } from "../figma/adapter";
@@ -7,6 +8,7 @@ import type { KnowledgeSummary } from "./messages";
 /** Only presentation preferences belong here; edits and action confirmations never persist. */
 export interface AuditViewState {
   activeTab: Tab;
+  reportSection?: "summary" | "issues" | "modules" | "guidance";
   showPassing: boolean;
   axisFilter: Axis | "all";
   categoryFilter?: FindingCategory | "all";
@@ -35,6 +37,7 @@ export interface SavedAuditV1 {
   profile: ReadinessProfile;
   provenance: { pluginVersion: string; knowledgeVersion: string };
   viewState?: AuditViewState;
+  issueReviewState?: IssueReviewState;
 }
 
 export type SaveAuditInput = Omit<SavedAuditV1, "schemaVersion" | "id" | "targetKey" | "savedAt">;
@@ -57,9 +60,10 @@ export function canonicalAuditTargetKey(target: CapturedAuditTarget): string {
 export function isAuditViewState(value: unknown): value is AuditViewState {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const view = value as Record<string, unknown>;
-  const allowed = new Set(["activeTab", "showPassing", "axisFilter", "categoryFilter", "pageFilter", "rootFilter", "variantFilter", "expanded"]);
+  const allowed = new Set(["activeTab", "reportSection", "showPassing", "axisFilter", "categoryFilter", "pageFilter", "rootFilter", "variantFilter", "expanded"]);
   return Object.keys(view).every((key) => allowed.has(key))
-    && ["overview", "modules", "findings", "guidance", "cleanup", "context", "profile"].includes(String(view.activeTab))
+    && ["audit", "report", "overview", "modules", "findings", "guidance", "cleanup", "context", "profile"].includes(String(view.activeTab))
+    && (view.reportSection === undefined || ["summary", "issues", "modules", "guidance"].includes(String(view.reportSection)))
     && typeof view.showPassing === "boolean"
     && (view.axisFilter === "all" || AXES.includes(view.axisFilter as Axis))
     && (view.categoryFilter === undefined || ["all", "requirement", "recommendation", "governance"].includes(String(view.categoryFilter)))

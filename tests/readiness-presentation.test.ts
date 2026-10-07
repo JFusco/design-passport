@@ -47,6 +47,20 @@ function click(tree: ReactNode, label: string): void {
 }
 
 describe("source issue presentation and historical compatibility", () => {
+  it("keeps the hero on the limiting module while another module improves", () => {
+    const p = profile(), graph = healthyGraph(p), roots = ["root:desktop", "root:mobile"];
+    const base = buildReadinessReport({ graph, profile: p, scope: "selection", targetRootIds: roots });
+    const desktop = syntheticFinding({ id: "desktop:naming", rootId: roots[0]!, nodeId: roots[0]!, ruleId: "naming.default-node", axis: "layer-naming", severity: 4, status: "fail" });
+    const mobile = syntheticFinding({ id: "mobile:naming", rootId: roots[1]!, nodeId: roots[1]!, ruleId: "naming.default-node", axis: "layer-naming", severity: 1, status: "fail" });
+    const before = buildReadinessReport({ graph, profile: p, scope: "selection", targetRootIds: roots, findings: [...base.findings, desktop, mobile] });
+    const after = buildReadinessReport({ graph, profile: p, scope: "selection", targetRootIds: roots, findings: [...base.findings, desktop] });
+    expect(after.frames.find((frame) => frame.rootId === roots[1])!.grade.score).toBeGreaterThan(before.frames.find((frame) => frame.rootId === roots[1])!.grade.score);
+    expect(after.grade).toEqual(before.grade);
+    const markup = renderToStaticMarkup(createElement(Overview, { ...overviewProps(), report: after }));
+    expect(markup).toContain(`${after.frames[0]!.rootName} sets your overall score.`);
+    expect(markup).not.toContain("Estimated");
+  });
+
   it("deduplicates only proven sources across modules and retains related occurrences as individual issues", () => {
     const report = reportFixture();
     const original = JSON.stringify(report);
@@ -137,14 +151,14 @@ describe("captured-target verification controls", () => {
     const props = overviewProps();
     const onRecheck = vi.fn();
     const tree = Overview({ ...props, onRecheck });
-    click(tree, "Refresh audit");
-    expect(onRecheck.mock.calls).toEqual([[{ mode: "changes" }]]);
+    click(tree, "Regenerate audit to verify");
+    expect(onRecheck.mock.calls).toEqual([[{ mode: "full" }]]);
     expect(props.onScan).not.toHaveBeenCalled();
   });
 
   it("disables verification while blocked and keeps historical export available", () => {
     const markup = renderToStaticMarkup(createElement(Overview, { ...overviewProps(), onRecheck: vi.fn(), recheckDisabled: true, historical: true, stale: true }));
-    expect(markup).toMatch(/<button[^>]+disabled=""[^>]*>Refresh audit<\/button>/);
+    expect(markup).toMatch(/<button[^>]+disabled=""[^>]*>Regenerate audit to verify<\/button>/);
     expect(markup).not.toContain("Rescan entire file");
     expect(markup).toMatch(/<button class="button">Export historical JSON<\/button>/);
     expect(markup).toContain("related group needs individual review");
@@ -156,10 +170,10 @@ describe("captured-target verification controls", () => {
     const report = reportFixture();
     report.frames = report.frames.filter((frame) => frame.rootId === "root:desktop");
     const props = { report, onRecheck, recheckDisabled: false, onNavigate: vi.fn(), onViewFindings: vi.fn(), onViewVariantFindings: vi.fn() };
-    click(Modules(props), "Refresh this module");
-    expect(onRecheck).toHaveBeenCalledExactlyOnceWith({ mode: "component", componentId: "root:desktop" });
+    click(Modules(props), "Check again");
+    expect(onRecheck).toHaveBeenCalledExactlyOnceWith({ mode: "component", componentId: "root:desktop", reportHash: report.snapshotHash, requestId: expect.any(String) });
     const markup = renderToStaticMarkup(createElement(Modules, { ...props, recheckDisabled: true }));
-    expect(markup).toMatch(/<button[^>]+disabled=""[^>]*>Refresh this module<\/button>/);
+    expect(markup).toMatch(/<button[^>]+disabled=""[^>]*>Check again<\/button>/);
     expect(markup).toContain("affected occurrences");
     expect(markup).toContain("shared fix is unverified");
   });

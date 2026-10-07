@@ -6,6 +6,7 @@ import { friendlyReference, humanizeIdentifier, relativeTime } from "../operatio
 export interface ContextPanelProps {
   knowledge: KnowledgeSummary | undefined;
   actionsBlocked: boolean;
+  historicalSummary?: boolean;
   onRefresh: () => void;
   projectStyleGuide: ProjectStyleGuideStatus;
   referencePackRaw: string;
@@ -32,10 +33,10 @@ export function ContextPanel(props: ContextPanelProps) {
 
   return (
     <section className="panel stack">
-      <div className="section-heading"><div><span className="section-label">Whole-file design knowledge</span><h2>{props.knowledge?.complete ? "Complete" : "Not built"}</h2></div></div>
+      <div className="section-heading"><div><span className="section-label">Whole-file design knowledge</span><h2>{props.historicalSummary ? "Saved capture · historical" : props.knowledge?.complete ? "Included pages captured" : "Not built"}</h2></div></div>
       {props.knowledge && <>
         <div className="context-grid">
-          <Metric label="Pages loaded" value={`${props.knowledge.loadedPageCount} / ${props.knowledge.pageCount}`} />
+          <Metric label="Included pages captured" value={`${props.knowledge.loadedPageCount} / ${props.knowledge.pageCount - (props.knowledge.excludedPageIds?.length ?? 0)}`} />
           <Metric label="Nodes" value={props.knowledge.nodeCount.toLocaleString()} />
           <Metric label="Components" value={props.knowledge.componentCount.toLocaleString()} />
           <Metric label="Instances" value={props.knowledge.instanceCount.toLocaleString()} />
@@ -44,7 +45,7 @@ export function ContextPanel(props: ContextPanelProps) {
         </div>
         <div className="snapshot"><span>Knowledge snapshot</span><strong>{friendlyReference(props.knowledge.snapshotHash)}</strong><small>Built {relativeTime(props.knowledge.builtAt)}</small></div>
         <ContextList title="Page role map" empty="No pages indexed." totalCount={props.knowledge.pages.length}>
-          {props.knowledge.pages.map((page) => <div className="inventory-row" key={page.id}><span><strong>{page.name}</strong><small>{page.role}</small></span><b>{page.nodeCount.toLocaleString()} nodes</b></div>)}
+          {props.knowledge.pages.map((page) => <div className="inventory-row" key={page.id}><span><strong>{page.name}</strong><small>{props.knowledge?.excludedPageIds?.includes(page.id) ? "Excluded by designer" : page.role}</small></span><b>{page.nodeCount.toLocaleString()} nodes</b></div>)}
         </ContextList>
         <ContextList title="Resolved component patterns" empty="No component definitions or instances were resolved." totalCount={props.knowledge.patternInventory.length}>
           {props.knowledge.patternInventory.slice(0, 40).map((pattern) => <div className="inventory-row" key={`${pattern.kind}:${pattern.label}`}><span><strong>{pattern.label}</strong><small>{pattern.kind}</small></span><b>{pattern.definitions} definitions · {pattern.instances} uses</b></div>)}
@@ -77,24 +78,25 @@ export function ContextPanel(props: ContextPanelProps) {
         help="Select the pack exported by the local companion. Design Passport validates it before anything changes."
         value={props.referencePackRaw}
         maximumBytes={90_000}
+        disabled={props.actionsBlocked}
         onLoad={props.onReferencePackRaw}
       />
       {props.referencePackRaw && !selectedPack ? <div className="banner error">This file is not a readable Design Passport guide or reference pack.</div> : null}
       {selectedPack ? <div className="file-summary"><strong>{selectedPack.role === "style-guide" ? "Project style guide" : "Session reference"} ready</strong><span>Version {selectedPack.version} · {selectedPack.factCount} guidance item{selectedPack.factCount === 1 ? "" : "s"}</span></div> : null}
       <div className="scope-actions">
-        <button className="button primary" disabled={!props.canMutateDocument || !props.fileKeyAvailable || selectedPack?.role !== "style-guide"} onClick={props.onImportProjectStyleGuide}>{props.projectStyleGuide.state === "active" && props.projectStyleGuide.persistent ? "Replace project style guide" : "Connect project style guide"}</button>
-        <button className="button" disabled={selectedPack?.role !== "reference" && !(selectedPack?.role === "style-guide" && !props.fileKeyAvailable)} onClick={props.onAddSessionReference}>{selectedPack?.role === "style-guide" ? "Use guide for this session" : "Use for this session"}</button>
-        {props.projectStyleGuide.state === "active" && props.projectStyleGuide.persistent ? <button className="button subtle" disabled={!props.canMutateDocument} onClick={props.onRemoveProjectStyleGuide}>Remove style guide</button> : null}
+        <button className="button primary" disabled={props.actionsBlocked || !props.canMutateDocument || !props.fileKeyAvailable || selectedPack?.role !== "style-guide"} onClick={props.onImportProjectStyleGuide}>{props.projectStyleGuide.state === "active" && props.projectStyleGuide.persistent ? "Replace project style guide" : "Connect project style guide"}</button>
+        <button className="button" disabled={props.actionsBlocked || (selectedPack?.role !== "reference" && !(selectedPack?.role === "style-guide" && !props.fileKeyAvailable))} onClick={props.onAddSessionReference}>{selectedPack?.role === "style-guide" ? "Use guide for this session" : "Use for this session"}</button>
+        {props.projectStyleGuide.state === "active" && props.projectStyleGuide.persistent ? <button className="button subtle" disabled={props.actionsBlocked || !props.canMutateDocument} onClick={props.onRemoveProjectStyleGuide}>Remove style guide</button> : null}
       </div>
       <div className="inventory-row"><span><strong>Session references</strong><small className="sentence">Cleared whenever the plugin restarts</small></span><b>{props.sessionReferenceCount}</b></div>
-      {props.sessionReferenceCount > 0 ? <button className="button subtle" onClick={props.onClearSessionReferences}>Clear session references</button> : null}
+      {props.sessionReferenceCount > 0 ? <button className="button subtle" disabled={props.actionsBlocked} onClick={props.onClearSessionReferences}>Clear session references</button> : null}
       {!props.canMutateDocument ? <p className="fine-print">Dev Mode can read and apply a connected style guide, but cannot import, replace, or remove it.</p> : null}
       {!props.fileKeyAvailable ? <p className="fine-print">This file has not been saved yet, so a style guide can be used for this session but cannot be connected permanently.</p> : null}
     </section>
   );
 }
 
-function JsonFilePicker(props: { id: string; label: string; help: string; value: string; maximumBytes: number; onLoad: (value: string) => void }) {
+function JsonFilePicker(props: { id: string; label: string; help: string; value: string; maximumBytes: number; disabled?: boolean; onLoad: (value: string) => void }) {
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
   useEffect(() => { if (!props.value) setFileName(""); }, [props.value]);
@@ -122,7 +124,7 @@ function JsonFilePicker(props: { id: string; label: string; help: string; value:
 
   return <div className="file-picker">
     <label className="button" htmlFor={props.id}>{fileName ? "Choose a different file" : props.label}</label>
-    <input id={props.id} type="file" accept=".json,application/json" onChange={choose} />
+    <input id={props.id} type="file" disabled={props.disabled} accept=".json,application/json" onChange={choose} />
     <small>{fileName ? `Selected: ${fileName}` : props.help}</small>
     {error ? <span className="file-error">{error}</span> : null}
   </div>;

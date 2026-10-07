@@ -61,6 +61,7 @@ export function reportToMarkdown(report: ReadinessReport): string {
     "",
     `Whole-file knowledge: ${report.target.knowledgeComplete ? "complete" : "incomplete"} (${inline(report.target.knowledgeSnapshotHash)})`,
     "",
+    ...(report.schemaVersion >= 4 ? [`Excluded page IDs: ${(report.target.excludedPageIds ?? []).map(inline).join(", ") || "None"}`, "", `Verification: ${inline(report.verification?.kind ?? "audit")} · ${inline(report.verification?.verifiedAt ?? report.generatedAt)}`, ...(report.verification?.kind === "micro-check" ? [`Checked keys: ${(report.verification.checkedKeys ?? []).map(inline).join(", ")}`, `Predecessor report: ${inline(report.verification.predecessorReportHash ?? "")}`] : []), ""] : []),
     "## Axes",
     "",
     "| Axis | Score | Passed / applicable weight |",

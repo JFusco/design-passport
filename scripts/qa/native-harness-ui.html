@@ -2,11 +2,11 @@
   <summary style="cursor:pointer;font-weight:700;position:sticky;top:0;background:#fff;z-index:1">Native QA controls — development only</summary>
   <div id="native-qa-identity" style="font-size:10px;overflow-wrap:anywhere;margin:6px 0"></div>
   <div style="display:flex;flex-wrap:wrap;gap:4px">
-    <button id="native-qa-page">Current page / fresh session</button><button id="native-qa-changes">Recheck changes</button><button id="native-qa-full">Rescan captured audit fully</button><button id="native-qa-inspect">Inspect file and selection</button>
+    <button id="native-qa-context">Generate context</button><button id="native-qa-page">Current page / fresh session</button><button id="native-qa-changes">Recheck changes</button><button id="native-qa-full">Rescan captured audit fully</button><button id="native-qa-inspect">Inspect file and selection</button>
     <input id="native-qa-component" placeholder="Component ID" aria-label="QA component ID"><button id="native-qa-component-run">Recheck component</button>
     <input id="native-qa-issue" placeholder="Issue ID (empty: first issue)" aria-label="QA issue ID"><button id="native-qa-issue-run">Recheck issue</button>
     <input id="native-qa-node" placeholder="Editable node ID" aria-label="QA editable node ID">
-    <select id="native-qa-field" aria-label="QA edit field"><option>name</option><option>visible</option><option>opacity</option><option>width</option><option>height</option><option>cornerRadius</option><option>strokeWeight</option></select>
+    <select id="native-qa-field" aria-label="QA edit field"><option>name</option><option>visible</option><option>opacity</option><option>width</option><option>height</option><option>cornerRadius</option><option>strokeWeight</option><option>itemSpacing</option><option>paddingTop</option><option>paddingRight</option><option>paddingBottom</option><option>paddingLeft</option></select>
     <input id="native-qa-value" placeholder="New value" aria-label="QA edit value"><button id="native-qa-edit">Edit allowlisted copy</button>
     <button id="native-qa-export">Export collected evidence JSON</button>
     <button id="native-qa-checkpoint">Export file storage checkpoint</button>
@@ -27,7 +27,7 @@
   let lastReport;
   let storagePending = false;
   let storageCheckpoint;
-  const measureCommands = new Set(['scan', 'refresh-audit', 'recheck-audit', 'audit-pages']);
+  const measureCommands = new Set(['generate-context', 'scan', 'refresh-audit', 'recheck-audit', 'audit-pages']);
   const beginRun = (request, timingOrigin, commandId) => ({ commandId, startedAt: new Date().toISOString(), start: performance.now(), request, timingOrigin, ...(storageCheckpoint ? { storageCheckpoint } : {}), firstInSession: evidence.runs.length === 0 && evidence.droppedRuns === 0 });
   const retainRun = (run) => {
     delete run.start;
@@ -52,6 +52,7 @@
     parent.postMessage({ pluginMessage: measureCommands.has(message.type) ? { ...message, __nativeQaCommandId: activeRun.commandId } : message }, '*');
   };
   byId('identity').textContent = 'Production ' + metadata.source.revision.slice(0, 12) + (metadata.source.dirty ? ' + working changes' : '') + ' · code SHA ' + metadata.source.productionCodeSha256.slice(0, 16) + ' · harness ' + metadata.harnessSourceSha256.slice(0, 16) + '. Existing cache retained.';
+  byId('context').onclick = () => send({ type: 'generate-context', regenerate: false });
   byId('page').onclick = () => send({ type: 'scan', request: { scope: 'page', refreshKnowledge: true } });
   byId('changes').onclick = () => send(metadata.capabilities.targetedRecheck ? { type: 'recheck-audit', request: { mode: 'changes' } } : { type: 'refresh-audit' });
   byId('full').onclick = () => send({ type: 'recheck-audit', request: { mode: 'full' } });
@@ -66,8 +67,8 @@
     try { send({ type: 'qa-storage-restore', checkpoint: JSON.parse(await file.text()) }); }
     catch (error) { status('Checkpoint could not be read: ' + String(error)); }
   };
-  byId('component-run').onclick = () => send({ type: 'recheck-audit', request: { mode: 'component', componentId: byId('component').value.trim() } });
-  byId('issue-run').onclick = () => send({ type: 'recheck-audit', request: { mode: 'issue', issueId: byId('issue').value.trim() || lastReport?.issueGroups?.[0]?.id || lastReport?.findings?.find((finding) => !['pass', 'not-applicable'].includes(finding.status))?.id || '' } });
+  byId('component-run').onclick = () => send({ type: 'recheck-audit', request: { mode: 'component', componentId: byId('component').value.trim(), reportHash: lastReport?.snapshotHash || '', requestId: 'native-component-' + nextCommand } });
+  byId('issue-run').onclick = () => send({ type: 'recheck-audit', request: { mode: 'issue', reportHash: lastReport?.snapshotHash || '', requestId: 'native-issue-' + nextCommand, issueId: byId('issue').value.trim() || lastReport?.issueGroups?.[0]?.id || lastReport?.findings?.find((finding) => !['pass', 'not-applicable'].includes(finding.status))?.id || '' } });
   byId('edit').onclick = () => {
     const field = byId('field').value;
     const raw = byId('value').value;
@@ -109,9 +110,11 @@
       activeRun.target = message.target;
       activeRun.auditStartedAt = at;
     }
-    if (message.type === 'scan-result') {
-      lastReport = message.report;
-      const run = { ...(activeRun || { number: evidence.runs.length + evidence.droppedRuns + 1, startedAt: at, timingOrigin: 'unobserved' }), status: 'completed', completedAt: at, elapsedMs: activeRun ? performance.now() - activeRun.start : null, report: message.report, plans: message.plans, refresh: message.refresh, saveStatus: message.saveStatus, knowledge: message.knowledge };
+    if (message.type === 'micro-check-result' && !message.data) { status(message); if (activeRun) retainRun({ ...activeRun, status: 'requires-regeneration', completedAt: at, elapsedMs: performance.now() - activeRun.start, failure: message }); }
+    const result = message.type === 'micro-check-result' ? message.data : message.type === 'scan-result' ? message : undefined;
+    if (result) {
+      lastReport = result.report;
+      const run = { ...(activeRun || { number: evidence.runs.length + evidence.droppedRuns + 1, startedAt: at, timingOrigin: 'unobserved' }), status: 'completed', completedAt: at, elapsedMs: activeRun ? performance.now() - activeRun.start : null, report: result.report, plans: result.plans, refresh: result.refresh, saveStatus: result.saveStatus, knowledge: result.knowledge };
       run.reportVisibleElapsedMs = run.elapsedMs;
       if (activeRun?.request?.type === 'audit-pages') run.timingOrigin += '-batch-cumulative';
       retainRun(run);
