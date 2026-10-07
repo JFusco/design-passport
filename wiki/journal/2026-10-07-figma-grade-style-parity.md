@@ -1,6 +1,8 @@
 ---
 topics: [stepped-audits-micro-fixes]
 plans: [2026-10-07-complete-figma-grade-and-score-styling-4247cafb41.md]
+issue: 'https://github.com/jfusco/design-passport/issues/87'
+issues: ['https://github.com/jfusco/design-passport/issues/87']
 ---
 
 # Figma grade and score parity
