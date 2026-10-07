@@ -1,6 +1,8 @@
 ---
 topics: [stepped-audits-micro-fixes]
 plans: [2026-10-07-align-the-plugin-with-the-figma-reference-28757aae2a.md]
+issue: 'https://github.com/jfusco/design-passport/issues/84'
+issues: ['https://github.com/jfusco/design-passport/issues/84']
 ---
 
 # Figma navigation and style fidelity
