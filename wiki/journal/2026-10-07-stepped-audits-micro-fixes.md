@@ -1,8 +1,8 @@
 ---
 topics: [stepped-audits-micro-fixes, whole-file-design-knowledge]
 plans: [2026-10-07-implement-the-figma-flow-and-live-micro-fix-scoring-040107251b.md]
-issue: "https://github.com/JFusco/design-passport/issues/81"
-issues: ["https://github.com/JFusco/design-passport/issues/81"]
+issue: 'https://github.com/jfusco/design-passport/issues/81'
+issues: ['https://github.com/jfusco/design-passport/issues/81']
 ---
 
 # Stepped audits and verified micro-fixes
