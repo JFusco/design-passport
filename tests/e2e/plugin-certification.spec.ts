@@ -216,6 +216,7 @@ test("keeps Figma navigation above notices and pinned on every destination", asy
     }
     await page.getByRole("button", { name: "Report", exact: true }).click();
     await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(page.getByRole("img", { name: "Grade A, 97.40 out of 100", exact: true })).toBeVisible();
     expect(await page.locator(".issue-category[open]").count()).toBe(0);
     expect(await page.locator(".passport-brand").evaluate((node) => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height }))).toEqual({ width: 16, height: 16 });
     expect(await page.locator(".tab-links button").first().evaluate((node) => ({ font: getComputedStyle(node).fontSize, weight: getComputedStyle(node).fontWeight, opacity: getComputedStyle(node).opacity }))).toEqual({ font: "16px", weight: "600", opacity: "0.4" });
