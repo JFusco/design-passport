@@ -11,7 +11,9 @@ The saved-result badge inherited the large report grade's 100px dimensions. Figm
 
 Read-only Figma inspection confirmed the two sizes and their distinct Inter typography, -1% tracking and 4px corners. The saved preview uses 9px corners, a 15.6px medium-weight score, and 58px total height. The report uses a 39.6px black-weight letter and a 16.6px regular-weight score. Its visible score now has two decimal places without a denominator; a named image role exposes its grade and out-of-100 score to screen readers. Stale readiness remains visible.
 
-The shared `.grade` treatment is compact; `.report-grade` owns the 100px treatment. Remove the competing legacy grade rules. Share typography, spacing, geometry and palette through CSS variables. Match cleanup text weight, saved labels, report text gaps and the reference's different collapsed/expanded score palettes. Figma inspection returned no local variable collections, paint styles or text styles, so these tokens preserve literal reference values.
+The shared `.grade` treatment is compact; `.report-grade` owns the 100px treatment. Remove the competing legacy grade rules. Share typography, spacing, geometry and palette through CSS variables. Match cleanup text weight, saved labels and report text gaps. Figma inspection returned no local variable collections, paint styles or text styles, so these tokens preserve literal reference values.
+
+PR 89 merged the geometry and score corrections while this follow-up was being prepared. Reconcile remote main `e7e73c8`, retaining its primary Report green/red badge palette across expansion states. The expanded examples use inconsistent variants; expanding a category should not recolor all score badges. This follow-up adds shared literal style tokens, the named grade image role, cleanup of competing legacy rules, remaining saved-label/scope spacing corrections, and precise rendered-style regression assertions. Preserve both plan and journal records.
 
 ## Browser and native evidence
 

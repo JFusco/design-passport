@@ -273,7 +273,7 @@ test("matches the Figma dark layout at 320, 456 and 500px with keyboard focus", 
     await page.locator(".finding-summary").first().click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const expandedAccessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-    expect(await page.locator(".axis-score").first().evaluate((node) => ({ color: getComputedStyle(node).color, background: getComputedStyle(node).backgroundColor }))).toEqual({ color: "rgb(255, 255, 255)", background: "rgb(155, 180, 164)" });
+    expect(await page.locator(".axis-score").first().evaluate((node) => ({ color: getComputedStyle(node).color, background: getComputedStyle(node).backgroundColor }))).toEqual({ color: "rgb(255, 255, 255)", background: "rgb(51, 150, 23)" });
     expect(expandedAccessibility.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target) }))).toEqual([
       { id: "color-contrast", targets: referenceContrastTargets.map((target) => target.map((selector) => selector.replace(".issue-category", ".issue-category[open=\"\"]"))) },
     ]);

@@ -12,7 +12,7 @@ The report grade uses a 100×100px square, 4px corners, Inter Black at 39.6px fo
 
 Keep shared grade styles compact and use `.report-grade` for the large report treatment. A later general `.grade` rule previously overrode the saved badge's width and height. Report scores use two decimal places without a visible denominator, with an accessible label preserving the out-of-100 meaning. Stale readiness still appears explicitly.
 
-The card uses a 24px inset, 20px gaps between report sections, and a 20px gap beside the grade. Cleanup text uses Inter Semi Bold at 12px. Collapsed category scores use the reference's bright green/red palette; the expanded report uses its muted grade palette. Both use white 9px score text.
+The card uses a 24px inset, 20px gaps between report sections, and a 20px gap beside the grade. Cleanup text uses Inter Semi Bold at 12px. Category scores use primary Report node `13:485`'s bright green/red palette and white 9px text in both collapsed and expanded states. Expanded examples contain inconsistent badge variants; preserve the primary reference appearance and the decision recorded in [the earlier grade styling journal](../journal/2026-10-07-figma-grade-style-parity.md).
 
 ## Verification limits
 

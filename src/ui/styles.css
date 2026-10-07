@@ -649,8 +649,6 @@ small, .fine-print, .check, .section-label, .eyebrow { font-family: var(--font-u
 .score-good { background: var(--score-good); }
 .score-mixed { background: var(--grade-mixed); }
 .score-low { background: var(--score-low); }
-.report-card:has(.issue-category[open]) .score-good { background: var(--grade-good); }
-.report-card:has(.issue-category[open]) .score-low { background: var(--grade-low); }
 .category-empty { margin: 0; padding: 0 var(--space-24) var(--space-16); color: var(--muted-ink); }
 .issue-category .finding-card { margin: 0 var(--space-24) 10px; }
 .finding-card { background: var(--muted); border: 1px solid var(--border); border-radius: var(--card-radius); }

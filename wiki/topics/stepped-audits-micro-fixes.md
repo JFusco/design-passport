@@ -36,6 +36,12 @@ on every other accessibility finding; this is not a blanket WCAG pass.
 See [issue 84](https://github.com/JFusco/design-passport/issues/84) and the
 [Figma fidelity journal](../journal/2026-10-07-figma-navigation-styles.md).
 
+Final parity inspection separated the saved preview's 40px grade from the
+report's 100px grade and matched the two-decimal score, 9px preview corners
+and primary Report badge colors. Exact green score badges add a documented
+contrast exception. See [issue 87](https://github.com/JFusco/design-passport/issues/87)
+and the [grade parity journal](../journal/2026-10-07-figma-grade-style-parity.md).
+
 ## Evidence and authority
 
 Confirmed `excludedPageIds` belong to profile v3 and are separate from page roles. Older live profiles normalize to no exclusions; historical packet profiles remain unchanged. Report v4 discloses exclusions and full-audit/micro-check provenance while readers retain versions 1–3. Excluded pages retain topology-only identities and remain watched. Required excluded component sources cannot silently become valid evidence.
