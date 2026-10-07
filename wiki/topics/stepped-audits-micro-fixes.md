@@ -55,3 +55,7 @@ Adapter fixtures cover scoped capture, field patching, combined edits, resource 
 New native Figma execution in a Verndale disposable file verified combined naming/gap edits (55.0 → 57.0), layout-dependent semantic parity with fresh full capture, explicit unsupported-edit fallback, confirmed exclusion, Clear across restart, historical check rejection and checkpointed guarded Auto Layout with native Undo. Bundle byte identities, retained raw evidence and native limitations are recorded in the [execution journal](../journal/2026-10-07-stepped-audits-micro-fixes.md). The original design and earlier QA files were preserved.
 
 See [issue 81](https://github.com/JFusco/design-passport/issues/81) and [whole-file knowledge](./whole-file-design-knowledge.md).
+
+## Grade-card style correction
+
+The [Figma style reference](./plugin-style-parity.md) defines separate 40px saved-result and 100px report grade treatments. [Issue 88](https://github.com/JFusco/design-passport/issues/88) corrects a cascade that enlarged the saved badge and verifies rendered typography and preview geometry. The [correction journal](../journal/2026-10-07-figma-grade-card-parity.md) distinguishes browser proof from the earlier native bundle.
