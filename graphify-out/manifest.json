@@ -465,8 +465,8 @@
     "semantic_hash": ""
   },
   "src/ui/App.tsx": {
-    "mtime": 1791389460.9961865,
-    "ast_hash": "8f2bc6fc41697f4cad565e89b2a13685",
+    "mtime": 1791395011.6479821,
+    "ast_hash": "f08a93dd6d5602ef89ebf42127f15aac",
     "semantic_hash": ""
   },
   "src/ui/BrandMark.tsx": {
@@ -490,8 +490,8 @@
     "semantic_hash": ""
   },
   "src/ui/components/Findings.tsx": {
-    "mtime": 1791389460.9948826,
-    "ast_hash": "5a2ea2ca367721cbac7ca178cd421719",
+    "mtime": 1791394784.1940687,
+    "ast_hash": "34162e8b0e4bd81405db25931fad30db",
     "semantic_hash": ""
   },
   "src/ui/components/Guidance.tsx": {
@@ -505,8 +505,8 @@
     "semantic_hash": ""
   },
   "src/ui/components/Overview.tsx": {
-    "mtime": 1791387678.1531003,
-    "ast_hash": "b60eb43a42118dd4064414b6d03a8631",
+    "mtime": 1791394896.7029963,
+    "ast_hash": "db22ce53a8e44d6cd4f7d237beaf4475",
     "semantic_hash": ""
   },
   "src/ui/components/PageBatch.tsx": {
@@ -520,9 +520,9 @@
     "semantic_hash": ""
   },
   "src/ui/components/SavedAudits.tsx": {
-    "mtime": 1791386306.956005,
-    "ast_hash": "12d2f5342a3444ca65d8611ed25c2a93",
-    "semantic_hash": "12d2f5342a3444ca65d8611ed25c2a93"
+    "mtime": 1791395011.6447384,
+    "ast_hash": "9ee8fdbbe6ec68d7c3f9f6160a67eb53",
+    "semantic_hash": ""
   },
   "src/ui/components/TokenCoverage.tsx": {
     "mtime": 1791387581.4008095,
@@ -755,13 +755,13 @@
     "semantic_hash": ""
   },
   "src/ui/components/ContextStatusPanel.tsx": {
-    "mtime": 1791387545.8791156,
-    "ast_hash": "c4c6bbffa7163d65009513676da47247",
+    "mtime": 1791394825.1039994,
+    "ast_hash": "d12793e9c377143568743fb374b81a00",
     "semantic_hash": ""
   },
   "src/ui/components/PageExclusions.tsx": {
-    "mtime": 1791388650.9512289,
-    "ast_hash": "f47edcb5c90aad01fb8d9fe67108aaf7",
+    "mtime": 1791394825.1048207,
+    "ast_hash": "037b75bbe8c1c35feb7bed3462fad5a8",
     "semantic_hash": ""
   },
   "src/ui/assets/Inter-LICENSE.txt": {
@@ -807,6 +807,11 @@
   "src/ui/assets/imgSettings24Dp1F1F1FFill1Wght100Grad0Opsz241.svg": {
     "mtime": 1791387543.9344792,
     "ast_hash": "13bbf0dcb33d64a0932354d3d4ebf2f0",
+    "semantic_hash": ""
+  },
+  "src/ui/assets/imgContext.svg": {
+    "mtime": 1791394765.3626304,
+    "ast_hash": "7d9d57d3941d44cffa6457c811459569",
     "semantic_hash": ""
   }
 }
