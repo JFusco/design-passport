@@ -2,13 +2,13 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 97,
-    "edges": 302,
+    "nodes": 100,
+    "edges": 315,
     "byType": {
       "index": 19,
-      "journal": 36,
-      "plan": 30,
-      "topic": 12
+      "journal": 37,
+      "plan": 31,
+      "topic": 13
     }
   },
   "nodes": [
@@ -20,8 +20,8 @@
       "githubRefs": [],
       "bytes": 162,
       "degree": 3,
-      "x": 0.99162,
-      "y": 0.129188,
+      "x": 0.992115,
+      "y": 0.125333,
       "size": 12
     },
     {
@@ -39,8 +39,8 @@
       ],
       "bytes": 6250,
       "degree": 3,
-      "x": 0.981178,
-      "y": 0.193105,
+      "x": 0.982287,
+      "y": 0.187381,
       "size": 12
     },
     {
@@ -58,8 +58,8 @@
       ],
       "bytes": 10158,
       "degree": 3,
-      "x": 0.966621,
-      "y": 0.256211,
+      "x": 0.968583,
+      "y": 0.24869,
       "size": 12
     },
     {
@@ -70,8 +70,8 @@
       "githubRefs": [],
       "bytes": 9443,
       "degree": 1,
-      "x": 0.925421,
-      "y": 0.37894,
+      "x": 0.929776,
+      "y": 0.368125,
       "size": 12
     },
     {
@@ -82,8 +82,8 @@
       "githubRefs": [],
       "bytes": 335,
       "degree": 8,
-      "x": 0.948009,
-      "y": 0.318243,
+      "x": 0.951057,
+      "y": 0.309017,
       "size": 12
     },
     {
@@ -94,8 +94,8 @@
       "githubRefs": [],
       "bytes": 5812,
       "degree": 3,
-      "x": 0.898952,
-      "y": 0.438048,
+      "x": 0.904827,
+      "y": 0.425779,
       "size": 12
     },
     {
@@ -113,8 +113,8 @@
       ],
       "bytes": 19515,
       "degree": 4,
-      "x": 0.868712,
-      "y": 0.495318,
+      "x": 0.876307,
+      "y": 0.481754,
       "size": 12
     },
     {
@@ -125,8 +125,8 @@
       "githubRefs": [],
       "bytes": 6801,
       "degree": 1,
-      "x": 0.834828,
-      "y": 0.550511,
+      "x": 0.844328,
+      "y": 0.535827,
       "size": 12
     },
     {
@@ -137,8 +137,8 @@
       "githubRefs": [],
       "bytes": 3739,
       "degree": 2,
-      "x": 0.797443,
-      "y": 0.603395,
+      "x": 0.809017,
+      "y": 0.587785,
       "size": 12
     },
     {
@@ -161,8 +161,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.756713,
-      "y": 0.653747,
+      "x": 0.770513,
+      "y": 0.637424,
       "size": 8
     },
     {
@@ -173,8 +173,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.712809,
-      "y": 0.701358,
+      "x": 0.728969,
+      "y": 0.684547,
       "size": 8
     },
     {
@@ -192,8 +192,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.665915,
-      "y": 0.746027,
+      "x": 0.684547,
+      "y": 0.728969,
       "size": 8
     },
     {
@@ -217,8 +217,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.616228,
-      "y": 0.787567,
+      "x": 0.637424,
+      "y": 0.770513,
       "size": 8
     },
     {
@@ -229,8 +229,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.563957,
-      "y": 0.825804,
+      "x": 0.587785,
+      "y": 0.809017,
       "size": 8
     },
     {
@@ -254,8 +254,8 @@
       ],
       "bytes": 2463,
       "degree": 3,
-      "x": 0.50932,
-      "y": 0.860577,
+      "x": 0.535827,
+      "y": 0.844328,
       "size": 8
     },
     {
@@ -273,8 +273,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": 0.452547,
-      "y": 0.891741,
+      "x": 0.481754,
+      "y": 0.876307,
       "size": 8
     },
     {
@@ -292,8 +292,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": 0.393876,
-      "y": 0.919164,
+      "x": 0.425779,
+      "y": 0.904827,
       "size": 8
     },
     {
@@ -304,8 +304,8 @@
       "githubRefs": [],
       "bytes": 2327,
       "degree": 5,
-      "x": 0.333552,
-      "y": 0.942732,
+      "x": 0.368125,
+      "y": 0.929776,
       "size": 8
     },
     {
@@ -316,8 +316,8 @@
       "githubRefs": [],
       "bytes": 3437,
       "degree": 7,
-      "x": 0.27183,
-      "y": 0.962345,
+      "x": 0.309017,
+      "y": 0.951057,
       "size": 8
     },
     {
@@ -328,8 +328,8 @@
       "githubRefs": [],
       "bytes": 2405,
       "degree": 6,
-      "x": 0.208968,
-      "y": 0.977923,
+      "x": 0.24869,
+      "y": 0.968583,
       "size": 8
     },
     {
@@ -347,8 +347,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": 0.145229,
-      "y": 0.989398,
+      "x": 0.187381,
+      "y": 0.982287,
       "size": 8
     },
     {
@@ -366,8 +366,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": 0.08088,
-      "y": 0.996724,
+      "x": 0.125333,
+      "y": 0.992115,
       "size": 8
     },
     {
@@ -385,8 +385,8 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": 0.016193,
-      "y": 0.999869,
+      "x": 0.062791,
+      "y": 0.998027,
       "size": 8
     },
     {
@@ -404,8 +404,8 @@
       ],
       "bytes": 5487,
       "degree": 4,
-      "x": -0.048562,
-      "y": 0.99882,
+      "x": 0,
+      "y": 1,
       "size": 8
     },
     {
@@ -423,8 +423,8 @@
       ],
       "bytes": 5249,
       "degree": 6,
-      "x": -0.113114,
-      "y": 0.993582,
+      "x": -0.062791,
+      "y": 0.998027,
       "size": 8
     },
     {
@@ -442,8 +442,8 @@
       ],
       "bytes": 3810,
       "degree": 4,
-      "x": -0.177191,
-      "y": 0.984176,
+      "x": -0.125333,
+      "y": 0.992115,
       "size": 8
     },
     {
@@ -461,8 +461,8 @@
       ],
       "bytes": 2962,
       "degree": 5,
-      "x": -0.240525,
-      "y": 0.970643,
+      "x": -0.187381,
+      "y": 0.982287,
       "size": 8
     },
     {
@@ -486,8 +486,8 @@
       ],
       "bytes": 1022,
       "degree": 2,
-      "x": -0.30285,
-      "y": 0.953038,
+      "x": -0.24869,
+      "y": 0.968583,
       "size": 8
     },
     {
@@ -505,8 +505,8 @@
       ],
       "bytes": 418,
       "degree": 0,
-      "x": -0.363905,
-      "y": 0.931436,
+      "x": -0.309017,
+      "y": 0.951057,
       "size": 8
     },
     {
@@ -524,8 +524,8 @@
       ],
       "bytes": 1472,
       "degree": 2,
-      "x": -0.423433,
-      "y": 0.905927,
+      "x": -0.368125,
+      "y": 0.929776,
       "size": 8
     },
     {
@@ -543,8 +543,8 @@
       ],
       "bytes": 943,
       "degree": 4,
-      "x": -0.481186,
-      "y": 0.876619,
+      "x": -0.425779,
+      "y": 0.904827,
       "size": 8
     },
     {
@@ -562,8 +562,8 @@
       ],
       "bytes": 2049,
       "degree": 4,
-      "x": -0.53692,
-      "y": 0.843633,
+      "x": -0.481754,
+      "y": 0.876307,
       "size": 8
     },
     {
@@ -581,8 +581,8 @@
       ],
       "bytes": 30914,
       "degree": 4,
-      "x": -0.590402,
-      "y": 0.807109,
+      "x": -0.535827,
+      "y": 0.844328,
       "size": 8
     },
     {
@@ -606,8 +606,8 @@
       ],
       "bytes": 2413,
       "degree": 3,
-      "x": -0.641408,
-      "y": 0.7672,
+      "x": -0.587785,
+      "y": 0.809017,
       "size": 8
     },
     {
@@ -631,8 +631,8 @@
       ],
       "bytes": 7669,
       "degree": 4,
-      "x": -0.689724,
-      "y": 0.724073,
+      "x": -0.637424,
+      "y": 0.770513,
       "size": 8
     },
     {
@@ -662,8 +662,8 @@
       ],
       "bytes": 4344,
       "degree": 8,
-      "x": -0.735146,
-      "y": 0.677908,
+      "x": -0.684547,
+      "y": 0.728969,
       "size": 8
     },
     {
@@ -681,8 +681,8 @@
       ],
       "bytes": 2278,
       "degree": 2,
-      "x": -0.777486,
-      "y": 0.628901,
+      "x": -0.728969,
+      "y": 0.684547,
       "size": 8
     },
     {
@@ -700,8 +700,8 @@
       ],
       "bytes": 2842,
       "degree": 3,
-      "x": -0.816564,
-      "y": 0.577255,
+      "x": -0.770513,
+      "y": 0.637424,
       "size": 8
     },
     {
@@ -719,8 +719,8 @@
       ],
       "bytes": 2279,
       "degree": 3,
-      "x": -0.852217,
-      "y": 0.523189,
+      "x": -0.809017,
+      "y": 0.587785,
       "size": 8
     },
     {
@@ -750,8 +750,8 @@
       ],
       "bytes": 10139,
       "degree": 4,
-      "x": -0.884295,
-      "y": 0.466928,
+      "x": -0.844328,
+      "y": 0.535827,
       "size": 8
     },
     {
@@ -775,8 +775,8 @@
       ],
       "bytes": 11238,
       "degree": 3,
-      "x": -0.912665,
-      "y": 0.408708,
+      "x": -0.876307,
+      "y": 0.481754,
       "size": 8
     },
     {
@@ -794,8 +794,27 @@
       ],
       "bytes": 14693,
       "degree": 7,
-      "x": -0.937207,
-      "y": 0.348774,
+      "x": -0.904827,
+      "y": 0.425779,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-10-07-figma-grade-card-parity.md",
+      "label": "Correct the grade card's Figma parity",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 88,
+          "url": "https://github.com/jfusco/design-passport/issues/88"
+        }
+      ],
+      "bytes": 3652,
+      "degree": 6,
+      "x": -0.929776,
+      "y": 0.368125,
       "size": 8
     },
     {
@@ -812,9 +831,9 @@
         }
       ],
       "bytes": 2325,
-      "degree": 3,
-      "x": -0.957817,
-      "y": 0.287378,
+      "degree": 4,
+      "x": -0.951057,
+      "y": 0.309017,
       "size": 8
     },
     {
@@ -831,9 +850,9 @@
         }
       ],
       "bytes": 4024,
-      "degree": 3,
-      "x": -0.974411,
-      "y": 0.224776,
+      "degree": 5,
+      "x": -0.968583,
+      "y": 0.24869,
       "size": 8
     },
     {
@@ -851,8 +870,8 @@
       ],
       "bytes": 4826,
       "degree": 4,
-      "x": -0.986917,
-      "y": 0.161231,
+      "x": -0.982287,
+      "y": 0.187381,
       "size": 8
     },
     {
@@ -863,8 +882,8 @@
       "githubRefs": [],
       "bytes": 3126,
       "degree": 2,
-      "x": 0.997903,
-      "y": 0.06473,
+      "x": 0.998027,
+      "y": 0.062791,
       "size": 12
     },
     {
@@ -875,8 +894,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.995283,
-      "y": 0.09701,
+      "x": -0.992115,
+      "y": 0.125333,
       "size": 8
     },
     {
@@ -887,8 +906,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -0.999476,
-      "y": 0.032382,
+      "x": -0.998027,
+      "y": 0.062791,
       "size": 8
     },
     {
@@ -899,8 +918,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.999476,
-      "y": -0.032382,
+      "x": -1,
+      "y": 0,
       "size": 8
     },
     {
@@ -918,8 +937,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.995283,
-      "y": -0.09701,
+      "x": -0.998027,
+      "y": -0.062791,
       "size": 8
     },
     {
@@ -930,8 +949,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.986917,
-      "y": -0.161231,
+      "x": -0.992115,
+      "y": -0.125333,
       "size": 8
     },
     {
@@ -942,8 +961,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.974411,
-      "y": -0.224776,
+      "x": -0.982287,
+      "y": -0.187381,
       "size": 8
     },
     {
@@ -954,8 +973,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.957817,
-      "y": -0.287378,
+      "x": -0.968583,
+      "y": -0.24869,
       "size": 8
     },
     {
@@ -966,8 +985,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.937207,
-      "y": -0.348774,
+      "x": -0.951057,
+      "y": -0.309017,
       "size": 8
     },
     {
@@ -978,8 +997,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.912665,
-      "y": -0.408708,
+      "x": -0.929776,
+      "y": -0.368125,
       "size": 8
     },
     {
@@ -997,8 +1016,8 @@
       ],
       "bytes": 6239,
       "degree": 3,
-      "x": -0.884295,
-      "y": -0.466928,
+      "x": -0.904827,
+      "y": -0.425779,
       "size": 8
     },
     {
@@ -1009,8 +1028,8 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.852217,
-      "y": -0.523189,
+      "x": -0.876307,
+      "y": -0.481754,
       "size": 8
     },
     {
@@ -1021,8 +1040,8 @@
       "githubRefs": [],
       "bytes": 11833,
       "degree": 5,
-      "x": -0.816564,
-      "y": -0.577255,
+      "x": -0.844328,
+      "y": -0.535827,
       "size": 8
     },
     {
@@ -1040,8 +1059,8 @@
       ],
       "bytes": 2158,
       "degree": 4,
-      "x": -0.777486,
-      "y": -0.628901,
+      "x": -0.809017,
+      "y": -0.587785,
       "size": 8
     },
     {
@@ -1052,8 +1071,8 @@
       "githubRefs": [],
       "bytes": 1840,
       "degree": 3,
-      "x": -0.735146,
-      "y": -0.677908,
+      "x": -0.770513,
+      "y": -0.637424,
       "size": 8
     },
     {
@@ -1071,8 +1090,8 @@
       ],
       "bytes": 1410,
       "degree": 3,
-      "x": -0.689724,
-      "y": -0.724073,
+      "x": -0.728969,
+      "y": -0.684547,
       "size": 8
     },
     {
@@ -1090,8 +1109,8 @@
       ],
       "bytes": 1654,
       "degree": 3,
-      "x": -0.641408,
-      "y": -0.7672,
+      "x": -0.684547,
+      "y": -0.728969,
       "size": 8
     },
     {
@@ -1102,8 +1121,8 @@
       "githubRefs": [],
       "bytes": 3932,
       "degree": 5,
-      "x": -0.590402,
-      "y": -0.807109,
+      "x": -0.637424,
+      "y": -0.770513,
       "size": 8
     },
     {
@@ -1114,8 +1133,8 @@
       "githubRefs": [],
       "bytes": 2203,
       "degree": 4,
-      "x": -0.53692,
-      "y": -0.843633,
+      "x": -0.587785,
+      "y": -0.809017,
       "size": 8
     },
     {
@@ -1126,8 +1145,8 @@
       "githubRefs": [],
       "bytes": 4752,
       "degree": 3,
-      "x": -0.481186,
-      "y": -0.876619,
+      "x": -0.535827,
+      "y": -0.844328,
       "size": 8
     },
     {
@@ -1145,8 +1164,8 @@
       ],
       "bytes": 6224,
       "degree": 4,
-      "x": -0.423433,
-      "y": -0.905927,
+      "x": -0.481754,
+      "y": -0.876307,
       "size": 8
     },
     {
@@ -1164,8 +1183,8 @@
       ],
       "bytes": 12464,
       "degree": 3,
-      "x": -0.363905,
-      "y": -0.931436,
+      "x": -0.425779,
+      "y": -0.904827,
       "size": 8
     },
     {
@@ -1176,8 +1195,8 @@
       "githubRefs": [],
       "bytes": 30260,
       "degree": 3,
-      "x": -0.30285,
-      "y": -0.953038,
+      "x": -0.368125,
+      "y": -0.929776,
       "size": 8
     },
     {
@@ -1195,8 +1214,8 @@
       ],
       "bytes": 1661,
       "degree": 3,
-      "x": -0.240525,
-      "y": -0.970643,
+      "x": -0.309017,
+      "y": -0.951057,
       "size": 8
     },
     {
@@ -1220,8 +1239,8 @@
       ],
       "bytes": 4267,
       "degree": 3,
-      "x": -0.177191,
-      "y": -0.984176,
+      "x": -0.24869,
+      "y": -0.968583,
       "size": 8
     },
     {
@@ -1245,8 +1264,8 @@
       ],
       "bytes": 3627,
       "degree": 3,
-      "x": -0.113114,
-      "y": -0.993582,
+      "x": -0.187381,
+      "y": -0.982287,
       "size": 8
     },
     {
@@ -1257,8 +1276,8 @@
       "githubRefs": [],
       "bytes": 1968,
       "degree": 3,
-      "x": -0.048562,
-      "y": -0.99882,
+      "x": -0.125333,
+      "y": -0.992115,
       "size": 8
     },
     {
@@ -1269,8 +1288,8 @@
       "githubRefs": [],
       "bytes": 34217,
       "degree": 4,
-      "x": 0.016193,
-      "y": -0.999869,
+      "x": -0.062791,
+      "y": -0.998027,
       "size": 8
     },
     {
@@ -1281,8 +1300,8 @@
       "githubRefs": [],
       "bytes": 1551,
       "degree": 3,
-      "x": 0.08088,
-      "y": -0.996724,
+      "x": 0,
+      "y": -1,
       "size": 8
     },
     {
@@ -1293,8 +1312,20 @@
       "githubRefs": [],
       "bytes": 1374,
       "degree": 3,
-      "x": 0.145229,
-      "y": -0.989398,
+      "x": 0.062791,
+      "y": -0.998027,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-10-07-correct-the-figma-grade-card-and-shared-style-values-fb40cb78bc.md",
+      "label": "Correct the Figma grade card and shared style values",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 1442,
+      "degree": 4,
+      "x": 0.125333,
+      "y": -0.992115,
       "size": 8
     },
     {
@@ -1305,8 +1336,8 @@
       "githubRefs": [],
       "bytes": 33319,
       "degree": 3,
-      "x": 0.208968,
-      "y": -0.977923,
+      "x": 0.187381,
+      "y": -0.982287,
       "size": 8
     },
     {
@@ -1358,10 +1389,10 @@
           "url": "https://github.com/jfusco/design-passport/pull/54"
         }
       ],
-      "bytes": 27245,
-      "degree": 32,
-      "x": 0.27183,
-      "y": -0.962345,
+      "bytes": 27601,
+      "degree": 33,
+      "x": 0.24869,
+      "y": -0.968583,
       "size": 12
     },
     {
@@ -1372,8 +1403,8 @@
       "githubRefs": [],
       "bytes": 211,
       "degree": 2,
-      "x": 0.333552,
-      "y": -0.942732,
+      "x": 0.309017,
+      "y": -0.951057,
       "size": 12
     },
     {
@@ -1384,8 +1415,8 @@
       "githubRefs": [],
       "bytes": 21674,
       "degree": 1,
-      "x": 0.393876,
-      "y": -0.919164,
+      "x": 0.368125,
+      "y": -0.929776,
       "size": 12
     },
     {
@@ -1403,8 +1434,8 @@
       ],
       "bytes": 13899,
       "degree": 4,
-      "x": 0.50932,
-      "y": -0.860577,
+      "x": 0.481754,
+      "y": -0.876307,
       "size": 12
     },
     {
@@ -1422,8 +1453,8 @@
       ],
       "bytes": 12257,
       "degree": 4,
-      "x": 0.563957,
-      "y": -0.825804,
+      "x": 0.535827,
+      "y": -0.844328,
       "size": 12
     },
     {
@@ -1441,8 +1472,8 @@
       ],
       "bytes": 5995,
       "degree": 3,
-      "x": 0.616228,
-      "y": -0.787567,
+      "x": 0.587785,
+      "y": -0.809017,
       "size": 12
     },
     {
@@ -1453,8 +1484,8 @@
       "githubRefs": [],
       "bytes": 366,
       "degree": 6,
-      "x": 0.452547,
-      "y": -0.891741,
+      "x": 0.425779,
+      "y": -0.904827,
       "size": 12
     },
     {
@@ -1465,8 +1496,8 @@
       "githubRefs": [],
       "bytes": 7744,
       "degree": 3,
-      "x": 0.665915,
-      "y": -0.746027,
+      "x": 0.637424,
+      "y": -0.770513,
       "size": 12
     },
     {
@@ -1484,8 +1515,8 @@
       ],
       "bytes": 719,
       "degree": 5,
-      "x": 0.712809,
-      "y": -0.701358,
+      "x": 0.684547,
+      "y": -0.728969,
       "size": 8
     },
     {
@@ -1503,8 +1534,8 @@
       ],
       "bytes": 8014,
       "degree": 44,
-      "x": 0.756713,
-      "y": -0.653747,
+      "x": 0.728969,
+      "y": -0.684547,
       "size": 8
     },
     {
@@ -1522,8 +1553,8 @@
       ],
       "bytes": 6658,
       "degree": 23,
-      "x": 0.797443,
-      "y": -0.603395,
+      "x": 0.770513,
+      "y": -0.637424,
       "size": 8
     },
     {
@@ -1547,8 +1578,8 @@
       ],
       "bytes": 20188,
       "degree": 43,
-      "x": 0.834828,
-      "y": -0.550511,
+      "x": 0.809017,
+      "y": -0.587785,
       "size": 8
     },
     {
@@ -1566,8 +1597,8 @@
       ],
       "bytes": 1973,
       "degree": 6,
-      "x": 0.868712,
-      "y": -0.495318,
+      "x": 0.844328,
+      "y": -0.535827,
       "size": 8
     },
     {
@@ -1585,8 +1616,8 @@
       ],
       "bytes": 11155,
       "degree": 8,
-      "x": 0.898952,
-      "y": -0.438048,
+      "x": 0.876307,
+      "y": -0.481754,
       "size": 8
     },
     {
@@ -1597,8 +1628,8 @@
       "githubRefs": [],
       "bytes": 4694,
       "degree": 25,
-      "x": 0.925421,
-      "y": -0.37894,
+      "x": 0.904827,
+      "y": -0.425779,
       "size": 8
     },
     {
@@ -1646,8 +1677,20 @@
       ],
       "bytes": 15543,
       "degree": 15,
-      "x": 0.948009,
-      "y": -0.318243,
+      "x": 0.929776,
+      "y": -0.368125,
+      "size": 8
+    },
+    {
+      "id": "wiki/topics/plugin-style-parity.md",
+      "label": "Plugin styles from Figma",
+      "type": "topic",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 2553,
+      "degree": 7,
+      "x": 0.951057,
+      "y": -0.309017,
       "size": 8
     },
     {
@@ -1658,8 +1701,8 @@
       "githubRefs": [],
       "bytes": 5332,
       "degree": 19,
-      "x": 0.966621,
-      "y": -0.256211,
+      "x": 0.968583,
+      "y": -0.24869,
       "size": 8
     },
     {
@@ -1685,12 +1728,18 @@
           "kind": "issue",
           "number": 87,
           "url": "https://github.com/jfusco/design-passport/issues/87"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 88,
+          "url": "https://github.com/jfusco/design-passport/issues/88"
         }
       ],
-      "bytes": 5720,
-      "degree": 13,
-      "x": 0.981178,
-      "y": -0.193105,
+      "bytes": 6180,
+      "degree": 18,
+      "x": 0.982287,
+      "y": -0.187381,
       "size": 8
     },
     {
@@ -1701,8 +1750,8 @@
       "githubRefs": [],
       "bytes": 12043,
       "degree": 15,
-      "x": 0.99162,
-      "y": -0.129188,
+      "x": 0.992115,
+      "y": -0.125333,
       "size": 8
     },
     {
@@ -1713,8 +1762,8 @@
       "githubRefs": [],
       "bytes": 5964,
       "degree": 32,
-      "x": 0.997903,
-      "y": -0.06473,
+      "x": 0.998027,
+      "y": -0.062791,
       "size": 8
     }
   ],
@@ -1799,6 +1848,20 @@
     {
       "id": "0e8116768a187f9b",
       "source": "wiki/plans/2026-10-07-align-the-plugin-with-the-figma-reference-28757aae2a.md",
+      "target": "wiki/topics/stepped-audits-micro-fixes.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "104a03d05c1d888a",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-10-07-correct-the-figma-grade-card-and-shared-style-values-fb40cb78bc.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "10d6d2ef1c51b728",
+      "source": "wiki/plans/2026-10-07-correct-the-figma-grade-card-and-shared-style-values-fb40cb78bc.md",
       "target": "wiki/topics/stepped-audits-micro-fixes.md",
       "type": "topic",
       "relation": "topic"
@@ -1944,6 +2007,20 @@
       "relation": "topic"
     },
     {
+      "id": "24813893e42ba19e",
+      "source": "wiki/journal/2026-10-07-figma-grade-card-parity.md",
+      "target": "wiki/topics/stepped-audits-micro-fixes.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "250abad191fb12e5",
+      "source": "wiki/topics/plugin-style-parity.md",
+      "target": "wiki/journal/2026-10-07-figma-grade-card-parity.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "25bcf1bc1b341da7",
       "source": "wiki/journal/2026-09-08-design-passport-v1.md",
       "target": "wiki/topics/design-readiness-standard.md",
@@ -1982,6 +2059,13 @@
       "id": "27e7e5ecc798e9c7",
       "source": "wiki/topics/project-scoped-knowledge-loop.md",
       "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "280a54f46cf08294",
+      "source": "wiki/topics/stepped-audits-micro-fixes.md",
+      "target": "wiki/topics/plugin-style-parity.md",
       "type": "link",
       "relation": "link"
     },
@@ -2140,6 +2224,13 @@
       "relation": "link"
     },
     {
+      "id": "36fb155b3599e302",
+      "source": "wiki/topics/plugin-style-parity.md",
+      "target": "wiki/journal/2026-10-07-figma-navigation-styles.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "3757aa5f870098e9",
       "source": "wiki/journal/2026-09-23-design-passport-companion.md",
       "target": "wiki/topics/project-scoped-knowledge-loop.md",
@@ -2208,6 +2299,13 @@
       "target": "wiki/topics/design-readiness-standard.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "42fc6f59e5e6b8cd",
+      "source": "wiki/topics/plugin-style-parity.md",
+      "target": "wiki/journal/2026-10-07-figma-grade-style-parity.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "44a70b3b30422185",
@@ -2427,6 +2525,13 @@
       "relation": "topic"
     },
     {
+      "id": "5e4316aff0bb1b8d",
+      "source": "wiki/topics/plugin-style-parity.md",
+      "target": "wiki/topics/stepped-audits-micro-fixes.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "5e9a0c6ac2ec160c",
       "source": "wiki/topics/supabase-companion.md",
       "target": "wiki/qa/companion-database-plumbing-review.md",
@@ -2481,6 +2586,13 @@
       "target": "wiki/benchmarks/persistent-audits.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "67af01218624a247",
+      "source": "wiki/journal/2026-10-07-figma-grade-card-parity.md",
+      "target": "wiki/topics/plugin-style-parity.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "6b1bf59272acdcbd",
@@ -3211,6 +3323,13 @@
       "relation": "link"
     },
     {
+      "id": "beff1df1d26095f0",
+      "source": "wiki/topics/stepped-audits-micro-fixes.md",
+      "target": "wiki/journal/2026-10-07-figma-grade-card-parity.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "bf99b8082cefedf4",
       "source": "wiki/topics/design-passport-architecture.md",
       "target": "wiki/topics/project-scoped-knowledge-loop.md",
@@ -3470,6 +3589,13 @@
       "relation": "link"
     },
     {
+      "id": "dc4a8b553773bbce",
+      "source": "wiki/journal/2026-10-07-figma-grade-card-parity.md",
+      "target": "wiki/plans/2026-10-07-correct-the-figma-grade-card-and-shared-style-values-fb40cb78bc.md",
+      "type": "plan",
+      "relation": "plan"
+    },
+    {
       "id": "dd9cc7bc9249b61d",
       "source": "wiki/topics/stepped-audits-micro-fixes.md",
       "target": "wiki/journal/2026-10-07-stepped-audits-micro-fixes.md",
@@ -3624,6 +3750,13 @@
       "relation": "topic"
     },
     {
+      "id": "eab876fd59f92d1e",
+      "source": "wiki/plans/2026-10-07-correct-the-figma-grade-card-and-shared-style-values-fb40cb78bc.md",
+      "target": "wiki/topics/plugin-style-parity.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "eaf7eb1a7b15b3f6",
       "source": "wiki/journal/2026-10-03-retire-certification.md",
       "target": "wiki/topics/design-readiness-standard.md",
@@ -3727,6 +3860,13 @@
       "target": "wiki/topics/whole-file-design-knowledge.md",
       "type": "topic",
       "relation": "topic"
+    },
+    {
+      "id": "f678c3ad07aa2aff",
+      "source": "wiki/journal/2026-10-07-figma-grade-card-parity.md",
+      "target": "wiki/journal/2026-10-07-figma-navigation-styles.md",
+      "type": "link",
+      "relation": "link"
     },
     {
       "id": "f7230dc6a4b364cb",

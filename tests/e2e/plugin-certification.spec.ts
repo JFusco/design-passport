@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { build } from "esbuild";
 import type { BootstrapData } from "../../src/figma/adapter";
 import type { PluginToUiMessage } from "../../src/plugin/messages";
@@ -7,6 +9,7 @@ import type { PluginToUiMessage } from "../../src/plugin/messages";
 type FixtureWindow = Window & { PassportTest: { bootstrap: BootstrapData; result: PluginToUiMessage } };
 const deliver = (page: Page, message: PluginToUiMessage) => page.evaluate((json) => window.postMessage({ pluginMessage: JSON.parse(json) }, "*"), JSON.stringify(message));
 let code: string;
+const visualArtifacts = process.env.DESIGN_PASSPORT_VISUAL_ARTIFACTS ?? tmpdir();
 
 test.beforeAll(async () => {
   const bundle = await build({
@@ -196,6 +199,8 @@ test("keeps Figma navigation above notices and pinned on every destination", asy
           return { width: rect.width, height: rect.height, radius: style.borderRadius, font: style.fontSize, weight: style.fontWeight, tracking: style.letterSpacing, previewHeight: node.getBoundingClientRect().height, previewRadius: getComputedStyle(node).borderRadius, scoreFont: score.fontSize, scoreWeight: score.fontWeight };
         });
         expect(preview).toEqual({ width: 40, height: 40, radius: "4px", font: "23.6px", weight: "900", tracking: "-0.236px", previewHeight: 58, previewRadius: "9px", scoreFont: "15.6px", scoreWeight: "500" });
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.locator(".saved-audits").screenshot({ path: join(visualArtifacts, `design-passport-88-saved-audit-${width}.png`) });
       }
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       await assertChrome();
@@ -211,6 +216,7 @@ test("keeps Figma navigation above notices and pinned on every destination", asy
     }
     await page.getByRole("button", { name: "Report", exact: true }).click();
     await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(page.getByRole("img", { name: "Grade A, 97.40 out of 100", exact: true })).toBeVisible();
     expect(await page.locator(".issue-category[open]").count()).toBe(0);
     expect(await page.locator(".passport-brand").evaluate((node) => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height }))).toEqual({ width: 16, height: 16 });
     expect(await page.locator(".tab-links button").first().evaluate((node) => ({ font: getComputedStyle(node).fontSize, weight: getComputedStyle(node).fontWeight, opacity: getComputedStyle(node).opacity }))).toEqual({ font: "16px", weight: "600", opacity: "0.4" });
@@ -218,13 +224,13 @@ test("keeps Figma navigation above notices and pinned on every destination", asy
     expect(grade.width).toBeCloseTo(100, 2);
     expect(grade.height).toBeCloseTo(100, 2);
     expect(grade.radius).toBe("4px");
-    const hero = await page.locator(".report-grade").evaluate((node) => {
+    const heroType = await page.locator(".report-grade").evaluate((node) => {
       const letter = getComputedStyle(node.querySelector("strong")!);
       const score = getComputedStyle(node.querySelector("span")!);
-      return { letterFont: letter.fontSize, letterWeight: letter.fontWeight, scoreFont: score.fontSize, scoreWeight: score.fontWeight, text: node.querySelector("span")!.textContent, whitespace: getComputedStyle(node).whiteSpace };
+      return { letterFont: letter.fontSize, letterWeight: letter.fontWeight, letterTracking: letter.letterSpacing, scoreFont: score.fontSize, scoreWeight: score.fontWeight, scoreTracking: score.letterSpacing, text: node.querySelector("span")!.textContent, whitespace: getComputedStyle(node).whiteSpace };
     });
-    expect(hero).toEqual({ letterFont: "39.6px", letterWeight: "900", scoreFont: "16.6px", scoreWeight: "400", text: "97.40", whitespace: "nowrap" });
-    expect(await page.locator(".axis-score.score-good").first().evaluate((node) => getComputedStyle(node).backgroundColor)).toBe("rgb(51, 150, 23)");
+    expect(heroType).toEqual({ letterFont: "39.6px", letterWeight: "900", letterTracking: "-0.396px", scoreFont: "16.6px", scoreWeight: "400", scoreTracking: "-0.166px", text: "97.40", whitespace: "nowrap" });
+    expect(await page.locator(".cleanup-callout > strong").evaluate((node) => getComputedStyle(node).fontWeight)).toBe("600");
     await page.locator(".issue-category > summary").first().focus();
     expect((await page.locator(".issue-category > summary").first().boundingBox())!.y).toBeGreaterThanOrEqual(105);
     await page.keyboard.press("Enter");
@@ -251,20 +257,26 @@ test("matches the Figma dark layout at 320, 456 and 500px with keyboard focus", 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect((await page.locator(".hero-summary").innerText()).length).toBeLessThanOrEqual(120);
     const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-    // Exact reference colors fail contrast on the inactive tabs and green
-    // score badges. Assert only those precise elements, not a broad exclusion.
-    expect(accessibility.violations.map((violation) => violation.id)).toEqual(["color-contrast"]);
-    const affected = await Promise.all(accessibility.violations[0]!.nodes.map((node) => page.locator(String(node.target[0])).evaluate((element) => element.getAttribute("aria-label") ?? element.className)));
-    expect(affected.sort()).toEqual(["Audit", "Cleanup", ...Array<string>(8).fill("axis-score score-good")].sort());
+    expect(await page.locator(".axis-score").first().evaluate((node) => ({ color: getComputedStyle(node).color, background: getComputedStyle(node).backgroundColor }))).toEqual({ color: "rgb(255, 255, 255)", background: "rgb(51, 150, 23)" });
+    // Exact Figma styles retain its 40% inactive labels and white 9px scores.
+    // Keep the precise contrast exceptions visible; fail on other regressions.
+    const referenceContrastTargets = [
+      ["button[aria-label=\"Audit\"]"], ["button[aria-label=\"Cleanup\"]"],
+      ...Array.from({ length: 8 }, (_, index) => [`.issue-category:nth-child(${index + 1}) > summary > span > .axis-score.score-good`]),
+    ];
+    expect(accessibility.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target) }))).toEqual([
+      { id: "color-contrast", targets: referenceContrastTargets },
+    ]);
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.screenshot({ path: `/tmp/design-passport-87-report-${width}.png`, fullPage: true });
+    await page.screenshot({ path: join(visualArtifacts, `design-passport-88-report-${width}.png`), fullPage: true });
     for (const summary of await page.locator(".issue-category > summary").all()) await summary.click();
     await page.locator(".finding-summary").first().click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const expandedAccessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-    expect(expandedAccessibility.violations.map((violation) => violation.id)).toEqual(["color-contrast"]);
-    const expandedAffected = await Promise.all(expandedAccessibility.violations[0]!.nodes.map((node) => page.locator(String(node.target[0])).evaluate((element) => element.getAttribute("aria-label") ?? element.className)));
-    expect(expandedAffected.sort()).toEqual(["Audit", "Cleanup", ...Array<string>(8).fill("axis-score score-good")].sort());
+    expect(await page.locator(".axis-score").first().evaluate((node) => ({ color: getComputedStyle(node).color, background: getComputedStyle(node).backgroundColor }))).toEqual({ color: "rgb(255, 255, 255)", background: "rgb(51, 150, 23)" });
+    expect(expandedAccessibility.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target) }))).toEqual([
+      { id: "color-contrast", targets: referenceContrastTargets.map((target) => target.map((selector) => selector.replace(".issue-category", ".issue-category[open=\"\"]"))) },
+    ]);
     const assets = await page.locator(".chevron, .node-link img, .issue-category > summary img").evaluateAll((nodes) => nodes.filter((node) => node.getBoundingClientRect().width > 0).map((node) => ({ slot: node.className || "link", width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
     for (const asset of assets) {
       const size = asset.slot === "link" ? 16 : 8;
@@ -272,7 +284,7 @@ test("matches the Figma dark layout at 320, 456 and 500px with keyboard focus", 
       expect(asset.height).toBeCloseTo(size, 2);
     }
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.screenshot({ path: `/tmp/design-passport-87-issues-${width}.png`, fullPage: true });
+    await page.screenshot({ path: join(visualArtifacts, `design-passport-88-issues-${width}.png`), fullPage: true });
     await page.locator(".finding-summary").first().click();
     for (const summary of await page.locator(".issue-category > summary").all()) await summary.click();
   }

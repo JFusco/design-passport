@@ -77,7 +77,7 @@ export function Overview(props: OverviewProps) {
             <div className="audited-target-summary"><strong>{auditedTarget?.countLabel}</strong><div className="audited-target-names" aria-label="Audited target names">{auditedTarget?.names.map((name, index) => <span key={`${index}:${name}`}>{name}</span>)}{auditedTarget && auditedTarget.remainingCount > 0 ? <span>+{auditedTarget.remainingCount} more</span> : null}</div></div>
             </div>
           <div className="result-hero">
-            <div className={`${gradeClass(props.report.grade.letter)} report-grade`} aria-label={`Grade ${props.report.grade.letter}, ${props.report.grade.score.toFixed(2)} out of 100`}><strong>{props.report.grade.letter}</strong><span>{props.report.grade.score.toFixed(2)}</span></div>
+            <div className={`${gradeClass(props.report.grade.letter)} report-grade`} role="img" aria-label={`Grade ${props.report.grade.letter}, ${props.report.grade.score.toFixed(2)} out of 100`}><strong>{props.report.grade.letter}</strong><span>{props.report.grade.score.toFixed(2)}</span></div>
             <div><h3>{props.report.ready ? "Looking good" : "Needs work"}</h3><p className="hero-summary">{reportSummary(props.report)}</p>{props.stale ? <p className="needs-refresh">{status}</p> : null}</div>
           </div>
           {props.onCleanup ? <div className="cleanup-callout"><strong>{props.cleanupCount ?? 0} item{props.cleanupCount === 1 ? "" : "s"} available to clean up</strong><button className="button primary" onClick={props.onCleanup}>Run Cleanup</button></div> : null}
