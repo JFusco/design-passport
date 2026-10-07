@@ -157,11 +157,11 @@ test("shows checking, preserves the score on fallback and retains a resolved row
     if (result.type !== "scan-result") throw new Error("Missing fixture");
     window.postMessage({ pluginMessage: { type: "micro-check-result", reportHash: hash, requestId: "two", checkedKeys: ["issue:one"], outcome: "resolved", reason: "Fix verified.", data: { ...result, report: { ...result.report, snapshotHash: "new-hash", grade: { letter: "A", score: 100 } }, issueReviewState: { records: [{ key: "issue:one", outcome: "resolved", checkedAt: new Date().toISOString(), previous: finding }], clearedKeys: [] } } } }, "*");
   }, JSON.stringify(details));
-  await expect(page.locator(".result-hero .grade > span")).toHaveText("100.0 / 100");
+  await expect(page.locator(".result-hero .grade > span")).toHaveText("100.00");
   await expect(page.getByRole("region", { name: "Resolved issues" }).getByRole("button", { name: "Clear", exact: true })).toBeEnabled();
   await deliver(page, { type: "issue-cleared", reportHash: "new-hash", keys: ["issue:one"], persistence: { state: "session-only", message: "Clear could not be saved; session only." } });
   await expect(page.getByRole("button", { name: "Clear", exact: true })).toHaveCount(0);
-  await expect(page.locator(".result-hero .grade > span")).toHaveText("100.0 / 100");
+  await expect(page.locator(".result-hero .grade > span")).toHaveText("100.00");
   await expect(page.getByText("Clear could not be saved; session only.")).toBeVisible();
 });
 
@@ -188,6 +188,14 @@ test("keeps Figma navigation above notices and pinned on every destination", asy
       if (destination === "Audit") {
         await expect(page.getByRole("heading", { name: "Saved Audit Results", exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "View report", exact: true })).toBeEnabled();
+        const preview = await page.locator(".saved-report-preview").evaluate((node) => {
+          const badge = node.querySelector(".saved-report-grade")!;
+          const rect = badge.getBoundingClientRect();
+          const style = getComputedStyle(badge);
+          const score = getComputedStyle(node.querySelector("strong")!);
+          return { width: rect.width, height: rect.height, radius: style.borderRadius, font: style.fontSize, weight: style.fontWeight, tracking: style.letterSpacing, previewHeight: node.getBoundingClientRect().height, previewRadius: getComputedStyle(node).borderRadius, scoreFont: score.fontSize, scoreWeight: score.fontWeight };
+        });
+        expect(preview).toEqual({ width: 40, height: 40, radius: "4px", font: "23.6px", weight: "900", tracking: "-0.236px", previewHeight: 58, previewRadius: "9px", scoreFont: "15.6px", scoreWeight: "500" });
       }
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       await assertChrome();
@@ -210,6 +218,13 @@ test("keeps Figma navigation above notices and pinned on every destination", asy
     expect(grade.width).toBeCloseTo(100, 2);
     expect(grade.height).toBeCloseTo(100, 2);
     expect(grade.radius).toBe("4px");
+    const hero = await page.locator(".report-grade").evaluate((node) => {
+      const letter = getComputedStyle(node.querySelector("strong")!);
+      const score = getComputedStyle(node.querySelector("span")!);
+      return { letterFont: letter.fontSize, letterWeight: letter.fontWeight, scoreFont: score.fontSize, scoreWeight: score.fontWeight, text: node.querySelector("span")!.textContent, whitespace: getComputedStyle(node).whiteSpace };
+    });
+    expect(hero).toEqual({ letterFont: "39.6px", letterWeight: "900", scoreFont: "16.6px", scoreWeight: "400", text: "97.40", whitespace: "nowrap" });
+    expect(await page.locator(".axis-score.score-good").first().evaluate((node) => getComputedStyle(node).backgroundColor)).toBe("rgb(51, 150, 23)");
     await page.locator(".issue-category > summary").first().focus();
     expect((await page.locator(".issue-category > summary").first().boundingBox())!.y).toBeGreaterThanOrEqual(105);
     await page.keyboard.press("Enter");
@@ -236,26 +251,28 @@ test("matches the Figma dark layout at 320, 456 and 500px with keyboard focus", 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect((await page.locator(".hero-summary").innerText()).length).toBeLessThanOrEqual(120);
     const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-    // The user explicitly requested the reference's exact 40% inactive-tab
-    // opacity. Record that known contrast exception; fail on every other issue.
-    expect(accessibility.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target) }))).toEqual([
-      { id: "color-contrast", targets: [["button[aria-label=\"Audit\"]"], ["button[aria-label=\"Cleanup\"]"]] },
-    ]);
-    await page.screenshot({ path: `/tmp/design-passport-84-report-${width}.png`, fullPage: true });
+    // Exact reference colors fail contrast on the inactive tabs and green
+    // score badges. Assert only those precise elements, not a broad exclusion.
+    expect(accessibility.violations.map((violation) => violation.id)).toEqual(["color-contrast"]);
+    const affected = await Promise.all(accessibility.violations[0]!.nodes.map((node) => page.locator(String(node.target[0])).evaluate((element) => element.getAttribute("aria-label") ?? element.className)));
+    expect(affected.sort()).toEqual(["Audit", "Cleanup", ...Array<string>(8).fill("axis-score score-good")].sort());
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: `/tmp/design-passport-87-report-${width}.png`, fullPage: true });
     for (const summary of await page.locator(".issue-category > summary").all()) await summary.click();
     await page.locator(".finding-summary").first().click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const expandedAccessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-    expect(expandedAccessibility.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target) }))).toEqual([
-      { id: "color-contrast", targets: [["button[aria-label=\"Audit\"]"], ["button[aria-label=\"Cleanup\"]"]] },
-    ]);
+    expect(expandedAccessibility.violations.map((violation) => violation.id)).toEqual(["color-contrast"]);
+    const expandedAffected = await Promise.all(expandedAccessibility.violations[0]!.nodes.map((node) => page.locator(String(node.target[0])).evaluate((element) => element.getAttribute("aria-label") ?? element.className)));
+    expect(expandedAffected.sort()).toEqual(["Audit", "Cleanup", ...Array<string>(8).fill("axis-score score-good")].sort());
     const assets = await page.locator(".chevron, .node-link img, .issue-category > summary img").evaluateAll((nodes) => nodes.filter((node) => node.getBoundingClientRect().width > 0).map((node) => ({ slot: node.className || "link", width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
     for (const asset of assets) {
       const size = asset.slot === "link" ? 16 : 8;
       expect(asset.width).toBeCloseTo(size, 2);
       expect(asset.height).toBeCloseTo(size, 2);
     }
-    await page.screenshot({ path: `/tmp/design-passport-84-issues-${width}.png`, fullPage: true });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: `/tmp/design-passport-87-issues-${width}.png`, fullPage: true });
     await page.locator(".finding-summary").first().click();
     for (const summary of await page.locator(".issue-category > summary").all()) await summary.click();
   }
