@@ -2,13 +2,13 @@
   "version": 1,
   "wikiRoot": "wiki",
   "counts": {
-    "nodes": 90,
-    "edges": 282,
+    "nodes": 93,
+    "edges": 292,
     "byType": {
       "index": 19,
-      "journal": 33,
-      "plan": 27,
-      "topic": 11
+      "journal": 34,
+      "plan": 28,
+      "topic": 12
     }
   },
   "nodes": [
@@ -20,8 +20,8 @@
       "githubRefs": [],
       "bytes": 162,
       "degree": 3,
-      "x": 0.990268,
-      "y": 0.139173,
+      "x": 0.990885,
+      "y": 0.134711,
       "size": 12
     },
     {
@@ -39,8 +39,8 @@
       ],
       "bytes": 6250,
       "degree": 3,
-      "x": 0.978148,
-      "y": 0.207912,
+      "x": 0.97953,
+      "y": 0.201299,
       "size": 12
     },
     {
@@ -58,8 +58,8 @@
       ],
       "bytes": 10158,
       "degree": 3,
-      "x": 0.961262,
-      "y": 0.275637,
+      "x": 0.963706,
+      "y": 0.266967,
       "size": 12
     },
     {
@@ -70,8 +70,8 @@
       "githubRefs": [],
       "bytes": 9443,
       "degree": 1,
-      "x": 0.913545,
-      "y": 0.406737,
+      "x": 0.918958,
+      "y": 0.394356,
       "size": 12
     },
     {
@@ -82,8 +82,8 @@
       "githubRefs": [],
       "bytes": 335,
       "degree": 8,
-      "x": 0.939693,
-      "y": 0.34202,
+      "x": 0.943484,
+      "y": 0.331418,
       "size": 12
     },
     {
@@ -94,8 +94,8 @@
       "githubRefs": [],
       "bytes": 5812,
       "degree": 3,
-      "x": 0.882948,
-      "y": 0.469472,
+      "x": 0.890238,
+      "y": 0.455495,
       "size": 12
     },
     {
@@ -113,8 +113,8 @@
       ],
       "bytes": 19515,
       "degree": 4,
-      "x": 0.848048,
-      "y": 0.529919,
+      "x": 0.857457,
+      "y": 0.514555,
       "size": 12
     },
     {
@@ -125,8 +125,8 @@
       "githubRefs": [],
       "bytes": 6801,
       "degree": 1,
-      "x": 0.809017,
-      "y": 0.587785,
+      "x": 0.820763,
+      "y": 0.571268,
       "size": 12
     },
     {
@@ -137,8 +137,8 @@
       "githubRefs": [],
       "bytes": 3739,
       "degree": 2,
-      "x": 0.766044,
-      "y": 0.642788,
+      "x": 0.780325,
+      "y": 0.625374,
       "size": 12
     },
     {
@@ -161,8 +161,8 @@
       "githubRefs": [],
       "bytes": 1889,
       "degree": 5,
-      "x": 0.71934,
-      "y": 0.694658,
+      "x": 0.736326,
+      "y": 0.676627,
       "size": 8
     },
     {
@@ -173,8 +173,8 @@
       "githubRefs": [],
       "bytes": 2011,
       "degree": 11,
-      "x": 0.669131,
-      "y": 0.743145,
+      "x": 0.688967,
+      "y": 0.724793,
       "size": 8
     },
     {
@@ -192,8 +192,8 @@
       ],
       "bytes": 9455,
       "degree": 5,
-      "x": 0.615661,
-      "y": 0.788011,
+      "x": 0.638465,
+      "y": 0.769651,
       "size": 8
     },
     {
@@ -217,8 +217,8 @@
       ],
       "bytes": 584,
       "degree": 0,
-      "x": 0.559193,
-      "y": 0.829038,
+      "x": 0.585049,
+      "y": 0.810998,
       "size": 8
     },
     {
@@ -229,8 +229,8 @@
       "githubRefs": [],
       "bytes": 1989,
       "degree": 5,
-      "x": 0.5,
-      "y": 0.866025,
+      "x": 0.528964,
+      "y": 0.848644,
       "size": 8
     },
     {
@@ -254,8 +254,8 @@
       ],
       "bytes": 2463,
       "degree": 3,
-      "x": 0.438371,
-      "y": 0.898794,
+      "x": 0.470465,
+      "y": 0.882418,
       "size": 8
     },
     {
@@ -273,8 +273,8 @@
       ],
       "bytes": 1573,
       "degree": 2,
-      "x": 0.374607,
-      "y": 0.927184,
+      "x": 0.40982,
+      "y": 0.912166,
       "size": 8
     },
     {
@@ -292,8 +292,8 @@
       ],
       "bytes": 2702,
       "degree": 3,
-      "x": 0.309017,
-      "y": 0.951057,
+      "x": 0.347305,
+      "y": 0.937752,
       "size": 8
     },
     {
@@ -304,8 +304,8 @@
       "githubRefs": [],
       "bytes": 2327,
       "degree": 5,
-      "x": 0.241922,
-      "y": 0.970296,
+      "x": 0.283206,
+      "y": 0.959059,
       "size": 8
     },
     {
@@ -316,8 +316,8 @@
       "githubRefs": [],
       "bytes": 3437,
       "degree": 7,
-      "x": 0.173648,
-      "y": 0.984808,
+      "x": 0.217814,
+      "y": 0.97599,
       "size": 8
     },
     {
@@ -328,8 +328,8 @@
       "githubRefs": [],
       "bytes": 2405,
       "degree": 6,
-      "x": 0.104528,
-      "y": 0.994522,
+      "x": 0.151428,
+      "y": 0.988468,
       "size": 8
     },
     {
@@ -347,8 +347,8 @@
       ],
       "bytes": 3988,
       "degree": 11,
-      "x": 0.034899,
-      "y": 0.999391,
+      "x": 0.084351,
+      "y": 0.996436,
       "size": 8
     },
     {
@@ -366,8 +366,8 @@
       ],
       "bytes": 3544,
       "degree": 6,
-      "x": -0.034899,
-      "y": 0.999391,
+      "x": 0.016889,
+      "y": 0.999857,
       "size": 8
     },
     {
@@ -385,8 +385,8 @@
       ],
       "bytes": 4822,
       "degree": 2,
-      "x": -0.104528,
-      "y": 0.994522,
+      "x": -0.050649,
+      "y": 0.998717,
       "size": 8
     },
     {
@@ -404,8 +404,8 @@
       ],
       "bytes": 5487,
       "degree": 4,
-      "x": -0.173648,
-      "y": 0.984808,
+      "x": -0.117957,
+      "y": 0.993019,
       "size": 8
     },
     {
@@ -423,8 +423,8 @@
       ],
       "bytes": 5249,
       "degree": 6,
-      "x": -0.241922,
-      "y": 0.970296,
+      "x": -0.184726,
+      "y": 0.98279,
       "size": 8
     },
     {
@@ -442,8 +442,8 @@
       ],
       "bytes": 3810,
       "degree": 4,
-      "x": -0.309017,
-      "y": 0.951057,
+      "x": -0.250653,
+      "y": 0.968077,
       "size": 8
     },
     {
@@ -461,8 +461,8 @@
       ],
       "bytes": 2962,
       "degree": 5,
-      "x": -0.374607,
-      "y": 0.927184,
+      "x": -0.315435,
+      "y": 0.948947,
       "size": 8
     },
     {
@@ -486,8 +486,8 @@
       ],
       "bytes": 1022,
       "degree": 2,
-      "x": -0.438371,
-      "y": 0.898794,
+      "x": -0.378779,
+      "y": 0.925487,
       "size": 8
     },
     {
@@ -505,8 +505,8 @@
       ],
       "bytes": 418,
       "degree": 0,
-      "x": -0.5,
-      "y": 0.866025,
+      "x": -0.440394,
+      "y": 0.897805,
       "size": 8
     },
     {
@@ -524,8 +524,8 @@
       ],
       "bytes": 1472,
       "degree": 2,
-      "x": -0.559193,
-      "y": 0.829038,
+      "x": -0.5,
+      "y": 0.866025,
       "size": 8
     },
     {
@@ -543,8 +543,8 @@
       ],
       "bytes": 943,
       "degree": 4,
-      "x": -0.615661,
-      "y": 0.788011,
+      "x": -0.557324,
+      "y": 0.830295,
       "size": 8
     },
     {
@@ -562,8 +562,8 @@
       ],
       "bytes": 2049,
       "degree": 4,
-      "x": -0.669131,
-      "y": 0.743145,
+      "x": -0.612106,
+      "y": 0.790776,
       "size": 8
     },
     {
@@ -581,8 +581,8 @@
       ],
       "bytes": 30914,
       "degree": 4,
-      "x": -0.71934,
-      "y": 0.694658,
+      "x": -0.664095,
+      "y": 0.747649,
       "size": 8
     },
     {
@@ -606,8 +606,8 @@
       ],
       "bytes": 2413,
       "degree": 3,
-      "x": -0.766044,
-      "y": 0.642788,
+      "x": -0.713053,
+      "y": 0.70111,
       "size": 8
     },
     {
@@ -631,8 +631,8 @@
       ],
       "bytes": 7669,
       "degree": 4,
-      "x": -0.809017,
-      "y": 0.587785,
+      "x": -0.758758,
+      "y": 0.651372,
       "size": 8
     },
     {
@@ -662,8 +662,8 @@
       ],
       "bytes": 4344,
       "degree": 8,
-      "x": -0.848048,
-      "y": 0.529919,
+      "x": -0.801001,
+      "y": 0.598663,
       "size": 8
     },
     {
@@ -681,8 +681,8 @@
       ],
       "bytes": 2278,
       "degree": 2,
-      "x": -0.882948,
-      "y": 0.469472,
+      "x": -0.839589,
+      "y": 0.543222,
       "size": 8
     },
     {
@@ -700,8 +700,8 @@
       ],
       "bytes": 2842,
       "degree": 3,
-      "x": -0.913545,
-      "y": 0.406737,
+      "x": -0.874347,
+      "y": 0.485302,
       "size": 8
     },
     {
@@ -719,8 +719,8 @@
       ],
       "bytes": 2279,
       "degree": 3,
-      "x": -0.939693,
-      "y": 0.34202,
+      "x": -0.905115,
+      "y": 0.425168,
       "size": 8
     },
     {
@@ -750,8 +750,8 @@
       ],
       "bytes": 10139,
       "degree": 4,
-      "x": -0.961262,
-      "y": 0.275637,
+      "x": -0.931753,
+      "y": 0.363094,
       "size": 8
     },
     {
@@ -775,8 +775,8 @@
       ],
       "bytes": 11238,
       "degree": 3,
-      "x": -0.978148,
-      "y": 0.207912,
+      "x": -0.954139,
+      "y": 0.299363,
       "size": 8
     },
     {
@@ -794,8 +794,27 @@
       ],
       "bytes": 14568,
       "degree": 7,
-      "x": -0.990268,
-      "y": 0.139173,
+      "x": -0.972172,
+      "y": 0.234266,
+      "size": 8
+    },
+    {
+      "id": "wiki/journal/2026-10-07-stepped-audits-micro-fixes.md",
+      "label": "Stepped audits and verified micro-fixes",
+      "type": "journal",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 81,
+          "url": "https://github.com/jfusco/design-passport/issues/81"
+        }
+      ],
+      "bytes": 4826,
+      "degree": 4,
+      "x": -0.98577,
+      "y": 0.168101,
       "size": 8
     },
     {
@@ -806,8 +825,8 @@
       "githubRefs": [],
       "bytes": 3126,
       "degree": 2,
-      "x": 0.997564,
-      "y": 0.069756,
+      "x": 0.997719,
+      "y": 0.06751,
       "size": 12
     },
     {
@@ -818,8 +837,8 @@
       "githubRefs": [],
       "bytes": 811,
       "degree": 4,
-      "x": -0.997564,
-      "y": 0.069756,
+      "x": -0.994869,
+      "y": 0.101168,
       "size": 8
     },
     {
@@ -830,8 +849,8 @@
       "githubRefs": [],
       "bytes": 993,
       "degree": 4,
-      "x": -1,
-      "y": 0,
+      "x": -0.999429,
+      "y": 0.033774,
       "size": 8
     },
     {
@@ -842,8 +861,8 @@
       "githubRefs": [],
       "bytes": 12391,
       "degree": 8,
-      "x": -0.997564,
-      "y": -0.069756,
+      "x": -0.999429,
+      "y": -0.033774,
       "size": 8
     },
     {
@@ -861,8 +880,8 @@
       ],
       "bytes": 2183,
       "degree": 4,
-      "x": -0.990268,
-      "y": -0.139173,
+      "x": -0.994869,
+      "y": -0.101168,
       "size": 8
     },
     {
@@ -873,8 +892,8 @@
       "githubRefs": [],
       "bytes": 1058,
       "degree": 3,
-      "x": -0.978148,
-      "y": -0.207912,
+      "x": -0.98577,
+      "y": -0.168101,
       "size": 8
     },
     {
@@ -885,8 +904,8 @@
       "githubRefs": [],
       "bytes": 978,
       "degree": 3,
-      "x": -0.961262,
-      "y": -0.275637,
+      "x": -0.972172,
+      "y": -0.234266,
       "size": 8
     },
     {
@@ -897,8 +916,8 @@
       "githubRefs": [],
       "bytes": 2552,
       "degree": 3,
-      "x": -0.939693,
-      "y": -0.34202,
+      "x": -0.954139,
+      "y": -0.299363,
       "size": 8
     },
     {
@@ -909,8 +928,8 @@
       "githubRefs": [],
       "bytes": 2654,
       "degree": 7,
-      "x": -0.913545,
-      "y": -0.406737,
+      "x": -0.931753,
+      "y": -0.363094,
       "size": 8
     },
     {
@@ -921,8 +940,8 @@
       "githubRefs": [],
       "bytes": 1230,
       "degree": 3,
-      "x": -0.882948,
-      "y": -0.469472,
+      "x": -0.905115,
+      "y": -0.425168,
       "size": 8
     },
     {
@@ -940,8 +959,8 @@
       ],
       "bytes": 6239,
       "degree": 3,
-      "x": -0.848048,
-      "y": -0.529919,
+      "x": -0.874347,
+      "y": -0.485302,
       "size": 8
     },
     {
@@ -952,8 +971,8 @@
       "githubRefs": [],
       "bytes": 8790,
       "degree": 3,
-      "x": -0.809017,
-      "y": -0.587785,
+      "x": -0.839589,
+      "y": -0.543222,
       "size": 8
     },
     {
@@ -964,8 +983,8 @@
       "githubRefs": [],
       "bytes": 11833,
       "degree": 5,
-      "x": -0.766044,
-      "y": -0.642788,
+      "x": -0.801001,
+      "y": -0.598663,
       "size": 8
     },
     {
@@ -983,8 +1002,8 @@
       ],
       "bytes": 2158,
       "degree": 4,
-      "x": -0.71934,
-      "y": -0.694658,
+      "x": -0.758758,
+      "y": -0.651372,
       "size": 8
     },
     {
@@ -995,8 +1014,8 @@
       "githubRefs": [],
       "bytes": 1840,
       "degree": 3,
-      "x": -0.669131,
-      "y": -0.743145,
+      "x": -0.713053,
+      "y": -0.70111,
       "size": 8
     },
     {
@@ -1014,8 +1033,8 @@
       ],
       "bytes": 1410,
       "degree": 3,
-      "x": -0.615661,
-      "y": -0.788011,
+      "x": -0.664095,
+      "y": -0.747649,
       "size": 8
     },
     {
@@ -1033,8 +1052,8 @@
       ],
       "bytes": 1654,
       "degree": 3,
-      "x": -0.559193,
-      "y": -0.829038,
+      "x": -0.612106,
+      "y": -0.790776,
       "size": 8
     },
     {
@@ -1045,8 +1064,8 @@
       "githubRefs": [],
       "bytes": 3932,
       "degree": 5,
-      "x": -0.5,
-      "y": -0.866025,
+      "x": -0.557324,
+      "y": -0.830295,
       "size": 8
     },
     {
@@ -1057,8 +1076,8 @@
       "githubRefs": [],
       "bytes": 2203,
       "degree": 4,
-      "x": -0.438371,
-      "y": -0.898794,
+      "x": -0.5,
+      "y": -0.866025,
       "size": 8
     },
     {
@@ -1069,8 +1088,8 @@
       "githubRefs": [],
       "bytes": 4752,
       "degree": 3,
-      "x": -0.374607,
-      "y": -0.927184,
+      "x": -0.440394,
+      "y": -0.897805,
       "size": 8
     },
     {
@@ -1088,8 +1107,8 @@
       ],
       "bytes": 6224,
       "degree": 4,
-      "x": -0.309017,
-      "y": -0.951057,
+      "x": -0.378779,
+      "y": -0.925487,
       "size": 8
     },
     {
@@ -1107,8 +1126,8 @@
       ],
       "bytes": 12464,
       "degree": 3,
-      "x": -0.241922,
-      "y": -0.970296,
+      "x": -0.315435,
+      "y": -0.948947,
       "size": 8
     },
     {
@@ -1119,8 +1138,8 @@
       "githubRefs": [],
       "bytes": 30260,
       "degree": 3,
-      "x": -0.173648,
-      "y": -0.984808,
+      "x": -0.250653,
+      "y": -0.968077,
       "size": 8
     },
     {
@@ -1138,8 +1157,8 @@
       ],
       "bytes": 1661,
       "degree": 3,
-      "x": -0.104528,
-      "y": -0.994522,
+      "x": -0.184726,
+      "y": -0.98279,
       "size": 8
     },
     {
@@ -1163,8 +1182,8 @@
       ],
       "bytes": 4267,
       "degree": 3,
-      "x": -0.034899,
-      "y": -0.999391,
+      "x": -0.117957,
+      "y": -0.993019,
       "size": 8
     },
     {
@@ -1188,8 +1207,8 @@
       ],
       "bytes": 3627,
       "degree": 3,
-      "x": 0.034899,
-      "y": -0.999391,
+      "x": -0.050649,
+      "y": -0.998717,
       "size": 8
     },
     {
@@ -1200,8 +1219,8 @@
       "githubRefs": [],
       "bytes": 1968,
       "degree": 3,
-      "x": 0.104528,
-      "y": -0.994522,
+      "x": 0.016889,
+      "y": -0.999857,
       "size": 8
     },
     {
@@ -1212,8 +1231,20 @@
       "githubRefs": [],
       "bytes": 34217,
       "degree": 4,
-      "x": 0.173648,
-      "y": -0.984808,
+      "x": 0.084351,
+      "y": -0.996436,
+      "size": 8
+    },
+    {
+      "id": "wiki/plans/2026-10-07-implement-the-figma-flow-and-live-micro-fix-scoring-040107251b.md",
+      "label": "Implement the Figma flow and live micro-fix scoring",
+      "type": "plan",
+      "aliases": [],
+      "githubRefs": [],
+      "bytes": 33319,
+      "degree": 3,
+      "x": 0.151428,
+      "y": -0.988468,
       "size": 8
     },
     {
@@ -1265,10 +1296,10 @@
           "url": "https://github.com/jfusco/design-passport/pull/54"
         }
       ],
-      "bytes": 26193,
-      "degree": 29,
-      "x": 0.241922,
-      "y": -0.970296,
+      "bytes": 26621,
+      "degree": 30,
+      "x": 0.217814,
+      "y": -0.97599,
       "size": 12
     },
     {
@@ -1279,8 +1310,8 @@
       "githubRefs": [],
       "bytes": 211,
       "degree": 2,
-      "x": 0.309017,
-      "y": -0.951057,
+      "x": 0.283206,
+      "y": -0.959059,
       "size": 12
     },
     {
@@ -1291,8 +1322,8 @@
       "githubRefs": [],
       "bytes": 21674,
       "degree": 1,
-      "x": 0.374607,
-      "y": -0.927184,
+      "x": 0.347305,
+      "y": -0.937752,
       "size": 12
     },
     {
@@ -1310,8 +1341,8 @@
       ],
       "bytes": 13899,
       "degree": 4,
-      "x": 0.5,
-      "y": -0.866025,
+      "x": 0.470465,
+      "y": -0.882418,
       "size": 12
     },
     {
@@ -1329,8 +1360,8 @@
       ],
       "bytes": 12257,
       "degree": 4,
-      "x": 0.559193,
-      "y": -0.829038,
+      "x": 0.528964,
+      "y": -0.848644,
       "size": 12
     },
     {
@@ -1348,8 +1379,8 @@
       ],
       "bytes": 5995,
       "degree": 3,
-      "x": 0.615661,
-      "y": -0.788011,
+      "x": 0.585049,
+      "y": -0.810998,
       "size": 12
     },
     {
@@ -1360,8 +1391,8 @@
       "githubRefs": [],
       "bytes": 366,
       "degree": 6,
-      "x": 0.438371,
-      "y": -0.898794,
+      "x": 0.40982,
+      "y": -0.912166,
       "size": 12
     },
     {
@@ -1372,8 +1403,8 @@
       "githubRefs": [],
       "bytes": 7744,
       "degree": 3,
-      "x": 0.669131,
-      "y": -0.743145,
+      "x": 0.638465,
+      "y": -0.769651,
       "size": 12
     },
     {
@@ -1391,8 +1422,8 @@
       ],
       "bytes": 719,
       "degree": 5,
-      "x": 0.71934,
-      "y": -0.694658,
+      "x": 0.688967,
+      "y": -0.724793,
       "size": 8
     },
     {
@@ -1410,8 +1441,8 @@
       ],
       "bytes": 8014,
       "degree": 44,
-      "x": 0.766044,
-      "y": -0.642788,
+      "x": 0.736326,
+      "y": -0.676627,
       "size": 8
     },
     {
@@ -1429,8 +1460,8 @@
       ],
       "bytes": 6658,
       "degree": 23,
-      "x": 0.809017,
-      "y": -0.587785,
+      "x": 0.780325,
+      "y": -0.625374,
       "size": 8
     },
     {
@@ -1454,8 +1485,8 @@
       ],
       "bytes": 20188,
       "degree": 43,
-      "x": 0.848048,
-      "y": -0.529919,
+      "x": 0.820763,
+      "y": -0.571268,
       "size": 8
     },
     {
@@ -1473,8 +1504,8 @@
       ],
       "bytes": 1973,
       "degree": 6,
-      "x": 0.882948,
-      "y": -0.469472,
+      "x": 0.857457,
+      "y": -0.514555,
       "size": 8
     },
     {
@@ -1492,8 +1523,8 @@
       ],
       "bytes": 11155,
       "degree": 8,
-      "x": 0.913545,
-      "y": -0.406737,
+      "x": 0.890238,
+      "y": -0.455495,
       "size": 8
     },
     {
@@ -1503,9 +1534,9 @@
       "aliases": [],
       "githubRefs": [],
       "bytes": 4694,
-      "degree": 24,
-      "x": 0.939693,
-      "y": -0.34202,
+      "degree": 25,
+      "x": 0.918958,
+      "y": -0.394356,
       "size": 8
     },
     {
@@ -1553,8 +1584,8 @@
       ],
       "bytes": 15543,
       "degree": 15,
-      "x": 0.961262,
-      "y": -0.275637,
+      "x": 0.943484,
+      "y": -0.331418,
       "size": 8
     },
     {
@@ -1565,8 +1596,27 @@
       "githubRefs": [],
       "bytes": 5332,
       "degree": 19,
-      "x": 0.978148,
-      "y": -0.207912,
+      "x": 0.963706,
+      "y": -0.266967,
+      "size": 8
+    },
+    {
+      "id": "wiki/topics/stepped-audits-micro-fixes.md",
+      "label": "Stepped audits and micro-fixes",
+      "type": "topic",
+      "aliases": [],
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 81,
+          "url": "https://github.com/jfusco/design-passport/issues/81"
+        }
+      ],
+      "bytes": 3792,
+      "degree": 7,
+      "x": 0.97953,
+      "y": -0.201299,
       "size": 8
     },
     {
@@ -1577,8 +1627,8 @@
       "githubRefs": [],
       "bytes": 12043,
       "degree": 15,
-      "x": 0.990268,
-      "y": -0.139173,
+      "x": 0.990885,
+      "y": -0.134711,
       "size": 8
     },
     {
@@ -1587,10 +1637,10 @@
       "type": "topic",
       "aliases": [],
       "githubRefs": [],
-      "bytes": 4946,
-      "degree": 28,
-      "x": 0.997564,
-      "y": -0.069756,
+      "bytes": 5964,
+      "degree": 32,
+      "x": 0.997719,
+      "y": -0.06751,
       "size": 8
     }
   ],
@@ -1657,6 +1707,13 @@
       "target": "wiki/plans/2026-09-23-designer-feedback-hardening-and-stale-build-prevention-859c045c42.md",
       "type": "plan",
       "relation": "plan"
+    },
+    {
+      "id": "0d882f12355de047",
+      "source": "wiki/topics/stepped-audits-micro-fixes.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "0e414a96ceaeba99",
@@ -2499,6 +2556,13 @@
       "relation": "topic"
     },
     {
+      "id": "81668231943de9f5",
+      "source": "wiki/plans/2026-10-07-implement-the-figma-flow-and-live-micro-fix-scoring-040107251b.md",
+      "target": "wiki/topics/stepped-audits-micro-fixes.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
       "id": "8211e31a9b46b70a",
       "source": "wiki/journal/2026-09-11-profile-state-code-connect-removal.md",
       "target": "wiki/topics/mutation-certification-safety.md",
@@ -2516,6 +2580,13 @@
       "id": "8473ccbff4c6216b",
       "source": "wiki/journal/2026-09-23-designer-feedback-review-remediation.md",
       "target": "wiki/topics/design-passport-architecture.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "85369f3f5c322bfb",
+      "source": "wiki/topics/stepped-audits-micro-fixes.md",
+      "target": "wiki/topics/mutation-certification-safety.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -2772,6 +2843,13 @@
       "relation": "topic"
     },
     {
+      "id": "a332b461744bd38c",
+      "source": "wiki/journal/2026-10-07-stepped-audits-micro-fixes.md",
+      "target": "wiki/plans/2026-10-07-implement-the-figma-flow-and-live-micro-fix-scoring-040107251b.md",
+      "type": "plan",
+      "relation": "plan"
+    },
+    {
       "id": "a4ee4623d9e26c47",
       "source": "wiki/journal/2026-09-10-organization-published-plugin.md",
       "target": "wiki/topics/figma-runtime-qa.md",
@@ -2807,6 +2885,13 @@
       "relation": "plan"
     },
     {
+      "id": "a6e9773c09876abd",
+      "source": "wiki/topics/stepped-audits-micro-fixes.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "a7139f1dfeb8e83d",
       "source": "wiki/topics/persistent-audits.md",
       "target": "wiki/journal/2026-10-03-postmerge-native-acceptance.md",
@@ -2838,6 +2923,13 @@
       "id": "a90c870959fcf5f5",
       "source": "wiki/plans/INDEX.md",
       "target": "wiki/plans/2026-09-09-variant-level-readiness-visibility-479be6bc3d.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
+      "id": "ac27308b09c5478a",
+      "source": "wiki/topics/whole-file-design-knowledge.md",
+      "target": "wiki/topics/stepped-audits-micro-fixes.md",
       "type": "link",
       "relation": "link"
     },
@@ -3143,6 +3235,13 @@
       "relation": "topic"
     },
     {
+      "id": "d104d5347299402f",
+      "source": "wiki/plans/INDEX.md",
+      "target": "wiki/plans/2026-10-07-implement-the-figma-flow-and-live-micro-fix-scoring-040107251b.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "d11633a20eef00e0",
       "source": "wiki/journal/2026-09-23-designer-feedback-review-remediation.md",
       "target": "wiki/topics/mutation-certification-safety.md",
@@ -3241,6 +3340,13 @@
       "relation": "link"
     },
     {
+      "id": "dd9cc7bc9249b61d",
+      "source": "wiki/topics/stepped-audits-micro-fixes.md",
+      "target": "wiki/journal/2026-10-07-stepped-audits-micro-fixes.md",
+      "type": "link",
+      "relation": "link"
+    },
+    {
       "id": "de2e381aaa3a7706",
       "source": "wiki/guides/INDEX.md",
       "target": "wiki/guides/ruleset.md",
@@ -3251,6 +3357,13 @@
       "id": "dea5c52a8e426887",
       "source": "wiki/journal/2026-09-14-scanner-maintenance-verification.md",
       "target": "wiki/topics/figma-runtime-qa.md",
+      "type": "topic",
+      "relation": "topic"
+    },
+    {
+      "id": "deee8447695d53f3",
+      "source": "wiki/journal/2026-10-07-stepped-audits-micro-fixes.md",
+      "target": "wiki/topics/stepped-audits-micro-fixes.md",
       "type": "topic",
       "relation": "topic"
     },
@@ -3435,6 +3548,13 @@
       "target": "wiki/plans/2026-09-11-make-scoped-audits-look-scoped-7be69504d6.md",
       "type": "link",
       "relation": "link"
+    },
+    {
+      "id": "f4826b39a6539c29",
+      "source": "wiki/journal/2026-10-07-stepped-audits-micro-fixes.md",
+      "target": "wiki/topics/whole-file-design-knowledge.md",
+      "type": "topic",
+      "relation": "topic"
     },
     {
       "id": "f54e705868348ee8",

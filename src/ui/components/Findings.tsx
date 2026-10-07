@@ -1,3 +1,11 @@
+import { stableIssueKey } from "../../core/issue-key";
+import type { IssueReviewState } from "../../plugin/issue-review";
+import type { WaiverStore } from "../../core/waivers";
+import linkIcon from "../assets/imgLinkSimple.svg";
+import resolvedLinkIcon from "../assets/imgLinkSimple1.svg";
+import expandIcon from "../assets/imgFrame38.svg";
+import collapseIcon from "../assets/imgFrame39.svg";
+import caretIcon from "../assets/imgCaretCircleDown.svg";
 import { AXIS_LABELS } from "../../core/constants";
 import { getPatternChecklist } from "../../core/catalog";
 import type { Axis, BindableField, Finding, FindingCategory, FindingGroup, FrameResult, JsonValue } from "../../core/contracts";
@@ -5,7 +13,7 @@ import type { VariableCollectionOption } from "../../figma/adapter";
 import type { TokenCoveragePageRequest, TokenCoveragePageResult } from "../../plugin/messages";
 import { groupsForFindings } from "../../core/finding-groups";
 import { findingImpactLabel } from "../../core/finding-policy";
-import { statusClass } from "../operations/presentation";
+import { statusClass, designerText } from "../operations/presentation";
 import { defaultTokenCollectionId } from "../operations/token-wizard";
 import { isWaiverReasonValid } from "../operations/waivers";
 import type { TokenWizardState, WaiverDraft } from "../types";
@@ -13,6 +21,13 @@ import { TokenCoverage } from "./TokenCoverage";
 
 export interface FindingsProps {
   findings: Finding[];
+  reviewState?: IssueReviewState;
+  checkingKeys?: readonly string[];
+  regenerationKeys?: readonly string[];
+  waivers?: WaiverStore;
+  onClear?: (key: string) => void;
+  clearDisabled?: boolean;
+  onRegenerate?: () => void;
   groups?: FindingGroup[];
   categoryFilter?: FindingCategory | "all";
   onCategoryFilter?: (value: FindingCategory | "all") => void;
@@ -63,6 +78,7 @@ export function Findings(props: FindingsProps) {
     .filter((frame) => props.pageFilter === "all" || frame.pageId === props.pageFilter)
     .sort((left, right) => left.rootName.localeCompare(right.rootName));
   const variants = props.frames.find((frame) => frame.rootId === props.rootFilter)?.variantCoverage ?? [];
+  const resolved = props.reviewState?.records.filter((row) => row.outcome === "resolved" && row.previous && !props.reviewState?.clearedKeys.includes(row.key)) ?? [];
   return (
     <section className="panel stack">
       <TokenCoverage
@@ -97,22 +113,31 @@ export function Findings(props: FindingsProps) {
         <label className="check"><input type="checkbox" checked={props.showPassing} onChange={(event) => props.onTogglePassing(event.target.checked)} /> Show passing</label>
       </div>
       {props.findings.length > 0 && <p className="muted">{issueCount} issue{issueCount === 1 ? "" : "s"} · {props.findings.length} finding occurrences in this view. Filters do not change grades.</p>}
-      {props.findings.length === 0 ? <div className="empty-state compact"><h2>No findings in this view</h2><p>Run an audit or change the filters.</p></div> : groups.map((group) => {
+      {props.findings.length === 0 ? <div className="empty-state compact"><h2>No findings in this view</h2><p>Run an audit or change the filters.</p></div> : Object.entries(AXIS_LABELS).map(([axis, label]) => {
+        const axisGroups = groups.filter((group) => byId.get(group.primaryFindingId)?.axis === axis);
+        if (!axisGroups.length) return null;
+        return <details className="issue-category" key={axis} open><summary><span>{label} · {axisGroups.length}</span><img src={caretIcon} alt="" /></summary>{axisGroups.map((group) => {
         const selectedId = props.expanded && group.findingIds.includes(props.expanded) ? props.expanded : group.primaryFindingId;
         const finding = byId.get(selectedId)!;
         const isExpanded = props.expanded === group.id || group.findingIds.includes(props.expanded ?? "");
+        const keys = group.findingIds.map((id) => stableIssueKey(byId.get(id)!));
+        const checking = keys.some((key) => props.checkingKeys?.includes(key));
+        const regeneration = keys.some((key) => props.regenerationKeys?.includes(key));
+        const unresolved = keys.some((key) => props.reviewState?.records.some((row) => row.key === key && row.outcome === "unresolved"));
+        const manual = finding.fixability === "manual";
         const checklist = finding.patternResolution?.canonicalName ? getPatternChecklist(finding.patternResolution.canonicalName) : [];
         return (
           <article className={`finding-card severity-${finding.severity}`} key={group.id}>
             <button className="finding-summary" onClick={() => props.onExpand(isExpanded ? props.expanded! : group.id)} aria-expanded={isExpanded}>
-              <span className={statusClass(finding.status)}>{finding.status}</span>
-              <span className="finding-title"><strong>{finding.title}</strong><small>{AXIS_LABELS[finding.axis]} · {findingImpactLabel(finding)}{group.findingIds.length > 1 ? ` · ${group.occurrenceCount} affected layers` : ""}{group.kind === "related" ? " · related findings" : ""}</small></span>
-              <span className="chevron" aria-hidden="true">{isExpanded ? "−" : "+"}</span>
+              <span className={statusClass(finding.status)}>{checking ? "Checking…" : unresolved ? "Unresolved" : finding.status === "needs-review" ? "Manual review" : finding.status}</span>
+              <span className="finding-title">{manual ? <small className="manual-review-label">Manual review</small> : null}<strong>{designerText(finding.title)}</strong><small>{AXIS_LABELS[finding.axis]} · {findingImpactLabel(finding)}{group.findingIds.length > 1 ? ` · ${group.occurrenceCount} affected layers` : ""}{group.kind === "related" ? " · related findings" : ""}</small></span>
+              <img className="chevron" src={isExpanded ? collapseIcon : expandIcon} alt="" />
             </button>
+            {props.onRecheckIssue && finding.status !== "pass" && finding.status !== "not-applicable" ? <div className="issue-actions"><button className="button" disabled={props.recheckDisabled || checking} onClick={() => props.onRecheckIssue!(group.id)}>{checking ? "Checking…" : "Check again"}</button>{regeneration ? <button className="button" disabled={props.recheckDisabled} onClick={props.onRegenerate}>Regenerate audit to verify</button> : null}</div> : null}
             {isExpanded && (
               <div className="finding-detail">
                 {group.kind === "related" && <p>These findings are related. A shared fix has not been verified; review each occurrence and its overrides.</p>}
-                <p>{finding.message}</p>
+                <p>{designerText(finding.message)}</p>
                 <p><strong>Score effect:</strong> {findingImpactLabel(finding)}</p>
                 {group.sourceNodeId && <button className="button" onClick={() => props.onNavigate(group.sourceNodeId!)}>Go to source</button>}
                 {group.sourceStyleId && <button className="button" onClick={() => props.onNavigate(navigationTarget(finding))}>Show layer using this style</button>}
@@ -122,10 +147,10 @@ export function Findings(props: FindingsProps) {
                   const occurrence = byId.get(id)!;
                   return <li key={id}><button className="node-link" onClick={() => props.onNavigate(navigationTarget(occurrence))}>{occurrence.nodePath}</button><button className="button subtle" onClick={() => props.onExpand(id)}>Inspect occurrence</button></li>;
                 })}</ul></details>}
-                {props.onRecheckIssue && <button className="button" disabled={props.recheckDisabled} onClick={() => props.onRecheckIssue!(group.id)}>Recheck this issue</button>}
-                <button className="node-link" onClick={() => props.onNavigate(navigationTarget(finding))}>{finding.nodePath}</button>
-                <dl><dt>Evidence</dt><dd>{finding.evidence.summary}</dd><dt>Fixability</dt><dd>{finding.fixability}</dd><dt>Confidence</dt><dd>{Math.round(finding.confidence * 100)}%</dd></dl>
-                <details><summary>Measured evidence</summary><pre className="finding-evidence">{JSON.stringify(finding.evidence.measured, null, 2)}</pre></details>
+
+                <button className="node-link" onClick={() => props.onNavigate(navigationTarget(finding))}><img src={linkIcon} alt="" />{finding.nodePath}</button>
+                <dl><dt>Evidence</dt><dd>{designerText(finding.evidence.summary)}</dd><dt>Fixability</dt><dd>{finding.fixability}</dd><dt>Confidence</dt><dd>{Math.round(finding.confidence * 100)}%</dd></dl>
+                <details><summary>Stats for nerds</summary><pre className="finding-evidence">{JSON.stringify(finding.evidence.measured, null, 2)}</pre></details>
                 {finding.patternResolution && <div className="resolution"><strong>Pattern resolution</strong><span>{finding.patternResolution.kind}{finding.patternResolution.canonicalName ? ` → ${finding.patternResolution.canonicalName}` : ""}{finding.patternResolution.candidates ? `: ${finding.patternResolution.candidates.join(" / ")}` : ""}</span></div>}
                 {finding.patternResolution?.kind === "contextual" && finding.patternResolution.candidates && <div className="candidate-actions"><span>Confirm the intended pattern:</span>{finding.patternResolution.candidates.map((candidate) => <button className="button" disabled={props.disabled || !props.canMutateDocument} key={candidate} onClick={() => props.onConfirmPattern(finding.id, candidate)}>{candidate}</button>)}</div>}
                 {finding.patternResolution?.kind === "novel" && finding.status !== "pass" ? <button className="button" disabled={props.disabled || !props.canMutateDocument} onClick={() => props.onConfirmPattern(finding.id, finding.patternResolution!.input.split("/")[0]?.trim() ?? finding.patternResolution!.input.trim())}>Accept project term</button> : null}
@@ -149,7 +174,9 @@ export function Findings(props: FindingsProps) {
             )}
           </article>
         );
-      })}
+      })}</details>})}
+      {resolved.length > 0 ? <section className="resolved-issues stack" aria-label="Resolved issues"><h2>Resolved</h2>{resolved.map((row) => <article className="finding-card resolved" key={row.key}><div className="finding-detail"><span className="status status-pass">Resolved</span><strong>{designerText(row.previous!.title)}</strong><button className="node-link" onClick={() => props.onNavigate(navigationTarget(row.previous!))}><img src={resolvedLinkIcon} alt="" />{row.previous!.nodePath}</button><small>Verified {row.checkedAt}. Clearing this row does not change the score.</small><button className="button" onClick={() => props.onClear?.(row.key)} disabled={!props.onClear || props.clearDisabled}>Clear</button></div></article>)}</section> : null}
+      <details className="waived-issues"><summary>Waived issues · deductions retained</summary>{props.findings.filter((finding) => finding.status === "waived").map((finding) => <div key={finding.id}><strong>{designerText(finding.title)}</strong><p>{finding.waiver?.reason ?? "Accepted exception"} · {findingImpactLabel(finding)}</p></div>)}{Object.entries(props.waivers ?? {}).filter(([key]) => !props.findings.some((finding) => stableIssueKey(finding) === key || finding.id === key)).map(([key, waiver]) => <div key={key}><span>Not present in this report</span><p>{waiver.reason}</p></div>)}</details>
     </section>
   );
 }

@@ -1,3 +1,4 @@
+import { hasCompleteKnowledge } from "../knowledge";
 import { AI_SOURCE_FRAME_ANNOTATION } from "../constants";
 import type { DesignKnowledgeGraph, Finding, NodeSnapshot, ReadinessProfile } from "../contracts";
 import { createFinding } from "./finding";
@@ -25,7 +26,7 @@ export function evaluatePipelineRules(
     { nodeType: root.type },
     consumable ? {} : { hardBlocker: true },
   ));
-  const knowledgeComplete = graph.complete && !graph.cancelled && graph.loadedPageCount === graph.pageCount;
+  const knowledgeComplete = hasCompleteKnowledge(graph);
   output.push(createFinding(
     "pipeline.file-knowledge",
     "pipeline-readiness",
@@ -35,9 +36,9 @@ export function evaluatePipelineRules(
     knowledgeComplete ? "pass" : "fail",
     "Complete file knowledge",
     knowledgeComplete
-      ? `All ${graph.pageCount} pages were loaded into the design knowledge graph.`
-      : `Only ${graph.loadedPageCount} of ${graph.pageCount} pages are indexed; readiness requires complete file knowledge.`,
-    { pageCount: graph.pageCount, loadedPageCount: graph.loadedPageCount, cancelled: graph.cancelled },
+      ? `All ${graph.loadedPageCount} included pages were captured; ${graph.excludedPageIds?.length ?? 0} pages excluded by the designer.`
+      : `Only ${graph.loadedPageCount} of ${graph.pageCount - (graph.excludedPageIds?.length ?? 0)} included pages are indexed; readiness requires complete file knowledge.`,
+    { pageCount: graph.pageCount, loadedPageCount: graph.loadedPageCount, excludedPageIds: graph.excludedPageIds ?? [], cancelled: graph.cancelled },
     knowledgeComplete ? {} : { hardBlocker: true },
   ));
   output.push(createFinding(

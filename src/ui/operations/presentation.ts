@@ -37,3 +37,11 @@ export function formatDateTime(value: string): string {
   if (!Number.isFinite(date.getTime())) return "Date unavailable";
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
+
+const FIELD_LABELS: Record<string, string> = {
+  itemSpacing: "gap", counterAxisSpacing: "row gap", paddingTop: "top padding", paddingBottom: "bottom padding", paddingLeft: "left padding", paddingRight: "right padding", cornerRadius: "corner radius", topLeftRadius: "top left radius", topRightRadius: "top right radius", bottomLeftRadius: "bottom left radius", bottomRightRadius: "bottom right radius", strokeWeight: "border width", fills: "fill", strokes: "border", fontSize: "font size", fontFamily: "font family", fontWeight: "font weight", lineHeight: "line height", letterSpacing: "letter spacing", boundVariables: "token bindings", textStyleId: "text style",
+};
+export function fieldLabel(field: string): string { return FIELD_LABELS[field] ?? field; }
+export function designerText(text: string): string {
+  return text.replace(/\b(?:itemSpacing|counterAxisSpacing|paddingTop|paddingBottom|paddingLeft|paddingRight|cornerRadius|strokeWeight|fontSize|fontFamily|fontWeight|lineHeight|letterSpacing|boundVariables|textStyleId)\b/gu, fieldLabel);
+}

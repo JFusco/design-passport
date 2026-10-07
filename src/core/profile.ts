@@ -3,13 +3,14 @@ import type { ReadinessProfile } from "./contracts";
 import { profileDomainErrors } from "./profile-semantics";
 import { validateContract } from "./schema";
 
-interface ReadinessProfileV1 extends Omit<ReadinessProfile, "schemaVersion" | "ruleModes"> {
+interface ReadinessProfileV1 extends Omit<ReadinessProfile, "schemaVersion" | "ruleModes" | "excludedPageIds"> {
   schemaVersion: 1;
 }
 
 function cloneProfile(profile: ReadinessProfile): ReadinessProfile {
   return {
     ...profile,
+    excludedPageIds: [...new Set(profile.excludedPageIds ?? [])].sort(),
     pageRoles: {
       foundations: {
         pageIds: [...profile.pageRoles.foundations.pageIds],
@@ -30,16 +31,18 @@ function cloneProfile(profile: ReadinessProfile): ReadinessProfile {
   };
 }
 
-/** Validate profile-v1/v2 input and always return the current in-memory contract. */
+/** Validate profile-v1/v2/v3 input and always return the current in-memory contract. */
 export function normalizeReadinessProfile(value: unknown): ReadinessProfile | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   const { requireCodeConnect: _legacyRequireCodeConnect, ...candidate } = value as Record<string, unknown>;
   if (!validateContract("readiness-profile", candidate).valid) return undefined;
-  if (candidate.schemaVersion === 2) return cloneProfile(candidate as unknown as ReadinessProfile);
+  if (candidate.schemaVersion === 3) return cloneProfile(candidate as unknown as ReadinessProfile);
+  if (candidate.schemaVersion === 2) return cloneProfile({ ...candidate, schemaVersion: 3, excludedPageIds: [] } as unknown as ReadinessProfile);
   const legacy = candidate as unknown as ReadinessProfileV1;
   return cloneProfile({
     ...legacy,
-    schemaVersion: 2,
+    schemaVersion: 3,
+    excludedPageIds: [],
     ruleModes: { ...DEFAULT_PROFILE.ruleModes },
   });
 }
@@ -68,6 +71,7 @@ export function reconcileProfilePages(
   return {
     profile: {
       ...profile,
+      excludedPageIds: reconcile(profile.excludedPageIds),
       pageRoles: {
         foundations: {
           pageIds: reconcile(profile.pageRoles.foundations.pageIds),

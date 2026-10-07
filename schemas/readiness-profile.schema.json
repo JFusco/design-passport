@@ -3,27 +3,61 @@
   "$id": "https://verndale.com/schemas/figma-ai-ready/readiness-profile.schema.json",
   "title": "ReadinessProfile",
   "oneOf": [
-    { "$ref": "#/$defs/profileV1" },
-    { "$ref": "#/$defs/profileV2" }
+    {
+      "$ref": "#/$defs/profileV1"
+    },
+    {
+      "$ref": "#/$defs/profileV2"
+    },
+    {
+      "$ref": "#/$defs/profileV3"
+    }
   ],
   "$defs": {
     "pageRole": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["pageIds", "externalLibraryKeys"],
+      "required": [
+        "pageIds",
+        "externalLibraryKeys"
+      ],
       "properties": {
-        "pageIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-        "externalLibraryKeys": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+        "pageIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "externalLibraryKeys": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       }
     },
     "pageRoles": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["foundations", "components", "screens"],
+      "required": [
+        "foundations",
+        "components",
+        "screens"
+      ],
       "properties": {
-        "foundations": { "$ref": "#/$defs/pageRole" },
-        "components": { "$ref": "#/$defs/pageRole" },
-        "screens": { "$ref": "#/$defs/pageRole" }
+        "foundations": {
+          "$ref": "#/$defs/pageRole"
+        },
+        "components": {
+          "$ref": "#/$defs/pageRole"
+        },
+        "screens": {
+          "$ref": "#/$defs/pageRole"
+        }
       }
     },
     "breakpoints": {
@@ -33,58 +67,267 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "width"],
+        "required": [
+          "name",
+          "width"
+        ],
         "properties": {
-          "name": { "type": "string", "minLength": 1 },
-          "width": { "type": "number", "exclusiveMinimum": 0 },
-          "variableModeName": { "type": "string", "minLength": 1 }
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "variableModeName": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
     "profileV1": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "profileId", "artifactKind", "pageRoles", "breakpoints", "tokenSourceCollectionKeys", "namingPolicy"],
+      "required": [
+        "schemaVersion",
+        "profileId",
+        "artifactKind",
+        "pageRoles",
+        "breakpoints",
+        "tokenSourceCollectionKeys",
+        "namingPolicy"
+      ],
       "properties": {
-        "schemaVersion": { "const": 1 },
-        "profileId": { "const": "verndale-web-v1" },
-        "artifactKind": { "type": "string", "enum": ["product", "library"] },
-        "pageRoles": { "$ref": "#/$defs/pageRoles" },
-        "breakpoints": { "$ref": "#/$defs/breakpoints" },
-        "tokenSourceCollectionKeys": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-        "namingPolicy": { "const": "code-aligned-strict" }
+        "schemaVersion": {
+          "const": 1
+        },
+        "profileId": {
+          "const": "verndale-web-v1"
+        },
+        "artifactKind": {
+          "type": "string",
+          "enum": [
+            "product",
+            "library"
+          ]
+        },
+        "pageRoles": {
+          "$ref": "#/$defs/pageRoles"
+        },
+        "breakpoints": {
+          "$ref": "#/$defs/breakpoints"
+        },
+        "tokenSourceCollectionKeys": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "namingPolicy": {
+          "const": "code-aligned-strict"
+        }
       }
     },
     "profileV2": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schemaVersion", "profileId", "artifactKind", "pageRoles", "breakpoints", "tokenSourceCollectionKeys", "namingPolicy", "ruleModes"],
+      "required": [
+        "schemaVersion",
+        "profileId",
+        "artifactKind",
+        "pageRoles",
+        "breakpoints",
+        "tokenSourceCollectionKeys",
+        "namingPolicy",
+        "ruleModes"
+      ],
       "properties": {
-        "schemaVersion": { "const": 2 },
-        "profileId": { "const": "verndale-web-v1" },
-        "artifactKind": { "type": "string", "enum": ["product", "library"] },
-        "pageRoles": { "$ref": "#/$defs/pageRoles" },
-        "breakpoints": { "$ref": "#/$defs/breakpoints" },
-        "tokenSourceCollectionKeys": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-        "namingPolicy": { "const": "code-aligned-strict" },
+        "schemaVersion": {
+          "const": 2
+        },
+        "profileId": {
+          "const": "verndale-web-v1"
+        },
+        "artifactKind": {
+          "type": "string",
+          "enum": [
+            "product",
+            "library"
+          ]
+        },
+        "pageRoles": {
+          "$ref": "#/$defs/pageRoles"
+        },
+        "breakpoints": {
+          "$ref": "#/$defs/breakpoints"
+        },
+        "tokenSourceCollectionKeys": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "namingPolicy": {
+          "const": "code-aligned-strict"
+        },
         "ruleModes": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["layer-naming", "component-property-grammar", "component-value-grammar", "canonical-component-names", "source-name-uniqueness", "catalog-vocabulary", "component-descriptions", "detached-designs", "spacer-layers"],
+          "required": [
+            "layer-naming",
+            "component-property-grammar",
+            "component-value-grammar",
+            "canonical-component-names",
+            "source-name-uniqueness",
+            "catalog-vocabulary",
+            "component-descriptions",
+            "detached-designs",
+            "spacer-layers"
+          ],
           "properties": {
-            "layer-naming": { "$ref": "#/$defs/ruleMode" },
-            "component-property-grammar": { "$ref": "#/$defs/ruleMode" },
-            "component-value-grammar": { "$ref": "#/$defs/ruleMode" },
-            "canonical-component-names": { "$ref": "#/$defs/ruleMode" },
-            "source-name-uniqueness": { "$ref": "#/$defs/ruleMode" },
-            "catalog-vocabulary": { "$ref": "#/$defs/ruleMode" },
-            "component-descriptions": { "$ref": "#/$defs/ruleMode" },
-            "detached-designs": { "$ref": "#/$defs/ruleMode" },
-            "spacer-layers": { "$ref": "#/$defs/ruleMode" }
+            "layer-naming": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "component-property-grammar": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "component-value-grammar": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "canonical-component-names": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "source-name-uniqueness": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "catalog-vocabulary": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "component-descriptions": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "detached-designs": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "spacer-layers": {
+              "$ref": "#/$defs/ruleMode"
+            }
           }
         }
       }
     },
-    "ruleMode": { "type": "string", "enum": ["required", "advisory", "off"] }
+    "ruleMode": {
+      "type": "string",
+      "enum": [
+        "required",
+        "advisory",
+        "off"
+      ]
+    },
+    "profileV3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "profileId",
+        "artifactKind",
+        "pageRoles",
+        "breakpoints",
+        "tokenSourceCollectionKeys",
+        "namingPolicy",
+        "ruleModes",
+        "excludedPageIds"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 3
+        },
+        "profileId": {
+          "const": "verndale-web-v1"
+        },
+        "artifactKind": {
+          "type": "string",
+          "enum": [
+            "product",
+            "library"
+          ]
+        },
+        "pageRoles": {
+          "$ref": "#/$defs/pageRoles"
+        },
+        "breakpoints": {
+          "$ref": "#/$defs/breakpoints"
+        },
+        "tokenSourceCollectionKeys": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "namingPolicy": {
+          "const": "code-aligned-strict"
+        },
+        "ruleModes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "layer-naming",
+            "component-property-grammar",
+            "component-value-grammar",
+            "canonical-component-names",
+            "source-name-uniqueness",
+            "catalog-vocabulary",
+            "component-descriptions",
+            "detached-designs",
+            "spacer-layers"
+          ],
+          "properties": {
+            "layer-naming": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "component-property-grammar": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "component-value-grammar": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "canonical-component-names": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "source-name-uniqueness": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "catalog-vocabulary": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "component-descriptions": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "detached-designs": {
+              "$ref": "#/$defs/ruleMode"
+            },
+            "spacer-layers": {
+              "$ref": "#/$defs/ruleMode"
+            }
+          }
+        },
+        "excludedPageIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
   }
 }

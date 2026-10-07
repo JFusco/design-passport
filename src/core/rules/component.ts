@@ -118,7 +118,7 @@ export function evaluateComponentRules(
       "needs-review",
       "Repeated component candidate",
       `${candidates.length} structurally equivalent nodes occur across the file; review them as a component family.`,
-      { occurrenceCount: candidates.length, nodeIds: candidates.map((node) => node.id).slice(0, 50) },
+      { signature: group.signature, occurrenceCount: candidates.length, nodeIds: candidates.map((node) => node.id).slice(0, 50) },
       { confidence: 0.75, discriminator: group.signature },
     ));
   }

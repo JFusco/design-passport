@@ -1,3 +1,5 @@
+import { stableIssueKey } from "../src/core/issue-key";
+import { syntheticFinding } from "./fixtures";
 import { describe, expect, it } from "vitest";
 import { gzipSync, strToU8 } from "fflate";
 import { build } from "esbuild";
@@ -167,7 +169,7 @@ describe("durable audit storage", () => {
     const current = input({ target: { scope: "file" } });
     const next = await storage.saveAudit(current);
     expect(next.status.state).toBe("saved");
-    expect((await storage.loadAudit(current.fileKey, next.audit.id))?.report).toMatchObject({ schemaVersion: 3, producer: { pluginVersion: "0.5.0", rulesetVersion: "1.0.0-beta.5" } });
+    expect((await storage.loadAudit(current.fileKey, next.audit.id))?.report).toMatchObject({ schemaVersion: 4, producer: { pluginVersion: "0.5.0", rulesetVersion: "1.0.0-beta.5" } });
   });
 
   it.each(["changed", "cancelled"])("retains the predecessor when replacement becomes %s during its durable write", async (reason) => {
@@ -563,5 +565,45 @@ describe("durable audit storage", () => {
     expect((await storage.saveAudit(malformed)).status.state).toBe("not-saved");
     expect(canonicalAuditTargetKey({ scope: "selection", nodeIds: ["b", "a", "a"] }))
       .toBe(canonicalAuditTargetKey({ scope: "selection", nodeIds: ["a", "b"] }));
+  });
+});
+
+
+describe("resolved-row display overlays", () => {
+  it("clears without changing packet evidence, restores the marker and removes it with the audit", async () => {
+    const memory = new MemoryStorage();
+    const storage = new AuditStorage(memory);
+    const value = input();
+    const previous = syntheticFinding({ id: "gone", ruleId: "naming.default-node", nodeId: "resolved-layer", status: "fail" });
+    const key = stableIssueKey(previous);
+    value.issueReviewState = { records: [{ key, outcome: "resolved", checkedAt: value.report.generatedAt, previous }], clearedKeys: [] };
+    const saved = await storage.saveAudit(value);
+    expect(saved.status.state).toBe("saved");
+    const packetKey = [...memory.values.keys()].find((key) => key.includes(":audit:")) ?? [...memory.values.keys()][0]!;
+    const packet = structuredClone(memory.values.get(packetKey));
+    expect(await storage.updateIssueReview(value.fileKey, saved.audit.id, value.report.snapshotHash, [key])).toEqual({ state: "saved" });
+    expect(memory.values.get(packetKey)).toEqual(packet);
+    const restored = await storage.loadAudit(value.fileKey, saved.audit.id);
+    expect(restored?.issueReviewState?.clearedKeys).toEqual([key]);
+    expect(restored).toMatchObject({ id: saved.audit.id, savedAt: saved.audit.savedAt, report: value.report });
+    expect((await storage.updateIssueReview(value.fileKey, saved.audit.id, value.report.snapshotHash, [stableIssueKey(value.report.findings[0]!)])).state).toBe("session-only");
+    await storage.forgetAudit(value.fileKey, saved.audit.id);
+    expect(memory.values.size).toBe(0);
+  });
+
+  it("keeps a durable report when overlay writes fail or are corrupt", async () => {
+    const memory = new MemoryStorage(); const storage = new AuditStorage(memory); const value = input();
+    const previous = syntheticFinding({ id: "gone", ruleId: "naming.default-node", nodeId: "gone", status: "fail" });
+    const key = stableIssueKey(previous);
+    value.issueReviewState = { records: [{ key, outcome: "resolved", checkedAt: value.report.generatedAt, previous }], clearedKeys: [] };
+    const saved = await storage.saveAudit(value);
+    memory.failWrites = true;
+    expect((await storage.updateIssueReview(value.fileKey, saved.audit.id, value.report.snapshotHash, [key])).state).toBe("session-only");
+    expect((await storage.loadAudit(value.fileKey, saved.audit.id))?.report).toEqual(value.report);
+    memory.failWrites = false;
+    await storage.updateIssueReview(value.fileKey, saved.audit.id, value.report.snapshotHash, [key]);
+    const overlayKey = [...memory.values.keys()].find((key) => key.includes("issue-review"))!;
+    memory.values.set(overlayKey, { schemaVersion: 1, reportHash: "wrong", clearedKeys: [key] });
+    expect((await storage.loadAudit(value.fileKey, saved.audit.id))?.issueReviewState?.clearedKeys).toEqual([]);
   });
 });

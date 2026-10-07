@@ -15,7 +15,13 @@ import type {
 import type { SelectionSummary, VariableCollectionOption } from "../figma/adapter";
 import type { AuditRecheckRequest, AuditTargetSummary, KnowledgeSummary, PluginToUiMessage, TokenCoveragePageRequest, TokenCoveragePageResult, UiToPluginMessage } from "../plugin/messages";
 import type { AuditSaveStatus, AuditViewState, SavedAuditSummary } from "../plugin/audit-state";
-import { CumulativeLogo } from "./CumulativeLogo";
+import settingsIcon from "./assets/imgSettings24Dp1F1F1FFill1Wght100Grad0Opsz241.svg";
+import brandImage from "./assets/imgImage3.png";
+import { ContextStatusPanel } from "./components/ContextStatusPanel";
+import { PageExclusions } from "./components/PageExclusions";
+import type { IssueReviewState } from "../plugin/issue-review";
+import type { WaiverStore } from "../core/waivers";
+import type { ContextStatus } from "../plugin/messages";
 import { Cleanup } from "./components/Cleanup";
 import { ContextPanel } from "./components/ContextPanel";
 import { Findings } from "./components/Findings";
@@ -36,7 +42,7 @@ import { actionableIssueSummary } from "./operations/breakdown";
 import { findingsForReview } from "./operations/findings";
 import { cloneProfile, formatDateTime } from "./operations/presentation";
 import { discardProfileDraft, profileDraftState } from "./operations/profile-state";
-import { batchCompletionNotice, defaultAuditView, reportTargetIdentity, shouldRestoreAudit, type RestoreRequest } from "./operations/saved-audits";
+import { batchCompletionNotice, defaultAuditView, normalizeAuditView, reportTargetIdentity, shouldRestoreAudit, type RestoreRequest } from "./operations/saved-audits";
 import type { BootstrapEnvelope, Tab, TokenWizardState, WaiverDraft } from "./types";
 
 const EMPTY_SELECTION_SUMMARY: SelectionSummary = { eligibleCount: 0, unsupportedCount: 0 };
@@ -65,7 +71,17 @@ export function App() {
   const [knowledge, setKnowledge] = useState<KnowledgeSummary>();
   const [collections, setCollections] = useState<VariableCollectionOption[]>([]);
   const [progress, setProgress] = useState<ScanProgress>();
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [activeTab, setActiveTab] = useState<Tab>("audit");
+  const [reportSection, setReportSection] = useState<NonNullable<AuditViewState["reportSection"]>>("summary");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [contextStatus, setContextStatus] = useState<ContextStatus>({ state: "missing" });
+  const [issueReviewState, setIssueReviewState] = useState<IssueReviewState>({ records: [], clearedKeys: [] });
+  const [checkingKeys, setCheckingKeys] = useState<string[]>([]);
+  const [regenerationKeys, setRegenerationKeys] = useState<string[]>([]);
+  const [waivers, setWaivers] = useState<WaiverStore>({});
+  const [clearNotice, setClearNotice] = useState<string>();
+  const generatingContext = useRef(false);
+  const displayedHash = useRef<string | undefined>(undefined);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [selectionSummary, setSelectionSummary] = useState<SelectionSummary>(EMPTY_SELECTION_SUMMARY);
@@ -102,8 +118,36 @@ export function App() {
   useEffect(() => {
     let initialized = false;
     const handler = (event: MessageEvent<{ pluginMessage?: PluginToUiMessage }>) => {
-      const message = event.data?.pluginMessage;
+      let message = event.data?.pluginMessage;
       if (!message || typeof message !== "object" || typeof message.type !== "string") return;
+      if (message.type === "waivers-result") { setWaivers(message.waivers); return; }
+      if (message.type === "context-status") {
+        const status = message.status;
+        setContextStatus((previous) => ({ ...status, ...(status.knowledge ? {} : previous.knowledge ? { knowledge: previous.knowledge } : {}) }));
+        if (message.status.state === "generating") { generatingContext.current = true; setScanInFlight(true); }
+        else if (generatingContext.current) { generatingContext.current = false; setScanInFlight(false); setProgress(undefined); }
+        if (message.status.state !== "current") setStale(true);
+        return;
+      }
+      if (message.type === "issue-cleared") {
+        if (message.reportHash !== displayedHash.current) return;
+        const keys = message.keys;
+        setIssueReviewState((state) => ({ ...state, clearedKeys: [...new Set([...state.clearedKeys, ...keys])] }));
+        setClearNotice(message.persistence.state === "saved" ? "Resolved rows cleared." : message.persistence.message ?? "Clear is available this session only.");
+        return;
+      }
+      if (message.type === "micro-check-started") {
+        if (message.reportHash === displayedHash.current) { setCheckingKeys(message.checkedKeys); setScanInFlight(true); }
+        return;
+      }
+      const microReason = message.type === "micro-check-result" ? message.reason : undefined;
+      if (message.type === "micro-check-result") {
+        if (message.reportHash !== displayedHash.current) return;
+        setCheckingKeys([]); setScanInFlight(false);
+        setNotice(message.reason);
+        if (message.outcome === "requires-regeneration" || !message.data) { setRegenerationKeys(message.checkedKeys); setStale(true); return; }
+        message = { type: "scan-result", ...message.data };
+      }
       if (message.type === "bootstrap") {
         if (initialized) return;
         initialized = true;
@@ -130,8 +174,12 @@ export function App() {
         reportAccepted.current = true;
         const audit = message.audit;
         lastReportTarget.current = reportTargetIdentity(audit.report);
-        const view = audit.viewState ?? defaultAuditView();
+        const view = normalizeAuditView(audit.viewState ?? defaultAuditView());
         lastPersistedView.current = JSON.stringify({ id: audit.id, viewState: view });
+        displayedHash.current = audit.report.snapshotHash;
+        setIssueReviewState(audit.issueReviewState ?? { records: [], clearedKeys: [] });
+        setCheckingKeys([]); setRegenerationKeys([]); setClearNotice(undefined);
+        setReportSection(view.reportSection ?? "summary");
         setReport(audit.report);
         setCoveragePages({});
         setPlans(audit.plans);
@@ -192,6 +240,12 @@ export function App() {
           setExpanded(undefined);
         }
         lastReportTarget.current = targetIdentity;
+        displayedHash.current = message.report.snapshotHash;
+        setIssueReviewState(message.issueReviewState ?? { records: [], clearedKeys: [] });
+        setWaivers(message.waivers ?? {});
+        setCheckingKeys([]); setRegenerationKeys([]); setClearNotice(undefined);
+        setUndoAcknowledged(false);
+        if (!microReason) { setActiveTab("report"); setReportSection("summary"); }
         setReport(message.report);
         setCoveragePages({});
         setPageFilter((current) => current === "all" || message.report.frames.some((frame) => frame.pageId === current) ? current : "all");
@@ -209,9 +263,9 @@ export function App() {
         setScanInFlight(batchRunning.current);
         setStale(false);
         setError(undefined);
-        if (!batchRunning.current) setNotice(message.refresh
+        if (!batchRunning.current) setNotice(microReason ?? (message.refresh
           ? auditRefreshNotice(message.refresh)
-          : auditCompletionNotice(message.report.target.scope, message.report.grade.letter, message.report.ready));
+          : auditCompletionNotice(message.report.target.scope, message.report.grade.letter, message.report.ready)));
       } else if (message.type === "token-coverage-page") {
         setCoveragePages((current) => ({ ...current, [message.result.requestId]: message.result }));
       } else if (message.type === "knowledge-stale") {
@@ -237,7 +291,7 @@ export function App() {
         setStale(true);
         setError(undefined);
         setNotice("Audit setup saved. Refresh to verify this setup; completed results remain available for browsing and historical export.");
-        setActiveTab("overview");
+        setActiveTab("audit");
       } else if (message.type === "profile-invalidated") {
         restoreRequest.current = null;
         batchRunning.current = false;
@@ -311,14 +365,21 @@ export function App() {
   useEffect(() => {
     if (!activeSavedId) return;
     const viewState: AuditViewState = {
-      activeTab, showPassing, axisFilter, categoryFilter, pageFilter, rootFilter, variantFilter,
+      activeTab, reportSection, showPassing, axisFilter, categoryFilter, pageFilter, rootFilter, variantFilter,
       ...(expanded === undefined ? {} : { expanded }),
     };
     const signature = JSON.stringify({ id: activeSavedId, viewState });
     if (lastPersistedView.current === signature) return;
     lastPersistedView.current = signature;
     send({ type: "save-audit-view", id: activeSavedId, viewState });
-  }, [activeSavedId, activeTab, showPassing, axisFilter, categoryFilter, pageFilter, rootFilter, variantFilter, expanded]);
+  }, [activeSavedId, activeTab, reportSection, showPassing, axisFilter, categoryFilter, pageFilter, rootFilter, variantFilter, expanded]);
+
+  useEffect(() => {
+    if (contextStatus.state !== "current" || !contextStatus.validatedAt) return;
+    const remaining = Date.parse(contextStatus.validatedAt) + 15 * 60_000 - Date.now();
+    const timer = window.setTimeout(() => { setContextStatus((status) => ({ ...status, state: "outdated", reason: "Context validation is older than 15 minutes. Run an audit to validate or regenerate context." })); setStale(true); }, Math.max(0, remaining));
+    return () => window.clearTimeout(timer);
+  }, [contextStatus]);
 
   const visibleFindings = useMemo(
     () => {
@@ -402,6 +463,12 @@ export function App() {
     send({ type: "audit-pages", pageIds });
   };
 
+  const generateContext = (regenerate: boolean) => {
+    if (draftState.blocked || scanInFlight) return;
+    setError(undefined); setNotice(undefined); setProgress(undefined); setScanInFlight(true);
+    send({ type: "generate-context", regenerate });
+  };
+
   const forgetDisplayedResult = () => {
     restoreRequest.current = null;
     setActiveSavedId(undefined);
@@ -441,26 +508,27 @@ export function App() {
     <main className="app-shell">
       <header className="app-header">
         <div className="brand-lockup">
-          <CumulativeLogo className="cumulative-logo" title="Cumulative" />
+          <img className="passport-brand" src={brandImage} alt="" />
           <h1>{PRODUCT_NAME}</h1>
         </div>
-        <div className="catalog-lock" title={bootstrap.catalogDigest}>Catalog {bootstrap.catalogVersion}</div>
+        <div className="settings"><button className="icon-button" aria-label="Settings" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(!settingsOpen)}><img src={settingsIcon} alt="" /></button>{settingsOpen ? <div className="settings-menu"><button onClick={() => { setActiveTab("context"); setSettingsOpen(false); }}>Context &amp; style guide</button><button onClick={() => { setActiveTab("profile"); setSettingsOpen(false); }}>Audit Setup</button></div> : null}</div>
       </header>
 
       <div className={`notification-stack${hasNotifications ? " has-notifications" : ""}`}>
         {bootstrap.data.producer.channel === "development" ? <div className="banner warning" role="status"><strong>Development build</strong> · Results from this plugin are visibly marked and should not be treated as production evidence.</div> : null}
         {draftState.blocked ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true"><span>{profileGateMessage}</span><button className="button subtle" onClick={() => setActiveTab("profile")}>Fix audit setup</button></div> : null}
         {!bootstrap.data.canMutateDocument ? <div className="banner info">Dev Mode is audit-only. Switch to Design mode to save the profile or clean up findings.</div> : null}
-        {historical && report ? <div className="banner info" role="status"><span><strong>Saved result · {formatDateTime(report.generatedAt)}</strong><br />Browse, navigate, and export now. Refresh to verify the current design before applying fixes.</span></div> : null}
+        {historical && report ? <div className="banner info" role="status"><span><strong>Saved result · {formatDateTime(report.generatedAt)}</strong><br />Browse, navigate, and export now. Regenerate audit to verify the current design before applying fixes.</span></div> : null}
         {saveFailure ? <div className="banner warning" role="status"><span><strong>{saveStatus.state === "session-only" ? "Available this session only" : "Not saved"}</strong><br />{saveStatus.message ?? "Export this result before closing Passport to keep a copy."}</span></div> : null}
-        {showStaleNotification ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true">This result hasn’t been verified against the current design and audit setup. Refresh before applying fixes.</div> : null}
+        {showStaleNotification ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true">This result hasn’t been verified against the current design and audit setup. Check again or regenerate the audit before applying fixes.</div> : null}
+        {clearNotice ? <div className="banner info" role="status">{clearNotice}</div> : null}
         {error ? <div className="banner error" role="alert" aria-atomic="true"><span>{error}</span><button className="icon-button" onClick={() => setError(undefined)} aria-label="Dismiss error">×</button></div> : null}
         <div className={notice ? "banner success" : "status-announcer"} role="status" aria-live="polite" aria-atomic="true">
           {notice ? <><span>{notice}</span><button className="icon-button" onClick={() => setNotice(undefined)} aria-label="Dismiss notice">×</button></> : null}
         </div>
       </div>
 
-      <SavedAudits
+      {activeTab === "audit" || activeTab === "context" ? <SavedAudits
         audits={savedAudits}
         activeId={activeSavedId}
         status={saveStatus}
@@ -468,13 +536,13 @@ export function App() {
         onOpen={(id) => { restoreRequest.current = { id }; setLoadingSavedAudit(true); setScanInFlight(true); send({ type: "open-saved-audit", id }); }}
         onForget={(id) => { send({ type: "forget-saved-audit", id }); if (id === activeSavedId) forgetDisplayedResult(); }}
         onClear={() => send({ type: "clear-file-cache" })}
-      />
+      /> : null}
 
       <nav className="tabs" aria-label="Plugin sections">
-        {(["overview", "modules", "findings", "guidance", "cleanup", "context"] as Tab[]).map((tab) => (
-          <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)}>
+        {(["audit", "report", "cleanup"] as Tab[]).map((tab) => (
+          <button key={tab} aria-label={`${tab[0]?.toUpperCase()}${tab.slice(1)}`} className={activeTab === tab ? "active" : ""} aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)}>
             {tab[0]?.toUpperCase()}{tab.slice(1)}
-            {tab === "findings" && report ? <span className="count">{actionableIssueSummary(report).actionableCount}</span> : null}
+            {tab === "report" && report ? <span className="count">{actionableIssueSummary(report).actionableCount}</span> : null}
           </button>
         ))}
       </nav>
@@ -502,13 +570,18 @@ export function App() {
         inert={panelLocked}
         aria-busy={scanInFlight}
       >
-        {activeTab === "overview" && (
+        {activeTab === "audit" ? <div className="panel stack"><ContextStatusPanel status={contextStatus} {...(progress ? { progress } : {})} disabled={draftState.blocked || scanInFlight} onGenerate={generateContext} onCancel={() => send({ type: "cancel-scan" })} /><PageExclusions pages={bootstrap.data.pages} excluded={profile.excludedPageIds} disabled={scanInFlight || !bootstrap.data.canMutateDocument} dirty={draftState.dirty} onChange={(ids) => setProfile({ ...cloneProfile(profile), excludedPageIds: ids })} onConfirm={() => send({ type: "save-profile", profile })} /><button className="button" onClick={() => setActiveTab("context")}>Project style guide &amp; context tools</button></div> : null}
+        {(activeTab === "audit" || activeTab === "report") && (
           <Overview
+            auditOnly={activeTab === "audit"}
+            reportOnly={activeTab === "report"}
+            excludedPageIds={profile.excludedPageIds}
+            onCleanup={() => setActiveTab("cleanup")}
             report={report}
             selectionSummary={selectionSummary}
             stale={stale}
             scanning={scanInFlight}
-            actionsBlocked={draftState.blocked}
+            actionsBlocked={draftState.blocked || (activeTab === "audit" && contextStatus.state === "missing")}
             historical={historical}
             pages={bootstrap.data.pages}
             fileKeyAvailable={bootstrap.data.fileKeyAvailable}
@@ -519,13 +592,21 @@ export function App() {
             onExport={(format) => send({ type: "export", format })}
           />
         )}
-        {activeTab === "findings" && (
+        {activeTab === "report" ? <div className="report-sections" aria-label="Report detail"><button className="button" aria-expanded={reportSection === "issues"} onClick={() => setReportSection(reportSection === "issues" ? "summary" : "issues")}>Issues &amp; evidence</button><button className="button" aria-expanded={reportSection === "modules"} onClick={() => setReportSection(reportSection === "modules" ? "summary" : "modules")}>Modules</button><button className="button" aria-expanded={reportSection === "guidance"} onClick={() => setReportSection(reportSection === "guidance" ? "summary" : "guidance")}>Guidance</button></div> : null}
+        {activeTab === "report" && (reportSection === "issues" || reportSection === "summary") && (
           <Findings
             findings={visibleFindings}
+            reviewState={issueReviewState}
+            checkingKeys={checkingKeys}
+            regenerationKeys={regenerationKeys}
+            waivers={waivers}
+            onRegenerate={() => scan(report?.target.scope ?? "page", true)}
+            clearDisabled={scanInFlight}
+            onClear={(key) => { if (!report || scanInFlight) return; send({ type: "clear-issue", reportHash: report.snapshotHash, keys: [key], ...(activeSavedId ? { auditId: activeSavedId } : {}) }); }}
             groups={report?.issueGroups ?? []}
             categoryFilter={categoryFilter}
             onCategoryFilter={setCategoryFilter}
-            onRecheckIssue={(issueId) => recheck({ mode: "issue", issueId })}
+            onRecheckIssue={(issueId) => recheck({ mode: "issue", issueId, reportHash: report!.snapshotHash, requestId: `issue:${Date.now()}` })}
             recheckDisabled={historical || draftState.blocked || scanInFlight}
             frames={report?.frames ?? []}
             showPassing={showPassing}
@@ -576,7 +657,7 @@ export function App() {
             }}
           />
         )}
-        {activeTab === "modules" && (
+        {activeTab === "report" && reportSection === "modules" && (
           <Modules
             report={report}
             onRecheck={recheck}
@@ -591,7 +672,7 @@ export function App() {
               setRootFilter(rootId);
               setVariantFilter("all");
               setExpanded(undefined);
-              setActiveTab("findings");
+              setActiveTab("report"); setReportSection("issues");
             }}
             onViewVariantFindings={(rootId, variantId) => {
               const frame = report?.frames.find((candidate) => candidate.rootId === rootId);
@@ -602,11 +683,11 @@ export function App() {
               setRootFilter(rootId);
               setVariantFilter(variantId);
               setExpanded(undefined);
-              setActiveTab("findings");
+              setActiveTab("report"); setReportSection("issues");
             }}
           />
         )}
-        {activeTab === "guidance" && (
+        {activeTab === "report" && reportSection === "guidance" && (
           <Guidance
             insights={insights}
             hasReport={Boolean(report)}
@@ -633,9 +714,10 @@ export function App() {
         )}
         {activeTab === "context" && (
           <ContextPanel
-            knowledge={knowledge}
-            actionsBlocked={draftState.blocked}
-            onRefresh={() => scan(report?.target.scope ?? "selection", true)}
+            knowledge={contextStatus.knowledge ?? knowledge}
+            historicalSummary={!contextStatus.knowledge && Boolean(knowledge)}
+            actionsBlocked={draftState.blocked || scanInFlight}
+            onRefresh={() => generateContext(true)}
             projectStyleGuide={bootstrap.data.projectStyleGuide}
             referencePackRaw={referencePackRaw}
             onReferencePackRaw={setReferencePackRaw}
@@ -679,7 +761,7 @@ export function App() {
 
       <footer className="app-footer">
         <span title={producerLabel(bootstrap.data.producer)}>{producerLabel(bootstrap.data.producer)}</span>
-        <span>·</span>
+        <span title={bootstrap.catalogDigest}>Catalog {bootstrap.catalogVersion}</span>
         <span>{bootstrap.data.fileName}</span>
         <button className="footer-link" onClick={() => setActiveTab("profile")}>Audit setup</button>
       </footer>

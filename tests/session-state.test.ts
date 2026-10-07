@@ -93,13 +93,13 @@ describe("plugin session safety", () => {
     state.completeBuild(state.beginBuild(), true);
     state.markDirty(["first"]);
     state.markDirty(["first", "second"]);
-    expect(state.changes).toEqual({ nodeIds: ["first", "second"] });
+    expect(state.changes).toEqual({ nodeIds: ["first", "second"], properties: { first: ["unknown"], second: ["unknown"] } });
     const capture = state.beginBuild();
     state.markDirty(["third"], "structural-change");
     expect(state.completeBuild(capture, true)).toBe(false);
-    expect(state.changes).toEqual({ nodeIds: ["first", "second", "third"], fullBuildReason: "structural-change" });
+    expect(state.changes).toEqual({ nodeIds: ["first", "second", "third"], properties: { first: ["unknown"], second: ["unknown"], third: ["unknown"] }, fullBuildReason: "structural-change" });
     state.completeBuild(state.beginBuild(), true);
-    expect(state.changes).toEqual({ nodeIds: [] });
+    expect(state.changes).toEqual({ nodeIds: [], properties: {} });
   });
 
 

@@ -5,9 +5,9 @@ An organization-published private Figma Design plugin that builds whole-file des
 The target and context scopes are deliberately separate:
 
 - **Audit target:** selected frames, components, or component sets; the captured current page; or all profile-designated source frames.
-- **Knowledge scope:** the complete Figma file on every fresh audit. Pages are loaded sequentially with progress and cancellation.
+- **Context scope:** all included pages, with designer-confirmed exclusions for covers, separators or archives. The watcher still loads all pages; capture runs sequentially with progress and cancellation.
 
-This lets a selected frame be graded at the altitude a pipeline consumes while component definitions, instances, variables, responsive siblings, repeated structures, page roles, and source relationships are understood across the design as a whole. Incomplete or stale whole-file knowledge is a hard readiness blocker.
+This lets a selected frame be graded at the altitude a pipeline consumes while component definitions, instances, variables, responsive siblings, repeated structures, page roles, and source relationships are understood across the design as a whole. Incomplete or unverified included-scope context blocks current readiness. Required component sources on excluded pages must be included and recaptured.
 
 ## What is implemented
 
@@ -16,7 +16,10 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 - Hard blockers, unresolved-review handling, and non-inflating waivers.
 - A pinned projection of all 80 patterns and every alias from `@verndale/ui-design-brain@1.17.0`.
 - Contextual aliases (`CTA`, `Banner`, `Label`, and `Stepper`) that always require a designer choice.
-- Whole-file semantic index with page roles, component use, responsive families, variable sources, and repeated structural signatures.
+- Included-scope semantic index with page roles, component use, responsive families, variable sources, and repeated structural signatures.
+- Explicit Generate context → Run audit → View report → Address issues flow.
+- Verified bounded micro-fixes that update one report score, with explicit regeneration for unsupported changes.
+- Resolved-row Clear preferences that preserve report evidence and scoring; waivers retain deductions.
 - WCAG 2.2 AA solid-background text contrast and target-size checks.
 - Automatic and guarded cleanup plans with one undo boundary per risk group.
 - Clone-first inferred Auto Layout validation with child-order, overlap, clipping, and 0.5 px geometry postconditions.
@@ -50,10 +53,10 @@ Design Passport is published to the Verndale organization. Organization members 
 
 1. Open the Figma Design or Dev Mode file to review.
 2. Open **Resources → Plugins** (or Quick Actions) and run **Design Passport**.
-3. Choose an audit scope. Design Passport automatically classifies conventional product and library files; there is no required setup step.
-4. Wait for the complete file-wide knowledge build, then review Overview and Findings. Completion shows whether the result was saved locally.
-5. Apply only reviewed cleanup and let the rescan complete. Use the current grade and readiness result to review the handoff.
-6. Export current JSON for machine consumers or Markdown for people. Saved historical exports are explicitly labeled and do not establish current readiness.
+3. In **Audit**, review suggested page exclusions and confirm any pages to skip, then **Generate context**. Suggestions start unchecked. Conventional files are classified automatically.
+4. Run **Current page**, **Audit selection** or **Source frames**, then open **Report**. The single grade reflects the captured target; completion shows whether it was saved locally.
+5. Fix supported issues on the canvas and use **Check again**. All supported pending edits are verified together and the report score updates. Unsupported changes show **Regenerate audit to verify** and retain the previous score. Review plugin cleanup before applying it; complete plans can be opted out of a batch.
+6. Clear retained resolved rows when finished; this does not change the score. Export JSON or Markdown from **Report**. Historical exports remain available but do not establish current readiness.
 
 The footer and audit result identify the exact plugin version, ruleset, build SHA, and Production/Development channel. If an already-open plugin window does not show the announced identity, close it and launch the organization plugin again.
 
@@ -69,7 +72,7 @@ Choose **Review pages** to select several pages or all pages. A batch prepares c
 
 ### Repeat-review performance
 
-Within a fresh unchanged session, audits reuse whole-file knowledge. After reopening or an explicit refresh, Passport validates saved base fragments against bulk page exports and Plugin API metadata, then captures changed fragments. Inferred variables, relevant variable/alias evidence, component relationships, and documentation resources are refreshed; an unverified saved graph never enables cleanup. If exports or dependencies cannot establish a match, capture falls back conservatively.
+Within a verified unchanged session, audits reuse included-scope context. Whole-context validation lasts 15 minutes and is separate from capture time. An explicit audit can revalidate aged unchanged context without recapture; micro-checks and batch page guards do not renew that clock. After reopening or an explicit refresh, Passport validates saved base fragments against bulk page exports and Plugin API metadata, then captures changed fragments. Inferred variables, relevant variable/alias evidence, component relationships, and documentation resources are refreshed; an unverified saved graph never enables cleanup. If exports or dependencies cannot establish a match, capture falls back conservatively.
 
 Diagnostic timings and cache counts appear only in the local plugin console. `node scripts/benchmark-context-cache.mjs 65 30` runs a synthetic cache/parity benchmark; it excludes the real Figma bridge and cannot establish a user-facing speedup. See [runtime and performance QA](wiki/guides/manual-qa.md) for the cold, reopen, component-edit, next-page, and batch measurement procedure.
 
@@ -122,7 +125,7 @@ FIGMA_TOKEN=your_figma_personal_access_token pnpm companion pack create \
   --out .design-passport-local/project-style-guide.json
 ```
 
-Choose the generated pack file in **Context → Style guide and references** while in Design Mode. Designers see a plain-language summary, version, and short reference—not raw JSON. The pack is validated and bound privately to that exact Figma file; collaborators in the file can use it on later normal audits. Dev Mode can read it but cannot replace or remove it. A copied file rejects the inherited binding because its file fingerprint differs. One-off `reference` packs use the same command with `--role reference`, remain session-only, and are labeled as inspiration. If an unsaved file has no stable file key, its style guide can be used for that session but cannot be connected permanently.
+Choose the generated pack file in **Settings → Context & style guide → Style guide and references** while in Design Mode. Designers see a plain-language summary, version, and short reference—not raw JSON. The pack is validated and bound privately to that exact Figma file; collaborators in the file can use it on later normal audits. Dev Mode can read it but cannot replace or remove it. A copied file rejects the inherited binding because its file fingerprint differs. One-off `reference` packs use the same command with `--role reference`, remain session-only, and are labeled as inspiration. If an unsaved file has no stable file key, its style guide can be used for that session but cannot be connected permanently.
 
 After an audit, **Guidance → Contribute learnings** shows a plain-language preview of the sanitized observations and everything that is excluded. Exporting is optional and is the only way scanning data leaves the plugin. The companion runs locally and stores selected imports in your dedicated Supabase database. Configure server-only runtime access as described in [the database guide](wiki/topics/supabase-companion.md), then import and review the machine-readable file:
 
@@ -207,17 +210,19 @@ committed. Wiki writer workflows require the repository secret `BOT_TOKEN`.
 
 ## Automatic audit setup
 
-Designers normally open Design Passport and run an audit immediately. The plugin deterministically infers product screens or component-library intent, local page roles (`Foundations`, `Components`, `Screens`), local Semantic variable collections, and the standard 1440 / 768 / 375 breakpoints. It does not move, rename, or otherwise change Figma content while classifying the file.
+Designers generate context and then audit; conventional files need no manual setup. The plugin deterministically infers product screens or component-library intent, local page roles (`Foundations`, `Components`, `Screens`), local Semantic variable collections, and the standard 1440 / 768 / 375 breakpoints. It does not move, rename, or otherwise change Figma content while classifying the file.
 
 `Audit setup` is a secondary recovery surface, not part of the normal workflow. It appears automatically only when the file cannot be classified safely or a saved page mapping was deleted. A recommended one-click setup is offered when deterministic inference can repair the state; unusual files can use the collapsed advanced controls for manual roles, token sources, and breakpoints.
 
 Advanced edits remain a local draft until the designer explicitly saves them. Audits, context rebuilds, cleanup, learning contribution, and current report export stay unavailable while a draft is unsaved or invalid. Historical reports remain readable and exportable using their original configuration. Discard restores the committed setup. Deleted page mappings are removed from the draft and require review and confirmation before work continues.
 
+Confirmed exclusions are stored separately from semantic page roles in profile v3. Removed page IDs require review, and changing exclusions invalidates context and current-report authority. Older profiles normalize without exclusions; saved historical profiles and reports remain unchanged.
+
 The committed profile and explicit contextual-pattern confirmations are stored as shared plugin data. Legacy compact certificate summaries remain unchanged. A validated project style-guide binding is stored separately as private document-root plugin data, never public shared data or client storage. Full nodes, findings, and text are not persisted in the document. Completed reports and normalized context fragments are stored separately in local clientStorage. Text content is represented by length and a deterministic fingerprint, not raw characters; raw bulk exports are transient.
 
 ## Grades, readiness, and legacy certificates
 
-Aim for B or better and a ready result. Readiness still requires complete whole-file knowledge, no hard blockers, and no unresolved scoring-critical reviews. Every audited source must be ready. A component set is one graded root; its variants and descendants retain their finding attribution and coverage in the report.
+Aim for B or better and a ready result. Readiness still requires complete verified context for the included pages, no hard blockers, and no unresolved scoring-critical reviews. Every audited source must be ready. A component set is one graded root; its variants and descendants retain their finding attribution and coverage in the report.
 
 Plugin `0.5.0` and ruleset `1.0.0-beta.5` retire certification actions and the scored `pipeline.certification-freshness` rule. Removing that rule can raise or lower fresh scores on previously certified targets. Grade thresholds, axis weights, token-coverage caps, policies, and waivers are unchanged.
 

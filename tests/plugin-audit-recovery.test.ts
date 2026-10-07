@@ -50,6 +50,8 @@ async function launch(storage = memoryStorage(), fileKey: string | undefined = "
       graph.builtAt = new Date().toISOString();
       return { graph, collections: [], diagnostics: {} };
     }),
+    assertTargetSources: vi.fn(async () => undefined),
+    stageMicroCheck: vi.fn(async (graph, _profile, journal) => ({ graph, nodeIds: Object.keys(journal ?? {}), verify: async () => true, commit: () => undefined })),
     matchesDocumentTopology: vi.fn(() => true),
     matchesVariableEnvironment: vi.fn(async () => true),
     captureAuditTarget: vi.fn((scope: string): CapturedAuditTarget => scope === "page"
@@ -72,7 +74,7 @@ async function launch(storage = memoryStorage(), fileKey: string | undefined = "
   vi.stubGlobal("__html__", "");
   vi.doMock("../src/figma/adapter", () => ({ FigmaAdapter: class { constructor() { return adapter; } } }));
   await import("../src/plugin/main");
-  const send = async (message: UiToPluginMessage) => { await ui.onmessage?.(message); };
+  const send = async (message: UiToPluginMessage) => { if ((message.type === "scan" || message.type === "audit-pages" && Boolean(fileKey)) && adapter.buildKnowledge.mock.calls.length === 0) await ui.onmessage?.({ type: "generate-context", regenerate: false }); await ui.onmessage?.(message); };
   await send({ type: "initialize" });
   if (waitForRestore) await vi.waitFor(() => expect(events.some((event) => event.type === "saved-audits" || event.type === "audit-save-status")).toBe(true));
   return { storage, events, adapter, handlers, send, sendRaw: async (message: unknown) => { await ui.onmessage?.(message as UiToPluginMessage); }, figmaMock };
@@ -218,12 +220,12 @@ describe("plugin audit recovery integration", () => {
     await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
     const initial = plugin.events.find((event) => event.type === "scan-result");
     if (initial?.type !== "scan-result") throw new Error("Expected initial audit");
-    for (const request of [{ mode: "issue" as const, issueId: "forged" }, { mode: "component" as const, componentId: "forged" }]) await plugin.send({ type: "recheck-audit", request });
+    for (const request of [{ mode: "issue" as const, issueId: "forged" }, { mode: "component" as const, componentId: "forged" }]) await plugin.send({ type: "recheck-audit", request: { ...request, reportHash: initial.report.snapshotHash, requestId: "check" } });
     expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(1);
-    expect(plugin.events.filter((event) => event.type === "error")).toHaveLength(2);
-    await plugin.send({ type: "recheck-audit", request: { mode: "issue", issueId: initial.report.issueGroups?.[0]?.id ?? initial.report.findings[0]!.id } });
+    expect(plugin.events.filter((event) => event.type === "micro-check-result" && event.outcome === "requires-regeneration")).toHaveLength(2);
+    await plugin.send({ type: "recheck-audit", request: { reportHash: initial.report.snapshotHash, requestId: "check", mode: "issue", issueId: initial.report.findings.find((finding) => finding.ruleId === "pipeline.annotation")!.id } });
     expect(plugin.adapter.targetRootIds).toHaveBeenLastCalledWith({ scope: "selection", nodeIds: ["root:desktop"] }, expect.any(Object));
-    expect(plugin.events.filter((event) => event.type === "scan-result").at(-1)).toMatchObject({ refresh: { requested: "issue" } });
+    expect(plugin.events.filter((event) => event.type === "micro-check-result").at(-1)).toMatchObject({ outcome: "unresolved", data: { refresh: { requested: "issue" } } });
   });
 
   it("journals visual edits to already scanned nodes and forces full capture for unsupported changes", async () => {
@@ -265,10 +267,10 @@ describe("plugin audit recovery integration", () => {
     await first.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
     const result = first.events.find((event) => event.type === "scan-result");
     expect(result).toMatchObject({ saveStatus: { state: "saved" } });
-    // Build acceptance, post-waiver analysis, pre-write and post-write commit:
+    // Build/cache acceptance, post-waiver analysis, pre/post-write commit:
     // every asynchronous authorization boundary stays protected without
     // repeating the expensive resource read for synchronous preparation.
-    expect(first.adapter.matchesVariableEnvironment).toHaveBeenCalledTimes(4);
+    expect(first.adapter.matchesVariableEnvironment).toHaveBeenCalledTimes(7);
     expect(first.storage.data.size).toBeGreaterThan(0);
     const second = await launch(first.storage);
     await vi.waitFor(() => expect(second.events.some((event) => event.type === "restored-audit")).toBe(true));
@@ -340,7 +342,7 @@ describe("plugin audit recovery integration", () => {
     expect(markdown?.type === "export-result" && markdown.content).toBe(`> Historical audit from ${legacy.report.generatedAt}. The current design has not been verified. Refresh in Design Passport before applying fixes.\n\n${reportToMarkdown(legacy.report)}`);
     expect(markdown?.type === "export-result" && markdown.content).toContain("Original stale certificate finding");
     await reopened.send({ type: "recheck-audit", request: { mode: "changes" } });
-    expect(reopened.events.filter((event) => event.type === "scan-result").at(-1)).toMatchObject({ report: { schemaVersion: 3, rulesetVersion: "1.0.0-beta.5", producer: { pluginVersion: "0.5.0" } } });
+    expect(reopened.events.filter((event) => event.type === "scan-result").at(-1)).toMatchObject({ report: { schemaVersion: 4, rulesetVersion: "1.0.0-beta.5", producer: { pluginVersion: "0.5.0" } } });
   });
 
   it("keeps grading and repairs identical across advisory packs, incremental refresh, and saved restoration", async () => {
@@ -357,7 +359,7 @@ describe("plugin audit recovery integration", () => {
     };
     const comparable = (report: ReturnType<typeof latest>["report"]) => {
       const { snapshotHash: _timestampDependentDigest, ...material } = report;
-      const normalized = { ...material, generatedAt: "fixed" };
+      const normalized = { ...material, generatedAt: "fixed", verification: { ...material.verification, verifiedAt: "fixed" } };
       return { ...normalized, snapshotHash: hashValue(normalized) };
     };
     const first = await launch();
@@ -690,7 +692,7 @@ describe("plugin audit recovery integration", () => {
       plugin.adapter.reconcileProfile.mockReturnValueOnce({ profile: profile(), profileConfigured: false, profileIssues: [] });
       await plugin.send({ type: "refresh-audit" });
     }
-    expect(plugin.events.at(-1)?.type).toBe(change === "saved" ? "profile-saved" : "profile-invalidated");
+    expect(plugin.events.filter((event) => event.type !== "context-status").at(-1)?.type).toBe(change === "saved" ? "profile-saved" : "profile-invalidated");
     await plugin.send({ type: "export", format: "json" });
     const exported = plugin.events.at(-1);
     expect(exported?.type).toBe("export-result");
@@ -784,5 +786,83 @@ describe("plugin audit recovery integration", () => {
     release();
     await refresh;
     expect(plugin.events.filter((event) => event.type === "scan-result")).toHaveLength(2);
+  });
+});
+
+describe("stepped context and micro-check publication", () => {
+  const initialAudit = async () => {
+    const plugin = await launch();
+    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
+    const result = plugin.events.find((event) => event.type === "scan-result");
+    if (result?.type !== "scan-result") throw new Error("Missing audit");
+    const request = { mode: "issue" as const, issueId: result.report.findings.find((finding) => finding.ruleId === "pipeline.annotation")!.id, reportHash: result.report.snapshotHash, requestId: "micro-test" };
+    return { plugin, result, request };
+  };
+
+  it("requires generation before the first audit and generates without replacing a report", async () => {
+    const plugin = await launch();
+    await plugin.sendRaw({ type: "scan", request: { scope: "page", refreshKnowledge: false } });
+    expect(plugin.adapter.buildKnowledge).not.toHaveBeenCalled();
+    expect(plugin.events.at(-1)).toMatchObject({ type: "error", message: expect.stringContaining("Generate context") });
+    await plugin.send({ type: "generate-context", regenerate: false });
+    expect(plugin.events.some((event) => event.type === "scan-result")).toBe(false);
+    expect(plugin.events.filter((event) => event.type === "context-status").at(-1)).toMatchObject({ status: { state: "current", outcome: "completed" } });
+  });
+
+  it("publishes a verified micro-fix with one changed hero and no build fallback", async () => {
+    const { plugin, result, request } = await initialAudit();
+    const builds = plugin.adapter.buildKnowledge.mock.calls.length;
+    plugin.handlers.get("documentchange")?.({ documentChanges: [{ id: "root:desktop", type: "PROPERTY_CHANGE", origin: "LOCAL", properties: ["annotations"] }] });
+    plugin.adapter.stageMicroCheck.mockImplementationOnce(async (graph) => {
+      const changed = structuredClone(graph); changed.nodes["root:desktop"].hasAnnotations = true;
+      return { graph: changed, nodeIds: ["root:desktop"], verify: async () => true, commit: () => undefined };
+    });
+    await plugin.send({ type: "recheck-audit", request });
+    const outcome = plugin.events.filter((event) => event.type === "micro-check-result").at(-1);
+    expect(outcome).toMatchObject({ outcome: "resolved", data: { report: { verification: { kind: "micro-check", predecessorReportHash: result.report.snapshotHash } } } });
+    if (outcome?.type !== "micro-check-result" || !outcome.data) throw new Error("Missing verified result");
+    expect(outcome.data.report.grade.score).toBeGreaterThan(result.report.grade.score);
+    expect(outcome.data.issueReviewState?.records.some((row) => row.outcome === "resolved" && row.previous?.ruleId === "pipeline.annotation")).toBe(true);
+    expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(builds);
+    expect(plugin.events.filter((event) => event.type === "scan-result")).toHaveLength(1);
+    // Clear remains a pure preference even after unrelated edits invalidate authority.
+    plugin.handlers.get("documentchange")?.({ documentChanges: [{ id: "root:mobile", type: "PROPERTY_CHANGE", origin: "REMOTE", properties: ["name"] }] });
+    const resolved = outcome.data.issueReviewState!.records.find((row) => row.outcome === "resolved")!;
+    await plugin.send({ type: "clear-issue", auditId: outcome.data.savedAuditId!, reportHash: outcome.data.report.snapshotHash, keys: [resolved.key] });
+    expect(plugin.events.at(-1)).toMatchObject({ type: "issue-cleared", persistence: { state: "saved" } });
+  });
+
+  it.each(["capture", "save", "unsupported", "cancel"])("keeps the predecessor and rejects %s interference without hidden capture", async (phase) => {
+    const { plugin, result, request } = await initialAudit();
+    const builds = plugin.adapter.buildKnowledge.mock.calls.length;
+    const mutate = () => plugin.handlers.get("documentchange")?.({ documentChanges: [{ id: "root:mobile", type: "PROPERTY_CHANGE", origin: "REMOTE", properties: [phase === "unsupported" ? "children" : "name"] }] });
+    if (phase === "unsupported") mutate();
+    else if (phase === "capture" || phase === "cancel") plugin.adapter.stageMicroCheck.mockImplementationOnce(async (graph) => {
+      if (phase === "capture") mutate(); else plugin.adapter.cancel();
+      return { graph, nodeIds: [], verify: async () => true, commit: () => undefined };
+    });
+    else {
+      const set = plugin.storage.setAsync.getMockImplementation()!;
+      plugin.storage.setAsync.mockImplementation(async (key, value) => { await set(key, value); if (key.includes(":audit:")) mutate(); });
+    }
+    await plugin.send({ type: "recheck-audit", request });
+    expect(plugin.events.filter((event) => event.type === "micro-check-result").at(-1)).toMatchObject({ outcome: "requires-regeneration" });
+    expect(plugin.events.filter((event) => event.type === "scan-result")).toHaveLength(1);
+    expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(builds);
+    const { AuditStorage } = await import("../src/plugin/audit-storage");
+    expect((await new AuditStorage(plugin.storage).listAudits("file-key")).map((audit) => audit.id)).toContain(result.savedAuditId);
+  });
+
+  it("revalidates an aged clean graph on an explicit audit without recapture or changing capture time", async () => {
+    const { plugin, result } = await initialAudit();
+    const builds = plugin.adapter.buildKnowledge.mock.calls.length;
+    const now = Date.now();
+    const clock = vi.spyOn(Date, "now").mockReturnValue(now + 16 * 60_000);
+    await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
+    const next = plugin.events.filter((event) => event.type === "scan-result").at(-1);
+    expect(next?.type === "scan-result" && next.knowledge.builtAt).toBe(result.knowledge.builtAt);
+    expect(plugin.adapter.buildKnowledge).toHaveBeenCalledTimes(builds);
+    expect(next?.type).toBe("scan-result");
+    clock.mockRestore();
   });
 });

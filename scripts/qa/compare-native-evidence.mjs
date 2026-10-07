@@ -17,7 +17,7 @@ function selectRun(input, number) {
     return { ...run, build, source };
   }
   if (number !== undefined) throw new Error("Run numbers apply only to native harness exports");
-  if (![1, 2, 3].includes(input?.schemaVersion) || !input.target || !Array.isArray(input.findings)) throw new Error("Expected a report or native harness export");
+  if (![1, 2, 3, 4].includes(input?.schemaVersion) || !input.target || !Array.isArray(input.findings)) throw new Error("Expected a report or native harness export");
   return { report: input };
 }
 
@@ -27,6 +27,7 @@ function reportMaterial(report) {
   // Snapshot identity includes generatedAt. Verify it above, then exclude only
   // the timestamp and its derived hash. Knowledge/document hashes stay intact.
   const { generatedAt, ...comparable } = material;
+  if (comparable.verification) { const { verifiedAt: _verifiedAt, ...provenance } = comparable.verification; comparable.verification = provenance; }
   return comparable;
 }
 

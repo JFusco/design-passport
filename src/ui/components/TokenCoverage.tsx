@@ -1,3 +1,4 @@
+import { fieldLabel } from "../operations/presentation";
 import { useState } from "react";
 import type { FrameResult, TokenCoverageDisposition, TokenCoverageGroup } from "../../core/contracts";
 import { hashValue } from "../../core/stable";
@@ -74,7 +75,7 @@ function CoverageEvidenceGroup(props: {
     <details onToggle={(event) => {
       if (event.currentTarget.open && livePaging && request && !result) props.onRequestPage?.(request);
     }}>
-      <summary><span>{props.group.disposition} · {props.group.field} · {props.group.reason}</span><strong>{props.group.count}</strong></summary>
+      <summary><span>{props.group.disposition} · {fieldLabel(props.group.field)} · {props.group.reason}</span><strong>{props.group.count}</strong></summary>
       {samples.length > 0 ? <ul>{samples.map((sample) => <li key={sample.nodeId}>{props.onNavigate ? <button type="button" className="node-link" onClick={() => props.onNavigate?.(sample.nodeId)}>{sample.nodePath}</button> : sample.nodePath}</li>)}</ul> : livePaging ? <small>Loading live evidence…</small> : null}
       {(pageCount ?? 1) > 1 ? <div className="coverage-pagination"><button type="button" className="button subtle" disabled={page === 0} onClick={() => loadPage(page - 1)}>Previous</button><span>Page {page + 1}{pageCount ? ` of ${pageCount}` : ""}</span><button type="button" className="button subtle" disabled={pageCount === undefined || page + 1 >= pageCount} onClick={() => loadPage(page + 1)}>Next</button></div> : null}
       {livePaging && result ? <small>{result.totalSamples} navigable live layer{result.totalSamples === 1 ? "" : "s"}; {props.group.count} exact evidence value{props.group.count === 1 ? "" : "s"}.</small>

@@ -9,12 +9,14 @@ export class KnowledgeSessionState {
   private nextBuildId = 1;
   private activeBuildId: number | undefined;
   private changedNodeIds = new Set<string>();
+  private changedProperties = new Map<string, Set<string>>();
+  private validatedAt: number | undefined;
   private fullBuildReason: string | undefined = "not-loaded";
 
   get documentRevision(): number { return this.revision; }
 
-  get changes(): { nodeIds: string[]; fullBuildReason?: string } {
-    return { nodeIds: [...this.changedNodeIds], ...(this.fullBuildReason ? { fullBuildReason: this.fullBuildReason } : {}) };
+  get changes(): { nodeIds: string[]; properties: Record<string, string[]>; fullBuildReason?: string } {
+    return { nodeIds: [...this.changedNodeIds], properties: Object.fromEntries([...this.changedProperties].map(([id, fields]) => [id, [...fields].sort()])), ...(this.fullBuildReason ? { fullBuildReason: this.fullBuildReason } : {}) };
   }
 
   get dirty(): boolean {
@@ -25,9 +27,54 @@ export class KnowledgeSessionState {
     return this.activeBuildId !== undefined;
   }
 
+  get wholeContextValidatedAt(): number | undefined { return this.validatedAt; }
+
+  validationFresh(now = Date.now()): boolean {
+    return this.validatedAt !== undefined && now >= this.validatedAt && now - this.validatedAt < 15 * 60 * 1000;
+  }
+
+  validateWholeContext(revision: number, now = Date.now()): void {
+    if (revision !== this.revision || this.dirty) throw new Error("Context changed during validation");
+    this.validatedAt = now;
+  }
+
+  recordChanges(changes: readonly DocumentChangeSignal[], fullBuildReason?: string): void {
+    this.revision += 1;
+    for (const change of changes) {
+      this.changedNodeIds.add(change.id);
+      const fields = this.changedProperties.get(change.id) ?? new Set<string>();
+      for (const field of change.properties?.length ? change.properties : ["unknown"]) fields.add(field);
+      this.changedProperties.set(change.id, fields);
+    }
+    if (fullBuildReason) this.fullBuildReason = fullBuildReason;
+  }
+
+  canCommitMicroCheck(revision: number, verified: ReadonlyMap<string, ReadonlySet<string>>): boolean {
+    return revision === this.revision && !this.fullBuildReason && [...this.changedNodeIds].every((id) => {
+      const fields = this.changedProperties.get(id);
+      return fields && fields.size > 0 && [...fields].every((field) => verified.get(id)?.has(field));
+    });
+  }
+
+  commitMicroCheck(revision: number, verified: ReadonlyMap<string, ReadonlySet<string>>): void {
+    if (revision !== this.revision || this.fullBuildReason) throw new Error("Design changed during Check again");
+    for (const [id, fields] of this.changedProperties) {
+      if ([...fields].every((field) => verified.get(id)?.has(field))) {
+        this.changedProperties.delete(id);
+        this.changedNodeIds.delete(id);
+      }
+    }
+    if (this.changedNodeIds.size === 0) this.cleanRevision = this.revision;
+  }
+
   markDirty(nodeIds?: readonly string[], fullBuildReason?: string): void {
     this.revision += 1;
-    for (const id of nodeIds ?? []) this.changedNodeIds.add(id);
+    for (const id of nodeIds ?? []) {
+      this.changedNodeIds.add(id);
+      const fields = this.changedProperties.get(id) ?? new Set<string>();
+      fields.add("unknown");
+      this.changedProperties.set(id, fields);
+    }
     if (fullBuildReason || !nodeIds) this.fullBuildReason = fullBuildReason ?? "unknown-change";
   }
 
@@ -46,6 +93,7 @@ export class KnowledgeSessionState {
     if (complete && token.revision === this.revision) {
       this.cleanRevision = this.revision;
       this.changedNodeIds.clear();
+      this.changedProperties.clear();
       this.fullBuildReason = undefined;
     }
     return !this.dirty;

@@ -74,7 +74,7 @@ export function assertContract(name: ContractName, value: unknown): void {
 function reportRelationshipErrors(report: ReadinessReport): string[] {
   if (report.schemaVersion === 1) return [];
   const errors: string[] = [];
-  if (report.schemaVersion === 3) {
+  if (report.schemaVersion >= 3) {
     if (!report.producer || report.producer.rulesetVersion !== report.rulesetVersion) errors.push("/producer rulesetVersion must match the report");
     for (const frame of report.frames) {
       const coverage = frame.tokenCoverage;

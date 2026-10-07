@@ -1,3 +1,4 @@
+import { isIssueReviewState, resolvedIssueKeys, validClearedKeys, type IssueReviewRecord } from "./issue-review";
 import { gzipSync, gunzipSync } from "fflate";
 import { PRODUCER_IDENTITY } from "../core/build-info";
 import { validateContract } from "../core/schema";
@@ -48,6 +49,7 @@ const PREFIX = "design-passport:cache:v1:";
 const AUDIT_PREFIX = `${PREFIX}audit:`;
 const CONTEXT_PREFIX = `${PREFIX}context:`;
 const VIEW_PREFIX = `${PREFIX}view:`;
+const ISSUE_REVIEW_PREFIX = `${PREFIX}issue-review:`;
 const MAXIMUM_RAW_BYTES = 128 * 1024 * 1024;
 
 interface StoredEntry {
@@ -118,6 +120,7 @@ function savedAudit(value: unknown): value is SavedAuditV1 {
     || !target(audit.target) || audit.targetKey !== canonicalAuditTargetKey(audit.target) || !date(audit.savedAt)
     || !validateContract("readiness-report", audit.report).valid || !validateContract("readiness-profile", audit.profile).valid
     || !Array.isArray(audit.plans) || !audit.plans.every((plan) => validateContract("change-plan", plan).valid)
+    || (audit.issueReviewState !== undefined && !isIssueReviewState(audit.issueReviewState))
     || !knowledge(audit.knowledge) || !Array.isArray(audit.insights)
     || !audit.insights.every((value) => {
       const insight = object(value);
@@ -300,6 +303,10 @@ function reportKey(fileKey: string, id: string): string {
   return `${filePrefix(AUDIT_PREFIX, fileKey)}${id}`;
 }
 
+function issueReviewKey(fileKey: string, id: string): string {
+  return `${filePrefix(ISSUE_REVIEW_PREFIX, fileKey)}${id}`;
+}
+
 function viewKey(fileKey: string, id: string): string {
   return `${filePrefix(VIEW_PREFIX, fileKey)}${id}`;
 }
@@ -384,7 +391,10 @@ export class AuditStorage {
 
   private async deleteEntry(entry: StoredEntry): Promise<void> {
     await this.storage.deleteAsync(entry.key);
-    if (entry.audit) await this.storage.deleteAsync(viewKey(entry.audit.fileKey, entry.audit.id));
+    if (entry.audit) {
+      await this.storage.deleteAsync(viewKey(entry.audit.fileKey, entry.audit.id));
+      await this.storage.deleteAsync(issueReviewKey(entry.audit.fileKey, entry.audit.id));
+    }
   }
 
   private async makeRoom(entries: StoredEntry[], requiredBytes: number, protectedKeys: Set<string>, allowReportEviction: boolean): Promise<boolean> {
@@ -423,6 +433,12 @@ export class AuditStorage {
     return this.enqueue(async () => {
       const audit = readAudit(await this.storage.getAsync(reportKey(fileKey, id)), this.onCodec);
       if (!audit || audit.fileKey !== fileKey || audit.id !== id) return undefined;
+      const overlay = object(await this.storage.getAsync(issueReviewKey(fileKey, id)).catch(() => undefined));
+      const resolved = resolvedIssueKeys(audit.issueReviewState, audit.report);
+      if (audit.issueReviewState && overlay?.schemaVersion === 1 && overlay.reportHash === audit.report.snapshotHash
+        && validClearedKeys(overlay.clearedKeys) && overlay.clearedKeys.every((key) => resolved.has(key))) {
+        audit.issueReviewState = { ...audit.issueReviewState, clearedKeys: [...new Set([...audit.issueReviewState.clearedKeys, ...overlay.clearedKeys])].sort() };
+      }
       const view = await this.storage.getAsync(viewKey(fileKey, id));
       if (viewRecord(view) && view.viewState) audit.viewState = view.viewState;
       // Reading a report must still succeed if storage is full or temporarily unavailable.
@@ -482,7 +498,8 @@ export class AuditStorage {
   private async prune(saved: SavedAuditV1): Promise<boolean> {
     let entries = (await this.entries()).filter((entry) => entry.audit);
     if (entries.some((entry) => entry.audit?.fileKey === saved.fileKey && entry.audit.targetKey === saved.targetKey && compareAudits(entry.audit, saved) > 0)) {
-      await this.storage.deleteAsync(reportKey(saved.fileKey, saved.id));
+      const losing = entries.find((entry) => entry.audit?.id === saved.id && entry.audit.fileKey === saved.fileKey);
+      if (losing) await this.deleteEntry(losing);
       return false;
     }
     for (const entry of entries) {
@@ -512,10 +529,40 @@ export class AuditStorage {
     });
   }
 
+  updateIssueReview(fileKey: string, id: string, reportHash: string, clearedKeys: readonly string[]): Promise<AuditSaveStatus> {
+    const captured = [...clearedKeys];
+    return this.enqueue(async () => {
+      try {
+        const audit = readAudit(await this.storage.getAsync(reportKey(fileKey, id)), this.onCodec);
+        if (!audit || audit.fileKey !== fileKey || audit.id !== id || audit.report.snapshotHash !== reportHash) throw new Error("The displayed saved result changed");
+        const resolved = resolvedIssueKeys(audit.issueReviewState, audit.report);
+        if (!validClearedKeys(captured) || captured.some((key) => !resolved.has(key))) throw new Error("Only verified resolved issues can be cleared");
+        const key = issueReviewKey(fileKey, id);
+        const previous = object(await this.storage.getAsync(key));
+        const prior = previous?.schemaVersion === 1 && previous.reportHash === reportHash && validClearedKeys(previous.clearedKeys)
+          ? previous.clearedKeys.filter((key) => resolved.has(key)) : [];
+        const value: IssueReviewRecord = { schemaVersion: 1, reportHash, clearedKeys: [...new Set([...prior, ...captured])].sort() };
+        const entries = await this.entries();
+        const used = entries.reduce((sum, entry) => sum + entry.bytes, 0) - (entries.find((entry) => entry.key === key)?.bytes ?? 0);
+        if (used + storageBytes(key, value) > this.maximumBytes) throw new Error("Local storage is full");
+        await this.storage.setAsync(key, value);
+        return { state: "saved" };
+      } catch {
+        return { state: "session-only", message: "Issue cleared for this session. This display preference could not be saved." };
+      }
+    });
+  }
+
+  async hasContext(fileKey: string): Promise<boolean> {
+    await this.pending;
+    return (await this.storage.keysAsync()).some((key) => key.startsWith(filePrefix(CONTEXT_PREFIX, fileKey)));
+  }
+
   forgetAudit(fileKey: string, id: string): Promise<void> {
     return this.enqueue(async () => {
       await this.storage.deleteAsync(reportKey(fileKey, id));
       await this.storage.deleteAsync(viewKey(fileKey, id));
+      await this.storage.deleteAsync(issueReviewKey(fileKey, id));
     });
   }
 

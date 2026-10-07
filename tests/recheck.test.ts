@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { stableIssueKey } from "../src/core/issue-key";
 import { buildReadinessReport } from "../src/core/report";
 import { captureRecheckFindings, recheckCounts } from "../src/plugin/recheck";
 import { syntheticFinding, healthyGraph, node, profile } from "./fixtures";
@@ -20,27 +21,27 @@ function fixture() {
 describe("captured audit rechecks", () => {
   it("validates occurrence-backed groups and reports only that issue's resolved and remaining counts", () => {
     const { graph, report } = fixture();
-    const captured = captureRecheckFindings({ mode: "issue", issueId: "group" }, report, graph, false);
-    expect(captured.findingIds).toEqual(["a", "b"]);
+    const captured = captureRecheckFindings({ reportHash: report.snapshotHash, requestId: "check", mode: "issue", issueId: "group" }, report, graph, false);
+    expect(captured.findingIds).toEqual(report.findings.slice(0, 2).map(stableIssueKey));
     const changed = { ...report, findings: [report.findings[1]!, report.findings[2]!, finding({ id: "unrelated-new" })] };
     expect(recheckCounts(captured, changed)).toEqual({ resolvedCount: 1, remainingCount: 1 });
-    expect(captureRecheckFindings({ mode: "issue", issueId: "b" }, report, graph, false).findingIds).toEqual(["b"]);
-    expect(() => captureRecheckFindings({ mode: "issue", issueId: "forged" }, report, graph, false)).toThrow("does not belong");
+    expect(captureRecheckFindings({ reportHash: report.snapshotHash, requestId: "check", mode: "issue", issueId: "b" }, report, graph, false).findingIds).toEqual([stableIssueKey(report.findings[1]!)]);
+    expect(() => captureRecheckFindings({ reportHash: report.snapshotHash, requestId: "check", mode: "issue", issueId: "forged" }, report, graph, false)).toThrow("does not belong");
   });
 
   it("counts a component and its descendants while rejecting foreign canvas components", () => {
     const { graph, report } = fixture();
-    const captured = captureRecheckFindings({ mode: "component", componentId: "component" }, report, graph, false);
-    expect(captured.findingIds).toEqual(["a", "b"]);
+    const captured = captureRecheckFindings({ reportHash: report.snapshotHash, requestId: "check", mode: "component", componentId: "component" }, report, graph, false);
+    expect(captured.findingIds).toEqual(report.findings.slice(0, 2).map(stableIssueKey));
     expect(recheckCounts(captured, { ...report, findings: [report.findings[1]!, finding({ id: "new", nodeId: "text" })] })).toEqual({ resolvedCount: 1, remainingCount: 2 });
-    for (const componentId of ["unrelated", "text", "missing"]) expect(() => captureRecheckFindings({ mode: "component", componentId }, report, graph, false)).toThrow("does not belong");
+    for (const componentId of ["unrelated", "text", "missing"]) expect(() => captureRecheckFindings({ reportHash: report.snapshotHash, requestId: "check", mode: "component", componentId }, report, graph, false)).toThrow("does not belong");
   });
 
   it("permits full historical refresh without accepting historical finding IDs as current authority", () => {
     const { report } = fixture();
-    expect(captureRecheckFindings({ mode: "changes" }, report, undefined, true).findingIds).toEqual(["a", "b", "c"]);
+    expect(captureRecheckFindings({ mode: "changes" }, report, undefined, true).findingIds).toEqual(report.findings.slice(0, 3).map(stableIssueKey));
     expect(captureRecheckFindings({ mode: "full" }, report, undefined, true).request.mode).toBe("full");
-    expect(() => captureRecheckFindings({ mode: "issue", issueId: "group" }, report, undefined, true)).toThrow("historical");
+    expect(() => captureRecheckFindings({ reportHash: report.snapshotHash, requestId: "check", mode: "issue", issueId: "group" }, report, undefined, true)).toThrow("historical");
     expect(() => captureRecheckFindings({ mode: "changes" }, undefined, undefined, false)).toThrow("Run an audit");
   });
 
@@ -50,6 +51,6 @@ describe("captured audit rechecks", () => {
     graph.nodes["component"]!.rootId = "section";
     graph.nodes["component"]!.parentId = "section";
     report.target.rootIds = ["component"];
-    expect(captureRecheckFindings({ mode: "component", componentId: "component" }, report, graph, false).findingIds).toEqual(["a", "b"]);
+    expect(captureRecheckFindings({ reportHash: report.snapshotHash, requestId: "check", mode: "component", componentId: "component" }, report, graph, false).findingIds).toEqual(report.findings.slice(0, 2).map(stableIssueKey));
   });
 });

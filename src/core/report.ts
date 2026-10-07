@@ -1,3 +1,4 @@
+import { hasCompleteKnowledge } from "./knowledge";
 import { CATALOG_DIGEST, CATALOG_VERSION } from "./catalog";
 import { RULESET_VERSION } from "./constants";
 import { PRODUCER_IDENTITY } from "./build-info";
@@ -20,6 +21,7 @@ export interface BuildReportInput {
   findings?: Finding[];
   now?: Date;
   targetResolution?: ReadinessReport["target"]["resolution"];
+  verification?: ReadinessReport["verification"];
 }
 
 function blockers(findings: Finding[]): Finding[] {
@@ -78,7 +80,7 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
     const missingAxes = AXES.filter((axis) => !representedAxes.has(axis));
     if (missingAxes.length > 0) throw new Error(`Source frame ${rootId} is missing findings for: ${missingAxes.join(", ")}`);
   }
-  const knowledgeComplete = input.graph.complete && !input.graph.cancelled && input.graph.loadedPageCount === input.graph.pageCount;
+  const knowledgeComplete = hasCompleteKnowledge(input.graph);
   const frames: FrameResult[] = targetRootIds.map((rootId) => {
     const root = input.graph.nodes[rootId];
     if (!root) throw new Error(`Target root ${rootId} is absent from the design knowledge graph`);
@@ -113,7 +115,7 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
   const blockerFindings = blockers(findings);
   const generatedAt = (input.now ?? new Date()).toISOString();
   const report: ReadinessReport = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     producer: { ...PRODUCER_IDENTITY },
     rulesetVersion: RULESET_VERSION,
     catalogVersion: CATALOG_VERSION,
@@ -124,6 +126,7 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
       rootIds: targetRootIds,
       knowledgeSnapshotHash: input.graph.snapshotHash,
       knowledgeComplete,
+      excludedPageIds: [...(input.graph.excludedPageIds ?? [])],
       ...(input.targetResolution ? { resolution: input.targetResolution } : {}),
     },
     axes: reportAxes,
@@ -135,6 +138,7 @@ export function buildReadinessReport(input: BuildReportInput): ReadinessReport {
     issueGroups: buildFindingGroups(findings),
     appliedChanges: input.appliedChanges ?? [],
     generatedAt,
+    verification: input.verification ?? { kind: "audit", verifiedAt: generatedAt },
     snapshotHash: "pending",
   };
   const { snapshotHash: _pending, ...snapshotMaterial } = report;

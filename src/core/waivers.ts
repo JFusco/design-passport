@@ -1,3 +1,4 @@
+import { stableIssueKey } from "./issue-key";
 import type { Finding } from "./contracts";
 
 type Waiver = NonNullable<Finding["waiver"]>;
@@ -35,9 +36,20 @@ export function sanitizeWaiverStore(value: unknown): WaiverStore {
 
 export function applyWaivers(findings: Finding[], waivers: WaiverStore, now = Date.now()): Finding[] {
   return findings.map((item) => {
-    const waiver = waivers[item.id];
+    const waiver = waivers[stableIssueKey(item)] ?? waivers[item.id];
     if (item.status === "pass" || item.status === "not-applicable" || !waiver) return item;
     if (waiver.expiresAt && Date.parse(waiver.expiresAt) <= now) return item;
     return { ...item, status: "waived", waiver };
   });
+}
+
+/** Re-anchor only IDs actually present in the displayed report; preserve unmatched history. */
+export function reanchorWaivers(waivers: WaiverStore, findings: readonly Finding[]): WaiverStore {
+  const next = { ...waivers };
+  for (const finding of findings) {
+    if (!waivers[finding.id]) continue;
+    next[stableIssueKey(finding)] ??= waivers[finding.id]!;
+    delete next[finding.id];
+  }
+  return next;
 }

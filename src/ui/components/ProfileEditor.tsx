@@ -1,3 +1,4 @@
+import { PageExclusions } from "./PageExclusions";
 import { CONFIGURABLE_POLICY_IDS, type ConfigurablePolicyId, type ReadinessProfile, type RuleMode } from "../../core/contracts";
 import type { BootstrapData, VariableCollectionOption } from "../../figma/adapter";
 import { profileDomainErrors } from "../../core/profile-semantics";
@@ -87,6 +88,7 @@ export function ProfileEditor(props: ProfileEditorProps) {
         <div><strong>Recommended fix</strong><p>Uses page names, component section dividers, local Semantic variable collections, and standard breakpoints. It never renames or moves Figma content.</p>{suggestionErrors.length > 0 && <small>Automatic setup needs manual help: {suggestionErrors.join("; ")}</small>}</div>
         <button className="button primary" disabled={!props.canPersist || suggestionErrors.length > 0} onClick={props.onAcceptSuggestion}>Use recommended setup</button>
       </div>}
+      <PageExclusions pages={props.pages} excluded={props.profile.excludedPageIds} disabled={!props.canPersist} dirty={props.dirty} onChange={(ids) => props.onChange({ ...cloneProfile(props.profile), excludedPageIds: ids })} onConfirm={props.onSave} />
       <details className="advanced-setup">
         <summary><span><strong>Manual setup</strong><small>File type, page roles, token sources, and breakpoints</small></span><span>Advanced</span></summary>
         <div className="stack">

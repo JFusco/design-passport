@@ -7,6 +7,7 @@ export const CERTIFICATION_ANNOTATION_PREFIX = "[Design Passport]";
 export const LEGACY_CERTIFICATION_ANNOTATION_PREFIX = "[Figma AI Ready]";
 export const SHARED_PLUGIN_DATA_NAMESPACE = "verndaleAiReady";
 export const PROFILE_DATA_KEY = "profile-v1";
+export const PROFILE_DATA_KEY_V3 = "profile-v3";
 export const PROFILE_DATA_KEY_V2 = "profile-v2";
 export const CERTIFICATION_DATA_KEY = "certification-v1";
 export const DETACHMENT_INTENT_DATA_KEY = "detachment-intent-v1";
@@ -76,7 +77,8 @@ export const SOURCES = {
 } satisfies Record<string, SourceRef>;
 
 export const DEFAULT_PROFILE: ReadinessProfile = {
-  schemaVersion: 2,
+  schemaVersion: 3,
+  excludedPageIds: [],
   profileId: "verndale-web-v1",
   artifactKind: "product",
   pageRoles: {

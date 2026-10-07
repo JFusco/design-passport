@@ -3,7 +3,7 @@ import { parseUiMessage } from "../src/plugin/message-validation";
 
 describe("UI message validation", () => {
   it("accepts explicit recheck modes and rejects missing or contradictory target IDs", () => {
-    for (const request of [{ mode: "changes" }, { mode: "full" }, { mode: "component", componentId: "1:2" }, { mode: "issue", issueId: "issue:1" }]) {
+    for (const request of [{ mode: "changes" }, { mode: "full" }, { mode: "component", componentId: "1:2", reportHash: "hash:1", requestId: "one" }, { mode: "issue", issueId: "issue:1", reportHash: "hash:1", requestId: "two" }]) {
       expect(parseUiMessage({ type: "recheck-audit", request })).toEqual({ type: "recheck-audit", request });
     }
     for (const request of [{ mode: "component" }, { mode: "issue", issueId: "" }, { mode: "changes", componentId: "1:2" }, { mode: "issue", issueId: "valid", componentId: "1:2" }, { mode: "unknown" }]) {

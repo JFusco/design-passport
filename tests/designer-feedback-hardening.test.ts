@@ -140,11 +140,11 @@ describe("designer-feedback hardening", () => {
 
   it("migrates profile-v1 defaults and emits a verifiable report-v3 producer and ledger", () => {
     const current = profile();
-    const { ruleModes: _ruleModes, ...legacyFields } = current;
+    const { ruleModes: _ruleModes, excludedPageIds: _excluded, ...legacyFields } = current;
     const migrated = parseStoredProfile(JSON.stringify({ ...legacyFields, schemaVersion: 1 }));
-    expect(migrated).toMatchObject({ schemaVersion: 2, ruleModes: current.ruleModes });
+    expect(migrated).toMatchObject({ schemaVersion: 3, excludedPageIds: [], ruleModes: current.ruleModes });
     const report = buildReadinessReport({ graph: healthyGraph(current), profile: current, scope: "selection", targetRootIds: ["root:desktop"] });
-    expect(report).toMatchObject({ schemaVersion: 3, producer: { pluginVersion: "0.5.0", rulesetVersion: "1.0.0-beta.5", channel: "development" }, frames: [{ tokenCoverage: expect.any(Object) }] });
+    expect(report).toMatchObject({ schemaVersion: 4, producer: { pluginVersion: "0.5.0", rulesetVersion: "1.0.0-beta.5", channel: "development" }, frames: [{ tokenCoverage: expect.any(Object) }] });
     expect(report.frames[0]!.tokenCoverage!.applicable).toBe(report.frames[0]!.tokenCoverage!.counts.bound + report.frames[0]!.tokenCoverage!.counts.inherited + report.frames[0]!.tokenCoverage!.counts.missing);
   });
 });
