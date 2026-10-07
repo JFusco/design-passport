@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { AXIS_LABELS } from "../../core/constants";
 import { producerLabel } from "../../core/build-info";
 import type { ReadinessReport, ScanScope } from "../../core/contracts";
@@ -28,6 +29,9 @@ export interface OverviewProps {
   recheckDisabled?: boolean;
   onScan: (scope: ScanScope, refresh?: boolean) => void;
   onExport: (format: "json" | "markdown") => void;
+  children?: ReactNode;
+  pageExclusions?: ReactNode;
+  cleanupCount?: number;
 }
 
 export function Overview(props: OverviewProps) {
@@ -46,8 +50,9 @@ export function Overview(props: OverviewProps) {
   return (
     <section className="panel stack">
       {!props.reportOnly && <div className="scope-card">
-        <div><span className="section-label">Audit target</span><p>Aim for B or better and a ready result. Choose what to audit. The rest of the file is used only as supporting context; the grade and findings apply only to your chosen target.</p></div>
+        <div><h2>Run the audit</h2><p>The rest of the file is supporting context. The grade and findings apply only to your chosen target.</p></div>
         <div className="scope-actions">
+          <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan("page")}>Run audit · Current page</button>
           <button
             className="button"
             disabled={props.actionsBlocked || props.scanning || !eligibility.canAudit}
@@ -56,30 +61,31 @@ export function Overview(props: OverviewProps) {
           >
             Audit selection ({props.selectionSummary.eligibleCount})
           </button>
-          <button className="button primary" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan("page")}>Run audit · Current page</button>
-          <button className="button" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan("file")}>Source frames</button>
         </div>
         {eligibility.guidance ? <p id="selection-guidance" className="selection-guidance" aria-live="polite">{eligibility.guidance}</p> : null}
+        {props.pageExclusions}
+        <details className="audit-more"><summary>More audit targets</summary><div className="stack"><button className="button" disabled={props.actionsBlocked || props.scanning} onClick={() => props.onScan("file")}>Source frames</button>{props.pages && props.onReviewPages ? <PageBatch excludedPageIds={props.excludedPageIds ?? []} pages={props.pages} canSave={props.fileKeyAvailable ?? true} disabled={props.actionsBlocked || props.scanning} onReview={props.onReviewPages} /> : null}</div></details>
       </div>}
-      {!props.reportOnly && props.pages && props.onReviewPages ? <PageBatch excludedPageIds={props.excludedPageIds ?? []} pages={props.pages} canSave={props.fileKeyAvailable ?? true} disabled={props.actionsBlocked || props.scanning} onReview={props.onReviewPages} /> : null}
       {!props.auditOnly && (!props.report ? (
         <div className="empty-state"><div className="empty-mark"><BrandMark /></div><h2>Build a trustworthy handoff signal</h2><p>Choose an audit target to see its readiness. The rest of the file informs the analysis without becoming part of the grade.</p></div>
       ) : (
         <>
+          <div className="report-card">
+          <div className="report-heading">
+            <div className="report-target">
+            <h2>{props.report.target.scope === "page" ? props.report.frames[0]?.pageName ?? "Audited page" : auditedTarget?.names[0] ?? "Audited design"} <span>[{props.report.target.scope === "page" ? "Page" : props.report.target.scope === "selection" ? "Selection" : "Source frames"}]</span></h2>
+            <div className="audited-target-summary"><strong>{auditedTarget?.countLabel}</strong><div className="audited-target-names" aria-label="Audited target names">{auditedTarget?.names.map((name, index) => <span key={`${index}:${name}`}>{name}</span>)}{auditedTarget && auditedTarget.remainingCount > 0 ? <span>+{auditedTarget.remainingCount} more</span> : null}</div></div>
+            </div>
           <div className="result-hero">
             <div className={gradeClass(props.report.grade.letter)}><strong>{props.report.grade.letter}</strong><span>{props.report.grade.score.toFixed(1)} / 100</span></div>
-            <div><span className="section-label">{historicalExport ? "Historical readiness" : "Overall readiness"}</span><h2>{props.report.ready ? "Looking good" : "Let’s improve your design"}</h2><p className="hero-summary">{reportSummary(props.report)}</p><p className={props.stale ? "needs-refresh" : props.report.ready ? "ready" : "not-ready"}>{status}</p><small>{props.report.producer ? `Audit producer: ${producerLabel(props.report.producer)}` : `Historical pre-v3 report · Ruleset ${props.report.rulesetVersion}`}</small>{props.report.grade.capReason && <small>{props.report.grade.capReason}</small>}</div>
+            <div><h3>{props.report.ready ? "Looking good" : "Needs work"}</h3><p className="hero-summary">{reportSummary(props.report)}</p><p className={props.stale ? "needs-refresh" : props.report.ready ? "ready" : "not-ready"}>{status}</p></div>
           </div>
-          <div className="audited-target-summary">
-            <div>
-              <span className="section-label">Audited target</span>
-              <strong>{auditedTarget?.countLabel}</strong>
-            </div>
-            <div className="audited-target-names" aria-label="Audited target names">
-              {auditedTarget?.names.map((name, index) => <span key={`${index}:${name}`}>{name}</span>)}
-              {auditedTarget && auditedTarget.remainingCount > 0 ? <span>+{auditedTarget.remainingCount} more</span> : null}
-            </div>
+          {props.onCleanup ? <div className="cleanup-callout"><strong>{props.cleanupCount ?? 0} item{props.cleanupCount === 1 ? "" : "s"} available to clean up</strong><button className="button primary" onClick={props.onCleanup}>Run Cleanup</button></div> : null}
           </div>
+          {props.children}
+          </div>
+          <details className="report-tools"><summary>Audit details &amp; exports</summary><div className="stack">
+          <span className="section-label">{historicalExport ? "Historical readiness" : "Overall readiness"}</span><small>{props.report.producer ? `Audit producer: ${producerLabel(props.report.producer)}` : `Historical pre-v3 report · Ruleset ${props.report.rulesetVersion}`}</small>
           {props.report.target.resolution?.mode === "component-sources" ? <div className="banner info" role="status">The selected documentation wrapper was excluded. This audit targets its nested top-level component sets and standalone components.</div> : null}
           <TokenCoverage frames={props.report.frames} />
           {issues ? <div className="scope-card" aria-label="Issue summary">
@@ -95,11 +101,11 @@ export function Overview(props: OverviewProps) {
           <details className="report-diagnostics"><summary>Stats for nerds</summary><p>Report {props.report.snapshotHash} · Verified {props.report.verification?.verifiedAt ?? props.report.generatedAt}</p><p>{props.report.grade.capReason ? designerText(props.report.grade.capReason) : "No grade cap"}</p><div className="axis-grid">
             {props.report.axes.map((axis) => <div className="axis-row" key={axis.axis}><div><span>{AXIS_LABELS[axis.axis]}</span><strong>{axis.score.toFixed(1)}</strong></div><div className="score-track"><span style={{ width: `${axis.score}%` }} /></div></div>)}
           </div></details>
-          {props.onCleanup ? <button className="button" onClick={props.onCleanup}>Review available cleanup</button> : null}
           <div className="footer-actions">
             <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("json")}>{historicalExport ? "Export historical JSON" : "Export JSON"}</button>
             <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("markdown")}>{historicalExport ? "Export historical Markdown" : "Export Markdown"}</button>
           </div>
+          </div></details>
         </>
       ))}
     </section>

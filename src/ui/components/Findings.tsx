@@ -5,10 +5,9 @@ import linkIcon from "../assets/imgLinkSimple.svg";
 import resolvedLinkIcon from "../assets/imgLinkSimple1.svg";
 import expandIcon from "../assets/imgFrame38.svg";
 import collapseIcon from "../assets/imgFrame39.svg";
-import caretIcon from "../assets/imgCaretCircleDown.svg";
 import { AXIS_LABELS } from "../../core/constants";
 import { getPatternChecklist } from "../../core/catalog";
-import type { Axis, BindableField, Finding, FindingCategory, FindingGroup, FrameResult, JsonValue } from "../../core/contracts";
+import type { Axis, AxisScore, BindableField, Finding, FindingCategory, FindingGroup, FrameResult, JsonValue } from "../../core/contracts";
 import type { VariableCollectionOption } from "../../figma/adapter";
 import type { TokenCoveragePageRequest, TokenCoveragePageResult } from "../../plugin/messages";
 import { groupsForFindings } from "../../core/finding-groups";
@@ -21,6 +20,8 @@ import { TokenCoverage } from "./TokenCoverage";
 
 export interface FindingsProps {
   findings: Finding[];
+  axes?: readonly AxisScore[];
+  detailed?: boolean;
   reviewState?: IssueReviewState;
   checkingKeys?: readonly string[];
   regenerationKeys?: readonly string[];
@@ -80,43 +81,13 @@ export function Findings(props: FindingsProps) {
   const variants = props.frames.find((frame) => frame.rootId === props.rootFilter)?.variantCoverage ?? [];
   const resolved = props.reviewState?.records.filter((row) => row.outcome === "resolved" && row.previous && !props.reviewState?.clearedKeys.includes(row.key)) ?? [];
   return (
-    <section className="panel stack">
-      <TokenCoverage
-        frames={props.rootFilter === "all" ? props.frames : props.frames.filter((frame) => frame.rootId === props.rootFilter)}
-        detailed
-        {...(props.coverageCurrent !== undefined ? { current: props.coverageCurrent } : {})}
-        {...(props.coverageReportHash ? { reportHash: props.coverageReportHash } : {})}
-        {...(props.coveragePages ? { pages: props.coveragePages } : {})}
-        {...(props.onRequestCoveragePage ? { onRequestPage: props.onRequestCoveragePage } : {})}
-        onNavigate={props.onNavigate}
-      />
-      <div className="filters finding-filters">
-        <select value={props.pageFilter} onChange={(event) => props.onPageFilter(event.target.value)} aria-label="Filter by page">
-          <option value="all">All pages</option>
-          {pages.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-        </select>
-        <select value={props.rootFilter} onChange={(event) => props.onRootFilter(event.target.value)} aria-label="Filter by module or component">
-          <option value="all">All modules</option>
-          {roots.map((frame) => <option key={frame.rootId} value={frame.rootId}>{frame.rootName} · {frame.grade.letter} {frame.grade.score.toFixed(1)}</option>)}
-        </select>
-        <select value={props.variantFilter} disabled={variants.length === 0} onChange={(event) => props.onVariantFilter(event.target.value)} aria-label="Filter by component variant">
-          <option value="all">All variants</option>
-          {variants.map((variant) => <option key={variant.variantId} value={variant.variantId}>{variant.variantName}</option>)}
-        </select>
-        <select value={props.axisFilter} onChange={(event) => props.onAxisFilter(event.target.value as Axis | "all")} aria-label="Filter by axis">
-          <option value="all">All axes</option>
-          {Object.entries(AXIS_LABELS).map(([axis, label]) => <option key={axis} value={axis}>{label}</option>)}
-        </select>
-        <select disabled={props.findings.length > 0 && props.findings.every((finding) => finding.category === undefined)} value={props.categoryFilter ?? "all"} onChange={(event) => props.onCategoryFilter?.(event.target.value as FindingCategory | "all")} aria-label="Filter by category">
-          <option value="all">All categories</option><option value="requirement">Requirements</option><option value="recommendation">Recommendations</option><option value="governance">Vocabulary governance</option>
-        </select>
-        <label className="check"><input type="checkbox" checked={props.showPassing} onChange={(event) => props.onTogglePassing(event.target.checked)} /> Show passing</label>
-      </div>
-      {props.findings.length > 0 && <p className="muted">{issueCount} issue{issueCount === 1 ? "" : "s"} · {props.findings.length} finding occurrences in this view. Filters do not change grades.</p>}
-      {props.findings.length === 0 ? <div className="empty-state compact"><h2>No findings in this view</h2><p>Run an audit or change the filters.</p></div> : Object.entries(AXIS_LABELS).map(([axis, label]) => {
+    <section className="findings-list">
+
+      {props.findings.length === 0 && !props.axes?.length ? <div className="empty-state compact"><h2>No findings in this view</h2><p>Run an audit or change the filters.</p></div> : Object.entries(AXIS_LABELS).map(([axis, label]) => {
         const axisGroups = groups.filter((group) => byId.get(group.primaryFindingId)?.axis === axis);
-        if (!axisGroups.length) return null;
-        return <details className="issue-category" key={axis} open><summary><span>{label} · {axisGroups.length}</span><img src={caretIcon} alt="" /></summary>{axisGroups.map((group) => {
+        const score = props.axes?.find((entry) => entry.axis === axis)?.score;
+        if (!axisGroups.length && score === undefined) return null;
+        return <details className="issue-category" key={axis}><summary><span>{score !== undefined ? <span className={`axis-score ${score >= 80 ? "score-good" : score >= 70 ? "score-mixed" : "score-low"}`}>{score.toFixed(1)}</span> : null}{label}{axisGroups.length > 0 ? <small> · {axisGroups.length}</small> : null}</span><img className="category-expand" src={expandIcon} alt="" width={8} height={8} /><img className="category-collapse" src={collapseIcon} alt="" width={8} height={8} /></summary>{axisGroups.length === 0 ? <p className="category-empty">No issues in this category for the current view.</p> : null}{axisGroups.map((group) => {
         const selectedId = props.expanded && group.findingIds.includes(props.expanded) ? props.expanded : group.primaryFindingId;
         const finding = byId.get(selectedId)!;
         const isExpanded = props.expanded === group.id || group.findingIds.includes(props.expanded ?? "");
@@ -176,6 +147,40 @@ export function Findings(props: FindingsProps) {
         );
       })}</details>})}
       {resolved.length > 0 ? <section className="resolved-issues stack" aria-label="Resolved issues"><h2>Resolved</h2>{resolved.map((row) => <article className="finding-card resolved" key={row.key}><div className="finding-detail"><span className="status status-pass">Resolved</span><strong>{designerText(row.previous!.title)}</strong><button className="node-link" onClick={() => props.onNavigate(navigationTarget(row.previous!))}><img src={resolvedLinkIcon} alt="" />{row.previous!.nodePath}</button><small>Verified {row.checkedAt}. Clearing this row does not change the score.</small><button className="button" onClick={() => props.onClear?.(row.key)} disabled={!props.onClear || props.clearDisabled}>Clear</button></div></article>)}</section> : null}
+      <details className="finding-tools" open={props.detailed}><summary>Filters &amp; evidence</summary><div className="stack">
+      <TokenCoverage
+        frames={props.rootFilter === "all" ? props.frames : props.frames.filter((frame) => frame.rootId === props.rootFilter)}
+        detailed
+        {...(props.coverageCurrent !== undefined ? { current: props.coverageCurrent } : {})}
+        {...(props.coverageReportHash ? { reportHash: props.coverageReportHash } : {})}
+        {...(props.coveragePages ? { pages: props.coveragePages } : {})}
+        {...(props.onRequestCoveragePage ? { onRequestPage: props.onRequestCoveragePage } : {})}
+        onNavigate={props.onNavigate}
+      />
+      <div className="filters finding-filters">
+        <select value={props.pageFilter} onChange={(event) => props.onPageFilter(event.target.value)} aria-label="Filter by page">
+          <option value="all">All pages</option>
+          {pages.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+        </select>
+        <select value={props.rootFilter} onChange={(event) => props.onRootFilter(event.target.value)} aria-label="Filter by module or component">
+          <option value="all">All modules</option>
+          {roots.map((frame) => <option key={frame.rootId} value={frame.rootId}>{frame.rootName} · {frame.grade.letter} {frame.grade.score.toFixed(1)}</option>)}
+        </select>
+        <select value={props.variantFilter} disabled={variants.length === 0} onChange={(event) => props.onVariantFilter(event.target.value)} aria-label="Filter by component variant">
+          <option value="all">All variants</option>
+          {variants.map((variant) => <option key={variant.variantId} value={variant.variantId}>{variant.variantName}</option>)}
+        </select>
+        <select value={props.axisFilter} onChange={(event) => props.onAxisFilter(event.target.value as Axis | "all")} aria-label="Filter by axis">
+          <option value="all">All axes</option>
+          {Object.entries(AXIS_LABELS).map(([axis, label]) => <option key={axis} value={axis}>{label}</option>)}
+        </select>
+        <select disabled={props.findings.length > 0 && props.findings.every((finding) => finding.category === undefined)} value={props.categoryFilter ?? "all"} onChange={(event) => props.onCategoryFilter?.(event.target.value as FindingCategory | "all")} aria-label="Filter by category">
+          <option value="all">All categories</option><option value="requirement">Requirements</option><option value="recommendation">Recommendations</option><option value="governance">Vocabulary governance</option>
+        </select>
+        <label className="check"><input type="checkbox" checked={props.showPassing} onChange={(event) => props.onTogglePassing(event.target.checked)} /> Show passing</label>
+      </div>
+      {props.findings.length > 0 && <p className="muted">{issueCount} issue{issueCount === 1 ? "" : "s"} · {props.findings.length} finding occurrences in this view. Filters do not change grades.</p>}
+      </div></details>
       <details className="waived-issues"><summary>Waived issues · deductions retained</summary>{props.findings.filter((finding) => finding.status === "waived").map((finding) => <div key={finding.id}><strong>{designerText(finding.title)}</strong><p>{finding.waiver?.reason ?? "Accepted exception"} · {findingImpactLabel(finding)}</p></div>)}{Object.entries(props.waivers ?? {}).filter(([key]) => !props.findings.some((finding) => stableIssueKey(finding) === key || finding.id === key)).map(([key, waiver]) => <div key={key}><span>Not present in this report</span><p>{waiver.reason}</p></div>)}</details>
     </section>
   );

@@ -71,11 +71,12 @@ async function mount(page: Page, devMode = false) {
     window.postMessage({ pluginMessage: { type: "bootstrap", data: { ...bootstrap, editorType: dev ? "dev" : "figma", canMutateDocument: !dev }, rulesetVersion: "fixture", catalogVersion: "fixture", catalogDigest: "fixture" } }, "*");
     window.postMessage({ pluginMessage: result }, "*");
   }, devMode);
-  await expect(page.getByRole("button", { name: "Regenerate audit to verify", exact: true })).toBeEnabled();
+  await expect(page.locator(".result-hero")).toBeVisible();
 }
 
 test("uses audit readiness with no certification controls, notices, or progress", async ({ page }) => {
   await mount(page);
+  await page.getByText("Audit details & exports", { exact: true }).click();
   await expect(page.getByRole("button", { name: /certif/i })).toHaveCount(0);
   await expect(page.getByText(/certification|certifying/i)).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Plugin sections" })).toContainText(/AuditReport\d*Cleanup/u);
@@ -98,10 +99,12 @@ test("retains unsaved setup gates and historical exports", async ({ page }) => {
   await page.getByText("Manual setup", { exact: true }).click();
   await page.getByLabel("Breakpoint width").first().fill("1400");
   await page.getByRole("button", { name: "Report", exact: true }).click();
+  await page.getByText("Audit details & exports", { exact: true }).click();
   await expect(page.getByRole("button", { name: "Regenerate audit to verify", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Audit", exact: true }).click();
   await expect(page.getByRole("button", { name: "Run audit · Current page", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Report", exact: false }).first().click();
+  await page.getByText("Audit details & exports", { exact: true }).click();
   await expect(page.getByRole("button", { name: "Export JSON", exact: true })).toBeDisabled();
   await deliver(page, { type: "knowledge-stale" });
   await expect(page.getByRole("button", { name: "Export historical JSON", exact: true })).toBeEnabled();
@@ -109,6 +112,7 @@ test("retains unsaved setup gates and historical exports", async ({ page }) => {
 
 test("retains Dev Mode cleanup gates while allowing audit and export", async ({ page }) => {
   await mount(page, true);
+  await page.getByText("Audit details & exports", { exact: true }).click();
   await expect(page.getByText(/Dev Mode is audit-only/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Export JSON", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Cleanup", exact: true }).click();
@@ -134,6 +138,7 @@ test("gates first audit on context and keeps generation separate from the report
 
 test("shows checking, preserves the score on fallback and retains a resolved row until Clear", async ({ page }) => {
   await mount(page);
+  await page.locator(".issue-category").filter({ has: page.getByRole("button", { name: "Check again", exact: true, includeHidden: true }) }).first().locator("summary").first().click();
   const details = await page.evaluate(() => {
     const result = (window as unknown as FixtureWindow).PassportTest.result;
     if (result.type !== "scan-result") throw new Error("Missing fixture");
@@ -160,6 +165,59 @@ test("shows checking, preserves the score on fallback and retains a resolved row
   await expect(page.getByText("Clear could not be saved; session only.")).toBeVisible();
 });
 
+test("keeps Figma navigation above notices and pinned on every destination", async ({ page }) => {
+  await mount(page, true);
+  await deliver(page, { type: "saved-audits", activeId: "audit:fixture", audits: [{ id: "audit:fixture", label: "Hero / Desktop / 1440", target: { scope: "selection", nodeIds: ["root:desktop"] }, generatedAt: "2026-10-07T12:00:00.000Z", grade: { letter: "A", score: 97.4 }, lastViewedAt: "2026-10-07T12:00:00.000Z" }] });
+  for (const width of [320, 456, 500]) {
+    await page.setViewportSize({ width, height: 720 });
+    const assertChrome = async () => {
+      const geometry = await page.evaluate(() => {
+        const header = document.querySelector(".app-header")!.getBoundingClientRect();
+        const nav = document.querySelector(".tabs")!.getBoundingClientRect();
+        const notice = document.querySelector(".notification-stack")!;
+        const history = document.querySelector(".saved-audits");
+        return { headerTop: header.top, headerHeight: header.height, navTop: nav.top, navBottom: nav.bottom,
+          navigationBeforeNotices: Boolean(document.querySelector(".tabs")!.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING),
+          navigationBeforeHistory: !history || Boolean(document.querySelector(".tabs")!.compareDocumentPosition(history) & Node.DOCUMENT_POSITION_FOLLOWING),
+          overflow: document.documentElement.scrollWidth > innerWidth };
+      });
+      expect(geometry).toEqual({ headerTop: 0, headerHeight: 49, navTop: 49, navBottom: 105, navigationBeforeNotices: true, navigationBeforeHistory: true, overflow: false });
+    };
+    for (const destination of ["Audit", "Report", "Cleanup"]) {
+      await page.getByRole("button", { name: destination, exact: true }).click();
+      if (destination === "Audit") {
+        await expect(page.getByRole("heading", { name: "Saved Audit Results", exact: true })).toBeVisible();
+        await expect(page.getByRole("button", { name: "View report", exact: true })).toBeEnabled();
+      }
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await assertChrome();
+    }
+    for (const destination of ["Context & style guide", "Audit Setup"]) {
+      await page.getByRole("button", { name: "Settings", exact: true }).click();
+      const menu = await page.locator(".settings-menu").boundingBox();
+      expect(menu!.x).toBeGreaterThanOrEqual(0);
+      expect(menu!.x + menu!.width).toBeLessThanOrEqual(width);
+      await page.locator(".settings-menu").getByRole("button", { name: destination, exact: true }).click();
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      await assertChrome();
+    }
+    await page.getByRole("button", { name: "Report", exact: true }).click();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    expect(await page.locator(".issue-category[open]").count()).toBe(0);
+    expect(await page.locator(".passport-brand").evaluate((node) => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height }))).toEqual({ width: 16, height: 16 });
+    expect(await page.locator(".tab-links button").first().evaluate((node) => ({ font: getComputedStyle(node).fontSize, weight: getComputedStyle(node).fontWeight, opacity: getComputedStyle(node).opacity }))).toEqual({ font: "16px", weight: "600", opacity: "0.4" });
+    const grade = await page.locator(".grade").evaluate((node) => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height, radius: getComputedStyle(node).borderRadius }));
+    expect(grade.width).toBeCloseTo(100, 2);
+    expect(grade.height).toBeCloseTo(100, 2);
+    expect(grade.radius).toBe("4px");
+    await page.locator(".issue-category > summary").first().focus();
+    expect((await page.locator(".issue-category > summary").first().boundingBox())!.y).toBeGreaterThanOrEqual(105);
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".issue-category").first()).toHaveAttribute("open", "");
+    await page.locator(".issue-category > summary").first().click();
+  }
+});
+
 test("opts a whole cleanup plan out and disables an empty batch", async ({ page }) => {
   await mount(page);
   await page.getByRole("button", { name: "Cleanup", exact: true }).click();
@@ -170,7 +228,7 @@ test("opts a whole cleanup plan out and disables an empty batch", async ({ page 
   await expect(page.getByRole("button", { name: "Apply this fix", exact: true }).first()).toBeEnabled();
 });
 
-test("matches the dark layout at 320, 456 and 500px with keyboard focus and readable contrast", async ({ page }) => {
+test("matches the Figma dark layout at 320, 456 and 500px with keyboard focus", async ({ page }) => {
   await mount(page);
   const { default: AxeBuilder } = await import("@axe-core/playwright");
   for (const width of [320, 456, 500]) {
@@ -178,12 +236,34 @@ test("matches the dark layout at 320, 456 and 500px with keyboard focus and read
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect((await page.locator(".hero-summary").innerText()).length).toBeLessThanOrEqual(120);
     const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-    expect(accessibility.violations).toEqual([]);
-    await page.screenshot({ path: `/tmp/design-passport-81-report-${width}.png`, fullPage: true });
+    // The user explicitly requested the reference's exact 40% inactive-tab
+    // opacity. Record that known contrast exception; fail on every other issue.
+    expect(accessibility.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target) }))).toEqual([
+      { id: "color-contrast", targets: [["button[aria-label=\"Audit\"]"], ["button[aria-label=\"Cleanup\"]"]] },
+    ]);
+    await page.screenshot({ path: `/tmp/design-passport-84-report-${width}.png`, fullPage: true });
+    for (const summary of await page.locator(".issue-category > summary").all()) await summary.click();
+    await page.locator(".finding-summary").first().click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const expandedAccessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+    expect(expandedAccessibility.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target) }))).toEqual([
+      { id: "color-contrast", targets: [["button[aria-label=\"Audit\"]"], ["button[aria-label=\"Cleanup\"]"]] },
+    ]);
+    const assets = await page.locator(".chevron, .node-link img, .issue-category > summary img").evaluateAll((nodes) => nodes.filter((node) => node.getBoundingClientRect().width > 0).map((node) => ({ slot: node.className || "link", width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
+    for (const asset of assets) {
+      const size = asset.slot === "link" ? 16 : 8;
+      expect(asset.width).toBeCloseTo(size, 2);
+      expect(asset.height).toBeCloseTo(size, 2);
+    }
+    await page.screenshot({ path: `/tmp/design-passport-84-issues-${width}.png`, fullPage: true });
+    await page.locator(".finding-summary").first().click();
+    for (const summary of await page.locator(".issue-category > summary").all()) await summary.click();
   }
   await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "light" });
   expect(await page.locator("html").evaluate((node) => getComputedStyle(node).colorScheme)).toBe("dark");
-  await page.getByRole("button", { name: "Settings", exact: true }).focus();
+  await page.getByRole("button", { name: "Cleanup", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Settings", exact: true })).toBeFocused();
   expect(await page.getByRole("button", { name: "Settings", exact: true }).evaluate((node) => getComputedStyle(node).outlineStyle)).toBe("solid");
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "Context & style guide" }).click();

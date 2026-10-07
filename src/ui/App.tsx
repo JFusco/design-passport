@@ -38,7 +38,6 @@ import {
   isAuditInterruptible,
   scanInFlightAfter,
 } from "./operations/audit-scope";
-import { actionableIssueSummary } from "./operations/breakdown";
 import { findingsForReview } from "./operations/findings";
 import { cloneProfile, formatDateTime } from "./operations/presentation";
 import { discardProfileDraft, profileDraftState } from "./operations/profile-state";
@@ -506,13 +505,22 @@ export function App() {
 
   return (
     <main className="app-shell">
+      <div className="app-chrome">
       <header className="app-header">
         <div className="brand-lockup">
-          <img className="passport-brand" src={brandImage} alt="" />
+          <img className="passport-brand" src={brandImage} alt="" width={16} height={16} />
           <h1>{PRODUCT_NAME}</h1>
         </div>
-        <div className="settings"><button className="icon-button" aria-label="Settings" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(!settingsOpen)}><img src={settingsIcon} alt="" /></button>{settingsOpen ? <div className="settings-menu"><button onClick={() => { setActiveTab("context"); setSettingsOpen(false); }}>Context &amp; style guide</button><button onClick={() => { setActiveTab("profile"); setSettingsOpen(false); }}>Audit Setup</button></div> : null}</div>
       </header>
+      <nav className="tabs" aria-label="Plugin sections">
+        <div className="tab-links">{(["audit", "report", "cleanup"] as Tab[]).map((tab) => (
+          <button key={tab} aria-label={`${tab[0]?.toUpperCase()}${tab.slice(1)}`} className={activeTab === tab ? "active" : ""} aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)}>
+            {tab[0]?.toUpperCase()}{tab.slice(1)}
+          </button>
+        ))}</div>
+        <div className="settings"><button className="icon-button" aria-label="Settings" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(!settingsOpen)}><img src={settingsIcon} alt="" width={24} height={24} /></button>{settingsOpen ? <div className="settings-menu"><button onClick={() => { setActiveTab("context"); setSettingsOpen(false); }}>Context &amp; style guide</button><button onClick={() => { setActiveTab("profile"); setSettingsOpen(false); }}>Audit Setup</button></div> : null}</div>
+      </nav>
+      </div>
 
       <div className={`notification-stack${hasNotifications ? " has-notifications" : ""}`}>
         {bootstrap.data.producer.channel === "development" ? <div className="banner warning" role="status"><strong>Development build</strong> · Results from this plugin are visibly marked and should not be treated as production evidence.</div> : null}
@@ -528,24 +536,17 @@ export function App() {
         </div>
       </div>
 
-      {activeTab === "audit" || activeTab === "context" ? <SavedAudits
+      {activeTab === "context" || (activeTab === "audit" && savedAudits.length > 0) ? <SavedAudits
         audits={savedAudits}
         activeId={activeSavedId}
         status={saveStatus}
         disabled={scanInFlight}
         onOpen={(id) => { restoreRequest.current = { id }; setLoadingSavedAudit(true); setScanInFlight(true); send({ type: "open-saved-audit", id }); }}
+        onViewCurrent={() => setActiveTab("report")}
         onForget={(id) => { send({ type: "forget-saved-audit", id }); if (id === activeSavedId) forgetDisplayedResult(); }}
         onClear={() => send({ type: "clear-file-cache" })}
       /> : null}
 
-      <nav className="tabs" aria-label="Plugin sections">
-        {(["audit", "report", "cleanup"] as Tab[]).map((tab) => (
-          <button key={tab} aria-label={`${tab[0]?.toUpperCase()}${tab.slice(1)}`} className={activeTab === tab ? "active" : ""} aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)}>
-            {tab[0]?.toUpperCase()}{tab.slice(1)}
-            {tab === "report" && report ? <span className="count">{actionableIssueSummary(report).actionableCount}</span> : null}
-          </button>
-        ))}
-      </nav>
 
       {loadingSavedAudit ? <section className="progress-card" role="status"><div className="progress-copy"><span className="spinner" aria-hidden="true" /><strong>Opening saved result…</strong></div></section> : batchProgress ? (
         <section className="progress-card">
@@ -570,11 +571,13 @@ export function App() {
         inert={panelLocked}
         aria-busy={scanInFlight}
       >
-        {activeTab === "audit" ? <div className="panel stack"><ContextStatusPanel status={contextStatus} {...(progress ? { progress } : {})} disabled={draftState.blocked || scanInFlight} onGenerate={generateContext} onCancel={() => send({ type: "cancel-scan" })} /><PageExclusions pages={bootstrap.data.pages} excluded={profile.excludedPageIds} disabled={scanInFlight || !bootstrap.data.canMutateDocument} dirty={draftState.dirty} onChange={(ids) => setProfile({ ...cloneProfile(profile), excludedPageIds: ids })} onConfirm={() => send({ type: "save-profile", profile })} /><button className="button" onClick={() => setActiveTab("context")}>Project style guide &amp; context tools</button></div> : null}
+        {activeTab === "audit" ? <div className="panel stack"><ContextStatusPanel status={contextStatus} {...(progress ? { progress } : {})} disabled={draftState.blocked || scanInFlight} onGenerate={generateContext} onCancel={() => send({ type: "cancel-scan" })} /></div> : null}
         {(activeTab === "audit" || activeTab === "report") && (
           <Overview
             auditOnly={activeTab === "audit"}
             reportOnly={activeTab === "report"}
+            cleanupCount={plans.filter((plan) => plan.risk !== "structural").reduce((count, plan) => count + plan.operations.length, 0)}
+            pageExclusions={<PageExclusions pages={bootstrap.data.pages} excluded={profile.excludedPageIds} disabled={scanInFlight || !bootstrap.data.canMutateDocument} dirty={draftState.dirty} onChange={(ids) => setProfile({ ...cloneProfile(profile), excludedPageIds: ids })} onConfirm={() => send({ type: "save-profile", profile })} />}
             excludedPageIds={profile.excludedPageIds}
             onCleanup={() => setActiveTab("cleanup")}
             report={report}
@@ -590,12 +593,13 @@ export function App() {
             recheckDisabled={draftState.blocked || scanInFlight}
             onScan={scan}
             onExport={(format) => send({ type: "export", format })}
-          />
-        )}
-        {activeTab === "report" ? <div className="report-sections" aria-label="Report detail"><button className="button" aria-expanded={reportSection === "issues"} onClick={() => setReportSection(reportSection === "issues" ? "summary" : "issues")}>Issues &amp; evidence</button><button className="button" aria-expanded={reportSection === "modules"} onClick={() => setReportSection(reportSection === "modules" ? "summary" : "modules")}>Modules</button><button className="button" aria-expanded={reportSection === "guidance"} onClick={() => setReportSection(reportSection === "guidance" ? "summary" : "guidance")}>Guidance</button></div> : null}
+          >
+
         {activeTab === "report" && (reportSection === "issues" || reportSection === "summary") && (
           <Findings
             findings={visibleFindings}
+            axes={report?.axes ?? []}
+            detailed={reportSection === "issues"}
             reviewState={issueReviewState}
             checkingKeys={checkingKeys}
             regenerationKeys={regenerationKeys}
@@ -657,6 +661,9 @@ export function App() {
             }}
           />
         )}
+          </Overview>
+        )}
+        {activeTab === "report" ? <div className="report-sections" aria-label="Report detail"><button className="button" aria-expanded={reportSection === "issues"} onClick={() => setReportSection(reportSection === "issues" ? "summary" : "issues")}>Issues &amp; evidence</button><button className="button" aria-expanded={reportSection === "modules"} onClick={() => setReportSection(reportSection === "modules" ? "summary" : "modules")}>Modules</button><button className="button" aria-expanded={reportSection === "guidance"} onClick={() => setReportSection(reportSection === "guidance" ? "summary" : "guidance")}>Guidance</button></div> : null}
         {activeTab === "report" && reportSection === "modules" && (
           <Modules
             report={report}

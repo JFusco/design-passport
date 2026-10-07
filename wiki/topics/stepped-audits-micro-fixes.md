@@ -10,6 +10,32 @@ The plugin follows Generate context → Run audit → View report → Address is
 
 The hero always uses the existing capped worst-module `report.grade`. Check again reads a bounded live closure, then recomputes all original target roots over staged evidence. There is no estimated score or independent award for Clear, waivers or supporting findings. Waived deductions remain in scoring.
 
+## Figma presentation fidelity
+
+The header and Audit/Report/Cleanup navigation form one sticky group before
+notices, saved results and progress. The header is 49px high; navigation uses
+Inter Semi Bold at 16px with 16px gaps, 24px page insets and Settings at the
+right. These values come from nodes `1:2`, `13:485`, `13:986` and `16:1112` in
+the supplied design. The file exposes no variable definitions, so its literal
+values are shared CSS tokens rather than invented Figma variable names.
+
+Report opens with one card containing target metadata, the 100px grade,
+deterministic summary, cleanup callout and collapsed category rows. Grade
+letters use Inter Black at 39.6px, with 16.6px score text and 4px corners.
+Filters, evidence, history/storage, verification and exports remain available
+through expandable controls. The reference's secondary gray buttons, exact
+palette, 8px cards and local assets apply across the plugin. This does not
+change grading, host authorization or saved-report evidence.
+
+The user's request for exact styling supersedes the earlier readable-metadata
+adjustment: reference footer text is 7px and inactive navigation opacity is
+40%. Axe identifies the two inactive navigation labels as a known text
+contrast exception. The browser check records those exact findings and fails
+on every other accessibility finding; this is not a blanket WCAG pass.
+
+See [issue 84](https://github.com/JFusco/design-passport/issues/84) and the
+[Figma fidelity journal](../journal/2026-10-07-figma-navigation-styles.md).
+
 ## Evidence and authority
 
 Confirmed `excludedPageIds` belong to profile v3 and are separate from page roles. Older live profiles normalize to no exclusions; historical packet profiles remain unchanged. Report v4 discloses exclusions and full-audit/micro-check provenance while readers retain versions 1–3. Excluded pages retain topology-only identities and remain watched. Required excluded component sources cannot silently become valid evidence.
