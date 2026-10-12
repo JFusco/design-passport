@@ -1,7 +1,7 @@
 ---
 pr: "https://github.com/jfusco/design-passport/pull/4"
-issue: "https://github.com/jfusco/design-passport/issues/3"
-issues: ["https://github.com/jfusco/design-passport/issues/3"]
+issue: 'https://github.com/jfusco/design-passport/issues/3'
+issues: ['https://github.com/jfusco/design-passport/issues/3']
 topics: []
 plans: []
 draft: github-reconciliation
