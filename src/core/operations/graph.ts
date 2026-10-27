@@ -9,6 +9,18 @@ export function isAuditTargetNodeType(type: string): type is AuditTargetNodeType
   return AUDIT_TARGET_NODE_TYPES.some((candidate) => candidate === type);
 }
 
+/** Follow ancestry as well as snapshot metadata, including partial cached graphs. */
+export function isConductorAuditExcluded(graph: Pick<DesignKnowledgeGraph, "nodes">, id: string): boolean {
+  const seen = new Set<string>();
+  let node = graph.nodes[id];
+  while (node && !seen.has(node.id)) {
+    seen.add(node.id);
+    if (node.conductorRole === "reference" || node.conductorRole === "wireframe") return true;
+    node = graph.nodes[node.parentId ?? ""];
+  }
+  return false;
+}
+
 export function collectDescendants(graph: Pick<DesignKnowledgeGraph, "nodes">, rootId: string): NodeSnapshot[] {
   const output: NodeSnapshot[] = [];
   const pending = [rootId];
@@ -18,7 +30,7 @@ export function collectDescendants(graph: Pick<DesignKnowledgeGraph, "nodes">, r
     if (!id || visited.has(id)) continue;
     visited.add(id);
     const node = graph.nodes[id];
-    if (!node) continue;
+    if (!node || isConductorAuditExcluded(graph, id)) continue;
     output.push(node);
     pending.push(...node.childIds.slice().reverse());
   }
@@ -65,6 +77,7 @@ export function populateGraphMetrics(nodes: Record<string, NodeSnapshot>): void 
       type: node.type,
       name: node.name.replace(/\s*\/\s*[^/]+\s*\/\s*\d+(?:\.\d+)?\s*$/i, ""),
       text: node.text?.contentHash,
+      conductorRole: node.conductorRole,
       children: node.childIds.filter((id) => nodes[id]?.evidenceRole !== "instance-descendant").map((id) => contentSignatures.get(id) ?? "missing"),
     });
     contentSignatures.set(node.id, node.contentSignature);
@@ -83,7 +96,7 @@ export function sourceFrameIds(
   ]);
   return Object.values(graph.nodes)
     .filter((node) => {
-      if (node.evidenceRole === "instance-descendant") return false;
+      if (node.evidenceRole === "instance-descendant" || isConductorAuditExcluded(graph, node.id)) return false;
       const parent = graph.nodes[node.parentId ?? ""];
       const topLevel = !parent || (parent.type === "SECTION" && !graph.nodes[parent.parentId ?? ""]);
       if (screenPages.has(node.pageId)) return topLevel && ["FRAME", "COMPONENT", "COMPONENT_SET"].includes(node.type);
@@ -156,16 +169,16 @@ export function resolveTargetRoots(
     const requestedNodeIds = [...new Set(selectionIds)];
     const rootIds = requestedNodeIds.flatMap((id) => {
       const node = graph.nodes[id];
-      if (!node || !isAuditTargetNodeType(node.type)) return [];
+      if (!node || !isAuditTargetNodeType(node.type) || isConductorAuditExcluded(graph, id)) return [];
       const page = graph.pages.find((candidate) => candidate.id === node.pageId);
       if (page?.role !== "components" || node.type !== "FRAME" || node.sourceMarked) return [id];
       return nestedComponentSources(graph, id);
     });
-    const uniqueRoots = [...new Set(rootIds)];
+    const uniqueRoots = [...new Set(rootIds)].filter((id) => !isConductorAuditExcluded(graph, id));
     const excludedNodeIds = requestedNodeIds.filter((id) => !uniqueRoots.includes(id));
     return { rootIds: uniqueRoots, mode: excludedNodeIds.length > 0 ? "component-sources" : "exact", requestedNodeIds, excludedNodeIds };
   }
-  if (scope === "file") return { rootIds: [...new Set(graph.sourceFrameIds)], mode: "exact", requestedNodeIds: [], excludedNodeIds: [] };
+  if (scope === "file") return { rootIds: [...new Set(graph.sourceFrameIds)].filter((id) => !isConductorAuditExcluded(graph, id)), mode: "exact", requestedNodeIds: [], excludedNodeIds: [] };
   const page = graph.pages.find((candidate) => candidate.id === currentPageId);
   const rootIds = page?.role === "components"
     ? graph.sourceFrameIds.filter((id) => graph.nodes[id]?.pageId === currentPageId)
@@ -179,5 +192,5 @@ export function resolveTargetRoots(
     });
     return [];
   });
-  return { rootIds: [...new Set(rootIds)], mode: "exact", requestedNodeIds: [], excludedNodeIds: [] };
+  return { rootIds: [...new Set(rootIds)].filter((id) => !isConductorAuditExcluded(graph, id)), mode: "exact", requestedNodeIds: [], excludedNodeIds: [] };
 }

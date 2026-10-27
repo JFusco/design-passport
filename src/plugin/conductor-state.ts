@@ -1,0 +1,22 @@
+/** Presentation only. Bearer credentials and pairing proofs never cross to the UI. */
+export interface ConductorPresentation {
+  state: "offline" | "pairing" | "connected" | "unavailable" | "error";
+  message: string;
+  environments: { id: string; label: string }[];
+  submission?: {
+    componentName: string; frames: { id: string; name: string }[]; message: string;
+    annotations: { id: string; text: string }[]; transitions: { id: string; label: string }[];
+  };
+  userCode?: string;
+  destination?: { project: string; deliverable: string; component?: string };
+  jobs: { id: string; name: string; device: string; state: string; canApply: boolean }[];
+}
+export type ConductorCommand =
+  | { type: "conductor-open" }
+  | { type: "conductor-offline" }
+  | { type: "conductor-connect"; environment: string }
+  | { type: "conductor-disconnect" }
+  | { type: "conductor-refresh" }
+  | { type: "conductor-inspect-selection" }
+  | { type: "conductor-submit"; message: string; annotationIds: string[]; transitionId: string }
+  | { type: "conductor-apply"; jobId: string };

@@ -354,6 +354,7 @@ export interface NodeSnapshot {
   descendantCount: number;
   /** Rendered occurrence evidence; its inherited source debt is evaluated at the definition. */
   evidenceRole?: "instance-descendant";
+  conductorRole?: "reference" | "wireframe" | "design";
   owningInstanceId?: string;
   /** Live override evidence from the owning component instance. */
   instanceEvidence?: {

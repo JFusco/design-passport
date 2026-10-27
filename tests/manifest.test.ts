@@ -10,7 +10,12 @@ describe("Figma manifest", () => {
     expect(manifest.documentAccess).toBe("dynamic-page");
     expect(manifest.permissions).toEqual(["teamlibrary"]);
     expect(manifest.enablePrivatePluginApi).toBe(true);
-    expect(manifest.networkAccess).toEqual({ allowedDomains: ["none"] });
+    expect(manifest.networkAccess.allowedDomains).toEqual([
+      "https://conductor.verndale.com",
+      "https://ca-cumulative-os-shell.redhill-26044d68.eastus2.azurecontainerapps.io",
+    ]);
+    expect(manifest.networkAccess.devAllowedDomains).toEqual(["http://localhost:3109"]);
+    expect(manifest.networkAccess.allowedDomains.every((origin) => new URL(origin).protocol === "https:" && !origin.includes("*"))).toBe(true);
   });
 
   it("declares no retired relaunch controls", () => {

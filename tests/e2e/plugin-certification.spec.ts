@@ -169,6 +169,8 @@ test("shows checking, preserves the score on fallback and retains a resolved row
 });
 
 test("keeps Figma navigation above notices and pinned on every destination", async ({ page }) => {
+  // Four destinations and settings at three widths include screenshot checks.
+  test.setTimeout(60_000);
   await mount(page, true);
   await deliver(page, { type: "saved-audits", activeId: "audit:fixture", audits: [{ id: "audit:fixture", label: "Hero / Desktop / 1440", target: { scope: "selection", nodeIds: ["root:desktop"] }, generatedAt: "2026-10-07T12:00:00.000Z", grade: { letter: "A", score: 97.4 }, lastViewedAt: "2026-10-07T12:00:00.000Z" }] });
   for (const width of [320, 456, 500]) {
@@ -186,7 +188,7 @@ test("keeps Figma navigation above notices and pinned on every destination", asy
       });
       expect(geometry).toEqual({ headerTop: 0, headerHeight: 49, navTop: 49, navBottom: 105, navigationBeforeNotices: true, navigationBeforeHistory: true, overflow: false });
     };
-    for (const destination of ["Audit", "Report", "Cleanup"]) {
+    for (const destination of ["Audit", "Report", "Cleanup", "Conductor"]) {
       await page.getByRole("button", { name: destination, exact: true }).click();
       if (destination === "Audit") {
         await expect(page.getByRole("heading", { name: "Saved Audit Results", exact: true })).toBeVisible();
@@ -219,7 +221,7 @@ test("keeps Figma navigation above notices and pinned on every destination", asy
     await expect(page.getByRole("img", { name: "Grade A, 97.40 out of 100", exact: true })).toBeVisible();
     expect(await page.locator(".issue-category[open]").count()).toBe(0);
     expect(await page.locator(".passport-brand").evaluate((node) => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height }))).toEqual({ width: 16, height: 16 });
-    expect(await page.locator(".tab-links button").first().evaluate((node) => ({ font: getComputedStyle(node).fontSize, weight: getComputedStyle(node).fontWeight, opacity: getComputedStyle(node).opacity }))).toEqual({ font: "16px", weight: "600", opacity: "0.4" });
+    expect(await page.locator(".tab-links button").first().evaluate((node) => ({ font: getComputedStyle(node).fontSize, weight: getComputedStyle(node).fontWeight, opacity: getComputedStyle(node).opacity }))).toEqual({ font: width <= 390 ? "14px" : "16px", weight: "600", opacity: "0.4" });
     const grade = await page.locator(".grade").evaluate((node) => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height, radius: getComputedStyle(node).borderRadius }));
     expect(grade.width).toBeCloseTo(100, 2);
     expect(grade.height).toBeCloseTo(100, 2);
@@ -250,12 +252,15 @@ test("opts a whole cleanup plan out and disables an empty batch", async ({ page 
 });
 
 test("matches the Figma dark layout at 320, 456 and 500px with keyboard focus", async ({ page }) => {
+  // Three viewport audits include accessibility scans and screenshot capture.
+  test.setTimeout(60_000);
   await mount(page);
   const { default: AxeBuilder } = await import("@axe-core/playwright");
   for (const width of [320, 456, 500]) {
     await page.setViewportSize({ width, height: 720 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     expect((await page.locator(".hero-summary").innerText()).length).toBeLessThanOrEqual(120);
+    await page.mouse.move(width - 1, 719);
     const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
     expect(await page.locator(".axis-score").first().evaluate((node) => ({ color: getComputedStyle(node).color, background: getComputedStyle(node).backgroundColor }))).toEqual({ color: "rgb(255, 255, 255)", background: "rgb(51, 150, 23)" });
     // Exact Figma styles retain its 40% inactive labels and white 9px scores.
@@ -264,19 +269,25 @@ test("matches the Figma dark layout at 320, 456 and 500px with keyboard focus", 
       ["button[aria-label=\"Audit\"]"], ["button[aria-label=\"Cleanup\"]"],
       ...Array.from({ length: 8 }, (_, index) => [`.issue-category:nth-child(${index + 1}) > summary > span > .axis-score.score-good`]),
     ];
-    expect(accessibility.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target) }))).toEqual([
-      { id: "color-contrast", targets: referenceContrastTargets },
-    ]);
+    // Known reference contrast exceptions may disappear at a smaller size;
+    // reject every new violation without requiring old failures to reproduce.
+    for (const violation of accessibility.violations) {
+      expect(violation.id).toBe("color-contrast");
+      for (const node of violation.nodes) expect(referenceContrastTargets).toContainEqual(node.target);
+    }
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: join(visualArtifacts, `design-passport-88-report-${width}.png`), fullPage: true });
     for (const summary of await page.locator(".issue-category > summary").all()) await summary.click();
     await page.locator(".finding-summary").first().click();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.mouse.move(width - 1, 719);
     const expandedAccessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
     expect(await page.locator(".axis-score").first().evaluate((node) => ({ color: getComputedStyle(node).color, background: getComputedStyle(node).backgroundColor }))).toEqual({ color: "rgb(255, 255, 255)", background: "rgb(51, 150, 23)" });
-    expect(expandedAccessibility.violations.map((violation) => ({ id: violation.id, targets: violation.nodes.map((node) => node.target) }))).toEqual([
-      { id: "color-contrast", targets: referenceContrastTargets.map((target) => target.map((selector) => selector.replace(".issue-category", ".issue-category[open=\"\"]"))) },
-    ]);
+    const expandedReferenceTargets = referenceContrastTargets.map((target) => target.map((selector) => selector.replace(".issue-category", ".issue-category[open=\"\"]")));
+    for (const violation of expandedAccessibility.violations) {
+      expect(violation.id).toBe("color-contrast");
+      for (const node of violation.nodes) expect(expandedReferenceTargets).toContainEqual(node.target);
+    }
     const assets = await page.locator(".chevron, .node-link img, .issue-category > summary img").evaluateAll((nodes) => nodes.filter((node) => node.getBoundingClientRect().width > 0).map((node) => ({ slot: node.className || "link", width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })));
     for (const asset of assets) {
       const size = asset.slot === "link" ? 16 : 8;
@@ -291,6 +302,8 @@ test("matches the Figma dark layout at 320, 456 and 500px with keyboard focus", 
   await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "light" });
   expect(await page.locator("html").evaluate((node) => getComputedStyle(node).colorScheme)).toBe("dark");
   await page.getByRole("button", { name: "Cleanup", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Conductor", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Settings", exact: true })).toBeFocused();
   expect(await page.getByRole("button", { name: "Settings", exact: true }).evaluate((node) => getComputedStyle(node).outlineStyle)).toBe("solid");

@@ -1,3 +1,4 @@
+import type { ConductorCommand, ConductorPresentation } from "./conductor-state";
 import type { IssueReviewState } from "./issue-review";
 import type { BootstrapData, SelectionSummary, VariableCollectionOption } from "../figma/adapter";
 import type { AuditSaveStatus, AuditViewState, SavedAuditSummary, SavedAuditV1 } from "./audit-state";
@@ -96,7 +97,7 @@ export interface AuditResultData {
   waivers?: import("../core/waivers").WaiverStore;
 }
 
-export type UiToPluginMessage =
+export type UiToPluginMessage = ConductorCommand
   | { type: "initialize" }
   | { type: "generate-context"; regenerate: boolean }
   | { type: "clear-issue"; auditId?: string; reportHash: string; keys: string[] }
@@ -135,7 +136,7 @@ export type UiToPluginMessage =
     rawValue: JsonValue;
   };
 
-export type PluginToUiMessage =
+export type PluginToUiMessage = { type: "conductor-state"; state: ConductorPresentation }
   | { type: "bootstrap"; data: BootstrapData; rulesetVersion: string; catalogVersion: string; catalogDigest: string }
   | { type: "waivers-result"; waivers: import("../core/waivers").WaiverStore }
   | { type: "collections-result"; collections: VariableCollectionOption[] }
