@@ -1,9 +1,10 @@
+import { submissionStatusMessage } from "./conductor-submission-status";
 import { readConductorSelection } from "../figma/conductor-selection";
 import { parseDesignSubmission, type DesignSubmission, type SubmissionResult } from "../core/conductor-contracts";
 import { assertContractVersion, WORKSPACE_LIMITS, type CanvasJob, type WorkspaceLease, type WorkspaceReceipt } from "../core/conductor-contracts";
 import { CONDUCTOR_ENVIRONMENTS } from "./conductor-environments";
 import type { ConductorCommand, ConductorPresentation } from "./conductor-state";
-import { ConductorTransport, type ConductorCredentials } from "./conductor-transport";
+import { ConductorAuthorizationError, ConductorRequestTimeoutError, ConductorTransport, type ConductorCredentials } from "./conductor-transport";
 
 interface ContextResponse {
   contractVersion: string; enabled: boolean; destination: { project: string; deliverable: string };
@@ -25,7 +26,12 @@ export function createConductorController(deps: {
   let submissionSelection: { selection: ReturnType<typeof readConductorSelection>; context: { componentId: string; componentName: string; connectionVersion: number; frames: DesignSubmission["frames"]; workflow: { version: number; transitions: { id: string; label: string }[] } } } | undefined;
   const draftKey = (token: ConductorCredentials, fileKey: string) => `conductor-draft-v1:${token.origin}:${token.ownerUserId}:${fileKey}`;
   const newRequestId = () => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => { const random = Math.floor(Math.random() * 16); return (char === "x" ? random : (random & 3) | 8).toString(16); });
-  const present = (state: ConductorPresentation["state"], message: string, rest: Partial<ConductorPresentation> = {}) => deps.post({ state, message, environments, jobs: [], ...rest });
+  let presentation: ConductorPresentation = { state: "offline", message: "Connect to Conductor to prepare a workspace.", environments, jobs: [] };
+  let busy: ConductorPresentation["busy"];
+  const present = (state: ConductorPresentation["state"], message: string, rest: Partial<ConductorPresentation> = {}) => {
+    presentation = { state, message, environments, jobs: state === "connected" ? presentation.jobs : [], ...(state === "connected" && presentation.destination ? { destination: presentation.destination } : {}), ...rest };
+    deps.post({ ...presentation, ...(busy ? { busy } : {}) });
+  };
   const stop = () => { submissionSelection = undefined; active = false; epoch++; if (timer !== undefined) clearTimeout(timer); timer = undefined; transport.stop(); };
   const requireCredentials = () => {
     if (!active || !credentials || Date.parse(credentials.expiresAt) <= Date.now()) throw new Error("Connect to Conductor again; your connection expired or is offline");
@@ -45,8 +51,7 @@ export function createConductorController(deps: {
     if (typeof requestId === "string" && /^[a-f0-9-]{36}$/i.test(requestId)) {
       const status = await transport.request(token.origin, `/api/figma-plugin/v1/submissions/${encodeURIComponent(requestId)}`, { token: token.token }) as SubmissionResult;
       if (!active || generation !== epoch) return;
-      message = `Last design submission saved. Workflow: ${status.transition === "not_requested" ? "not requested" : status.transition}. Notification: ${status.notification}.`;
-      if (status.warnings?.length) message += ` ${status.warnings.join(" ")}`;
+      message = submissionStatusMessage(status);
     }
     present("connected", message, { destination: context.destination, jobs: context.jobs });
   };
@@ -66,11 +71,23 @@ export function createConductorController(deps: {
       if (result.state !== "pending") throw new Error("Connection expired or was already redeemed. Start a new connection.");
       present("pairing", "Approve this connection in your browser, then return here.", { userCode });
       timer = setTimeout(() => { void poll(origin, id, proof, deadline, generation, userCode); }, WORKSPACE_LIMITS.pollMs);
-    } catch (error) { if (active && generation === epoch) present("error", error instanceof Error ? error.message : "Conductor connection failed. Try connecting again."); }
+    } catch (error) {
+      if (!active || generation !== epoch) return;
+      if (error instanceof ConductorRequestTimeoutError && Date.now() < deadline) {
+        present("pairing", "Conductor is taking longer to respond. Still waiting for browser approval.", { userCode });
+        timer = setTimeout(() => { void poll(origin, id, proof, deadline, generation, userCode); }, WORKSPACE_LIMITS.pollMs);
+      } else present("error", error instanceof Error ? error.message : "Conductor connection failed. Try connecting again.");
+    }
   };
   return {
     stop,
     async handle(command: ConductorCommand) {
+      if (busy && command.type !== "conductor-offline" && command.type !== "conductor-disconnect") return;
+      const activities: Partial<Record<ConductorCommand["type"], NonNullable<ConductorPresentation["busy"]>>> = {
+        "conductor-connect": "connecting", "conductor-refresh": "refreshing", "conductor-inspect-selection": "inspecting", "conductor-submit": "submitting", "conductor-apply": "preparing",
+      };
+      busy = activities[command.type];
+      if (busy) deps.post({ ...presentation, busy, hasError: false });
       try {
         if (command.type === "conductor-offline") { stop(); return; }
         if (command.type === "conductor-open") {
@@ -106,7 +123,13 @@ export function createConductorController(deps: {
         }
         if (command.type === "conductor-inspect-selection") {
           const token = requireCredentials(); const generation = epoch;
-          const selection = readConductorSelection();
+          let selection: ReturnType<typeof readConductorSelection>;
+          try { selection = readConductorSelection(); }
+          catch (error) {
+            submissionSelection = undefined;
+            present("connected", error instanceof Error ? error.message : "Select a Design frame or annotated layer, then try again.", { hasError: true });
+            return;
+          }
           const query = `fileKey=${encodeURIComponent(selection.fileKey)}&${selection.frames.map((frame) => `nodeId=${encodeURIComponent(frame.id)}`).join("&")}`;
           const context = await transport.request(token.origin, `/api/figma-plugin/v1/submissions/context?${query}`, { token: token.token }) as NonNullable<typeof submissionSelection>["context"];
           if (generation !== epoch || !active) return;
@@ -145,7 +168,7 @@ export function createConductorController(deps: {
             if (typeof result.commentId !== "string" || !Array.isArray(result.variantIds)) throw new Error("Submission acknowledgement is incomplete; retry to check its saved state");
             await figma.clientStorage.setAsync(`${key}:receipt`, pending.submissionId);
             await figma.clientStorage.deleteAsync(key); submissionSelection = undefined;
-            present("connected", result.transition === "refused" ? "Saved; transition not applied. Review the workflow in Conductor." : result.transition === "pending" ? "Design and notes saved. The workflow action and notification are pending." : "Design and selected notes saved. Notification delivery is pending.");
+            present("connected", submissionStatusMessage(result));
           } finally { submitting = false; }
           return;
         }
@@ -174,7 +197,13 @@ export function createConductorController(deps: {
           }
           } finally { release(); }
         }
-      } catch (error) { if (active) present("error", error instanceof Error ? error.message : "Conductor is unavailable. Offline audits remain available."); }
+      } catch (error) {
+        if (active) {
+          const message = error instanceof Error ? error.message : "Conductor is unavailable. Your design is retained; try again.";
+          const recoverable = credentials && Date.parse(credentials.expiresAt) > Date.now() && !(error instanceof ConductorAuthorizationError);
+          present(recoverable ? "connected" : "error", message, { ...(recoverable ? { jobs: presentation.jobs, ...(presentation.destination ? { destination: presentation.destination } : {}), ...(presentation.submission ? { submission: presentation.submission } : {}) } : {}), hasError: true });
+        }
+      } finally { busy = undefined; deps.post(presentation); }
     },
   };
 }

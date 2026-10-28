@@ -94,15 +94,35 @@ export async function applyConductorWorkspace(job: CanvasJob, lease: WorkspaceLe
         : instruction.kind === "container" || instruction.kind === "control" ? figma.createFrame() : figma.createRectangle();
       stampConductorBinding(node, identity("wireframe", instruction.id)); owner.appendChild(node);
       node.name = instruction.name; node.resize(instruction.width, instruction.height); node.x = instruction.x; node.y = instruction.y;
-      if (node.type === "TEXT") { node.fontName = { family: "Inter", style: "Regular" }; node.fontSize = 14; node.characters = instruction.text ?? ""; node.textAutoResize = "NONE"; }
-      else { node.fills = [{ type: "SOLID", color: { r: .92, g: .92, b: .92 } }]; }
+      if (node.type === "TEXT") { node.fontName = { family: "Inter", style: "Regular" }; node.fontSize = instruction.fontSize ?? 14; node.lineHeight = { unit: "PERCENT", value: 125 }; node.fills = [{ type: "SOLID", color: { r: .12, g: .12, b: .12 } }]; node.characters = instruction.text ?? ""; node.textAutoResize = "NONE"; }
+      else {
+        node.fills = instruction.kind === "container" ? [] : [{ type: "SOLID", color: { r: .9, g: .9, b: .9 } }];
+        if (instruction.kind === "image" || instruction.kind === "control") {
+          node.strokes = [{ type: "SOLID", color: { r: .45, g: .45, b: .45 } }];
+          node.strokeWeight = 1;
+          if (instruction.kind === "image") node.dashPattern = [8, 6];
+        }
+      }
       if (node.type === "FRAME") {
-        if (instruction.layout) { node.layoutMode = instruction.layout === "vertical" ? "VERTICAL" : "HORIZONTAL"; node.primaryAxisSizingMode = "FIXED"; node.counterAxisSizingMode = "FIXED"; node.itemSpacing = 8; }
+        if (instruction.layout) { node.layoutMode = instruction.layout === "vertical" ? "VERTICAL" : "HORIZONTAL"; node.primaryAxisSizingMode = "FIXED"; node.counterAxisSizingMode = "FIXED"; node.itemSpacing = instruction.gap ?? 8;
+          node.paddingTop = node.paddingRight = node.paddingBottom = node.paddingLeft = instruction.padding ?? 0;
+        }
+        if (instruction.kind === "control") {
+          node.layoutMode = "HORIZONTAL";
+          node.primaryAxisSizingMode = "FIXED"; node.counterAxisSizingMode = "FIXED";
+          node.primaryAxisAlignItems = "CENTER"; node.counterAxisAlignItems = "CENTER";
+          node.paddingLeft = node.paddingRight = 16;
+          node.paddingTop = node.paddingBottom = 12;
+        }
         for (const child of instruction.children ?? []) await render(child, node);
         if (instruction.kind === "control" && instruction.text) {
           const label = figma.createText(); stampConductorBinding(label, identity("wireframe", `${instruction.id}:label`)); node.appendChild(label);
-          label.fontName = { family: "Inter", style: "Regular" }; label.fontSize = 14; label.characters = instruction.text;
-          label.x = 8; label.y = 8;
+          label.fontName = { family: "Inter", style: "Regular" }; label.fontSize = instruction.fontSize ?? 14; label.lineHeight = { unit: "PERCENT", value: 125 }; label.characters = instruction.text;
+          label.fills = [{ type: "SOLID", color: { r: .12, g: .12, b: .12 } }];
+          label.resize(Math.max(1, instruction.width - 32), Math.max(1, instruction.height - 24));
+          label.textAutoResize = "NONE";
+          label.textAlignHorizontal = "CENTER"; label.textAlignVertical = "CENTER";
+          label.x = 16; label.y = 12;
         }
       }
     };
@@ -113,6 +133,12 @@ export async function applyConductorWorkspace(job: CanvasJob, lease: WorkspaceLe
   await checkpoint();
   parent.resizeWithoutConstraints(Math.max(parent.width, instructions.width * 3 + 144), Math.max(parent.height, 80 + job.revision * (instructions.height + 80)));
   figma.commitUndo();
+  // Reveal the real output after all guarded writes; never alter the Design frame.
+  const page = parent.parent;
+  if (page?.type === "PAGE") {
+    await figma.setCurrentPageAsync(page);
+    figma.viewport.scrollAndZoomIntoView([wireframe ?? design]);
+  }
   return { jobItemId: job.id, connectionVersion: job.connectionVersion, epoch: lease.epoch, fileKey: job.fileKey,
     instructionDigest: job.instructionDigest, sectionNodeId: parent.id, referenceNodeId: reference.id, designNodeId: design.id,
     ...(wireframe ? { wireframeNodeId: wireframe.id } : {}), warnings };

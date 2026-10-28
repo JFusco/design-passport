@@ -2,6 +2,8 @@
 export interface ConductorPresentation {
   state: "offline" | "pairing" | "connected" | "unavailable" | "error";
   message: string;
+  busy?: "connecting" | "refreshing" | "inspecting" | "submitting" | "preparing";
+  hasError?: boolean;
   environments: { id: string; label: string }[];
   submission?: {
     componentName: string; frames: { id: string; name: string }[]; message: string;

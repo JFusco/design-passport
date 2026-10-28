@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ConductorTransport } from "../src/plugin/conductor-transport";
+afterEach(() => { vi.useRealTimers(); });
 const origin = "https://conductor.example";
 const environments = [{ id: "test", label: "Test", origin }];
 describe("Conductor transport boundary", () => {
@@ -42,4 +43,21 @@ describe("Conductor transport boundary", () => {
     await expect(transport.request(origin, "/api/figma-plugin/v1/context")).rejects.toThrow("limits");
     await expect(transport.request(origin, "/api/figma-plugin/v1/job-items/1/screenshot", { binary: true })).rejects.toThrow("type");
   });
+});
+
+it.each([["https://conductor.example", 30_000], ["http://localhost:3109", 120_000]] as const)("bounds requests to %s", async (host, deadline) => {
+  vi.useFakeTimers();
+  const transport = new ConductorTransport([{ id: "test", label: "Test", origin: host }], () => new Promise(() => {})); transport.open();
+  let settled = false;
+  const pending = transport.request(host, "/api/figma-plugin/v1/context").catch((error) => { settled = true; return error; });
+  await vi.advanceTimersByTimeAsync(deadline - 1); expect(settled).toBe(false);
+  await vi.advanceTimersByTimeAsync(1); await expect(pending).resolves.toMatchObject({ name: "ConductorRequestTimeoutError" });
+});
+it("allows a cold local route to complete after the hosted deadline", async () => {
+  vi.useFakeTimers(); let finish!: (response: Response) => void;
+  const host = "http://localhost:3109";
+  const transport = new ConductorTransport([{ id: "local", label: "Local", origin: host }], () => new Promise((resolve) => { finish = resolve; })); transport.open();
+  const pending = transport.request(host, "/api/figma-plugin/v1/context");
+  await vi.advanceTimersByTimeAsync(60_000); finish(Response.json({ enabled: true }));
+  expect(await pending).toEqual({ enabled: true });
 });

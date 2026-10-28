@@ -20,7 +20,7 @@ class NativeNode {
 function harness() {
   let next = 0; const root = new NativeNode("DOCUMENT", next++); const initial = new NativeNode("PAGE", next++); root.appendChild(initial);
   const create = (type: string) => { const node = new NativeNode(type, next++); initial.appendChild(node); return node; };
-  const api = { fileKey: "file", editorType: "figma", mode: "default", root, loadAllPagesAsync: async () => {}, loadFontAsync: async () => {}, createImage: () => ({ hash: "image", getSizeAsync: async () => ({ width: 390, height: 844 }) }),
+  const api = { fileKey: "file", editorType: "figma", mode: "default", root, setCurrentPageAsync: vi.fn(async () => {}), viewport: { scrollAndZoomIntoView: vi.fn() }, loadAllPagesAsync: async () => {}, loadFontAsync: async () => {}, createImage: () => ({ hash: "image", getSizeAsync: async () => ({ width: 390, height: 844 }) }),
     createPage: () => { const page = new NativeNode("PAGE", next++); root.appendChild(page); return page; }, createSection: () => create("SECTION"), createFrame: () => create("FRAME"), createText: () => create("TEXT"), createRectangle: () => create("RECTANGLE"), commitUndo: vi.fn() };
   vi.stubGlobal("figma", api);
   return { api, root, create, all: () => root.findAll(() => true) };
@@ -41,6 +41,22 @@ describe("native workspace mutation and recovery", () => {
     expect(fixture.all().find((node) => node.name === "Heading")?.type).toBe("TEXT");
     expect(await applyConductorWorkspace(job(), lease, screenshot, deps())).toMatchObject({ sectionNodeId: first.sectionNodeId, designNodeId: first.designNodeId });
     expect(fixture.all()).toHaveLength(count);
+  });
+  it("preserves hierarchy, padded groups and legible controls instead of uniform gray boxes", async () => {
+    const fixture = harness(); const input = job();
+    input.instructions.nodes = [{ id: "copy", kind: "container", name: "Hero copy", x: 16, y: 16, width: 358, height: 300, layout: "vertical", padding: 24, gap: 24, children: [
+      { id: "title", kind: "text", name: "Hero title", x: 0, y: 0, width: 300, height: 100, fontSize: 40, text: "Find your next trail" },
+      { id: "cta", kind: "control", name: "Explore journeys", x: 0, y: 0, width: 220, height: 48, fontSize: 16, text: "Explore journeys" },
+    ] }, { id: "image", kind: "image", name: "Hero image", x: 16, y: 340, width: 358, height: 200 }];
+    input.instructionDigest = instructionDigest(input.instructions);
+    const receipt = await applyConductorWorkspace(input, lease, screenshot, deps());
+    expect(fixture.all().find(node => node.name === "Hero copy")).toMatchObject({ paddingLeft: 24, paddingRight: 24, itemSpacing: 24, fills: [] });
+    expect(fixture.all().find(node => node.name === "Hero title")).toMatchObject({ fontSize: 40, lineHeight: { unit: "PERCENT", value: 125 } });
+    expect(fixture.all().find(node => node.name === "Explore journeys")).toMatchObject({ layoutMode: "HORIZONTAL", paddingLeft: 16, paddingRight: 16, paddingTop: 12, paddingBottom: 12, primaryAxisAlignItems: "CENTER" });
+    expect(fixture.all().find(node => node.type === "TEXT" && node.parent?.name === "Explore journeys")).toMatchObject({ fontSize: 16, x: 16, y: 12, width: 188, height: 24 });
+    expect(fixture.all().find(node => node.name === "Hero image")).toMatchObject({ dashPattern: [8, 6], strokeWeight: 1 });
+    expect(fixture.api.setCurrentPageAsync).toHaveBeenCalled();
+    expect(fixture.api.viewport.scrollAndZoomIntoView).toHaveBeenCalledWith([fixture.all().find(node => node.id === receipt.wireframeNodeId)]);
   });
   it("adds a revision while preserving designer edits and reusing the unchanged reference", async () => {
     const fixture = harness(); const first = await applyConductorWorkspace(job(), lease, screenshot, deps());

@@ -58,6 +58,10 @@ export interface NativeInstruction {
   height: number;
   text?: string;
   layout?: "vertical" | "horizontal";
+  /** Bounded presentation values for native wireframes, not executable styles. */
+  fontSize?: number;
+  padding?: number;
+  gap?: number;
   children?: NativeInstruction[];
 }
 export interface CanvasInstructions {
@@ -210,7 +214,21 @@ export function parseCanvasInstructions(value: unknown): CanvasInstructions {
     if (++count > WORKSPACE_LIMITS.nodes || depth > WORKSPACE_LIMITS.depth)
       throw new Error("Native node budget exceeded");
     const node = object(value);
-    keys(node, ["id", "kind", "name", "x", "y", "width", "height", "text", "layout", "children"]);
+    keys(node, [
+      "id",
+      "kind",
+      "name",
+      "x",
+      "y",
+      "width",
+      "height",
+      "text",
+      "layout",
+      "fontSize",
+      "padding",
+      "gap",
+      "children",
+    ]);
     const id = text(node.id);
     if (ids.has(id)) throw new Error("Duplicate element identity");
     ids.add(id);
@@ -249,6 +267,22 @@ export function parseCanvasInstructions(value: unknown): CanvasInstructions {
       if (node.kind !== "container" || !["vertical", "horizontal"].includes(String(node.layout)))
         throw new Error("Invalid layout");
       result.layout = node.layout as "vertical" | "horizontal";
+    }
+    for (const field of ["fontSize", "padding", "gap"] as const) {
+      if (node[field] === undefined) continue;
+      const value = node[field];
+      const isText = node.kind === "text" || node.kind === "control";
+      if (
+        (field === "fontSize" ? !isText : node.kind !== "container" || !node.layout) ||
+        typeof value !== "number" ||
+        !Number.isFinite(value) ||
+        value < (field === "fontSize" ? 10 : 0) ||
+        value > (field === "fontSize" ? 96 : 128)
+      )
+        throw new Error("Invalid native presentation");
+      if (field === "padding" && value * 2 >= Math.min(result.width, result.height))
+        throw new Error("Padding exceeds container dimensions");
+      result[field] = value;
     }
     if (node.children !== undefined) {
       if (node.kind !== "container" || !Array.isArray(node.children))

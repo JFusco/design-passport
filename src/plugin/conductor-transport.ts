@@ -3,6 +3,13 @@ import { WORKSPACE_LIMITS, utf8Bytes } from "../core/conductor-contracts";
 export interface ConductorCredentials { origin: string; token: string; ownerUserId: string; expiresAt: string; }
 export interface ConductorEnvironment { id: string; label: string; origin: string; }
 
+/** A bounded request may time out while the same pairing is still pending. */
+export class ConductorRequestTimeoutError extends Error {
+  constructor() { super("Conductor request timed out; refresh to check saved progress"); this.name = "ConductorRequestTimeoutError"; }
+}
+
+export class ConductorAuthorizationError extends Error {}
+
 /** Fixed origins only. Credentials never enter presentation state or shared data. */
 export class ConductorTransport {
   private generation = 0;
@@ -21,6 +28,8 @@ export class ConductorTransport {
     if (/[\u0000-\u0020]/.test(path) || !/^https?:\/\/[^/]+$/.test(origin)) throw new Error("Invalid Conductor destination");
     const destination = `${origin}${path}`;
     const generation = this.generation;
+    // The fixed development origin may compile a route on its first request.
+    const requestTimeoutMs = origin === "http://localhost:3109" ? 120_000 : 30_000;
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const work = (async () => {
@@ -30,7 +39,7 @@ export class ConductorTransport {
       if (!this.enabled || generation !== this.generation) throw new Error("Conductor connection stopped");
       if (response.redirected || (response.url && !response.url.startsWith(`${origin}/`))) throw new Error("Conductor redirect refused");
       if (!response.ok) {
-        if (response.status === 401) throw new Error("Your Conductor connection expired or was revoked. Connect again.");
+        if (response.status === 401) throw new ConductorAuthorizationError("Your Conductor connection expired or was revoked. Connect again.");
         if (response.status === 409) throw new Error("This workspace changed. Refresh before continuing.");
         if (response.status === 429) throw new Error("Conductor is busy. Wait before refreshing.");
         throw new Error("Conductor is unavailable. Your design and offline audits are retained.");
@@ -54,7 +63,7 @@ export class ConductorTransport {
       if (utf8Bytes(raw) > cap) throw new Error("Conductor response exceeds limits");
       return JSON.parse(raw) as unknown;
       })();
-      return await Promise.race([work, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error("Conductor request timed out; refresh to check saved progress")), 30_000); })]);
+      return await Promise.race([work, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new ConductorRequestTimeoutError()), requestTimeoutMs); })]);
     } finally { if (timer !== undefined) clearTimeout(timer); }
   }
 }
