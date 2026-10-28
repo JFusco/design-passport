@@ -50,3 +50,11 @@ The live r1 output exposed flattened 14px typography and clipped 1px controls. T
 ## Companion follow-up
 
 Move selected companion audit/history and human-gated knowledge workflows into native Conductor in a separate issue. Preserve original Supabase and local history until verified exports, scope mapping, completeness and recovery checks pass. Keep grading in the plugin, immutable evidence and decisions distinct, and shared publication subject to an explicit human decision. Existing Code Connect mappings must retain actual implementation provenance.
+
+## Send an existing frame to a chosen component
+
+The independent-frame handoff is tracked in [issue 96](https://github.com/JFusco/design-passport/issues/96). It requires one saved Figma Design frame outside a Conductor-bound workspace. Choose **Send existing frame to Conductor**, then an accessible project, deliverable and feature/component. Project membership and the existing plugin policy are checked server-side; an organization administrator can choose projects across that organization. Search narrows bounded destination lists.
+
+The design/variant name starts with the frame name and remains editable. Choose **Default appearance** or **Named variant** independently of the name. Only configured project device targets are offered. The actual Figma width must equal the configured width exactly; no custom width, rounding or automatic resizing is used. A second default for the same component and device target is refused; use a uniquely named variant instead. Existing designs remain unchanged.
+
+A separate confirmation lists the full destination, Design tab, source frame, saved name, appearance, configured breakpoint, message and checked frame annotations. Only confirmation saves. A transaction writes a new design variant, Design discussion entry and immutable annotation evidence. It uses the existing preview and evidence processing and requests no workflow transition. The handoff does not establish approval or enable continuous synchronization. Uncertain saves retain their original request and variant identities for acknowledgement retries, including after the plugin is restarted. Bound Design frames continue using their existing destination flow.

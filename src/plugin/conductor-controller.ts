@@ -1,3 +1,4 @@
+import { createExistingFrameController } from "./conductor-existing-controller";
 import { submissionStatusMessage } from "./conductor-submission-status";
 import { readConductorSelection } from "../figma/conductor-selection";
 import { parseDesignSubmission, type DesignSubmission, type SubmissionResult } from "../core/conductor-contracts";
@@ -32,11 +33,17 @@ export function createConductorController(deps: {
     presentation = { state, message, environments, jobs: state === "connected" ? presentation.jobs : [], ...(state === "connected" && presentation.destination ? { destination: presentation.destination } : {}), ...rest };
     deps.post({ ...presentation, ...(busy ? { busy } : {}) });
   };
-  const stop = () => { submissionSelection = undefined; active = false; epoch++; if (timer !== undefined) clearTimeout(timer); timer = undefined; transport.stop(); };
+  const stop = () => { existing.reset(); submissionSelection = undefined; active = false; epoch++; if (timer !== undefined) clearTimeout(timer); timer = undefined; transport.stop(); };
   const requireCredentials = () => {
     if (!active || !credentials || Date.parse(credentials.expiresAt) <= Date.now()) throw new Error("Connect to Conductor again; your connection expired or is offline");
     return credentials;
   };
+  const existing = createExistingFrameController({
+    credentials: requireCredentials,
+    request: (path, body) => { const token = requireCredentials(); return transport.request(token.origin, path, { token: token.token, ...(body === undefined ? {} : { body }) }); },
+    present: (message, state, result) => present("connected", message, { ...(state ? { existing: state } : {}), ...(result ? { existingResult: result } : {}) }),
+    current: () => active && Boolean(credentials), newId: newRequestId,
+  });
   const refresh = async () => {
     const token = requireCredentials(); const generation = epoch;
     if (!figma.fileKey) { present("unavailable", "This file has no stable Figma key. Open a linked file to prepare workspaces."); return; }
@@ -84,11 +91,14 @@ export function createConductorController(deps: {
     async handle(command: ConductorCommand) {
       if (busy && command.type !== "conductor-offline" && command.type !== "conductor-disconnect") return;
       const activities: Partial<Record<ConductorCommand["type"], NonNullable<ConductorPresentation["busy"]>>> = {
-        "conductor-connect": "connecting", "conductor-refresh": "refreshing", "conductor-inspect-selection": "inspecting", "conductor-submit": "submitting", "conductor-apply": "preparing",
+        "conductor-start-existing": "choosing", "conductor-existing-destination": "choosing", "conductor-review-existing": "inspecting", "conductor-confirm-existing": "submitting", "conductor-connect": "connecting", "conductor-refresh": "refreshing", "conductor-inspect-selection": "inspecting", "conductor-submit": "submitting", "conductor-apply": "preparing",
       };
       busy = activities[command.type];
       if (busy) deps.post({ ...presentation, busy, hasError: false });
       try {
+        if (["conductor-start-existing", "conductor-existing-destination", "conductor-review-existing", "conductor-edit-existing", "conductor-confirm-existing", "conductor-open-existing-result"].includes(command.type)) {
+          await existing.handle(command as import("./conductor-existing-state").ExistingFrameCommand); return;
+        }
         if (command.type === "conductor-offline") { stop(); return; }
         if (command.type === "conductor-open") {
           stop(); credentials = undefined; active = true; transport.open(); const generation = epoch;
@@ -201,7 +211,7 @@ export function createConductorController(deps: {
         if (active) {
           const message = error instanceof Error ? error.message : "Conductor is unavailable. Your design is retained; try again.";
           const recoverable = credentials && Date.parse(credentials.expiresAt) > Date.now() && !(error instanceof ConductorAuthorizationError);
-          present(recoverable ? "connected" : "error", message, { ...(recoverable ? { jobs: presentation.jobs, ...(presentation.destination ? { destination: presentation.destination } : {}), ...(presentation.submission ? { submission: presentation.submission } : {}) } : {}), hasError: true });
+          present(recoverable ? "connected" : "error", message, { ...(recoverable ? { jobs: presentation.jobs, ...(presentation.destination ? { destination: presentation.destination } : {}), ...(presentation.submission ? { submission: presentation.submission } : {}), ...(presentation.existing ? { existing: presentation.existing } : {}), ...(presentation.existingResult ? { existingResult: presentation.existingResult } : {}) } : {}), hasError: true });
         }
       } finally { busy = undefined; deps.post(presentation); }
     },

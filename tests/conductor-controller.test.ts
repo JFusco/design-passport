@@ -112,3 +112,22 @@ it("shows saving, blocks duplicate actions and preserves an uncertain submission
   expect(post).toHaveBeenLastCalledWith(expect.objectContaining({ state: "connected", message: expect.stringContaining("External notifications are disabled") }));
   client.stop();
 });
+
+it("clears destination loading after a failed read and permits an explicit retry", async () => {
+  const credentials = { origin: CONDUCTOR_ENVIRONMENTS[0]!.origin, ownerUserId: "owner", token: "fixture", expiresAt: new Date(Date.now() + 60_000).toISOString() };
+  const frame = { id: "90:1", type: "FRAME", name: "Existing frame", width: 1024, parent: null, annotations: [], getSharedPluginData: () => "" };
+  let attempts = 0;
+  const fetcher = vi.fn<typeof fetch>(async (url) => {
+    if (String(url).includes("/destinations")) return ++attempts === 1 ? new Response("", { status: 503 }) : Response.json({ options: [{ id: "p", name: "Project" }], more: false });
+    return Response.json({ contractVersion: "1.0.0", enabled: true, jobs: [], destination: { project: "", deliverable: "" } });
+  });
+  const post = vi.fn(); vi.stubGlobal("fetch", fetcher);
+  vi.stubGlobal("figma", { fileKey: "file", editorType: "figma", mode: "default", currentPage: { selection: [frame] }, clientStorage: { getAsync: async (key: string) => key === "conductor-credentials-v1" ? credentials : undefined } });
+  const client = createConductorController({ post, enterCanvas: () => () => {}, apply: vi.fn() });
+  await client.handle({ type: "conductor-open" }); await client.handle({ type: "conductor-start-existing" });
+  expect(post.mock.calls.at(-1)?.[0]).toMatchObject({ state: "connected", hasError: true });
+  expect(post.mock.calls.at(-1)?.[0].busy).toBeUndefined();
+  await client.handle({ type: "conductor-existing-destination" });
+  expect(post.mock.calls.at(-1)?.[0]).toMatchObject({ existing: { options: [{ id: "p", name: "Project" }] } });
+  expect(post.mock.calls.at(-1)?.[0].busy).toBeUndefined(); client.stop();
+});

@@ -80,9 +80,17 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
     }
     throw new Error("recheck request is invalid");
   }
-  if (["conductor-open", "conductor-offline", "conductor-disconnect", "conductor-refresh", "conductor-inspect-selection"].includes(String(message.type))) {
+  if (["conductor-open", "conductor-offline", "conductor-disconnect", "conductor-refresh", "conductor-inspect-selection", "conductor-start-existing", "conductor-edit-existing", "conductor-confirm-existing", "conductor-open-existing-result"].includes(String(message.type))) {
     if (Object.keys(message).length !== 1) throw new Error("Unexpected Conductor command fields");
     return { type: message.type } as UiToPluginMessage;
+  }
+  if (message.type === "conductor-existing-destination") {
+    if (Object.keys(message).some((key) => !["type", "projectId", "deliverableId", "componentId", "search"].includes(key))) throw new Error("Invalid destination selection");
+    return { type: message.type, ...(message.projectId === undefined ? {} : { projectId: text(message.projectId, "projectId", 200) }), ...(message.deliverableId === undefined ? {} : { deliverableId: text(message.deliverableId, "deliverableId", 200) }), ...(message.componentId === undefined ? {} : { componentId: text(message.componentId, "componentId", 200) }), ...(message.search === undefined ? {} : { search: text(message.search, "search", 200) }) };
+  }
+  if (message.type === "conductor-review-existing") {
+    if (Object.keys(message).some((key) => !["type", "variantName", "isDefaultAppearance", "deviceTargetSlug", "message", "annotationIds"].includes(key)) || typeof message.isDefaultAppearance !== "boolean" || typeof message.message !== "string" || message.message.length > 10000 || !Array.isArray(message.annotationIds) || message.annotationIds.length > 20) throw new Error("Invalid existing frame details");
+    return { type: message.type, variantName: text(message.variantName, "variantName", 200), isDefaultAppearance: message.isDefaultAppearance, deviceTargetSlug: text(message.deviceTargetSlug, "deviceTargetSlug", 200), message: message.message, annotationIds: message.annotationIds.map((id) => text(id, "annotationId", 256)) };
   }
   if (message.type === "conductor-submit") {
     if (Object.keys(message).some((key) => !["type", "message", "annotationIds", "transitionId"].includes(key)) || typeof message.message !== "string" || message.message.length > 10000 || !Array.isArray(message.annotationIds) || message.annotationIds.length > 20 || typeof message.transitionId !== "string" || message.transitionId.length > 200) throw new Error("Invalid design submission");
