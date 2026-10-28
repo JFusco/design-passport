@@ -97,7 +97,10 @@ export function createConductorController(deps: {
       if (busy) deps.post({ ...presentation, busy, hasError: false });
       try {
         if (["conductor-start-existing", "conductor-existing-destination", "conductor-review-existing", "conductor-edit-existing", "conductor-confirm-existing", "conductor-open-existing-result"].includes(command.type)) {
-          await existing.handle(command as import("./conductor-existing-state").ExistingFrameCommand); return;
+          const generation = epoch;
+          try { await existing.handle(command as import("./conductor-existing-state").ExistingFrameCommand); }
+          catch (error) { if (active && credentials && generation === epoch) throw error; }
+          return;
         }
         if (command.type === "conductor-offline") { stop(); return; }
         if (command.type === "conductor-open") {

@@ -12,6 +12,7 @@ import { utf8ByteLength } from "../src/core/stable";
 import { AuditStorage, type AuditCodecMeasurement, type ClientStoragePort } from "../src/plugin/audit-storage";
 import { canonicalAuditTargetKey, isAuditViewState, type AuditViewState, type SaveAuditInput } from "../src/plugin/audit-state";
 import { buildKnowledgeSummary } from "../src/plugin/knowledge-summary";
+import { parseUiMessage } from "../src/plugin/message-validation";
 import { healthyGraph, profile } from "./fixtures";
 
 class MemoryStorage implements ClientStoragePort {
@@ -209,6 +210,26 @@ describe("durable audit storage", () => {
     expect(isAuditViewState(view)).toBe(true);
     for (const categoryFilter of ["all", "requirement", "recommendation", "governance"]) expect(isAuditViewState({ ...view, categoryFilter })).toBe(true);
     expect(isAuditViewState({ ...view, categoryFilter: "anything" })).toBe(false);
+  });
+
+  it("accepts and restores the Conductor tab while rejecting unknown tabs and view keys", async () => {
+    const port = new MemoryStorage();
+    const storage = new AuditStorage(port);
+    const saved = await storage.saveAudit({ ...input(), viewState: view });
+    const conductorView: AuditViewState = { ...view, activeTab: "conductor" };
+    expect(isAuditViewState(conductorView)).toBe(true);
+    const command = { type: "save-audit-view", id: saved.audit.id, viewState: conductorView };
+    expect(parseUiMessage(JSON.parse(JSON.stringify(command)))).toEqual(command);
+    for (const invalid of [{ ...view, activeTab: "unknown" }, { ...conductorView, undoAcknowledged: true }]) {
+      expect(isAuditViewState(invalid)).toBe(false);
+      expect(() => parseUiMessage({ ...command, viewState: invalid })).toThrow("Saved audit view is invalid");
+    }
+    await storage.updateView("file-one", saved.audit.id, conductorView);
+    const restored = await new AuditStorage(port).loadAudit("file-one", saved.audit.id);
+    expect(restored?.viewState).toEqual(conductorView);
+    expect(restored?.report).toEqual(saved.audit.report);
+    await storage.updateView("file-one", saved.audit.id, view);
+    expect((await new AuditStorage(port).loadAudit("file-one", saved.audit.id))?.viewState).toEqual(view);
   });
 
   it("lists small headers without decompressing report bodies, then decodes only the chosen result", async () => {

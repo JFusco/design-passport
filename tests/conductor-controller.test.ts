@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createConductorController } from "../src/plugin/conductor-controller";
 import { CONDUCTOR_ENVIRONMENTS } from "../src/plugin/conductor-environments";
+import { parseDesignSubmission, type DesignSubmission } from "../src/core/conductor-contracts";
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 function controller() {
   return createConductorController({ post: vi.fn(), enterCanvas: () => () => {}, apply: vi.fn() });
@@ -130,4 +131,141 @@ it("clears destination loading after a failed read and permits an explicit retry
   await client.handle({ type: "conductor-existing-destination" });
   expect(post.mock.calls.at(-1)?.[0]).toMatchObject({ existing: { options: [{ id: "p", name: "Project" }] } });
   expect(post.mock.calls.at(-1)?.[0].busy).toBeUndefined(); client.stop();
+});
+
+it("shows neutral refusal guidance for a workspace submission conflict", async () => {
+  const credentials = { origin: CONDUCTOR_ENVIRONMENTS[0]!.origin, ownerUserId: "owner", token: "fixture", expiresAt: new Date(Date.now() + 60_000).toISOString() };
+  const binding = { schemaVersion: 1, role: "design", organizationId: "org", projectId: "p", deliverableId: "d", componentId: "c", workspaceId: "workspace", fileKey: "file", nodeId: "1:1", jobItemId: "job", elementId: "design", variantId: "variant", revision: 1, connectionVersion: 1 };
+  const frame = { id: "1:1", name: "Design", type: "FRAME", parent: null, annotations: [], getSharedPluginData: () => JSON.stringify(binding) };
+  const storage = new Map<string, unknown>([["conductor-credentials-v1", credentials]]);
+  const fetcher = vi.fn<typeof fetch>(async (url) => {
+    if (String(url).endsWith("/submissions")) return new Response("", { status: 409 });
+    if (String(url).includes("/submissions/context?")) return Response.json({ componentId: "c", componentName: "Card", connectionVersion: 1, frames: [{ nodeId: "1:1", variantId: "variant", expectedVariantVersion: 1 }], workflow: { version: 1, transitions: [] } });
+    return Response.json({ contractVersion: "1.0.0", enabled: true, jobs: [], destination: { project: "Project", deliverable: "Website" } });
+  });
+  const post = vi.fn(); vi.stubGlobal("fetch", fetcher);
+  vi.stubGlobal("figma", { fileKey: "file", currentPage: { selection: [frame] }, clientStorage: { getAsync: async (key: string) => storage.get(key), setAsync: async (key: string, value: unknown) => { storage.set(key, value); } } });
+  const client = createConductorController({ post, enterCanvas: () => () => {}, apply: vi.fn() });
+  await client.handle({ type: "conductor-open" }); await client.handle({ type: "conductor-inspect-selection" });
+  await client.handle({ type: "conductor-submit", message: "Review design", annotationIds: [], transitionId: "" });
+  expect(post).toHaveBeenLastCalledWith(expect.objectContaining({ state: "connected", hasError: true, message: expect.stringContaining("Conductor refused this submission") }));
+  expect(post.mock.calls.at(-1)?.[0].message).not.toMatch(/frame width|default appearance/);
+  client.stop();
+});
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: Error) => void;
+  const promise = new Promise<T>((done, fail) => { resolve = done; reject = fail; });
+  return { promise, resolve, reject };
+}
+
+function existingControllerFixture() {
+  const credentials = { origin: CONDUCTOR_ENVIRONMENTS[0]!.origin, ownerUserId: "account-a", token: "fixture-a", expiresAt: new Date(Date.now() + 60_000).toISOString() };
+  const frame = { id: "90:1", type: "FRAME", name: "Existing frame", width: 1024, parent: null, annotations: [{ label: "Account A note" }], getSharedPluginData: () => "" };
+  const destination = { project: { id: "p", name: "Project" }, deliverable: { id: "d", name: "Website" }, component: { id: "c", name: "Card" }, devices: [{ slug: "tablet", width: 1024, hasDefault: false }] };
+  const storage = new Map<string, unknown>([["conductor-credentials-v1", credentials]]);
+  const clientStorage = {
+    getAsync: vi.fn(async (key: string): Promise<unknown> => storage.get(key)),
+    setAsync: vi.fn(async (key: string, value: unknown) => { storage.set(key, value); }),
+    deleteAsync: vi.fn(async (key: string) => { storage.delete(key); }),
+  };
+  const submissions: { payload: DesignSubmission; authorization: string | null }[] = [];
+  const response = { refused: false };
+  const fetcher = vi.fn<typeof fetch>(async (url, init) => {
+    if (String(url).endsWith("/submissions")) {
+      const payload = parseDesignSubmission(JSON.parse(String(init?.body)));
+      submissions.push({ payload, authorization: new Headers(init?.headers).get("Authorization") });
+      return response.refused ? new Response("", { status: 409 }) : Response.json({ commentId: "saved", variantIds: payload.frames.map((entry) => entry.variantId) });
+    }
+    if (String(url).includes("/destinations")) return Response.json({ options: [], more: false, destination });
+    return Response.json({ contractVersion: "1.0.0", enabled: true, jobs: [], destination: { project: "Project", deliverable: "Website" } });
+  });
+  const post = vi.fn(); vi.stubGlobal("fetch", fetcher);
+  vi.stubGlobal("figma", { fileKey: "file", editorType: "figma", mode: "default", currentPage: { selection: [frame] }, clientStorage });
+  const client = createConductorController({ post, enterCanvas: () => () => {}, apply: vi.fn() });
+  const review = async () => {
+    await client.handle({ type: "conductor-open" });
+    await client.handle({ type: "conductor-start-existing" });
+    await client.handle({ type: "conductor-existing-destination", projectId: "p", deliverableId: "d", componentId: "c" });
+    await client.handle({ type: "conductor-review-existing", variantName: "A's design", isDefaultAppearance: true, deviceTargetSlug: "tablet", message: "Account A message", annotationIds: ["90:1/0"] });
+  };
+  const reopenAsB = async () => {
+    storage.set("conductor-credentials-v1", { ...credentials, ownerUserId: "account-b", token: "fixture-b" });
+    await client.handle({ type: "conductor-open" });
+    await client.handle({ type: "conductor-start-existing" });
+    const presentation = post.mock.calls.at(-1)![0];
+    expect(presentation.existing.review).toBeUndefined();
+    expect(presentation.existing.details).toBeUndefined();
+    post.mockClear();
+    return presentation;
+  };
+  return { client, clientStorage, storage, credentials, submissions, response, post, review, reopenAsB };
+}
+
+describe.each(["conductor-offline", "conductor-disconnect"] as const)("existing handoff session reset: %s", (reset) => {
+  it("does not send a pending write under a new account and lets the original owner recover it", async () => {
+    const f = existingControllerFixture(); await f.review();
+    const entered = deferred<void>(); const gate = deferred<void>();
+    f.clientStorage.setAsync.mockImplementationOnce(async (key, value) => { entered.resolve(); await gate.promise; f.storage.set(key, value); });
+    const confirming = f.client.handle({ type: "conductor-confirm-existing" }); await entered.promise;
+    await f.client.handle({ type: reset });
+    const presentation = await f.reopenAsB();
+    gate.resolve(); await confirming;
+    expect(f.submissions).toEqual([]);
+    expect(f.post.mock.calls.length).toBeGreaterThan(0);
+    for (const [state] of f.post.mock.calls) expect(state).toEqual(presentation);
+    const key = `conductor-existing-pending-v1:${f.credentials.origin}:account-a:file`;
+    const pending = parseDesignSubmission(f.storage.get(key));
+    await f.client.handle({ type: "conductor-offline" });
+    f.storage.set("conductor-credentials-v1", f.credentials);
+    await f.client.handle({ type: "conductor-open" }); await f.client.handle({ type: "conductor-start-existing" });
+    expect(f.post.mock.calls.at(-1)?.[0].existing.review).toMatchObject({ variantName: "A's design", message: "Account A message", annotationIds: ["90:1/0"] });
+    await f.client.handle({ type: "conductor-confirm-existing" });
+    expect(f.submissions).toEqual([{ payload: pending, authorization: "Bearer fixture-a" }]);
+    expect(f.storage.has(key)).toBe(false); f.client.stop();
+  });
+
+  it.each([false, true])("ignores a stale pending read (rejected: %s)", async (rejected) => {
+    const f = existingControllerFixture(); await f.review();
+    const entered = deferred<void>(); const gate = deferred<unknown>();
+    f.clientStorage.getAsync.mockImplementationOnce(async () => { entered.resolve(); return gate.promise; });
+    const confirming = f.client.handle({ type: "conductor-confirm-existing" }); await entered.promise;
+    await f.client.handle({ type: reset });
+    const presentation = await f.reopenAsB();
+    if (rejected) gate.reject(new Error("Account A storage read failed")); else gate.resolve(undefined);
+    await confirming;
+    expect(f.submissions).toEqual([]);
+    for (const [state] of f.post.mock.calls) expect(state).toEqual(presentation);
+    f.client.stop();
+  });
+
+  it.each([false, true])("ignores terminal cleanup after switching accounts (refused: %s)", async (refused) => {
+    const f = existingControllerFixture(); await f.review(); f.response.refused = refused;
+    const entered = deferred<void>(); const gate = deferred<void>();
+    f.clientStorage.deleteAsync.mockImplementationOnce(async (key) => { entered.resolve(); await gate.promise; f.storage.delete(key); });
+    const confirming = f.client.handle({ type: "conductor-confirm-existing" }); await entered.promise;
+    expect(f.submissions).toHaveLength(1);
+    expect(f.submissions[0]?.authorization).toBe("Bearer fixture-a");
+    await f.client.handle({ type: reset });
+    const presentation = await f.reopenAsB();
+    gate.resolve(); await confirming;
+    for (const [state] of f.post.mock.calls) expect(state).toEqual(presentation);
+    expect(f.submissions).toHaveLength(1); f.client.stop();
+  });
+});
+
+it("disconnects from an existing-frame review and clears the handoff presentation", async () => {
+  const f = existingControllerFixture(); await f.review();
+  await f.client.handle({ type: "conductor-disconnect" });
+  expect(f.post).toHaveBeenLastCalledWith(expect.objectContaining({ state: "offline" }));
+  expect(f.post.mock.calls.at(-1)?.[0].existing).toBeUndefined();
+  expect(f.storage.has("conductor-credentials-v1")).toBe(false); f.client.stop();
+});
+
+it("keeps the existing-frame refusal guidance and editable details in the parent presentation", async () => {
+  const f = existingControllerFixture(); await f.review(); f.response.refused = true;
+  await f.client.handle({ type: "conductor-confirm-existing" });
+  expect(f.post).toHaveBeenLastCalledWith(expect.objectContaining({ state: "connected", hasError: true, message: expect.stringContaining("frame width, design name and default appearance"), existing: expect.objectContaining({ review: undefined, details: expect.objectContaining({ variantName: "A's design", message: "Account A message", annotationIds: ["90:1/0"] }) }) }));
+  expect([...f.storage.keys()]).toEqual(["conductor-credentials-v1"]); f.client.stop();
 });

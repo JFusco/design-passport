@@ -1,7 +1,7 @@
 ---
 status: "partial"
 executed: true
-evidence: ["Issue JFusco/design-passport#96; focused plugin and isolated Postgres checks; native default/variant/width/retry acceptance passed; final verification blocked by browser context teardown"]
+evidence: ["Issue JFusco/design-passport#96; focused plugin and isolated Postgres checks; native default/variant/width/retry acceptance passed; final verification initially blocked by browser context teardown; remaining gate completed under plan 1cc3e3cff6"]
 source_tool: "repository"
 source: "/private/tmp/send-existing-frame-plan.md"
 topics: ["conductor-design-workspaces"]

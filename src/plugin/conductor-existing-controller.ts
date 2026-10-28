@@ -18,14 +18,11 @@ export function createExistingFrameController(deps: {
     if (!state || JSON.stringify(frame) !== JSON.stringify(state.frame)) throw new Error("Your selected frame, name, width or annotations changed. Choose Send existing frame to Conductor and review it again.");
     return frame;
   };
-  const key = () => {
-    const token = deps.credentials();
-    return `conductor-existing-pending-v1:${token.origin}:${token.ownerUserId}`;
-  };
+  const key = (token: ConductorCredentials, fileKey: string) => `conductor-existing-pending-v1:${token.origin}:${token.ownerUserId}:${fileKey}`;
   return {
     reset() { generation++; state = undefined; resultPath = undefined; },
     async handle(command: ExistingFrameCommand) {
-      deps.credentials();
+      const token = deps.credentials();
       const version = generation;
       const current = () => version === generation && deps.current();
       if (command.type === "conductor-open-existing-result") {
@@ -35,8 +32,26 @@ export function createExistingFrameController(deps: {
       if (command.type === "conductor-start-existing" || command.type === "conductor-existing-destination") {
         const frame = command.type === "conductor-start-existing" ? readExistingFrame() : selected();
         if (command.type === "conductor-start-existing") {
-          const saved: unknown = await figma.clientStorage.getAsync(key());
+          const pendingKey = key(token, frame.fileKey);
+          let saved: unknown = await figma.clientStorage.getAsync(pendingKey);
           if (!current()) return;
+          const legacyKey = `conductor-existing-pending-v1:${token.origin}:${token.ownerUserId}`;
+          const legacy: unknown = await figma.clientStorage.getAsync(legacyKey);
+          if (!current()) return;
+          if (legacy) {
+            const pending = parseDesignSubmission(legacy);
+            if (pending.fileKey === frame.fileKey) {
+              if (saved && JSON.stringify(parseDesignSubmission(saved)) !== JSON.stringify(pending)) throw new Error("A previous frame submission still needs acknowledgement. Retry its original frame and details before sending another design.");
+              // Copy before deleting so interruption never loses the original retry identity.
+              if (!saved) {
+                await figma.clientStorage.setAsync(pendingKey, pending);
+                if (!current()) return;
+              }
+              await figma.clientStorage.deleteAsync(legacyKey);
+              if (!current()) return;
+              saved = pending;
+            }
+          }
           if (saved) {
             const pending = parseDesignSubmission(saved);
             const original = pending.existingFrame;
@@ -87,10 +102,11 @@ export function createExistingFrameController(deps: {
       const params = `projectId=${encodeURIComponent(target.project.id)}&deliverableId=${encodeURIComponent(target.deliverable.id)}&componentId=${encodeURIComponent(target.component.id)}`;
       const latest = parseDestinationOptions(await deps.request(`/api/figma-plugin/v1/destinations?${params}`));
       if (!current()) return;
-      const pendingKey = key();
+      const pendingKey = key(token, frame.fileKey);
       const saved: unknown = await figma.clientStorage.getAsync(pendingKey);
+      if (!current()) return;
       if (!saved && JSON.stringify(latest.destination) !== JSON.stringify(target)) {
-        state = { ...state!, ...latest, review: undefined };
+        state = { ...state!, ...latest, details: review, review: undefined };
         deps.present("The destination or project breakpoints changed. Review the updated details before sending.", state); return;
       }
       selected();
@@ -105,19 +121,25 @@ export function createExistingFrameController(deps: {
         pending = previous;
       }
       await figma.clientStorage.setAsync(pendingKey, pending);
+      if (!current()) return;
       let result: SubmissionResult;
       try { result = await deps.request("/api/figma-plugin/v1/submissions", pending) as SubmissionResult; }
       catch (error) {
+        if (!current()) return;
         if (error instanceof ConductorSubmissionRefusedError) {
           await figma.clientStorage.deleteAsync(pendingKey);
+          if (!current()) return;
           state = { ...state!, details: review, review: undefined };
-          deps.present(error.message, state);
+          const message = "Conductor refused this submission. Check your project access, frame width, design name and default appearance, then review the destination again. Existing designs are unchanged.";
+          deps.present(message, state);
+          throw new ConductorSubmissionRefusedError(message);
         }
         throw error;
       }
       if (!current()) return;
       if (typeof result.commentId !== "string" || result.variantIds?.length !== 1 || result.variantIds[0] !== pending.frames[0]!.variantId) throw new Error("Conductor has not confirmed this submission. Retry with the same frame and details.");
       await figma.clientStorage.deleteAsync(pendingKey);
+      if (!current()) return;
       resultPath = `/projects/${encodeURIComponent(target.project.id)}/deliverables/${encodeURIComponent(target.deliverable.id)}/features/${encodeURIComponent(target.component.id)}?tab=design`;
       state = undefined;
       deps.present(`Saved “${review.variantName}” as ${review.isDefaultAppearance ? "Default appearance" : "a named variant"} at ${frame.width}px in ${target.project.name} / ${target.deliverable.name} / ${target.component.name} → Design. Your message and checked annotations are in Design discussion. Approval and workflow state are unchanged.`, undefined, resultPath);
