@@ -955,7 +955,7 @@
           "url": "https://github.com/jfusco/design-passport/issues/96"
         }
       ],
-      "bytes": 9055,
+      "bytes": 9180,
       "degree": 3,
       "x": -0.980439,
       "y": 0.196825,
@@ -966,8 +966,15 @@
       "label": "Bound handoff recovery and connection regression",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 4620,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 96,
+          "url": "https://github.com/jfusco/design-passport/issues/96"
+        }
+      ],
+      "bytes": 4745,
       "degree": 3,
       "x": -0.990004,
       "y": 0.141041,

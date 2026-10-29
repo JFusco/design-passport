@@ -2,6 +2,8 @@
 date: 2026-10-29
 topics: [conductor-design-workspaces]
 plans: [2026-10-29-bound-handoff-session-recovery-c7863b299f.md]
+issue: 'https://github.com/jfusco/design-passport/issues/96'
+issues: ['https://github.com/jfusco/design-passport/issues/96']
 ---
 
 # Bound handoff recovery and connection regression
