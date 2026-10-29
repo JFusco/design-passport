@@ -1,6 +1,8 @@
 ---
 topics: [conductor-design-workspaces, design-passport-architecture]
 plans: [2026-10-27-final-implementation-plan-ec46cfe592.md]
+issue: 'https://github.com/jfusco/design-passport/issues/94'
+issues: ['https://github.com/jfusco/design-passport/issues/94']
 ---
 
 # Connected Conductor design workspaces

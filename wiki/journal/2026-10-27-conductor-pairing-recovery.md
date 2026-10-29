@@ -1,5 +1,7 @@
 ---
 topics: [conductor-design-workspaces]
+issue: 'https://github.com/jfusco/design-passport/issues/94'
+issues: ['https://github.com/jfusco/design-passport/issues/94']
 ---
 
 # Preserve pending Conductor pairing after a timeout
