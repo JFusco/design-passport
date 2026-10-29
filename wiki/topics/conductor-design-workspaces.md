@@ -62,3 +62,9 @@ A separate confirmation lists the full destination, Design tab, source frame, sa
 ## Connection lifecycle and retry isolation
 
 Conductor is an allowed saved-audit tab; returning from an audit must not invalidate the result. Disconnect remains available throughout existing-frame selection, details and confirmation. Pending handoffs are scoped to the configured origin, owner and Figma file, retaining the original request and variant IDs through retry and legacy-record migration. A reset invalidates pending asynchronous work before another account can submit or display it. Destination changes clear confirmation but preserve entered design details and selected notes for review. Workspace refusals use neutral recovery copy; existing-frame refusals retain their specific width, name and appearance guidance.
+
+## Bound submission recovery across sessions
+
+A definite refusal releases only the matching bound draft so the designer can correct the message or selection. Unknown outcomes retain the original request for acknowledgement. Storage, requests, receipts and success/error presentation are fenced to the captured session and credential owner. Reopening releases an old in-flight latch; only the current operation can release its own submit/loading state. This preserves duplicate protection while an older transport request settles.
+
+Independent review and recheck passed these boundaries with 149 focused tests on October 29. Repository-wide verification, hosted CI and native Figma acceptance remain separate evidence; see the [recovery journal](../journal/2026-10-29-bound-handoff-recovery.md).

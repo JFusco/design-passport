@@ -1,16 +1,16 @@
-# Graph Report - design-passport  (2026-10-28)
+# Graph Report - design-passport  (2026-10-29)
 
 ## Corpus Check
-- 170 files · ~105,748 words
+- 170 files · ~106,042 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1408 nodes · 4602 edges · 65 communities (62 shown, 3 thin omitted)
+- 1408 nodes · 4603 edges · 65 communities (62 shown, 3 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 63 edges (avg confidence: 0.7)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `53dadd36`
+- Built from commit: `5e9eeac3`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

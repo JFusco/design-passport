@@ -5,7 +5,7 @@ import { parseDesignSubmission, type DesignSubmission, type SubmissionResult } f
 import { assertContractVersion, WORKSPACE_LIMITS, type CanvasJob, type WorkspaceLease, type WorkspaceReceipt } from "../core/conductor-contracts";
 import { CONDUCTOR_ENVIRONMENTS } from "./conductor-environments";
 import type { ConductorCommand, ConductorPresentation } from "./conductor-state";
-import { ConductorAuthorizationError, ConductorRequestTimeoutError, ConductorTransport, type ConductorCredentials } from "./conductor-transport";
+import { ConductorAuthorizationError, ConductorRequestTimeoutError, ConductorSubmissionRefusedError, ConductorTransport, type ConductorCredentials } from "./conductor-transport";
 
 interface ContextResponse {
   contractVersion: string; enabled: boolean; destination: { project: string; deliverable: string };
@@ -23,17 +23,18 @@ export function createConductorController(deps: {
   let epoch = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let active = false;
-  let submitting = false;
+  let submitting: object | undefined;
   let submissionSelection: { selection: ReturnType<typeof readConductorSelection>; context: { componentId: string; componentName: string; connectionVersion: number; frames: DesignSubmission["frames"]; workflow: { version: number; transitions: { id: string; label: string }[] } } } | undefined;
   const draftKey = (token: ConductorCredentials, fileKey: string) => `conductor-draft-v1:${token.origin}:${token.ownerUserId}:${fileKey}`;
   const newRequestId = () => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => { const random = Math.floor(Math.random() * 16); return (char === "x" ? random : (random & 3) | 8).toString(16); });
   let presentation: ConductorPresentation = { state: "offline", message: "Connect to Conductor to prepare a workspace.", environments, jobs: [] };
   let busy: ConductorPresentation["busy"];
+  let busyOwner: object | undefined;
   const present = (state: ConductorPresentation["state"], message: string, rest: Partial<ConductorPresentation> = {}) => {
     presentation = { state, message, environments, jobs: state === "connected" ? presentation.jobs : [], ...(state === "connected" && presentation.destination ? { destination: presentation.destination } : {}), ...rest };
     deps.post({ ...presentation, ...(busy ? { busy } : {}) });
   };
-  const stop = () => { existing.reset(); submissionSelection = undefined; active = false; epoch++; if (timer !== undefined) clearTimeout(timer); timer = undefined; transport.stop(); };
+  const stop = () => { existing.reset(); submissionSelection = undefined; submitting = undefined; active = false; epoch++; if (timer !== undefined) clearTimeout(timer); timer = undefined; transport.stop(); };
   const requireCredentials = () => {
     if (!active || !credentials || Date.parse(credentials.expiresAt) <= Date.now()) throw new Error("Connect to Conductor again; your connection expired or is offline");
     return credentials;
@@ -89,11 +90,13 @@ export function createConductorController(deps: {
   return {
     stop,
     async handle(command: ConductorCommand) {
+      const op = {};
       if (busy && command.type !== "conductor-offline" && command.type !== "conductor-disconnect") return;
       const activities: Partial<Record<ConductorCommand["type"], NonNullable<ConductorPresentation["busy"]>>> = {
         "conductor-start-existing": "choosing", "conductor-existing-destination": "choosing", "conductor-review-existing": "inspecting", "conductor-confirm-existing": "submitting", "conductor-connect": "connecting", "conductor-refresh": "refreshing", "conductor-inspect-selection": "inspecting", "conductor-submit": "submitting", "conductor-apply": "preparing",
       };
       busy = activities[command.type];
+      busyOwner = busy ? op : undefined;
       if (busy) deps.post({ ...presentation, busy, hasError: false });
       try {
         if (["conductor-start-existing", "conductor-existing-destination", "conductor-review-existing", "conductor-edit-existing", "conductor-confirm-existing", "conductor-open-existing-result"].includes(command.type)) {
@@ -157,9 +160,11 @@ export function createConductorController(deps: {
         }
         if (command.type === "conductor-submit") {
           if (submitting) return;
-          submitting = true;
+          const token = requireCredentials(); const generation = epoch;
+          const live = () => active && generation === epoch && credentials === token;
+          const owner = {}; submitting = owner;
           try {
-          const token = requireCredentials(); const selected = submissionSelection;
+          const selected = submissionSelection;
           if (!selected) throw new Error("Select and review the destination again before submitting");
           const current = readConductorSelection();
           if (JSON.stringify(current.frames.map((frame) => frame.id)) !== JSON.stringify(selected.selection.frames.map((frame) => frame.id)) || current.fileKey !== selected.selection.fileKey) throw new Error("Your selected design changed; review its destination again");
@@ -170,6 +175,7 @@ export function createConductorController(deps: {
           const payload = parseDesignSubmission({ submissionId: newRequestId(), connectionVersion: selected.context.connectionVersion, componentId: selected.context.componentId, fileKey: current.fileKey, frames: selected.context.frames, message: command.message, annotations,
             ...(transition ? { transition: { id: transition.id, expectedWorkflowVersion: selected.context.workflow.version } } : {}) });
           const saved: unknown = await figma.clientStorage.getAsync(key);
+          if (!live()) return;
           let pending = payload;
           if (saved && typeof saved === "object" && "payload" in saved) {
             const previous = parseDesignSubmission(saved.payload);
@@ -177,12 +183,32 @@ export function createConductorController(deps: {
             pending = previous;
           }
             await figma.clientStorage.setAsync(key, { payload: pending });
-            const result = await transport.request(token.origin, "/api/figma-plugin/v1/submissions", { token: token.token, body: pending }) as SubmissionResult;
+            if (!live()) return;
+            let result: SubmissionResult;
+            try { result = await transport.request(token.origin, "/api/figma-plugin/v1/submissions", { token: token.token, body: pending }) as SubmissionResult; }
+            catch (error) {
+              if (!live()) return;
+              if (error instanceof ConductorSubmissionRefusedError) {
+                const stored: unknown = await figma.clientStorage.getAsync(key);
+                if (!live()) return;
+                if (stored && typeof stored === "object" && "payload" in stored && parseDesignSubmission(stored.payload).submissionId === pending.submissionId) {
+                  await figma.clientStorage.deleteAsync(key);
+                  if (!live()) return;
+                }
+                if (presentation.submission) presentation = { ...presentation, submission: { ...presentation.submission, message: pending.message } };
+              }
+              throw error;
+            }
+            if (!live()) return;
             if (typeof result.commentId !== "string" || !Array.isArray(result.variantIds)) throw new Error("Submission acknowledgement is incomplete; retry to check its saved state");
             await figma.clientStorage.setAsync(`${key}:receipt`, pending.submissionId);
-            await figma.clientStorage.deleteAsync(key); submissionSelection = undefined;
+            if (!live()) return;
+            await figma.clientStorage.deleteAsync(key);
+            if (!live()) return;
+            submissionSelection = undefined;
             present("connected", submissionStatusMessage(result));
-          } finally { submitting = false; }
+          } catch (error) { if (live()) throw error; }
+          finally { if (submitting === owner) submitting = undefined; }
           return;
         }
         if (command.type === "conductor-refresh") { await refresh(); return; }
@@ -216,7 +242,7 @@ export function createConductorController(deps: {
           const recoverable = credentials && Date.parse(credentials.expiresAt) > Date.now() && !(error instanceof ConductorAuthorizationError);
           present(recoverable ? "connected" : "error", message, { ...(recoverable ? { jobs: presentation.jobs, ...(presentation.destination ? { destination: presentation.destination } : {}), ...(presentation.submission ? { submission: presentation.submission } : {}), ...(presentation.existing ? { existing: presentation.existing } : {}), ...(presentation.existingResult ? { existingResult: presentation.existingResult } : {}) } : {}), hasError: true });
         }
-      } finally { busy = undefined; deps.post(presentation); }
+      } finally { if (busyOwner === op || busyOwner === undefined) { busy = undefined; busyOwner = undefined; deps.post(presentation); } }
     },
   };
 }
