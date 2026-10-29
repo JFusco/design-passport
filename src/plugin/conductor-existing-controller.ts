@@ -1,4 +1,3 @@
-import { designChangeStatusMessage } from "./conductor-submission-status";
 import { parseDesignSubmission } from "../core/conductor-contracts";
 import { readExistingFrame } from "../figma/conductor-existing-frame";
 import { parseDestinationOptions, type ExistingFrameCommand, type ExistingFrameState } from "./conductor-existing-state";
@@ -15,7 +14,6 @@ export function createExistingFrameController(deps: {
 }) {
   let generation = 0;
   let state: ExistingFrameState | undefined;
-  let resultPath: string | undefined;
   const selected = () => {
     const frame = readExistingFrame();
     if (!state || JSON.stringify(frame) !== JSON.stringify(state.frame)) throw new Error("Your selected frame, name, width or annotations changed. Choose Send existing frame to Conductor and review it again.");
@@ -23,15 +21,11 @@ export function createExistingFrameController(deps: {
   };
   let intent: "design_change" | undefined;
   return {
-    reset() { generation++; state = undefined; resultPath = undefined; intent = undefined; },
+    reset() { generation++; state = undefined; intent = undefined; },
     async handle(command: ExistingFrameCommand) {
       deps.credentials();
       const version = generation;
       const current = () => version === generation && deps.current();
-      if (command.type === "conductor-open-existing-result") {
-        if (!resultPath) throw new Error("Send a frame before opening its destination.");
-        figma.openExternal(`${deps.credentials().origin}${resultPath}`); return;
-      }
       if (command.type === "conductor-start-existing" || command.type === "conductor-start-existing-change" || command.type === "conductor-existing-destination") {
         const starting = command.type !== "conductor-existing-destination";
         if (starting) intent = command.type === "conductor-start-existing-change" ? "design_change" : undefined;
@@ -94,8 +88,7 @@ export function createExistingFrameController(deps: {
         frames: [{ nodeId: frame.id, variantId: deps.newId(), expectedVariantVersion: null }], message: review.message, annotations: frame.annotations.filter((note) => review.annotationIds.includes(note.id)).map(({ nodeId, text }) => ({ nodeId, text })) });
       const destination = { project: target.project.name, deliverable: target.deliverable.name, component: target.component.name };
       const path = `/projects/${encodeURIComponent(target.project.id)}/deliverables/${encodeURIComponent(target.deliverable.id)}/features/${encodeURIComponent(target.component.id)}?tab=design`;
-      let result;
-      try { result = await deps.pending.send(payload, "existing", { destination, resultPath: path }); }
+      try { await deps.pending.send(payload, "existing", { destination, resultPath: path }); }
       catch (error) {
         if (current() && error instanceof LegacySendRefusedError) {
           state = { ...state!, details: review, review: undefined };
@@ -103,10 +96,6 @@ export function createExistingFrameController(deps: {
         }
         throw error;
       }
-      if (!current() || !result) return;
-      resultPath = path;
-      state = undefined;
-      deps.present(`${intent ? `${designChangeStatusMessage(result)} ` : ""}Saved “${review.variantName}” as ${review.isDefaultAppearance ? "Default appearance" : "a named variant"} at ${frame.width}px in ${target.project.name} / ${target.deliverable.name} / ${target.component.name} → Design. Your message and checked annotations are in Design discussion. Approval and workflow state are unchanged.`, undefined, resultPath);
     },
   };
 }

@@ -1,4 +1,3 @@
-import { designChangeStatusMessage } from "./conductor-submission-status";
 import { parseDesignSubmission, type DesignSubmission } from "../core/conductor-contracts";
 import { readConductorSelection } from "../figma/conductor-selection";
 export interface DesignChangeContext {
@@ -90,9 +89,7 @@ export function createDesignChangeController(deps: {
       });
       const resultPath = `/projects/${encodeURIComponent(context.projectId)}/deliverables/${encodeURIComponent(context.deliverableId)}/features/${encodeURIComponent(context.componentId)}?tab=design`;
       const destination = { project: state.project, deliverable: state.deliverable, component: state.feature };
-      const receipt = await deps.pending.send(payload, "bound", { destination, resultPath }); if (!current() || !receipt) return;
-      selected = undefined; context = undefined; state = undefined;
-      deps.present(`${designChangeStatusMessage(receipt)} ${destination.project} / ${destination.deliverable} / ${destination.component} → Design.`, undefined, resultPath);
+      await deps.pending.send(payload, "bound", { destination, resultPath });
     },
   };
 }

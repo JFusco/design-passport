@@ -178,6 +178,23 @@ describe("durable pending sends", () => {
     expect(f.present.mock.calls.at(-1)?.[0]).toContain("The workflow action was applied.");
     expect(f.present.mock.calls.at(-1)?.[0]).toContain("Notification delivery failed.");
   });
+  it.each([false, true])("resumes reviewed existing-frame change details (destination metadata: %s)", async withMetadata => {
+    const f = fixture(), key = existingPendingKey(f.token, "file");
+    const submission: DesignSubmission = { ...payload, intent: "design_change", existingFrame: { projectId: "p", deliverableId: "d", frameName: "Tablet frame", variantName: "Tablet", isDefaultAppearance: false, frameWidth: 1024, deviceTargetSlug: "tablet" } };
+    const metadata = { destination: { project: "Project", deliverable: "Website", component: "Card" }, resultPath: "/projects/p/deliverables/d/features/feature?tab=design" };
+    f.storage.set(key, submission);
+    f.storage.set(`${key}:terminal`, { requestId: payload.submissionId, fileKey: "file", outcome: "committed", receipt, ...(withMetadata ? { metadata } : {}) });
+    expect(await f.make().blocked()).toBe(true);
+    const message = f.present.mock.calls.at(-1)![0];
+    expect(message).toMatch(/^Design changes saved/);
+    expect(message).toContain(`Saved “Tablet” as a named variant at 1024px${withMetadata ? " in Project / Website / Card → Design." : "."}`);
+    expect(message).toContain("Approval and workflow state are unchanged.");
+    expect(message).toContain("Slack notification planning or delivery is pending.");
+    expect(message).toContain("Your message and checked annotations are in Design discussion.");
+    expect(f.present).toHaveBeenLastCalledWith(message, undefined, { outcome: "committed", redacted: false, ...(withMetadata ? { metadata } : {}) });
+    expect(f.request).not.toHaveBeenCalled();
+    expect(f.storage.has(key)).toBe(false);
+  });
   it.each(["cancelled", "committed"] as const)("uses exact terminal wording for %s", async outcome => {
     const f = fixture(); f.storage.set(f.key, { payload });
     f.request.mockResolvedValue({ requestId: payload.submissionId, fileKey: "file", outcome, ...(outcome === "committed" ? { receipt: null } : {}) });

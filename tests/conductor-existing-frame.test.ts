@@ -37,7 +37,9 @@ describe("existing frame handoff", () => {
       const payload = parseDesignSubmission(f.request.mock.calls.find(([, body]) => body)?.[1]);
       expect(payload).toMatchObject({ componentId: "c", existingFrame: { projectId: "p", deliverableId: "d", frameWidth: 1024, deviceTargetSlug: "tablet", variantName: "Hero tablet", isDefaultAppearance }, annotations: [{ nodeId: "60:1", text: "Selected note" }] });
       expect(payload.transition).toBeUndefined();
-      expect(f.present).toHaveBeenLastCalledWith(expect.stringContaining("Project / Website / Card"), undefined, expect.stringContaining("/features/c?tab=design"));
+      expect(f.present).toHaveBeenLastCalledWith(expect.stringContaining(`Saved “Hero tablet” as ${isDefaultAppearance ? "Default appearance" : "a named variant"} at 1024px in Project / Website / Card → Design.`), undefined, {
+        outcome: "committed", redacted: false, metadata: { destination: { project: "Project", deliverable: "Website", component: "Card" }, resultPath: "/projects/p/deliverables/d/features/c?tab=design" },
+      });
     }
   });
   it("requires an exact configured width and never infers a breakpoint by rounding", async () => {
@@ -50,7 +52,7 @@ describe("existing frame handoff", () => {
     await expect(f.controller.handle({ ...f.review, annotationIds: [] })).rejects.toThrow("default design already exists");
     await f.controller.handle({ ...f.review, isDefaultAppearance: false, annotationIds: [] });
     await f.controller.handle({ type: "conductor-confirm-existing" });
-    expect(f.present).toHaveBeenLastCalledWith(expect.stringContaining("a named variant"), undefined, expect.any(String));
+    expect(f.present).toHaveBeenLastCalledWith(expect.stringContaining("a named variant"), undefined, expect.objectContaining({ outcome: "committed", metadata: expect.objectContaining({ resultPath: "/projects/p/deliverables/d/features/c?tab=design" }) }));
   });
   it("requires a new review after the selected frame width, name or destination changes", async () => {
     const f = fixture(); await f.choose(); await f.controller.handle({ ...f.review, annotationIds: [...f.review.annotationIds] });

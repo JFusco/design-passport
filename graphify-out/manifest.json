@@ -885,8 +885,8 @@
     "semantic_hash": ""
   },
   "src/plugin/conductor-existing-controller.ts": {
-    "mtime": 1793309769.870858,
-    "ast_hash": "7bed04a45771bcbe49e926de30790adc",
+    "mtime": 1793312629.2837498,
+    "ast_hash": "1927dfb9d8f4071c706a57ae096799ff",
     "semantic_hash": ""
   },
   "src/plugin/conductor-existing-state.ts": {
@@ -905,13 +905,13 @@
     "semantic_hash": ""
   },
   "src/plugin/conductor-change-controller.ts": {
-    "mtime": 1793309769.8371198,
-    "ast_hash": "c92d27dff3c05f5812f2fcf1078f6e43",
+    "mtime": 1793312629.3294716,
+    "ast_hash": "d8008bb2d5469ed7ecd6e8512fb8a67d",
     "semantic_hash": ""
   },
   "src/plugin/conductor-pending-send.ts": {
-    "mtime": 1793310069.481498,
-    "ast_hash": "56c4fa5cff4dc9751ddfdce042e0f69c",
+    "mtime": 1793312629.2386458,
+    "ast_hash": "b659e31d58dfc2d0b3caa8c028901ecd",
     "semantic_hash": ""
   },
   "src/ui/components/ConductorDesignChange.tsx": {

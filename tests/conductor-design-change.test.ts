@@ -27,8 +27,10 @@ describe("explicit design changes", () => {
     expect(f.present.mock.calls.at(-1)?.[1]).toMatchObject({ project: "Project", deliverable: "Website", feature: "Hero", frames: [{ name: "Design", appearance: "Named variant", width: 390, newLink: true }] });
     await f.controller.handle(f.review); expect(f.pending.send).not.toHaveBeenCalled();
     await f.controller.handle({ type: "conductor-confirm-change" });
-    expect(f.pending.send).toHaveBeenCalledWith(expect.objectContaining({ intent: "design_change", message: "Improved navigation", frames: [{ nodeId: "1:2", variantId: "variant", expectedVariantVersion: null, frameWidth: 390 }], annotations: [{ nodeId: "1:2", text: "Keep the BA decision" }] }), "bound", expect.objectContaining({ resultPath: "/projects/p/deliverables/d/features/c?tab=design" }));
-    expect(f.present).toHaveBeenLastCalledWith(expect.stringContaining("Project / Website / Hero → Design"), undefined, "/projects/p/deliverables/d/features/c?tab=design");
+    expect(f.pending.send).toHaveBeenCalledWith(expect.objectContaining({ intent: "design_change", message: "Improved navigation", frames: [{ nodeId: "1:2", variantId: "variant", expectedVariantVersion: null, frameWidth: 390 }], annotations: [{ nodeId: "1:2", text: "Keep the BA decision" }] }), "bound", {
+      destination: { project: "Project", deliverable: "Website", component: "Hero" }, resultPath: "/projects/p/deliverables/d/features/c?tab=design",
+    });
+    expect(f.present).toHaveBeenCalledTimes(2);
     expect((f.pending.send.mock.calls[0] as unknown as [Record<string, unknown>])[0].transition).toBeUndefined();
   });
   it("rejects blank summaries and directs unchanged designs to Design Notes", async () => {

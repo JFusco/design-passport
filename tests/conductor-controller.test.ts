@@ -95,6 +95,20 @@ function lifecycleFixture(kind: "bound" | "existing") {
   return { client, post, last, credentials, binding, frame, figma, storage, clientStorage, destination, context, selectionContext, submissions, resolutions, respond, resolve, status, receipt, fetcher, command, details, key, open, review, setup };
 }
 
+it.each([false, true])("presents reviewed existing-frame details and opens Design (default: %s)", async isDefaultAppearance => {
+  const f = lifecycleFixture("existing"); f.details.isDefaultAppearance = isDefaultAppearance; await f.setup();
+  await f.client.handle(f.command);
+  expect(f.last().message).toContain("Tablet");
+  expect(f.last().message).toContain(isDefaultAppearance ? "Default appearance" : "a named variant");
+  expect(f.last().message).toContain("1024px");
+  expect(f.last().message).toContain("Project / Website / Card → Design");
+  expect(f.last().message).toContain("Your message and checked annotations are in Design discussion.");
+  expect(f.last().existingResult).toBe("/projects/p/deliverables/d/features/c?tab=design");
+  await f.client.handle({ type: "conductor-open-existing-result" });
+  expect(f.figma.openExternal).toHaveBeenCalledWith(`${f.credentials.origin}/projects/p/deliverables/d/features/c?tab=design`);
+  f.client.stop();
+});
+
 describe.each(["bound", "existing"] as const)("parent-controller recovery: %s", kind => {
   it("automatically cancels a supported first refusal and requires a newly reviewed identity", async () => {
     const f = lifecycleFixture(kind); await f.setup(); f.respond.mockResolvedValueOnce(new Response("", { status: 409 }));

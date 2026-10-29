@@ -85,9 +85,15 @@ export function createPendingSendController(deps: {
     await clear(entry, check);
     if (outcome === "refused") return;
     const metadata = outcome === "committed" && receipt ? entry.metadata : undefined;
-    const message = outcome === "cancelled" ? "The pending send was cancelled. Nothing from this request was saved."
+    let message = outcome === "cancelled" ? "The pending send was cancelled. Nothing from this request was saved."
       : !receipt ? "The earlier send was saved, but its details are no longer accessible."
-      : `${entry.payload.intent === "design_change" ? designChangeStatusMessage(receipt) : submissionStatusMessage(receipt)}${metadata ? ` ${metadata.destination.project} / ${metadata.destination.deliverable} / ${metadata.destination.component} → Design.` : ""}`;
+      : entry.payload.intent === "design_change" ? designChangeStatusMessage(receipt) : submissionStatusMessage(receipt);
+    if (outcome === "committed" && receipt) {
+      const existingFrame = entry.payload.existingFrame;
+      if (existingFrame) message += ` Saved “${existingFrame.variantName}” as ${existingFrame.isDefaultAppearance ? "Default appearance" : "a named variant"} at ${existingFrame.frameWidth}px${metadata ? " in" : "."}`;
+      if (metadata) message += ` ${metadata.destination.project} / ${metadata.destination.deliverable} / ${metadata.destination.component} → Design.`;
+      if (existingFrame) message += " Your message and checked annotations are in Design discussion.";
+    }
     deps.present(message, undefined, { outcome, redacted: outcome === "committed" && !receipt, ...(metadata ? { metadata } : {}) });
   };
   const resolve = async () => {
