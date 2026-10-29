@@ -912,7 +912,7 @@
           "url": "https://github.com/jfusco/design-passport/issues/94"
         }
       ],
-      "bytes": 2017,
+      "bytes": 2142,
       "degree": 4,
       "x": -0.972023,
       "y": 0.234886,
@@ -923,8 +923,15 @@
       "label": "Preserve pending Conductor pairing after a timeout",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 2936,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 94,
+          "url": "https://github.com/jfusco/design-passport/issues/94"
+        }
+      ],
+      "bytes": 3061,
       "degree": 2,
       "x": -0.984231,
       "y": 0.17689,
@@ -935,8 +942,15 @@
       "label": "Keep design handoffs optional and explicit",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 6966,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 94,
+          "url": "https://github.com/jfusco/design-passport/issues/94"
+        }
+      ],
+      "bytes": 7091,
       "degree": 2,
       "x": -0.992981,
       "y": 0.118273,
