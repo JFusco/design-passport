@@ -66,8 +66,9 @@ describe("durable pending sends", () => {
     await expect(f.controller.send(payload, "bound")).rejects.toThrow("first send"); expect(f.storage.has(f.key)).toBe(false);
     f.storage.set(f.key, { payload: { ...payload, submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" } });
     expect(await f.make().blocked()).toBe(true);
+    f.request.mockRejectedValueOnce(new ConductorSubmissionRefusedError("Refused again"));
     await f.make().send(payload, "bound");
-    expect(f.request).toHaveBeenCalledTimes(1); expect(f.storage.has(f.key)).toBe(true);
+    expect(f.request).toHaveBeenCalledTimes(2); expect(f.storage.has(f.key)).toBe(true);
   });
   it("does not treat a missing receipt, timeout or restarted metadata as cancellation", async () => {
     const f = fixture(); f.support(false); f.storage.set(f.key, { payload });
@@ -119,7 +120,69 @@ describe("durable pending sends", () => {
     expect(f.storage.has(f.key)).toBe(true); expect(f.api.deleteAsync).not.toHaveBeenCalled();
     expect(f.request).toHaveBeenCalledTimes(phase === "terminal" ? 1 : 0);
     expect(await f.make().blocked()).toBe(false);
-    f.switch("owner-a"); expect(await f.make().blocked()).toBe(phase !== "terminal");
+    f.switch("owner-a"); expect(await f.make().blocked()).toBe(true);
+    expect(f.storage.has(f.key)).toBe(phase !== "terminal");
+  });
+
+  it("retries an uncertain legacy request unchanged and increments attempts before dispatch", async () => {
+    const f = fixture(); f.support(false); f.request.mockRejectedValueOnce(new Error("Timeout"));
+    await f.controller.send(payload, "bound");
+    f.request.mockImplementationOnce(async (_path, body) => {
+      expect(body).toEqual(payload);
+      expect(f.storage.get(`${f.key}:dispatch`)).toMatchObject({ attemptsStarted: 2 });
+      return receipt;
+    });
+    await f.controller.send({ ...payload, submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" }, "bound");
+    expect(f.request.mock.calls[1]?.[1]).toEqual(f.request.mock.calls[0]?.[1]);
+    expect(f.storage.get(`${f.key}:receipt`)).toBe(payload.submissionId);
+    expect(f.storage.has(f.key)).toBe(false);
+  });
+  it.each(["recovery", "message", "intent", "variant", "refusal", "dispatch failure"])("fences legacy retries at %s", async boundary => {
+    const f = fixture(); f.support(false); f.request.mockRejectedValueOnce(new Error("Timeout"));
+    await f.controller.send(payload, "bound");
+    const retry = { ...payload, submissionId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" };
+    if (boundary === "recovery") f.storage.set(`${f.key}:recovery`, { requestId: payload.submissionId, fileKey: "file", operation: "resolve" });
+    if (boundary === "message") retry.message = "Another handoff";
+    if (boundary === "intent") { retry.intent = "design_change"; retry.frames = payload.frames.map(frame => ({ ...frame, frameWidth: 390 })); }
+    if (boundary === "variant") retry.frames = payload.frames.map(frame => ({ ...frame, variantId: "another-variant" }));
+    if (boundary === "refusal") f.request.mockRejectedValueOnce(new ConductorSubmissionRefusedError("Refused"));
+    if (boundary === "dispatch failure") f.api.setAsync.mockRejectedValueOnce(new Error("Disk full"));
+    if (boundary === "dispatch failure") await expect(f.controller.send(retry, "bound")).rejects.toThrow("Disk full");
+    else await f.controller.send(retry, "bound");
+    expect(f.request).toHaveBeenCalledTimes(boundary === "refusal" ? 2 : 1);
+    expect(f.storage.has(f.key)).toBe(true);
+    if (boundary === "refusal") expect(f.storage.get(`${f.key}:dispatch`)).toMatchObject({ attemptsStarted: 2 });
+  });
+  it.each(["bound", "existing"] as const)("resumes %s acknowledgement only after its receipt pointer is durable", async kind => {
+    const f = fixture(), key = kind === "bound" ? f.key : existingPendingKey(f.token, "file");
+    f.api.setAsync.mockImplementation(async (name, value) => { if (name === `${key}:receipt`) throw new Error("Pointer unavailable"); f.storage.set(name, value); });
+    await f.controller.send(payload, kind);
+    expect(f.storage.get(`${key}:terminal`)).toMatchObject({ outcome: "committed", receipt });
+    await expect(f.make().blocked()).rejects.toThrow("Pointer unavailable");
+    expect(f.storage.has(key)).toBe(true);
+    expect(f.storage.has(`${key}:receipt`)).toBe(false);
+    f.api.setAsync.mockImplementation(async (name, value) => { f.storage.set(name, value); });
+    await f.make().blocked();
+    expect(f.storage.get(`${key}:receipt`)).toBe(payload.submissionId);
+    expect(f.storage.has(key)).toBe(false);
+    expect(f.storage.has(`${key}:dispatch`)).toBe(false);
+    expect(f.present.mock.calls.at(-1)?.[0]).toContain("Notification delivery is pending");
+    expect(f.request).toHaveBeenCalledTimes(1);
+  });
+  it.each(["check", "resolve"] as const)("presents workflow and notification outcomes from %s", async operation => {
+    const f = fixture(); f.storage.set(f.key, { payload });
+    const result = { ...receipt, notification: "failed", transition: "applied" };
+    f.request.mockResolvedValue(operation === "check" ? result : { requestId: payload.submissionId, fileKey: "file", outcome: "committed", receipt: result });
+    if (operation === "check") await f.controller.check();
+    else { await f.controller.requestResolution(); await f.controller.resolve(); }
+    expect(f.present.mock.calls.at(-1)?.[0]).toContain("The workflow action was applied.");
+    expect(f.present.mock.calls.at(-1)?.[0]).toContain("Notification delivery failed.");
+  });
+  it.each(["cancelled", "committed"] as const)("uses exact terminal wording for %s", async outcome => {
+    const f = fixture(); f.storage.set(f.key, { payload });
+    f.request.mockResolvedValue({ requestId: payload.submissionId, fileKey: "file", outcome, ...(outcome === "committed" ? { receipt: null } : {}) });
+    await f.controller.requestResolution(); await f.controller.resolve();
+    expect(f.present.mock.calls.at(-1)?.[0]).toBe(outcome === "cancelled" ? "The pending send was cancelled. Nothing from this request was saved." : "The earlier send was saved, but its details are no longer accessible.");
   });
 
 });

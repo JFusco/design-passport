@@ -9,7 +9,7 @@ export interface DesignChangeContext {
 }
 export interface DesignChangeState {
   project: string; deliverable: string; feature: string;
-  frames: { id: string; name: string; variantName: string; appearance: string; breakpoint: string; width: number; newLink: boolean }[];
+  frames: { id: string; name: string; url: string; variantName: string; appearance: string; breakpoint: string; width: number; baseline: number | null; newLink: boolean }[];
   annotations: { id: string; text: string }[];
   review?: { summary: string; annotationIds: string[] } | undefined;
 }
@@ -18,8 +18,8 @@ export type DesignChangeCommand = { type: "conductor-start-change" } | { type: "
 export function createDesignChangeController(deps: {
   request: (path: string) => Promise<unknown>;
   current: () => boolean;
-  present: (message: string, state?: DesignChangeState) => void;
-  pending: Pick<ReturnType<typeof import("./conductor-pending-send").createPendingSendController>, "blocked" | "send">;
+  present: (message: string, state?: DesignChangeState, result?: string) => void;
+  pending: Pick<ReturnType<typeof import("./conductor-pending-send").createPendingSendController>, "review" | "send">;
   newId: () => string;
 }) {
   let generation = 0;
@@ -50,16 +50,22 @@ export function createDesignChangeController(deps: {
     reset() { generation++; selected = undefined; context = undefined; state = undefined; },
     async handle(command: DesignChangeCommand) {
       const version = generation, current = () => version === generation && deps.current();
-      if (await deps.pending.blocked() || !current()) return;
+      const retry = await deps.pending.review("bound", "design_change");
+      if (!retry || !current()) return;
       if (command.type === "conductor-start-change") {
         const selection = readConductorSelection();
         const data = await load(selection); if (!current()) return;
+        if (retry.payload && (retry.payload.componentId !== data.componentId || retry.payload.connectionVersion !== data.connectionVersion || JSON.stringify(retry.payload.frames) !== JSON.stringify(data.frames.map(({ nodeId, variantId, expectedVariantVersion }) => ({ nodeId, variantId, expectedVariantVersion, frameWidth: selection.frames.find(frame => frame.id === nodeId)!.width }))))) throw new Error("The original variant or destination changed. Check its saved receipt or resolve the pending send.");
+        const annotationIds = retry.payload?.annotations.map(note => selection.annotations.find(source => source.nodeId === note.nodeId && source.text === note.text)?.id);
+        if (annotationIds?.some(id => !id)) throw new Error("The original checked annotations changed. Check its saved receipt or resolve the pending send.");
         selected = selection; context = data;
         state = { project: data.projectName, deliverable: data.deliverableName, feature: data.componentName,
           frames: selection.frames.map(frame => { const detail = data.frameDetails[frame.id]!;
-            return { id: frame.id, name: frame.name, variantName: detail.variantName, appearance: detail.isDefaultAppearance ? "Default appearance" : "Named variant",
-              breakpoint: detail.deviceTargetSlug, width: detail.frameWidth, newLink: data.frames.find(entry => entry.nodeId === frame.id)!.expectedVariantVersion === null }; }),
+            const baseline = data.frames.find(entry => entry.nodeId === frame.id)!.expectedVariantVersion;
+            return { id: frame.id, name: frame.name, url: `https://www.figma.com/design/${encodeURIComponent(selection.fileKey)}?node-id=${encodeURIComponent(frame.id)}`, variantName: detail.variantName, appearance: detail.isDefaultAppearance ? "Default appearance" : "Named variant",
+              breakpoint: detail.deviceTargetSlug, width: detail.frameWidth, baseline, newLink: baseline === null }; }),
           annotations: selection.annotations.map(({ id, text }) => ({ id, text })),
+          ...(retry.payload ? { review: { summary: retry.payload.message, annotationIds: annotationIds as string[] } } : {}),
         };
         deps.present("Describe the design changes and choose which annotations to include. Nothing has been saved.", state); return;
       }
@@ -82,9 +88,11 @@ export function createDesignChangeController(deps: {
         frames: context.frames.map(({ nodeId, variantId, expectedVariantVersion }) => ({ nodeId, variantId, expectedVariantVersion, frameWidth: live.frames.find(frame => frame.id === nodeId)!.width })),
         annotations: live.annotations.filter(note => review.annotationIds.includes(note.id)).map(({ nodeId, text }) => ({ nodeId, text })),
       });
-      const receipt = await deps.pending.send(payload, "bound"); if (!current() || !receipt) return;
+      const resultPath = `/projects/${encodeURIComponent(context.projectId)}/deliverables/${encodeURIComponent(context.deliverableId)}/features/${encodeURIComponent(context.componentId)}?tab=design`;
+      const destination = { project: state.project, deliverable: state.deliverable, component: state.feature };
+      const receipt = await deps.pending.send(payload, "bound", { destination, resultPath }); if (!current() || !receipt) return;
       selected = undefined; context = undefined; state = undefined;
-      deps.present(designChangeStatusMessage(receipt));
+      deps.present(`${designChangeStatusMessage(receipt)} ${destination.project} / ${destination.deliverable} / ${destination.component} → Design.`, undefined, resultPath);
     },
   };
 }

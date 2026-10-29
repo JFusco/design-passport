@@ -55,7 +55,12 @@ function ExistingFrameDetails({ state, disabled, busy, send }: Props) {
     <label htmlFor="existing-appearance">Appearance</label><select id="existing-appearance" disabled={disabled} value={isDefault ? "default" : "variant"} onChange={(event) => setDefault(event.target.value === "default")}><option value="default">Default appearance</option><option value="variant">Named variant</option></select>
     {isDefault && device?.hasDefault ? <p role="alert">A default already exists for this breakpoint. Choose Named variant and a unique name. The existing default will stay unchanged.</p> : <p>{isDefault ? "This will be the component’s default design for this breakpoint." : "Use a distinct name for this alternate appearance."}</p>}
     <label htmlFor="existing-message">{state.intent ? "What changed? (required)" : "Message for the Design discussion (optional)"}</label><textarea id="existing-message" disabled={disabled} rows={3} maxLength={10000} value={message} onChange={(event) => setMessage(event.target.value)} />
-    {state.intent ? <p>If nothing changed, cancel and use Design Notes in Conductor.</p> : null}
+    {state.intent ? <>
+      <p>Describe what changed. If there is no design change, cancel and use Design Notes in Conductor.</p>
+      <p>You can deliberately send a new submission with a new summary. Conductor does not compare the visuals.</p>
+      <p>No workflow action. Approval and workflow stay unchanged.</p>
+      <p>Applicable workflow role holders receive a Conductor inbox notice. Eligible role holders who opted into Slack also receive a Slack direct message after the update is saved. Slack delivery may be unavailable or fail separately.</p>
+    </> : null}
     {state.frame.annotations.length ? <fieldset><legend>Frame annotations to include</legend>{state.frame.annotations.map((note) => <label key={note.id} className="conductor-annotation"><input type="checkbox" disabled={disabled} checked={annotations.includes(note.id)} onChange={(event) => setAnnotations((previous) => event.target.checked ? [...previous, note.id] : previous.filter((id) => id !== note.id))} /><span>{note.text}</span></label>)}</fieldset> : <p>No annotations on this selected frame. Notes on other layers are not collected.</p>}
     <p>Checked notes become Functional Spec source evidence requiring BA confirmation. They do not establish approved requirements.</p>
     <button className="button subtle" disabled={disabled} onClick={() => send({ type: "conductor-cancel-send" })}>Cancel</button>

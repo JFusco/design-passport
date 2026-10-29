@@ -9,7 +9,7 @@ export function ConductorPanel({ state, send }: { state: ConductorPresentation; 
   const selectedEnvironment = state.environments.some((entry) => entry.id === environment) ? environment : state.environments[0]?.id ?? "";
   const connected = state.state === "connected";
   const busy = Boolean(state.busy);
-  const reviewing = Boolean(state.existing || state.change || state.recovery);
+  const reviewing = Boolean(state.existing || state.change || state.recovery || state.redacted);
   return <section className="panel stack conductor-panel" aria-labelledby="conductor-title">
     <div className="conductor-heading"><div><span className="conductor-eyebrow">DESIGN WORKSPACES</span><h2 id="conductor-title">{connected ? "Design workspaces" : "Connect to Conductor"}</h2></div><span className={`conductor-status ${connected ? "connected" : ""}`}>{connected ? "Connected" : state.state === "pairing" ? "Awaiting approval" : state.state === "error" || state.state === "unavailable" ? "Needs attention" : state.busy === "choosing" ? "Loading projects, deliverables and components…" : state.busy === "connecting" ? "Connecting…" : "Not connected"}</span></div>
     {!reviewing ? <><p>Select an independently created frame and choose Send existing frame to Conductor to choose its destination, name, appearance and project breakpoint. Review the full destination before sending.</p>
@@ -35,11 +35,21 @@ export function ConductorPanel({ state, send }: { state: ConductorPresentation; 
     {connected && !state.recovery && !state.change ? <button className="button" disabled={busy} onClick={() => send({ type: "conductor-start-existing" })}>{state.existing ? "Start over with selected frame" : "Send existing frame to Conductor"}</button> : null}
     {connected && !reviewing && state.supportsDesignChanges ? <button className="button primary" disabled={busy} onClick={() => send({ type: "conductor-start-change" })}>Send design changes</button> : null}
     {connected && state.change ? <ConductorDesignChange state={state.change} disabled={busy} send={send} /> : null}
-    {connected && state.recovery ? <section className="conductor-connection" aria-label="Pending send recovery"><h3>Pending design send</h3><p>{state.recovery.summary}</p><button className="button" disabled={busy} onClick={() => send({ type: "conductor-check-pending" })}>Check saved receipt</button>{state.recovery.canResolve ? state.recovery.confirming ? <button className="button primary" disabled={busy} onClick={() => send({ type: "conductor-resolve-pending" })}>Confirm resolution</button> : <button className="button" disabled={busy} onClick={() => send({ type: "conductor-request-resolution" })}>Resolve pending send</button> : <p>Reconnect to a Conductor server supporting pending-send recovery. Keep this pending request until its saved receipt or cancellation is confirmed.</p>}</section> : null}
+    {connected && state.recovery ? <section className="conductor-connection" aria-label="Pending send recovery"><h3>Pending design send</h3><p>{state.recovery.summary}</p>
+      {state.recovery.destination ? <p>{state.recovery.destination.project} / {state.recovery.destination.deliverable} / {state.recovery.destination.component} → Design</p> : null}
+      <button className="button" disabled={busy} onClick={() => send({ type: "conductor-check-pending" })}>Check saved receipt</button>
+      {state.recovery.retryCommand && !state.recovery.confirming ? <button className="button" disabled={busy} onClick={() => send({ type: state.recovery!.retryCommand! })}>Review original send</button> : null}
+      {state.recovery.canResolve ? state.recovery.confirming ? <button className="button primary" disabled={busy} onClick={() => send({ type: "conductor-resolve-pending" })}>Confirm resolution</button> : <button className="button" disabled={busy} onClick={() => send({ type: "conductor-request-resolution" })}>Resolve pending send</button> : <p>Reconnect to a Conductor server supporting pending-send recovery. Keep this pending request until its saved receipt or cancellation is confirmed.</p>}</section> : null}
     {connected && state.existing ? <ConductorExistingFrame state={state.existing} failed={Boolean(state.hasError)} disabled={busy} busy={state.busy === "submitting"} send={send} /> : null}
     {connected && state.existingResult ? <button className="button" disabled={busy} onClick={() => send({ type: "conductor-open-existing-result" })}>Open component’s Design tab</button> : null}
     {!reviewing && state.jobs.map((job) => <article key={job.id} className="conductor-job"><div><strong>{job.name}</strong><span>{job.device} · {job.state.replaceAll("_", " ")}</span></div><button className="button" disabled={busy || !job.canApply} onClick={() => send({ type: "conductor-apply", jobId: job.id })}>Prepare workspace</button></article>)}
-    {!reviewing && state.submission ? <ConductorSubmission key={state.submission.frames.map((frame) => frame.id).join(",")} selection={state.submission} busy={state.busy === "submitting"} disabled={busy} send={send} /> : null}
+    {!reviewing && state.submission ? state.submission.retry ? <section className="conductor-connection" aria-label="Review original send">
+      <h3>Retry original send to {state.submission.componentName}</h3>
+      <p>{state.submission.frames.map(frame => frame.name).join(", ")}</p><p>{state.submission.retry.message}</p>
+      <ul>{state.submission.annotations.filter(note => state.submission!.retry!.annotationIds.includes(note.id)).map(note => <li key={note.id}>{note.text}</li>)}</ul>
+      <p>Workflow action: {state.submission.transitions.find(action => action.id === state.submission!.retry!.transitionId)?.label ?? "Save design and notes"}</p>
+      <button className="button primary" disabled={busy} onClick={() => send({ type: "conductor-submit", ...state.submission!.retry! })}>Retry original send</button>
+    </section> : <ConductorSubmission key={state.submission.frames.map((frame) => frame.id).join(",")} selection={state.submission} busy={state.busy === "submitting"} disabled={busy} send={send} /> : null}
     <p className="conductor-footnote">Connections expire after eight hours and can be revoked from your Conductor profile. Audit, Report and Cleanup stay available offline. Preparing or submitting a design does not approve it.</p>
   </section>;
 }

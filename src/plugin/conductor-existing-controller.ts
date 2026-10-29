@@ -3,6 +3,7 @@ import { parseDesignSubmission } from "../core/conductor-contracts";
 import { readExistingFrame } from "../figma/conductor-existing-frame";
 import { parseDestinationOptions, type ExistingFrameCommand, type ExistingFrameState } from "./conductor-existing-state";
 import { type ConductorCredentials } from "./conductor-transport";
+import { LegacySendRefusedError } from "./conductor-pending-send";
 
 export function createExistingFrameController(deps: {
   credentials: () => ConductorCredentials;
@@ -10,7 +11,7 @@ export function createExistingFrameController(deps: {
   present: (message: string, state?: ExistingFrameState, result?: string) => void;
   current: () => boolean;
   newId: () => string;
-  pending: Pick<ReturnType<typeof import("./conductor-pending-send").createPendingSendController>, "blocked" | "send">;
+  pending: Pick<ReturnType<typeof import("./conductor-pending-send").createPendingSendController>, "review" | "send">;
 }) {
   let generation = 0;
   let state: ExistingFrameState | undefined;
@@ -22,7 +23,7 @@ export function createExistingFrameController(deps: {
   };
   let intent: "design_change" | undefined;
   return {
-    reset() { generation++; state = undefined; resultPath = undefined; },
+    reset() { generation++; state = undefined; resultPath = undefined; intent = undefined; },
     async handle(command: ExistingFrameCommand) {
       deps.credentials();
       const version = generation;
@@ -32,11 +33,14 @@ export function createExistingFrameController(deps: {
         figma.openExternal(`${deps.credentials().origin}${resultPath}`); return;
       }
       if (command.type === "conductor-start-existing" || command.type === "conductor-start-existing-change" || command.type === "conductor-existing-destination") {
-        if (await deps.pending.blocked()) return;
         const starting = command.type !== "conductor-existing-destination";
         if (starting) intent = command.type === "conductor-start-existing-change" ? "design_change" : undefined;
+        const retry = await deps.pending.review("existing", intent);
+        if (!retry || !current()) return;
         const frame = starting ? readExistingFrame() : selected();
-        const query = starting ? {} : { ...(command.projectId ? { projectId: command.projectId } : {}), ...(command.deliverableId ? { deliverableId: command.deliverableId } : {}), ...(command.componentId ? { componentId: command.componentId } : {}), ...(command.search ? { search: command.search } : {}) };
+        const original = retry.payload?.existingFrame;
+        if (original && (retry.payload!.frames[0]?.nodeId !== frame.id || original.frameName !== frame.name || original.frameWidth !== frame.width)) throw new Error("Select the original frame with its reviewed name and width before retrying, or resolve the pending send.");
+        const query = original ? { projectId: original.projectId, deliverableId: original.deliverableId, componentId: retry.payload!.componentId } : starting ? {} : { ...(command.projectId ? { projectId: command.projectId } : {}), ...(command.deliverableId ? { deliverableId: command.deliverableId } : {}), ...(command.componentId ? { componentId: command.componentId } : {}), ...(command.search ? { search: command.search } : {}) };
         const prior = state;
         const projectName = query.projectId ? (prior?.query.projectId === query.projectId ? prior.path?.project : prior?.options.find((entry) => entry.id === query.projectId)?.name) : undefined;
         const deliverableName = query.deliverableId ? (prior?.query.deliverableId === query.deliverableId ? prior.path?.deliverable : prior?.options.find((entry) => entry.id === query.deliverableId)?.name) : undefined;
@@ -47,6 +51,12 @@ export function createExistingFrameController(deps: {
         const data = parseDestinationOptions(await deps.request(`/api/figma-plugin/v1/destinations${search ? `?${search}` : ""}`));
         if (!current()) return;
         state = { frame, query, ...(intent ? { intent } : {}), ...(path ? { path } : {}), ...data };
+        if (original) {
+          if (!data.destination || data.destination.project.id !== original.projectId || data.destination.deliverable.id !== original.deliverableId || data.destination.component.id !== retry.payload!.componentId || !data.destination.devices.some(device => device.slug === original.deviceTargetSlug && device.width === frame.width)) throw new Error("The original destination or breakpoint changed. Check its receipt or resolve the pending send.");
+          const annotationIds = retry.payload!.annotations.map(note => frame.annotations.find(source => source.nodeId === note.nodeId && source.text === note.text)?.id);
+          if (annotationIds.some(id => !id)) throw new Error("The original checked annotations changed. Check its receipt or resolve the pending send.");
+          state.review = { variantName: original.variantName, isDefaultAppearance: original.isDefaultAppearance, deviceTargetSlug: original.deviceTargetSlug, message: retry.payload!.message, annotationIds: annotationIds as string[] };
+        }
         deps.present(data.destination ? "Name the design and match its width to a project breakpoint." : "Choose where this frame will land. Nothing has been saved.", state); return;
       }
       if (command.type === "conductor-edit-existing") {
@@ -54,7 +64,7 @@ export function createExistingFrameController(deps: {
         state = { ...state!, details: state!.review, review: undefined };
         deps.present("Edit the design details, then review the destination again.", state); return;
       }
-      if (await deps.pending.blocked()) return;
+      if (!await deps.pending.review("existing", intent) || !current()) return;
       const frame = selected();
       const target = state!.destination;
       if (!target) throw new Error("Choose a project, deliverable and feature/component first.");
@@ -82,9 +92,19 @@ export function createExistingFrameController(deps: {
       const payload = parseDesignSubmission({ ...(intent ? { intent } : {}), submissionId: deps.newId(), connectionVersion: 1, componentId: target.component.id, fileKey: frame.fileKey,
         existingFrame: { projectId: target.project.id, deliverableId: target.deliverable.id, frameName: frame.name, variantName: review.variantName, isDefaultAppearance: review.isDefaultAppearance, frameWidth: frame.width, deviceTargetSlug: review.deviceTargetSlug },
         frames: [{ nodeId: frame.id, variantId: deps.newId(), expectedVariantVersion: null }], message: review.message, annotations: frame.annotations.filter((note) => review.annotationIds.includes(note.id)).map(({ nodeId, text }) => ({ nodeId, text })) });
-      const result = await deps.pending.send(payload, "existing");
+      const destination = { project: target.project.name, deliverable: target.deliverable.name, component: target.component.name };
+      const path = `/projects/${encodeURIComponent(target.project.id)}/deliverables/${encodeURIComponent(target.deliverable.id)}/features/${encodeURIComponent(target.component.id)}?tab=design`;
+      let result;
+      try { result = await deps.pending.send(payload, "existing", { destination, resultPath: path }); }
+      catch (error) {
+        if (current() && error instanceof LegacySendRefusedError) {
+          state = { ...state!, details: review, review: undefined };
+          deps.present(error.message, state);
+        }
+        throw error;
+      }
       if (!current() || !result) return;
-      resultPath = `/projects/${encodeURIComponent(target.project.id)}/deliverables/${encodeURIComponent(target.deliverable.id)}/features/${encodeURIComponent(target.component.id)}?tab=design`;
+      resultPath = path;
       state = undefined;
       deps.present(`${intent ? `${designChangeStatusMessage(result)} ` : ""}Saved “${review.variantName}” as ${review.isDefaultAppearance ? "Default appearance" : "a named variant"} at ${frame.width}px in ${target.project.name} / ${target.deliverable.name} / ${target.component.name} → Design. Your message and checked annotations are in Design discussion. Approval and workflow state are unchanged.`, undefined, resultPath);
     },

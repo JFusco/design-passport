@@ -71,7 +71,8 @@ describe("existing frame handoff", () => {
     });
     await expect(f.controller.handle({ type: "conductor-confirm-existing" })).rejects.toThrow(/Review the destination, width and design details/);
     expect([...f.storage.values()]).toMatchObject([{ outcome: "refused" }]);
-
+    const { type: _type, ...details } = f.review;
+    expect(f.present).toHaveBeenLastCalledWith(expect.stringContaining("Review the destination, width and design details"), expect.objectContaining({ details, review: undefined }));
   });
   it("renders an enabled Disconnect throughout the existing-frame steps", () => {
     const f = fixture();

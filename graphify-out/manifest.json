@@ -845,8 +845,8 @@
     "semantic_hash": ""
   },
   "src/plugin/conductor-controller.ts": {
-    "mtime": 1793304656.7713032,
-    "ast_hash": "41a20193d337a468aedf454fca68bcad",
+    "mtime": 1793310069.4397588,
+    "ast_hash": "82560f573bdfef6ce1ec95d7b950e345",
     "semantic_hash": ""
   },
   "src/plugin/conductor-environments.ts": {
@@ -855,8 +855,8 @@
     "semantic_hash": ""
   },
   "src/plugin/conductor-state.ts": {
-    "mtime": 1793301710.7076952,
-    "ast_hash": "5bf06e6a9188c4ca8714151b36780e0d",
+    "mtime": 1793309769.9052212,
+    "ast_hash": "10b67477eded8524e92c6d1c3c790d48",
     "semantic_hash": ""
   },
   "src/plugin/conductor-transport.ts": {
@@ -865,8 +865,8 @@
     "semantic_hash": ""
   },
   "src/ui/components/ConductorPanel.tsx": {
-    "mtime": 1793301753.746144,
-    "ast_hash": "58c5de8335bd2f3b0c8cee135120853d",
+    "mtime": 1793309792.2949128,
+    "ast_hash": "c15016a91e45d6ef1478b71588ce07fb",
     "semantic_hash": ""
   },
   "src/ui/components/ConductorSubmission.tsx": {
@@ -885,8 +885,8 @@
     "semantic_hash": ""
   },
   "src/plugin/conductor-existing-controller.ts": {
-    "mtime": 1793304656.790162,
-    "ast_hash": "0333cb709a9ec60ffc73ea5d532c9034",
+    "mtime": 1793309769.870858,
+    "ast_hash": "7bed04a45771bcbe49e926de30790adc",
     "semantic_hash": ""
   },
   "src/plugin/conductor-existing-state.ts": {
@@ -895,28 +895,28 @@
     "semantic_hash": ""
   },
   "src/ui/components/ConductorExistingConfirmation.tsx": {
-    "mtime": 1793301755.8070667,
-    "ast_hash": "27cc97749723de5a921d7576f6c413d5",
+    "mtime": 1793309792.2177157,
+    "ast_hash": "c2d9128fc8be25b74022f7c614f20b90",
     "semantic_hash": ""
   },
   "src/ui/components/ConductorExistingFrame.tsx": {
-    "mtime": 1793303164.2458482,
-    "ast_hash": "01fa4b59505013e9547b8d001ce45ede",
+    "mtime": 1793309792.253925,
+    "ast_hash": "66b2a6aef06fd092b0bdee702ed11a9c",
     "semantic_hash": ""
   },
   "src/plugin/conductor-change-controller.ts": {
-    "mtime": 1793302407.3204238,
-    "ast_hash": "c6fdc97e291dea6ec11e2ad435c8f37c",
+    "mtime": 1793309769.8371198,
+    "ast_hash": "c92d27dff3c05f5812f2fcf1078f6e43",
     "semantic_hash": ""
   },
   "src/plugin/conductor-pending-send.ts": {
-    "mtime": 1793302801.8111117,
-    "ast_hash": "2933838d99ad1d9860aae134c04c851d",
+    "mtime": 1793310069.481498,
+    "ast_hash": "56c4fa5cff4dc9751ddfdce042e0f69c",
     "semantic_hash": ""
   },
   "src/ui/components/ConductorDesignChange.tsx": {
-    "mtime": 1793301736.084265,
-    "ast_hash": "4886f9e312af4036abe694a7db233b5f",
+    "mtime": 1793309792.1812494,
+    "ast_hash": "245dd132235e2ab88bc296de1bc242cc",
     "semantic_hash": ""
   }
 }

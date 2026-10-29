@@ -4,12 +4,14 @@ export interface ConductorPresentation {
   supportsDesignChanges?: boolean;
   recovery?: import("./conductor-pending-send").PendingSendPresentation;
   change?: import("./conductor-change-controller").DesignChangeState;
+  redacted?: boolean;
   state: "offline" | "pairing" | "connected" | "unavailable" | "error";
   message: string;
   busy?: "choosing" | "connecting" | "refreshing" | "inspecting" | "submitting" | "preparing";
   hasError?: boolean;
   environments: { id: string; label: string }[];
   submission?: {
+    retry?: { message: string; annotationIds: string[]; transitionId: string };
     componentName: string; frames: { id: string; name: string }[]; message: string;
     annotations: { id: string; text: string }[]; transitions: { id: string; label: string }[];
   };
