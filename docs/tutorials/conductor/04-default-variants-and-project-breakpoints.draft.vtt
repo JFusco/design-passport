@@ -1,0 +1,24 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:03.500
+Check the actual frame width: 390px.
+
+00:00:04.900 --> 00:00:08.400
+Choose the project’s matching 390px
+breakpoint.
+
+00:00:09.800 --> 00:00:13.891
+Use Default only if this breakpoint has no
+default.
+
+00:00:15.291 --> 00:00:20.291
+Choose Named variant and a unique name for
+an alternate design.
+
+00:00:21.691 --> 00:00:25.782
+A mismatched width needs resizing and a
+new review.
+
+00:00:27.182 --> 00:00:30.682
+Confirm name, appearance and breakpoint
+together.

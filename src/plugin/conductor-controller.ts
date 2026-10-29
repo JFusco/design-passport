@@ -1,14 +1,17 @@
+import { existingPendingKey, createPendingSendController } from "./conductor-pending-send";
+import { designChangeStatusMessage, submissionStatusMessage } from "./conductor-submission-status";
+import { createDesignChangeController } from "./conductor-change-controller";
+import { readExistingFrame } from "../figma/conductor-existing-frame";
 import { createExistingFrameController } from "./conductor-existing-controller";
-import { submissionStatusMessage } from "./conductor-submission-status";
 import { readConductorSelection } from "../figma/conductor-selection";
 import { parseDesignSubmission, type DesignSubmission, type SubmissionResult } from "../core/conductor-contracts";
 import { assertContractVersion, WORKSPACE_LIMITS, type CanvasJob, type WorkspaceLease, type WorkspaceReceipt } from "../core/conductor-contracts";
 import { CONDUCTOR_ENVIRONMENTS } from "./conductor-environments";
 import type { ConductorCommand, ConductorPresentation } from "./conductor-state";
-import { ConductorAuthorizationError, ConductorRequestTimeoutError, ConductorSubmissionRefusedError, ConductorTransport, type ConductorCredentials } from "./conductor-transport";
+import { ConductorAuthorizationError, ConductorRequestTimeoutError, ConductorTransport, type ConductorCredentials } from "./conductor-transport";
 
 interface ContextResponse {
-  contractVersion: string; enabled: boolean; destination: { project: string; deliverable: string };
+  contractVersion: string; enabled: boolean; supports?: string[]; destination: { project: string; deliverable: string };
   jobs: ConductorPresentation["jobs"];
 }
 const STORAGE_KEY = "conductor-credentials-v1";
@@ -23,6 +26,7 @@ export function createConductorController(deps: {
   let epoch = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let active = false;
+  let supportsDesignChanges = false;
   let submitting: object | undefined;
   let submissionSelection: { selection: ReturnType<typeof readConductorSelection>; context: { componentId: string; componentName: string; connectionVersion: number; frames: DesignSubmission["frames"]; workflow: { version: number; transitions: { id: string; label: string }[] } } } | undefined;
   const draftKey = (token: ConductorCredentials, fileKey: string) => `conductor-draft-v1:${token.origin}:${token.ownerUserId}:${fileKey}`;
@@ -31,17 +35,25 @@ export function createConductorController(deps: {
   let busy: ConductorPresentation["busy"];
   let busyOwner: object | undefined;
   const present = (state: ConductorPresentation["state"], message: string, rest: Partial<ConductorPresentation> = {}) => {
-    presentation = { state, message, environments, jobs: state === "connected" ? presentation.jobs : [], ...(state === "connected" && presentation.destination ? { destination: presentation.destination } : {}), ...rest };
+    presentation = { state, message, environments, jobs: state === "connected" ? presentation.jobs : [], ...(state === "connected" && presentation.destination ? { destination: presentation.destination } : {}), supportsDesignChanges: state === "connected" && supportsDesignChanges, ...rest };
     deps.post({ ...presentation, ...(busy ? { busy } : {}) });
   };
-  const stop = () => { existing.reset(); submissionSelection = undefined; submitting = undefined; active = false; epoch++; if (timer !== undefined) clearTimeout(timer); timer = undefined; transport.stop(); };
+  const stop = () => { existing.reset(); changes.reset(); pending.reset(); supportsDesignChanges = false; busy = undefined; busyOwner = undefined; submissionSelection = undefined; submitting = undefined; active = false; epoch++; if (timer !== undefined) clearTimeout(timer); timer = undefined; transport.stop(); };
   const requireCredentials = () => {
     if (!active || !credentials || Date.parse(credentials.expiresAt) <= Date.now()) throw new Error("Connect to Conductor again; your connection expired or is offline");
     return credentials;
   };
+  const request = (path: string, body?: unknown) => { const token = requireCredentials(); return transport.request(token.origin, path, { token: token.token, ...(body === undefined ? {} : { body }) }); };
+  const pending = createPendingSendController({ credentials: requireCredentials, current: () => active, session: () => epoch,
+    supported: () => supportsDesignChanges, request,
+    present: (message, recovery) => present("connected", message, recovery ? { recovery } : {}),
+  });
+  const changes = createDesignChangeController({ request, current: () => active, newId: newRequestId, pending,
+    present: (message, change) => present("connected", message, change ? { change } : {}),
+  });
   const existing = createExistingFrameController({
-    credentials: requireCredentials,
-    request: (path, body) => { const token = requireCredentials(); return transport.request(token.origin, path, { token: token.token, ...(body === undefined ? {} : { body }) }); },
+    credentials: requireCredentials, pending,
+    request,
     present: (message, state, result) => present("connected", message, { ...(state ? { existing: state } : {}), ...(result ? { existingResult: result } : {}) }),
     current: () => active && Boolean(credentials), newId: newRequestId,
   });
@@ -53,13 +65,19 @@ export function createConductorController(deps: {
     assertContractVersion(context.contractVersion);
     if (!context.enabled) { present("unavailable", "Design workspaces are not enabled for your organization. Offline audits remain available."); return; }
     if (!Array.isArray(context.jobs) || context.jobs.length > 100 || !context.destination || typeof context.destination.project !== "string" || typeof context.destination.deliverable !== "string") throw new Error("Invalid Conductor workspace response");
+    supportsDesignChanges = Array.isArray(context.supports) && context.supports.includes("design_change") && context.supports.includes("resolve_pending_send");
+    if (await pending.blocked()) return;
     let message = "Connected. Keep this file and the plugin open while preparing workspaces.";
-    const requestId: unknown = await figma.clientStorage.getAsync(`${draftKey(token, figma.fileKey)}:receipt`);
-    if (!active || generation !== epoch) return;
-    if (typeof requestId === "string" && /^[a-f0-9-]{36}$/i.test(requestId)) {
-      const status = await transport.request(token.origin, `/api/figma-plugin/v1/submissions/${encodeURIComponent(requestId)}`, { token: token.token }) as SubmissionResult;
+    for (const key of [draftKey(token, figma.fileKey), existingPendingKey(token, figma.fileKey)]) {
+      const requestId: unknown = await figma.clientStorage.getAsync(`${key}:receipt`);
       if (!active || generation !== epoch) return;
-      message = submissionStatusMessage(status);
+      if (typeof requestId === "string" && /^[a-f0-9-]{36}$/i.test(requestId)) {
+        const status = await transport.request(token.origin, `/api/figma-plugin/v1/submissions/${encodeURIComponent(requestId)}`, { token: token.token }) as SubmissionResult;
+        if (!active || generation !== epoch) return;
+        const terminal = await figma.clientStorage.getAsync(`${key}:terminal`) as { intent?: string } | undefined;
+        if (!active || generation !== epoch) return;
+        message = terminal?.intent === "design_change" ? designChangeStatusMessage(status) : submissionStatusMessage(status);
+      }
     }
     present("connected", message, { destination: context.destination, jobs: context.jobs });
   };
@@ -91,14 +109,30 @@ export function createConductorController(deps: {
     stop,
     async handle(command: ConductorCommand) {
       const op = {};
+      let operationEpoch = epoch;
       if (busy && command.type !== "conductor-offline" && command.type !== "conductor-disconnect") return;
       const activities: Partial<Record<ConductorCommand["type"], NonNullable<ConductorPresentation["busy"]>>> = {
-        "conductor-start-existing": "choosing", "conductor-existing-destination": "choosing", "conductor-review-existing": "inspecting", "conductor-confirm-existing": "submitting", "conductor-connect": "connecting", "conductor-refresh": "refreshing", "conductor-inspect-selection": "inspecting", "conductor-submit": "submitting", "conductor-apply": "preparing",
+        "conductor-start-change": "inspecting", "conductor-review-change": "inspecting", "conductor-confirm-change": "submitting", "conductor-check-pending": "refreshing", "conductor-resolve-pending": "submitting", "conductor-start-existing-change": "choosing", "conductor-start-existing": "choosing", "conductor-existing-destination": "choosing", "conductor-review-existing": "inspecting", "conductor-confirm-existing": "submitting", "conductor-connect": "connecting", "conductor-refresh": "refreshing", "conductor-inspect-selection": "inspecting", "conductor-submit": "submitting", "conductor-apply": "preparing",
       };
       busy = activities[command.type];
       busyOwner = busy ? op : undefined;
       if (busy) deps.post({ ...presentation, busy, hasError: false });
       try {
+        if (command.type === "conductor-check-pending") { await pending.check(); return; }
+        if (command.type === "conductor-request-resolution") { await pending.requestResolution(); return; }
+        if (command.type === "conductor-resolve-pending") { await pending.resolve(); return; }
+        if (command.type === "conductor-cancel-send") { changes.reset(); existing.reset(); submissionSelection = undefined; present("connected", "Design submission cancelled. Use Design Notes in Conductor when nothing changed."); return; }
+        if (["conductor-start-change", "conductor-review-change", "conductor-edit-change", "conductor-confirm-change", "conductor-start-existing-change"].includes(command.type)) {
+          if (!supportsDesignChanges) throw new Error("Reconnect to Conductor with design-change and pending-send recovery support.");
+          if (await pending.blocked()) return;
+          if (command.type === "conductor-start-change") {
+            let unbound = false;
+            try { readExistingFrame(); unbound = true; } catch { /* Bound selections are validated by the change controller. */ }
+            if (unbound) { await existing.handle({ type: "conductor-start-existing-change" }); return; }
+          }
+          if (command.type === "conductor-start-existing-change") { await existing.handle(command); return; }
+          await changes.handle(command as import("./conductor-change-controller").DesignChangeCommand); return;
+        }
         if (["conductor-start-existing", "conductor-existing-destination", "conductor-review-existing", "conductor-edit-existing", "conductor-confirm-existing", "conductor-open-existing-result"].includes(command.type)) {
           const generation = epoch;
           try { await existing.handle(command as import("./conductor-existing-state").ExistingFrameCommand); }
@@ -107,7 +141,7 @@ export function createConductorController(deps: {
         }
         if (command.type === "conductor-offline") { stop(); return; }
         if (command.type === "conductor-open") {
-          stop(); credentials = undefined; active = true; transport.open(); const generation = epoch;
+          stop(); operationEpoch = epoch; credentials = undefined; active = true; transport.open(); const generation = epoch;
           const saved: unknown = await figma.clientStorage.getAsync(STORAGE_KEY);
           if (!active || generation !== epoch) return;
           if (saved && typeof saved === "object") {
@@ -125,7 +159,7 @@ export function createConductorController(deps: {
           stop(); present("offline", "Disconnected locally. You can also revoke Design Passport access from your Conductor profile."); return;
         }
         if (command.type === "conductor-connect") {
-          stop(); active = true; transport.open(); const generation = epoch;
+          stop(); operationEpoch = epoch; active = true; transport.open(); const generation = epoch;
           const environment = transport.environment(command.environment);
           const pairing = await transport.request(environment.origin, "/api/figma-plugin/v1/pairings", { body: {} }) as { id: string; pollingSecret: string; userCode: string; verificationUrl: string; expiresAt: string };
           if (!active || generation !== epoch) return;
@@ -139,6 +173,7 @@ export function createConductorController(deps: {
         }
         if (command.type === "conductor-inspect-selection") {
           const token = requireCredentials(); const generation = epoch;
+          if (await pending.blocked()) return;
           let selection: ReturnType<typeof readConductorSelection>;
           try { selection = readConductorSelection(); }
           catch (error) {
@@ -164,6 +199,7 @@ export function createConductorController(deps: {
           const live = () => active && generation === epoch && credentials === token;
           const owner = {}; submitting = owner;
           try {
+          if (await pending.blocked()) return;
           const selected = submissionSelection;
           if (!selected) throw new Error("Select and review the destination again before submitting");
           const current = readConductorSelection();
@@ -171,40 +207,11 @@ export function createConductorController(deps: {
           const annotations = command.annotationIds.map((id) => { const note = current.annotations.find((note) => note.id === id); if (!note) throw new Error("Selected annotations changed; review them again"); return { nodeId: note.nodeId, text: note.text }; });
           const transition = command.transitionId ? selected.context.workflow.transitions.find((entry) => entry.id === command.transitionId) : undefined;
           if (command.transitionId && !transition) throw new Error("Choose a permitted workflow action");
-          const key = draftKey(token, current.fileKey);
-          const payload = parseDesignSubmission({ submissionId: newRequestId(), connectionVersion: selected.context.connectionVersion, componentId: selected.context.componentId, fileKey: current.fileKey, frames: selected.context.frames, message: command.message, annotations,
+          const payload = parseDesignSubmission({ submissionId: newRequestId(), connectionVersion: selected.context.connectionVersion, componentId: selected.context.componentId, fileKey: current.fileKey,
+            frames: selected.context.frames.map(({ nodeId, variantId, expectedVariantVersion }) => ({ nodeId, variantId, expectedVariantVersion })), message: command.message, annotations,
             ...(transition ? { transition: { id: transition.id, expectedWorkflowVersion: selected.context.workflow.version } } : {}) });
-          const saved: unknown = await figma.clientStorage.getAsync(key);
-          if (!live()) return;
-          let pending = payload;
-          if (saved && typeof saved === "object" && "payload" in saved) {
-            const previous = parseDesignSubmission(saved.payload);
-            if (previous.componentId !== payload.componentId || previous.fileKey !== payload.fileKey || previous.message !== payload.message || JSON.stringify(previous.annotations) !== JSON.stringify(payload.annotations) || previous.transition?.id !== payload.transition?.id || JSON.stringify(previous.frames.map((frame) => frame.nodeId)) !== JSON.stringify(payload.frames.map((frame) => frame.nodeId))) throw new Error("A previous submission still awaits acknowledgement. Retry its original message and selection before changing it.");
-            pending = previous;
-          }
-            await figma.clientStorage.setAsync(key, { payload: pending });
-            if (!live()) return;
-            let result: SubmissionResult;
-            try { result = await transport.request(token.origin, "/api/figma-plugin/v1/submissions", { token: token.token, body: pending }) as SubmissionResult; }
-            catch (error) {
-              if (!live()) return;
-              if (error instanceof ConductorSubmissionRefusedError) {
-                const stored: unknown = await figma.clientStorage.getAsync(key);
-                if (!live()) return;
-                if (stored && typeof stored === "object" && "payload" in stored && parseDesignSubmission(stored.payload).submissionId === pending.submissionId) {
-                  await figma.clientStorage.deleteAsync(key);
-                  if (!live()) return;
-                }
-                if (presentation.submission) presentation = { ...presentation, submission: { ...presentation.submission, message: pending.message } };
-              }
-              throw error;
-            }
-            if (!live()) return;
-            if (typeof result.commentId !== "string" || !Array.isArray(result.variantIds)) throw new Error("Submission acknowledgement is incomplete; retry to check its saved state");
-            await figma.clientStorage.setAsync(`${key}:receipt`, pending.submissionId);
-            if (!live()) return;
-            await figma.clientStorage.deleteAsync(key);
-            if (!live()) return;
+          const result = await pending.send(payload, "bound");
+          if (!live() || !result) return;
             submissionSelection = undefined;
             present("connected", submissionStatusMessage(result));
           } catch (error) { if (live()) throw error; }
@@ -237,10 +244,10 @@ export function createConductorController(deps: {
           } finally { release(); }
         }
       } catch (error) {
-        if (active) {
+        if (active && operationEpoch === epoch) {
           const message = error instanceof Error ? error.message : "Conductor is unavailable. Your design is retained; try again.";
           const recoverable = credentials && Date.parse(credentials.expiresAt) > Date.now() && !(error instanceof ConductorAuthorizationError);
-          present(recoverable ? "connected" : "error", message, { ...(recoverable ? { jobs: presentation.jobs, ...(presentation.destination ? { destination: presentation.destination } : {}), ...(presentation.submission ? { submission: presentation.submission } : {}), ...(presentation.existing ? { existing: presentation.existing } : {}), ...(presentation.existingResult ? { existingResult: presentation.existingResult } : {}) } : {}), hasError: true });
+          present(recoverable ? "connected" : "error", message, { ...(recoverable ? { jobs: presentation.jobs, ...(presentation.destination ? { destination: presentation.destination } : {}), ...(presentation.submission ? { submission: presentation.submission } : {}), ...(presentation.existing ? { existing: presentation.existing } : {}), ...(presentation.existingResult ? { existingResult: presentation.existingResult } : {}), ...(presentation.recovery ? { recovery: presentation.recovery } : {}), ...(presentation.change ? { change: presentation.change } : {}) } : {}), hasError: true });
         }
       } finally { if (busyOwner === op || busyOwner === undefined) { busy = undefined; busyOwner = undefined; deps.post(presentation); } }
     },

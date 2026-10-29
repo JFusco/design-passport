@@ -1,0 +1,19 @@
+SILENT TASK CLIP. Draft; not recorded.
+
+1. Check the actual frame width: 390px.
+SHOT: Figma width control
+
+2. Choose the project’s matching 390px breakpoint.
+SHOT: Device picker
+
+3. Use Default only if this breakpoint has no default.
+SHOT: Duplicate-default refusal
+
+4. Choose Named variant and a unique name for an alternate design.
+SHOT: Corrected details
+
+5. A mismatched width needs resizing and a new review.
+SHOT: Exact-width refusal
+
+6. Confirm name, appearance and breakpoint together.
+SHOT: Confirmation

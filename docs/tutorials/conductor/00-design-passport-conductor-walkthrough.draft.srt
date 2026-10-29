@@ -1,0 +1,283 @@
+1
+00:00:00,000 --> 00:00:07,273
+Here’s how to move a design from Conductor
+into Figma, then send a clear update back.
+
+2
+00:00:07,673 --> 00:00:12,673
+We’ll use a sample project throughout.
+Preparing a workspace, submitting a
+
+3
+00:00:13,073 --> 00:00:18,982
+design, reviewing it, and approving it are
+separate steps. Sending a design never
+
+4
+00:00:19,382 --> 00:00:22,882
+approves it.
+
+5
+00:00:24,282 --> 00:00:29,736
+In Design Passport, open Conductor, choose
+your environment, and select Connect in
+
+6
+00:00:30,136 --> 00:00:35,591
+browser. Sign in and check that the
+approval matches this plugin. Approve
+
+7
+00:00:35,991 --> 00:00:41,900
+access, then return to Figma. Keep live
+connection codes and credentials out of
+
+8
+00:00:42,300 --> 00:00:48,209
+the recording. This connection lasts eight
+hours. You can disconnect here, or revoke
+
+9
+00:00:48,609 --> 00:00:52,109
+access from your Conductor profile.
+
+10
+00:00:53,509 --> 00:00:58,964
+In the feature’s Design tab, choose
+Prepare in Figma. Pick the source
+
+11
+00:00:59,364 --> 00:01:04,818
+screenshot and a configured device. A
+project lead links the intended Figma
+
+12
+00:01:05,218 --> 00:01:11,127
+Design file when needed. Back in the
+plugin, refresh workspaces and prepare the
+
+13
+00:01:11,527 --> 00:01:16,073
+workspace. Keep the file and plugin open
+while it finishes.
+
+14
+00:01:17,473 --> 00:01:22,473
+Reference preserves the starting design.
+Wireframe is an editable starting point.
+
+15
+00:01:22,873 --> 00:01:28,782
+Design is where you make the replacement.
+Edit the Design frame. Preparing these
+
+16
+00:01:29,182 --> 00:01:33,727
+frames does not send your edits back to
+Conductor automatically.
+
+17
+00:01:35,127 --> 00:01:41,036
+You can also send a frame you created
+independently. Select Send existing frame
+
+18
+00:01:41,436 --> 00:01:47,345
+to Conductor, then choose the project,
+deliverable and feature. Give the design a
+
+19
+00:01:47,745 --> 00:01:53,200
+clear name, choose its appearance and
+match a configured breakpoint. Review the
+
+20
+00:01:53,600 --> 00:01:59,055
+full destination before sending. This
+creates a new design link and leaves
+
+21
+00:01:59,455 --> 00:02:02,955
+existing designs in place.
+
+22
+00:02:04,355 --> 00:02:10,264
+Default appearance and the design name are
+separate choices. A breakpoint can have
+
+23
+00:02:10,664 --> 00:02:16,573
+one default. For another appearance,
+choose a named variant and give it a
+
+24
+00:02:16,973 --> 00:02:22,882
+unique name. The Figma frame width must
+match the project breakpoint exactly. If
+
+25
+00:02:23,282 --> 00:02:30,555
+it does not match, resize the frame and
+review it again. The plugin does not round
+
+26
+00:02:30,955 --> 00:02:34,455
+widths for you.
+
+27
+00:02:35,855 --> 00:02:42,218
+Select the annotated layers whose notes
+you want to consider. Check only the notes
+
+28
+00:02:42,618 --> 00:02:47,618
+you mean to send. Notes on unselected
+descendants are not collected
+
+29
+00:02:48,018 --> 00:02:53,018
+automatically. Your checked notes and
+their Figma source links become evidence
+
+30
+00:02:53,418 --> 00:02:58,873
+in the feature’s Design discussion. A
+business analyst still needs to confirm
+
+31
+00:02:59,273 --> 00:03:04,727
+requirements. These notes do not override
+saved decisions or approve a Functional
+
+32
+00:03:05,127 --> 00:03:08,627
+Spec.
+
+33
+00:03:10,027 --> 00:03:15,482
+When the design changes, choose Send
+design changes. Explain what changed in
+
+34
+00:03:15,882 --> 00:03:22,245
+your own words, and check the annotations
+to include. If nothing changed, cancel and
+
+35
+00:03:22,645 --> 00:03:27,645
+use Design Notes in Conductor. Review the
+project, deliverable, feature, frame,
+
+36
+00:03:28,045 --> 00:03:33,045
+variant, appearance and breakpoint. A
+first submission is labelled New design
+
+37
+00:03:33,445 --> 00:03:37,082
+link. Confirm only when these details are
+right.
+
+38
+00:03:38,482 --> 00:03:44,391
+The design links, summary and checked
+notes are now saved in the confirmed
+
+39
+00:03:44,791 --> 00:03:50,245
+feature’s Design discussion. This action
+makes no workflow move or approval. The
+
+40
+00:03:50,645 --> 00:03:55,645
+current workflow’s applicable role holders
+keep their inbox notices. Only authorized
+
+41
+00:03:56,045 --> 00:04:02,409
+role holders who opted into Slack get an
+external message. The saved design and
+
+42
+00:04:02,809 --> 00:04:08,264
+Slack delivery have separate outcomes.
+Pending or failed Slack delivery does not
+
+43
+00:04:08,664 --> 00:04:12,164
+mean the design was lost.
+
+44
+00:04:13,564 --> 00:04:19,927
+If the response is lost, check the saved
+receipt before starting another send. You
+
+45
+00:04:20,327 --> 00:04:27,145
+can do this after reopening the plugin,
+even if the frame has been deleted or
+
+46
+00:04:27,545 --> 00:04:33,000
+nothing is selected. Resolve pending send
+asks Conductor to recover the committed
+
+47
+00:04:33,400 --> 00:04:39,309
+receipt or safely cancel that request.
+Confirm the resolution. It cannot undo a
+
+48
+00:04:39,709 --> 00:04:46,073
+design that was already saved. If access
+expired or was revoked, reconnect first. A
+
+49
+00:04:46,473 --> 00:04:49,973
+timeout or missing receipt never proves
+cancellation.
+
+50
+00:04:51,373 --> 00:04:57,736
+The plugin is optional. Without it, use
+Add Design in Conductor to upload a
+
+51
+00:04:58,136 --> 00:05:04,955
+screenshot or link a Figma frame, then add
+Design Notes. Figma import still needs the
+
+52
+00:05:05,355 --> 00:05:09,900
+server’s Figma connection; screenshot
+upload does not. Normal review and
+
+53
+00:05:10,300 --> 00:05:15,755
+approval remain available when the plugin
+is absent, disconnected or expired. Choose
+
+54
+00:05:16,155 --> 00:05:19,791
+an approval only through the normal
+Conductor workflow.
+
+55
+00:05:21,191 --> 00:05:26,645
+Before you finish, check the destination,
+the saved discussion and the delivery
+
+56
+00:05:27,045 --> 00:05:31,591
+status. Design Passport prepares and
+submits design evidence. Reviewers and
+
+57
+00:05:31,991 --> 00:05:36,536
+business analysts confirm it, and the
+authorized workflow owner handles
+
+58
+00:05:36,936 --> 00:05:41,027
+approval. That keeps the next step clear
+for everyone.

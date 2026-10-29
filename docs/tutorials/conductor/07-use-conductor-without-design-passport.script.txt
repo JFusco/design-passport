@@ -1,0 +1,16 @@
+SILENT TASK CLIP. Draft; not recorded.
+
+1. Disconnect Design Passport, or leave it closed.
+SHOT: Disconnected plugin
+
+2. Upload a screenshot with Add Design in Conductor.
+SHOT: Plugin-free upload
+
+3. Alternatively import a Figma frame with the server integration.
+SHOT: Plugin-free Figma import
+
+4. Add Design Notes and reload the feature.
+SHOT: Saved notes
+
+5. Review and approve through the normal Conductor workflow.
+SHOT: Authorized review/approval controls; use synthetic fixture

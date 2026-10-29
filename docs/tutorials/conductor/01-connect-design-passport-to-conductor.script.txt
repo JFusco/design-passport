@@ -1,0 +1,16 @@
+SILENT TASK CLIP. Draft; not recorded.
+
+1. Choose the Conductor environment.
+SHOT: Plugin Conductor tab
+
+2. Select Connect in browser.
+SHOT: Connection action
+
+3. Review and approve the matching connection.
+SHOT: Sanitized approval cutaway; no live code
+
+4. Return to Figma and check Connected.
+SHOT: Connected plugin
+
+5. Disconnect here, or revoke access in your profile.
+SHOT: Connection lifecycle controls

@@ -13,7 +13,7 @@ export function ConductorExistingConfirmation({ state, disabled, busy, send }: {
   return <div className="handoff-confirmation">
     <header className="handoff-confirmation-heading">
       <span className="handoff-step">Step 3 of 3</span>
-      <h4>Confirm your handoff</h4>
+      <h4>{state.intent ? "Confirm design changes · New design link" : "Confirm your handoff"}</h4>
       <p>Check the destination and design before sending.</p>
     </header>
 
@@ -45,9 +45,10 @@ export function ConductorExistingConfirmation({ state, disabled, busy, send }: {
       <ul>{notes.map((note) => <li key={note.id}>{note.text}</li>)}</ul>
     </details> : <p className="handoff-reassurance">No annotations included.</p>}
 
+    {state.intent ? <p>Authorized role holders from the current workflow stage who opted into Slack receive the design-change summary. Conductor inbox notices remain available.</p> : null}
     <p className="handoff-reassurance">Adds a frame link to Design. Your message and checked notes go to Design discussion. Approval and workflow stay unchanged.</p>
     <div className="handoff-confirmation-actions">
-      <button className="button primary" disabled={disabled} onClick={() => send({ type: "conductor-confirm-existing" })}>{busy ? "Sending design…" : "Send design"}</button>
+      <button className="button primary" disabled={disabled} onClick={() => send({ type: "conductor-confirm-existing" })}>{busy ? "Sending design…" : state.intent ? "Send design changes" : "Send design"}</button>
       <button className="button subtle" disabled={disabled} onClick={() => send({ type: "conductor-edit-existing" })}>Back to details</button>
     </div>
   </div>;

@@ -5,7 +5,7 @@
   "files": {
     "conductor-contracts.ts": {
       "source": "apps/shell/src/lib/design-workspaces/contracts.ts",
-      "sha256": "30c8e1eeaaf16a7b4db88aae4734a49405244d07fc89b786fb465e8f3508bddb"
+      "sha256": "078fb0466107c539437b0f154dbfbfd7b5ebf57f0f043058c8302d0bc02beabe"
     },
     "conductor-digest.ts": {
       "source": "apps/shell/src/lib/design-workspaces/instruction-digest.ts",

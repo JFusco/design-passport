@@ -7,6 +7,7 @@ export interface ExistingDestination {
   devices: { slug: string; width: number; hasDefault: boolean }[];
 }
 export interface ExistingFrameState {
+  intent?: "design_change";
   frame: ReturnType<typeof readExistingFrame>;
   query: { projectId?: string; deliverableId?: string; componentId?: string; search?: string };
   path?: { project: string; deliverable?: string };
@@ -18,6 +19,7 @@ export interface ExistingFrameState {
 }
 export type ExistingFrameCommand =
   | { type: "conductor-start-existing" }
+  | { type: "conductor-start-existing-change" }
   | { type: "conductor-existing-destination"; projectId?: string; deliverableId?: string; componentId?: string; search?: string }
   | { type: "conductor-review-existing"; variantName: string; isDefaultAppearance: boolean; deviceTargetSlug: string; message: string; annotationIds: string[] }
   | { type: "conductor-edit-existing" }

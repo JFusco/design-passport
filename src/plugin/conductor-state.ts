@@ -1,6 +1,9 @@
 import type { ExistingFrameState, ExistingFrameCommand } from "./conductor-existing-state";
 /** Presentation only. Bearer credentials and pairing proofs never cross to the UI. */
 export interface ConductorPresentation {
+  supportsDesignChanges?: boolean;
+  recovery?: import("./conductor-pending-send").PendingSendPresentation;
+  change?: import("./conductor-change-controller").DesignChangeState;
   state: "offline" | "pairing" | "connected" | "unavailable" | "error";
   message: string;
   busy?: "choosing" | "connecting" | "refreshing" | "inspecting" | "submitting" | "preparing";
@@ -16,7 +19,8 @@ export interface ConductorPresentation {
   destination?: { project: string; deliverable: string; component?: string };
   jobs: { id: string; name: string; device: string; state: string; canApply: boolean }[];
 }
-export type ConductorCommand = ExistingFrameCommand
+export type ConductorCommand = ExistingFrameCommand | import("./conductor-change-controller").DesignChangeCommand
+  | { type: "conductor-check-pending" | "conductor-request-resolution" | "conductor-resolve-pending" | "conductor-cancel-send" }
   | { type: "conductor-open" }
   | { type: "conductor-offline" }
   | { type: "conductor-connect"; environment: string }

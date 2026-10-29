@@ -10,3 +10,10 @@ export function submissionStatusMessage(result: SubmissionResult): string {
     : result.notification === "sent" ? "Notifications were sent." : "Notification delivery is pending.";
   return `Design and selected notes saved in this component’s Design discussion. ${workflow} ${notification}${result.warnings?.length ? ` ${result.warnings.join(" ")}` : ""}`;
 }
+
+export function designChangeStatusMessage(result: SubmissionResult): string {
+  const slack = result.notification === "pending" ? "Slack notification planning or delivery is pending."
+    : result.notification === "failed" ? "Slack notification planning or delivery failed; Conductor will retry eligible work."
+    : result.notification === "sent" ? "Slack messages were sent." : "Slack delivery is disabled or no eligible delivery remains.";
+  return `Design changes saved in the feature’s Design discussion. Approval and workflow state are unchanged. ${slack}${result.warnings.length ? ` ${result.warnings.join(" ")}` : ""}`;
+}

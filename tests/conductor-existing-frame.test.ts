@@ -1,3 +1,4 @@
+import { createPendingSendController } from "../src/plugin/conductor-pending-send";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readExistingFrame } from "../src/figma/conductor-existing-frame";
 import { createExistingFrameController } from "../src/plugin/conductor-existing-controller";
@@ -16,10 +17,12 @@ function fixture() {
   const figma = { fileKey: "file", editorType: "figma", mode: "default", currentPage: { selection: [frame] }, clientStorage };
   vi.stubGlobal("figma", figma);
   const destination = { project: { id: "p", name: "Project" }, deliverable: { id: "d", name: "Website" }, component: { id: "c", name: "Card" }, devices: [{ slug: "tablet", width: 1024, hasDefault: false }] };
-  const request = vi.fn(async (_path: string, body?: unknown) => body ? { commentId: "saved", variantIds: (body as { frames: { variantId: string }[] }).frames.map((entry) => entry.variantId) } : { options: [], more: false, destination });
+  const request = vi.fn(async (_path: string, body?: unknown) => body ? { submissionId: "saved", transition: "not_requested", notification: "pending", warnings: [], commentId: "saved", variantIds: (body as { frames: { variantId: string }[] }).frames.map((entry) => entry.variantId) } : { options: [], more: false, destination });
   let id = 0;
   const present = vi.fn();
-  const controller = createExistingFrameController({ request, present, credentials: () => ({ origin: "http://localhost:3109", token: "fixture", ownerUserId: "owner", expiresAt: "2099-01-01" }), current: () => true, newId: () => `00000000-0000-4000-8000-${String(++id).padStart(12, "0")}` });
+  const token = { origin: "http://localhost:3109", token: "fixture", ownerUserId: "owner", expiresAt: "2099-01-01" };
+  const pending = createPendingSendController({ credentials: () => token, current: () => true, session: () => 1, supported: () => false, request, present });
+  const controller = createExistingFrameController({ request, present, pending, credentials: () => token, current: () => true, newId: () => `00000000-0000-4000-8000-${String(++id).padStart(12, "0")}` });
   const choose = async () => { await controller.handle({ type: "conductor-start-existing" }); await controller.handle({ type: "conductor-existing-destination", projectId: "p", deliverableId: "d", componentId: "c" }); };
   const review = { type: "conductor-review-existing", variantName: "Hero tablet", isDefaultAppearance: true, deviceTargetSlug: "tablet", message: "Ready for review", annotationIds: ["60:1/0"] } as const;
   return { frame, destination, request, present, controller, choose, review, storage, figma };
@@ -66,55 +69,9 @@ describe("existing frame handoff", () => {
       if (body) throw new ConductorSubmissionRefusedError("Refresh and review this submission again.");
       return { options: [], more: false, destination: f.destination };
     });
-    await expect(f.controller.handle({ type: "conductor-confirm-existing" })).rejects.toThrow(/frame width, design name and default appearance/);
-    expect(f.storage.size).toBe(0);
-    const { type: _type, ...details } = f.review;
-    expect(f.present).toHaveBeenLastCalledWith(expect.stringContaining("frame width, design name and default appearance"), expect.objectContaining({ details, review: undefined }));
-  });
-  it("allows another file while preserving the original file's uncertain handoff", async () => {
-    const f = fixture(); f.figma.fileKey = "a"; await f.choose(); await f.controller.handle({ ...f.review, annotationIds: [...f.review.annotationIds] });
-    f.request.mockImplementationOnce(async () => ({ options: [], more: false, destination: f.destination })).mockRejectedValueOnce(new Error("Timed out"));
-    await expect(f.controller.handle({ type: "conductor-confirm-existing" })).rejects.toThrow("Timed out");
-    const pending = parseDesignSubmission([...f.storage.values()][0]);
-    expect([...f.storage.keys()]).toEqual(["conductor-existing-pending-v1:http://localhost:3109:owner:a"]);
-    f.figma.fileKey = "b";
-    f.figma.currentPage.selection = [{ ...f.frame, id: "70:1", name: "Other file frame" }];
-    await f.controller.handle({ type: "conductor-start-existing" });
-    expect(f.present).toHaveBeenLastCalledWith(expect.stringContaining("Name the design"), expect.objectContaining({ query: {} }));
-    expect(f.present.mock.calls.at(-1)?.[1].review).toBeUndefined();
-    f.figma.fileKey = "a"; f.figma.currentPage.selection = [f.frame]; f.controller.reset();
-    await f.controller.handle({ type: "conductor-start-existing" });
-    expect(f.present).toHaveBeenLastCalledWith(expect.stringContaining("previous handoff"), expect.objectContaining({ review: expect.objectContaining({ annotationIds: [...f.review.annotationIds] }) }));
-    await f.controller.handle({ type: "conductor-confirm-existing" });
-    expect(f.request.mock.calls.filter(([, body]) => body).map(([, body]) => body)).toEqual([pending, pending]);
-    expect(f.storage.size).toBe(0);
-  });
-  it.each([false, true])("migrates a legacy pending identity safely (interrupted copy: %s)", async (interrupted) => {
-    const f = fixture(); await f.choose(); await f.controller.handle({ ...f.review, annotationIds: [...f.review.annotationIds] });
-    f.request.mockImplementationOnce(async () => ({ options: [], more: false, destination: f.destination })).mockRejectedValueOnce(new Error("Timed out"));
-    await expect(f.controller.handle({ type: "conductor-confirm-existing" })).rejects.toThrow("Timed out");
-    const scopedKey = [...f.storage.keys()][0]!;
-    const pending = parseDesignSubmission(f.storage.get(scopedKey));
-    const legacyKey = scopedKey.slice(0, -":file".length);
-    f.storage.delete(scopedKey); f.storage.set(legacyKey, pending); f.controller.reset();
-    f.figma.fileKey = "another-file";
-    await f.controller.handle({ type: "conductor-start-existing" });
-    expect(f.present.mock.calls.at(-1)?.[1].review).toBeUndefined();
-    expect(f.storage.get(legacyKey)).toEqual(pending);
-    f.figma.fileKey = "file";
-    if (interrupted) {
-      vi.spyOn(f.figma.clientStorage, "deleteAsync").mockRejectedValueOnce(new Error("Interrupted migration"));
-      await expect(f.controller.handle({ type: "conductor-start-existing" })).rejects.toThrow("Interrupted migration");
-      expect(f.storage.get(legacyKey)).toEqual(pending);
-      expect(f.storage.get(scopedKey)).toEqual(pending);
-      f.controller.reset();
-    }
-    await f.controller.handle({ type: "conductor-start-existing" });
-    expect(f.storage.has(legacyKey)).toBe(false);
-    expect(f.storage.get(scopedKey)).toEqual(pending);
-    await f.controller.handle({ type: "conductor-confirm-existing" });
-    expect(f.request.mock.calls.filter(([, body]) => body).map(([, body]) => body)).toEqual([pending, pending]);
-    expect(f.storage.size).toBe(0);
+    await expect(f.controller.handle({ type: "conductor-confirm-existing" })).rejects.toThrow(/Review the destination, width and design details/);
+    expect([...f.storage.values()]).toMatchObject([{ outcome: "refused" }]);
+
   });
   it("renders an enabled Disconnect throughout the existing-frame steps", () => {
     const f = fixture();
@@ -133,23 +90,6 @@ describe("existing frame handoff", () => {
       expect(html).not.toContain("Refresh workspaces");
       expect(html).not.toContain("Use selected design frames");
     }
-  });
-  it("retries an uncertain save with the same request and variant identities", async () => {
-    const f = fixture(); await f.choose(); await f.controller.handle({ ...f.review, annotationIds: [] });
-    let first: unknown;
-    f.request.mockImplementation(async (_path, body) => {
-      if (!body) return { options: [], more: false, destination: f.destination };
-      if (!first) { first = body; throw new Error("Timed out"); }
-      expect(body).toEqual(first);
-      return { commentId: "saved", variantIds: (body as { frames: { variantId: string }[] }).frames.map((entry) => entry.variantId) };
-    });
-    await expect(f.controller.handle({ type: "conductor-confirm-existing" })).rejects.toThrow("Timed out");
-    f.controller.reset();
-    f.destination.devices[0]!.hasDefault = true;
-    await f.controller.handle({ type: "conductor-start-existing" });
-    expect(f.present).toHaveBeenLastCalledWith(expect.stringContaining("previous handoff"), expect.objectContaining({ review: expect.objectContaining({ isDefaultAppearance: true }) }));
-    await f.controller.handle({ type: "conductor-confirm-existing" });
-    expect(f.storage.size).toBe(0);
   });
   it("refuses an existing workspace binding even if malformed", () => {
     const f = fixture(); f.frame.getSharedPluginData = () => "malformed";

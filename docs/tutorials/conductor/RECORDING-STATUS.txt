@@ -1,0 +1,10 @@
+PREPARED SOURCES ONLY — NO FINAL FOOTAGE
+
+Marin is selected. Do not record or clone the user. All caption timecodes are estimates and require retiming after final editing.
+
+Record actual shipped screens with synthetic data. Hide connection codes, credentials, private URLs, client names and unrelated app content. Capture pending-send recovery with a controlled lost-response fixture. Never imply a saved design was cancelled or that submitting approves it.
+
+Before acceptance: verify all eight MP4 filenames against production-manifest.json; H.264 playback, duration, audio and absence of audio on silent clips; pacing and readable pauses; caption sync, spelling and line breaks; first/last frames and frame-by-frame privacy. Preserve scripts and final SRT/VTT beside MP4s. Record actual published plugin/server revision and acceptance receipts privately.
+
+Final recording and acceptance: https://github.com/JFusco/design-passport/issues/101
+No release, paid narration, live Slack delivery or recording is authorized by this prepared-source package.

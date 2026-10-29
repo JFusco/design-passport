@@ -114,12 +114,18 @@ export interface ExistingFrameDestination {
   deviceTargetSlug: string;
 }
 export interface DesignSubmission {
+  intent?: "design_change";
   existingFrame?: ExistingFrameDestination;
   submissionId: string;
   connectionVersion: number;
   componentId: string;
   fileKey: string;
-  frames: { nodeId: string; variantId: string; expectedVariantVersion: number | null }[];
+  frames: {
+    nodeId: string;
+    variantId: string;
+    expectedVariantVersion: number | null;
+    frameWidth?: number;
+  }[];
   message: string;
   annotations: { nodeId: string; text: string }[];
   transition?: { id: string; expectedWorkflowVersion: number };
@@ -326,6 +332,7 @@ export function parseDesignSubmission(value: unknown): DesignSubmission {
     "annotations",
     "transition",
     "existingFrame",
+    "intent",
   ]);
   if (
     !Array.isArray(input.frames) ||
@@ -337,10 +344,26 @@ export function parseDesignSubmission(value: unknown): DesignSubmission {
     throw new Error("Submission selection exceeds limits");
   if (typeof input.message !== "string" || input.message.length > WORKSPACE_LIMITS.messageLength)
     throw new Error("Invalid submission message");
+  if (input.intent !== undefined && input.intent !== "design_change")
+    throw new Error("Invalid submission intent");
+  if (input.intent === "design_change" && (!input.message.trim() || input.transition !== undefined))
+    throw new Error("Describe what changed; design changes cannot perform workflow actions");
   const seen = new Set<string>();
   const frames = input.frames.map((entry) => {
     const frame = object(entry);
-    keys(frame, ["nodeId", "variantId", "expectedVariantVersion"]);
+    keys(frame, ["nodeId", "variantId", "expectedVariantVersion", "frameWidth"]);
+    if (
+      (input.intent === "design_change" && input.existingFrame === undefined) ||
+      frame.frameWidth !== undefined
+    ) {
+      if (
+        typeof frame.frameWidth !== "number" ||
+        !Number.isFinite(frame.frameWidth) ||
+        frame.frameWidth <= 0 ||
+        frame.frameWidth > WORKSPACE_LIMITS.width
+      )
+        throw new Error("Invalid design frame width");
+    }
     const nodeId = text(frame.nodeId);
     const variantId = text(frame.variantId);
     if (seen.has(nodeId) || seen.has(variantId)) throw new Error("Repeated design frame");
@@ -351,6 +374,7 @@ export function parseDesignSubmission(value: unknown): DesignSubmission {
       variantId,
       expectedVariantVersion:
         frame.expectedVariantVersion === null ? null : integer(frame.expectedVariantVersion, 0),
+      ...(frame.frameWidth === undefined ? {} : { frameWidth: frame.frameWidth as number }),
     };
   });
   const result: DesignSubmission = {
@@ -359,7 +383,8 @@ export function parseDesignSubmission(value: unknown): DesignSubmission {
     componentId: text(input.componentId),
     fileKey: text(input.fileKey),
     frames,
-    message: input.message,
+    message: input.intent === "design_change" ? input.message.trim() : input.message,
+    ...(input.intent === "design_change" ? { intent: "design_change" as const } : {}),
     annotations: input.annotations.map((entry) => {
       const annotation = object(entry);
       keys(annotation, ["nodeId", "text"]);
@@ -412,6 +437,66 @@ export function parseDesignSubmission(value: unknown): DesignSubmission {
     };
   }
   return result;
+}
+
+export type SubmissionResolution =
+  | { requestId: string; fileKey: string; outcome: "cancelled" }
+  | { requestId: string; fileKey: string; outcome: "committed"; receipt: SubmissionResult | null };
+
+export function parseSubmissionResolutionRequest(requestId: unknown, value: unknown) {
+  const input = object(value);
+  keys(input, ["fileKey"]);
+  const fileKey = text(input.fileKey);
+  if (!/^[A-Za-z0-9_-]{1,200}$/.test(fileKey)) throw new Error("Invalid Figma file identity");
+  return { requestId: uuid(requestId), fileKey };
+}
+
+export function parseSubmissionResult(value: unknown): SubmissionResult {
+  const input = object(value);
+  keys(input, [
+    "submissionId",
+    "commentId",
+    "variantIds",
+    "transition",
+    "notification",
+    "warnings",
+  ]);
+  if (
+    !Array.isArray(input.variantIds) ||
+    !input.variantIds.length ||
+    input.variantIds.length > 8 ||
+    !Array.isArray(input.warnings) ||
+    input.warnings.length > 100 ||
+    !["not_requested", "pending", "applied", "refused"].includes(String(input.transition)) ||
+    !["pending", "sent", "failed", "disabled"].includes(String(input.notification))
+  )
+    throw new Error("Invalid submission receipt");
+  return {
+    submissionId: text(input.submissionId),
+    commentId: text(input.commentId),
+    variantIds: input.variantIds.map((id) => text(id)),
+    transition: input.transition as SubmissionResult["transition"],
+    notification: input.notification as SubmissionResult["notification"],
+    warnings: input.warnings.map((warning) => text(warning, 10_000)),
+  };
+}
+
+export function parseSubmissionResolution(value: unknown): SubmissionResolution {
+  const input = object(value);
+  keys(
+    input,
+    input.outcome === "committed"
+      ? ["requestId", "fileKey", "outcome", "receipt"]
+      : ["requestId", "fileKey", "outcome"],
+  );
+  const identity = parseSubmissionResolutionRequest(input.requestId, { fileKey: input.fileKey });
+  if (input.outcome === "cancelled") return { ...identity, outcome: "cancelled" };
+  if (input.outcome !== "committed") throw new Error("Invalid resolution outcome");
+  return {
+    ...identity,
+    outcome: "committed",
+    receipt: input.receipt === null ? null : parseSubmissionResult(input.receipt),
+  };
 }
 
 export function parseWorkspaceReceipt(value: unknown): WorkspaceReceipt {

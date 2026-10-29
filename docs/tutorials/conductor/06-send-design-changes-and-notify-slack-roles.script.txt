@@ -1,0 +1,22 @@
+SILENT TASK CLIP. Draft; not recorded.
+
+1. Choose Send design changes.
+SHOT: Bound Design frame
+
+2. Describe what changed; if unchanged, cancel and use Design Notes.
+SHOT: Required summary
+
+3. Review destination, frames, appearance, breakpoint and checked notes.
+SHOT: Confirmation
+
+4. Send, then check the saved design and separate Slack status.
+SHOT: Save receipt
+
+5. Only authorized role holders who opted into Slack receive messages.
+SHOT: Approved synthetic Slack fixture; live send requires approval
+
+6. If a response is lost, reopen and Check saved receipt.
+SHOT: No-selection recovery
+
+7. Resolve pending send recovers a receipt or safely cancels the request.
+SHOT: Explicit confirmation; cannot undo a saved design

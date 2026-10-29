@@ -41,7 +41,11 @@ export class ConductorTransport {
       if (response.redirected || (response.url && !response.url.startsWith(`${origin}/`))) throw new Error("Conductor redirect refused");
       if (!response.ok) {
         if (response.status === 401) throw new ConductorAuthorizationError("Your Conductor connection expired or was revoked. Connect again.");
-        if (path === "/api/figma-plugin/v1/submissions" && [400,403,404,409].includes(response.status)) throw new ConductorSubmissionRefusedError("Conductor refused this submission. Refresh and review it again; existing designs are unchanged.");
+        if (path === "/api/figma-plugin/v1/submissions" && [400,403,404,409].includes(response.status)) throw new ConductorSubmissionRefusedError("Conductor refused this submission. Check the saved receipt or resolve the pending request before starting another send.");
+        if (path.endsWith("/resolve")) {
+          if (response.status === 403) throw new Error("Pending-send recovery is disabled or not permitted. Ask your Conductor administrator to restore access before resolving this request.");
+          if (response.status === 404) throw new Error("The recovery endpoint or your current access is unavailable. Reconnect and ask your project lead to check access and server recovery support.");
+        }
         if (response.status === 409) throw new Error("This workspace changed. Refresh before continuing.");
         if (response.status === 429) throw new Error("Conductor is busy. Wait before refreshing.");
         throw new Error("Conductor is unavailable. Your design and offline audits are retained.");
