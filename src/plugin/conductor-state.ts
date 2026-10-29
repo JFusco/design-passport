@@ -1,19 +1,22 @@
+import type { ExistingFrameState, ExistingFrameCommand } from "./conductor-existing-state";
 /** Presentation only. Bearer credentials and pairing proofs never cross to the UI. */
 export interface ConductorPresentation {
   state: "offline" | "pairing" | "connected" | "unavailable" | "error";
   message: string;
-  busy?: "connecting" | "refreshing" | "inspecting" | "submitting" | "preparing";
+  busy?: "choosing" | "connecting" | "refreshing" | "inspecting" | "submitting" | "preparing";
   hasError?: boolean;
   environments: { id: string; label: string }[];
   submission?: {
     componentName: string; frames: { id: string; name: string }[]; message: string;
     annotations: { id: string; text: string }[]; transitions: { id: string; label: string }[];
   };
+  existing?: ExistingFrameState;
+  existingResult?: string;
   userCode?: string;
   destination?: { project: string; deliverable: string; component?: string };
   jobs: { id: string; name: string; device: string; state: string; canApply: boolean }[];
 }
-export type ConductorCommand =
+export type ConductorCommand = ExistingFrameCommand
   | { type: "conductor-open" }
   | { type: "conductor-offline" }
   | { type: "conductor-connect"; environment: string }

@@ -735,3 +735,39 @@ pre { max-width: 100%; overflow: auto; }
   .tab-links { gap: 12px; min-width: 0; }
   .tabs .tab-links button { font-size: 14px; }
 }
+
+/* Existing-frame handoff: readable controls and destination confirmation. */
+.conductor-connection > .button { justify-self: start; }
+.conductor-connection input:not([type="checkbox"]) { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--control-border); border-radius: 6px; background: var(--paper); color: var(--ink); }
+.conductor-connection h4 { margin: 0; }
+
+.conductor-handoff { padding: 20px; gap: 16px; }
+.conductor-handoff > h3 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: -.2px; }
+.conductor-handoff .handoff-frame-context { color: var(--muted-ink); font-size: 12px; }
+.handoff-confirmation { display: grid; gap: 20px; min-width: 0; }
+.handoff-confirmation-heading { display: grid; gap: 7px; }
+.handoff-step { color: var(--muted-ink); font-size: 11px; }
+.handoff-confirmation-heading h4 { font-size: 20px; font-weight: 650; letter-spacing: -.4px; line-height: 1.25; }
+.handoff-confirmation-heading p { color: var(--muted-ink); }
+.handoff-label { display: block; color: var(--muted-ink); font-size: 11px; font-weight: 500; line-height: 1.5; }
+.handoff-destination { display: grid; gap: 7px; padding: 16px; border: 1px solid var(--control-border); border-radius: 10px; background: var(--paper); min-width: 0; }
+.handoff-destination .handoff-project { font-size: 12px; font-weight: 500; }
+.handoff-destination .handoff-deliverable { color: var(--muted-ink); font-size: 12px; }
+.handoff-deliverable > span:first-child { padding-inline: 5px; opacity: .65; }
+.handoff-destination h5 { margin: 7px 0 0; font-size: 16px; font-weight: 650; line-height: 1.4; letter-spacing: -.2px; overflow-wrap: anywhere; }
+.handoff-design-summary { display: grid; gap: 8px; min-width: 0; }
+.handoff-design-summary .handoff-design-name { font-size: 16px; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
+.handoff-badges { display: flex; flex-wrap: wrap; gap: 7px; }
+.handoff-badges > span { padding: 4px 9px; border: 1px solid var(--border); border-radius: 6px; font-size: 11px; line-height: 1.5; color: var(--ink); background: var(--muted); }
+.handoff-design-summary .handoff-source { display: grid; gap: 3px; margin-top: 4px; color: var(--muted-ink); font-size: 11px; line-height: 1.5; }
+.handoff-source > span { font-weight: 550; }
+.handoff-message { display: grid; gap: 7px; padding-top: 16px; border-top: 1px solid var(--border); }
+.handoff-message > p { white-space: pre-wrap; font-size: 13px; line-height: 1.65; }
+.handoff-notes { color: var(--muted-ink); font-size: 12px; }
+.handoff-notes > summary { cursor: pointer; padding-block: 4px; }
+.handoff-notes > ul { padding-left: 18px; margin: 10px 0 0; line-height: 1.6; }
+.handoff-confirmation .handoff-reassurance { color: var(--muted-ink); font-size: 11px; line-height: 1.6; }
+.handoff-confirmation-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 16px; border-top: 1px solid var(--border); }
+.handoff-confirmation-actions .button { width: auto; flex: 0 0 auto; }
+
+.handoff-confirmation-actions .button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }

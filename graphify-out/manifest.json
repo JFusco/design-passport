@@ -175,7 +175,7 @@
     "semantic_hash": ""
   },
   "src/core/contracts.ts": {
-    "mtime": 1793124533.1530194,
+    "mtime": 1793212761.9475644,
     "ast_hash": "345e971de18198cc9722c4b4117f9b06",
     "semantic_hash": ""
   },
@@ -215,7 +215,7 @@
     "semantic_hash": ""
   },
   "src/core/operations/graph.ts": {
-    "mtime": 1793130356.7153904,
+    "mtime": 1793212762.4458017,
     "ast_hash": "979ef3618abb594e6c9f08f04c2b176b",
     "semantic_hash": ""
   },
@@ -340,7 +340,7 @@
     "semantic_hash": ""
   },
   "src/figma/adapter.ts": {
-    "mtime": 1793126223.1966343,
+    "mtime": 1793212763.1554523,
     "ast_hash": "6ed1c9c6f9682d6d72a274eaf315596e",
     "semantic_hash": ""
   },
@@ -405,8 +405,8 @@
     "semantic_hash": "b1a8df35ee352d49a9e729141db072d5"
   },
   "src/plugin/audit-state.ts": {
-    "mtime": 1793124235.0248847,
-    "ast_hash": "e72077abb5929cd93964f3945f71eaa0",
+    "mtime": 1793224165.2745118,
+    "ast_hash": "f810d633c23612cc8d26edbf3c8064b9",
     "semantic_hash": ""
   },
   "src/plugin/audit-storage.ts": {
@@ -430,17 +430,17 @@
     "semantic_hash": ""
   },
   "src/plugin/main.ts": {
-    "mtime": 1793132969.9905682,
+    "mtime": 1793212766.6530855,
     "ast_hash": "2599575835976ffdb357c0d5263f929d",
     "semantic_hash": ""
   },
   "src/plugin/message-validation.ts": {
-    "mtime": 1793126630.0999174,
-    "ast_hash": "5c9481122b4e06ceaf39eff172f73c1b",
+    "mtime": 1793213394.3823137,
+    "ast_hash": "23bd272625afcc9f6acdad7bd62ebd0e",
     "semantic_hash": ""
   },
   "src/plugin/messages.ts": {
-    "mtime": 1793124940.0126579,
+    "mtime": 1793212768.0824091,
     "ast_hash": "a1c42cc4a87827af59591d59a41df702",
     "semantic_hash": ""
   },
@@ -465,7 +465,7 @@
     "semantic_hash": ""
   },
   "src/ui/App.tsx": {
-    "mtime": 1793128328.2928421,
+    "mtime": 1793212768.3255877,
     "ast_hash": "00e7f5263e2493c7d87c2eb11f7aa087",
     "semantic_hash": ""
   },
@@ -575,7 +575,7 @@
     "semantic_hash": "2c39f81feb297fc96ec8304c2aa9425f"
   },
   "src/ui/types.ts": {
-    "mtime": 1793124730.9078302,
+    "mtime": 1793212768.5703568,
     "ast_hash": "4eb1fa2653ca4e3385febb85a8cc92b8",
     "semantic_hash": ""
   },
@@ -815,68 +815,93 @@
     "semantic_hash": ""
   },
   "src/core/conductor-contracts.source.json": {
-    "mtime": 1793151614.139666,
-    "ast_hash": "12e9726ef1832739a70d01102102c91b",
+    "mtime": 1793215031.3617525,
+    "ast_hash": "6012cb878311ac4033b76f201a4a1e87",
     "semantic_hash": ""
   },
   "src/core/conductor-contracts.ts": {
-    "mtime": 1793151614.0708995,
-    "ast_hash": "fd2756605600c465576df5bfcf203c56",
+    "mtime": 1793215031.1760454,
+    "ast_hash": "a00143291ea80e8ba2141423ca522757",
     "semantic_hash": ""
   },
   "src/core/conductor-digest.ts": {
-    "mtime": 1793129842.8815112,
+    "mtime": 1793212761.171412,
     "ast_hash": "3c2f89b329ee31f3010aada7543a89de",
     "semantic_hash": ""
   },
   "src/figma/conductor-binding.ts": {
-    "mtime": 1793129169.6898599,
+    "mtime": 1793212763.428966,
     "ast_hash": "703b164f2beca9ba21b9a4ed269d253d",
     "semantic_hash": ""
   },
   "src/figma/conductor-selection.ts": {
-    "mtime": 1793126621.9224446,
+    "mtime": 1793212764.1666136,
     "ast_hash": "dd54d785633dd236de053c14f00dc95b",
     "semantic_hash": ""
   },
   "src/figma/conductor-workspace.ts": {
-    "mtime": 1793197951.8863862,
+    "mtime": 1793212764.5124304,
     "ast_hash": "fe9e3a410d2bfcb8fcb603e081a3fd72",
     "semantic_hash": ""
   },
   "src/plugin/conductor-controller.ts": {
-    "mtime": 1793198191.8975291,
-    "ast_hash": "48a0bdab2cbc64c50e877de45d592d9d",
+    "mtime": 1793276498.8900213,
+    "ast_hash": "c789c3ce2e03b3817a9d4f0c0a45383a",
     "semantic_hash": ""
   },
   "src/plugin/conductor-environments.ts": {
-    "mtime": 1793126733.3194,
+    "mtime": 1793212765.0418267,
     "ast_hash": "76bdd9a1aedd067dce03dde3a4148949",
     "semantic_hash": ""
   },
   "src/plugin/conductor-state.ts": {
-    "mtime": 1793197768.6859822,
-    "ast_hash": "8dc329016695b9e1cb33de34f792d4a9",
+    "mtime": 1793214725.1692832,
+    "ast_hash": "544253e18a24035395041af1d29fb73d",
     "semantic_hash": ""
   },
   "src/plugin/conductor-transport.ts": {
-    "mtime": 1793197768.6910543,
-    "ast_hash": "d9544325645b83beb7b0d600a12b7c6d",
+    "mtime": 1793224165.3543615,
+    "ast_hash": "35a00df1da06463ac76e1d28671ee412",
     "semantic_hash": ""
   },
   "src/ui/components/ConductorPanel.tsx": {
-    "mtime": 1793198254.3715239,
-    "ast_hash": "5f8a8d3eb6fc63686e819ba4e8e27271",
+    "mtime": 1793224165.589698,
+    "ast_hash": "3a6c39036cde48e79b3a76eae81012b4",
     "semantic_hash": ""
   },
   "src/ui/components/ConductorSubmission.tsx": {
-    "mtime": 1793197888.0316248,
+    "mtime": 1793212768.3380003,
     "ast_hash": "144a8fbfb067ae956071d364f70ca92b",
     "semantic_hash": ""
   },
   "src/plugin/conductor-submission-status.ts": {
-    "mtime": 1793197884.7222157,
+    "mtime": 1793212765.3607366,
     "ast_hash": "d65225b6f4a4573fee0183c45a189f1b",
+    "semantic_hash": ""
+  },
+  "src/figma/conductor-existing-frame.ts": {
+    "mtime": 1793213345.797499,
+    "ast_hash": "dd5af4ca3c6c32116a47312006c51c59",
+    "semantic_hash": ""
+  },
+  "src/plugin/conductor-existing-controller.ts": {
+    "mtime": 1793224165.4281886,
+    "ast_hash": "39bb1e6696066ee0c22a62332eab6304",
+    "semantic_hash": ""
+  },
+  "src/plugin/conductor-existing-state.ts": {
+    "mtime": 1793214642.8299565,
+    "ast_hash": "a0b7b7a88ba8570f4154be7506380256",
+    "semantic_hash": ""
+  },
+  "src/ui/components/ConductorExistingConfirmation.tsx": {
+    "mtime": 1793216618.4892442,
+    "ast_hash": "fd26998809f9b3756064246f75055968",
+    "semantic_hash": ""
+  },
+  "src/ui/components/ConductorExistingFrame.tsx": {
+    "mtime": 1793215729.862992,
+    "ast_hash": "56dfacf9f818b0b0001311d30fdea579",
     "semantic_hash": ""
   }
 }

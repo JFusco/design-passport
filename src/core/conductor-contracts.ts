@@ -104,7 +104,17 @@ export interface PreparationRequest {
   expectedConnectionVersion: number;
   items: { componentId: string; screenshotVariantId: string; deviceTargetSlug: string }[];
 }
+export interface ExistingFrameDestination {
+  projectId: string;
+  deliverableId: string;
+  frameName: string;
+  variantName: string;
+  isDefaultAppearance: boolean;
+  frameWidth: number;
+  deviceTargetSlug: string;
+}
 export interface DesignSubmission {
+  existingFrame?: ExistingFrameDestination;
   submissionId: string;
   connectionVersion: number;
   componentId: string;
@@ -315,6 +325,7 @@ export function parseDesignSubmission(value: unknown): DesignSubmission {
     "message",
     "annotations",
     "transition",
+    "existingFrame",
   ]);
   if (
     !Array.isArray(input.frames) ||
@@ -355,6 +366,43 @@ export function parseDesignSubmission(value: unknown): DesignSubmission {
       return { nodeId: text(annotation.nodeId), text: text(annotation.text, 1_000) };
     }),
   };
+  if (input.existingFrame !== undefined) {
+    const target = object(input.existingFrame);
+    keys(target, [
+      "projectId",
+      "deliverableId",
+      "frameName",
+      "deviceTargetSlug",
+      "variantName",
+      "isDefaultAppearance",
+      "frameWidth",
+    ]);
+    if (
+      frames.length !== 1 ||
+      frames[0]!.expectedVariantVersion !== null ||
+      input.transition !== undefined
+    )
+      throw new Error("Existing frame submissions create one new design without a workflow action");
+    if (!/^[A-Za-z0-9_-]{1,200}$/.test(result.fileKey) || !/^\d+:\d+$/.test(frames[0]!.nodeId))
+      throw new Error("Invalid Figma frame identity");
+    if (
+      typeof target.isDefaultAppearance !== "boolean" ||
+      typeof target.frameWidth !== "number" ||
+      !Number.isFinite(target.frameWidth) ||
+      target.frameWidth <= 0 ||
+      target.frameWidth > WORKSPACE_LIMITS.width
+    )
+      throw new Error("Invalid frame appearance or width");
+    result.existingFrame = {
+      variantName: text(target.variantName),
+      isDefaultAppearance: target.isDefaultAppearance,
+      frameWidth: target.frameWidth,
+      projectId: text(target.projectId),
+      deliverableId: text(target.deliverableId),
+      frameName: text(target.frameName),
+      deviceTargetSlug: text(target.deviceTargetSlug),
+    };
+  }
   if (input.transition !== undefined) {
     const transition = object(input.transition);
     keys(transition, ["id", "expectedWorkflowVersion"]);

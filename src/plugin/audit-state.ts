@@ -62,7 +62,7 @@ export function isAuditViewState(value: unknown): value is AuditViewState {
   const view = value as Record<string, unknown>;
   const allowed = new Set(["activeTab", "reportSection", "showPassing", "axisFilter", "categoryFilter", "pageFilter", "rootFilter", "variantFilter", "expanded"]);
   return Object.keys(view).every((key) => allowed.has(key))
-    && ["audit", "report", "overview", "modules", "findings", "guidance", "cleanup", "context", "profile"].includes(String(view.activeTab))
+    && ["audit", "report", "overview", "modules", "findings", "guidance", "cleanup", "context", "profile", "conductor"].includes(String(view.activeTab))
     && (view.reportSection === undefined || ["summary", "issues", "modules", "guidance"].includes(String(view.reportSection)))
     && typeof view.showPassing === "boolean"
     && (view.axisFilter === "all" || AXES.includes(view.axisFilter as Axis))
