@@ -1,3 +1,6 @@
+import { createConductorController } from "./conductor-controller";
+import { applyConductorWorkspace } from "../figma/conductor-workspace";
+import type { ConductorCommand } from "./conductor-state";
 import { actionableFinding, stableIssueKey } from "../core/issue-key";
 import { mergeIssueReview, resolvedIssueKeys, type IssueReviewState } from "./issue-review";
 import { CATALOG_DIGEST, CATALOG_VERSION } from "../core/catalog";
@@ -73,6 +76,18 @@ let initialized = false;
 let initializeGeneration = 0;
 const knowledgeState = new KnowledgeSessionState();
 const commandGate = new CommandGate();
+const conductor = createConductorController({
+  post: (state) => post({ type: "conductor-state", state }),
+  enterCanvas: () => { assertDocumentMutationAllowed(); return commandGate.enter("prepare-workspace"); },
+  apply: async (job, lease, screenshot, checkpoint) => {
+    const receipt = await runDocumentMutation([], () => applyConductorWorkspace(job, lease, screenshot, { checkpoint, now: Date.now }), true);
+    const updated = await adapter.getBootstrap();
+    bootstrap = { ...bootstrap, pages: updated.pages };
+    post({ type: "bootstrap", data: bootstrap, rulesetVersion: RULESET_VERSION, catalogVersion: CATALOG_VERSION, catalogDigest: CATALOG_DIGEST });
+    return receipt;
+  },
+});
+
 const mutationChangeGuard = new MutationChangeGuard();
 let documentChangeWatching = false;
 let sessionReferencePacks: DesignReferencePackV1[] = [];
@@ -1063,6 +1078,9 @@ figma.ui.onmessage = async (rawMessage: unknown) => {
   let nonTerminal = false;
   try {
     const message = parseUiMessage(rawMessage);
+    if (message.type.startsWith("conductor-")) { await conductor.handle(message as ConductorCommand); return; }
+    // Entering any audit operation stops connected polling before acquiring the gate.
+    if (message.type !== "save-audit-view") conductor.stop();
     if (message.type === "cancel-scan") {
       adapter.cancel();
       return;

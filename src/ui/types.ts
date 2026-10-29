@@ -1,7 +1,7 @@
 import type { BindableField, JsonValue } from "../core/contracts";
 import type { BootstrapData } from "../figma/adapter";
 
-export type Tab = "audit" | "report" | "overview" | "modules" | "findings" | "guidance" | "cleanup" | "context" | "profile";
+export type Tab = "audit" | "report" | "overview" | "modules" | "findings" | "guidance" | "cleanup" | "context" | "profile" | "conductor";
 
 export interface BootstrapEnvelope {
   data: BootstrapData;

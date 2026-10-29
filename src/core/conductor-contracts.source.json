@@ -1,0 +1,15 @@
+{
+  "contractVersion": "1.0.0",
+  "owner": "COS-monorepo",
+  "tracking": "CEC-141",
+  "files": {
+    "conductor-contracts.ts": {
+      "source": "apps/shell/src/lib/design-workspaces/contracts.ts",
+      "sha256": "9983b5c8d75d4753b953195af24821ba215cc57367f7593dd9f7f25f08a29865"
+    },
+    "conductor-digest.ts": {
+      "source": "apps/shell/src/lib/design-workspaces/instruction-digest.ts",
+      "sha256": "88fc05b00d6e63fc2a54ce831fcc1363e416c0d6cdf0dc11fe082cf8105e9a16"
+    }
+  }
+}

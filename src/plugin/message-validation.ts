@@ -80,6 +80,19 @@ export function parseUiMessage(value: unknown): UiToPluginMessage {
     }
     throw new Error("recheck request is invalid");
   }
+  if (["conductor-open", "conductor-offline", "conductor-disconnect", "conductor-refresh", "conductor-inspect-selection"].includes(String(message.type))) {
+    if (Object.keys(message).length !== 1) throw new Error("Unexpected Conductor command fields");
+    return { type: message.type } as UiToPluginMessage;
+  }
+  if (message.type === "conductor-submit") {
+    if (Object.keys(message).some((key) => !["type", "message", "annotationIds", "transitionId"].includes(key)) || typeof message.message !== "string" || message.message.length > 10000 || !Array.isArray(message.annotationIds) || message.annotationIds.length > 20 || typeof message.transitionId !== "string" || message.transitionId.length > 200) throw new Error("Invalid design submission");
+    return { type: message.type, message: message.message, annotationIds: message.annotationIds.map((id) => text(id, "annotationId", 256)), transitionId: message.transitionId };
+  }
+  if (message.type === "conductor-connect" || message.type === "conductor-apply") {
+    const key = message.type === "conductor-connect" ? "environment" : "jobId";
+    if (Object.keys(message).some((field) => field !== "type" && field !== key)) throw new Error("Unexpected Conductor command fields");
+    return { type: message.type, [key]: text(message[key], key, 200) } as UiToPluginMessage;
+  }
   if (message.type === "scan") {
     const request = record(message.request);
     if (!request || Object.keys(request).some((key) => key !== "scope" && key !== "refreshKnowledge")

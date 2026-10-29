@@ -1,3 +1,4 @@
+import { conductorAuditRole } from "./conductor-binding";
 import { MicroCheckRequired, microClosure, type MicroFieldGroup } from "./micro-check";
 import type {
   BindableField,
@@ -434,7 +435,8 @@ export async function tokenPropertySnapshot(node: SceneNode): Promise<NodeSnapsh
   }
   const radius = "cornerRadius" in node ? numberOrUndefined(node.cornerRadius) : undefined;
   const weight = "strokeWeight" in node ? numberOrUndefined(node.strokeWeight) : undefined;
-  return { id: node.id, rootId: node.id, pageId: "", path: node.name, name: node.name, type: node.type,
+  const conductorRole = conductorAuditRole(node);
+  return { ...(conductorRole ? { conductorRole } : {}), id: node.id, rootId: node.id, pageId: "", path: node.name, name: node.name, type: node.type,
     visible: node.visible, renderVisible: renderVisible(node), width: node.width, height: node.height, x: node.x, y: node.y,
     opacity: "opacity" in node ? node.opacity : 1, rotation: 0, childIds: [], descendantCount: 0,
     fills: fillData, strokes: strokeData, effects: [], boundFields: boundFields(node, fillData, strokeData),
@@ -518,9 +520,11 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
   const certification = certificationSummary(node);
   const patternConfirmation = confirmedPattern(node);
   const detachmentIntent = intentionalDetachment(node);
+  const conductorRole = conductorAuditRole(node);
   const annotationTexts = "annotations" in node ? node.annotations.map(annotationText) : [];
   const devStatus = devStatusSnapshot(node);
   return {
+    ...(conductorRole ? { conductorRole } : {}),
     ...geometryEvidence(node),
     renderVisible: renderVisible(node),
     ...((value) => value === undefined ? {} : { hasPointerInteraction: value })(pointerInteraction(node)),
@@ -723,6 +727,8 @@ function captureSupplement(node: SceneNode, raw: Record<string, unknown> | undef
     structuralSignature: structuralSignature(node),
     annotations: "annotations" in node ? node.annotations.map(annotationText) : [],
     devStatus: devStatusSnapshot(node),
+    conductorRole: conductorAuditRole(node),
+    conductorBinding: node.getSharedPluginData("verndaleAiReady", "conductor-binding-v1"),
     certification: node.getSharedPluginData("verndaleAiReady", "certification-v1"),
     confirmation: node.getSharedPluginData("verndaleAiReady", "pattern-resolution-v1"),
     detachmentIntent: node.getSharedPluginData(SHARED_PLUGIN_DATA_NAMESPACE, DETACHMENT_INTENT_DATA_KEY),
@@ -1542,7 +1548,7 @@ export class FigmaAdapter {
         const supplements = entries.map(({ node, rootId, path }) => ({ rootId, path, node: captureSupplement(node, restNodes.get(node.id)) }));
         stageStarted = Date.now();
         const environment = exportedRoot && restSubtreeCovers(exportedRoot, entries) ? await variableEnvironment.fingerprint(supplements) : undefined;
-        const fingerprint = environment ? hashValue({ captureVersion: 2, fileKey: figma.fileKey, pageId: page.id, pageName: page.name,
+        const fingerprint = environment ? hashValue({ captureVersion: 3, fileKey: figma.fileKey, pageId: page.id, pageName: page.name,
           profile, restRoot: exportedRoot, metadata: exported.metadata, supplements, environment }) : undefined;
         diagnostics.validationMs += Date.now() - stageStarted;
         if (!fingerprint) throw new FullKnowledgeRebuildRequired("An affected source has incomplete dependency evidence");
@@ -1733,7 +1739,7 @@ export class FigmaAdapter {
           if (restRoot && variableEnvironment && restSubtreeCovers(restRoot, entries)) {
             const supplements = entries.map(({ node, rootId, path }) => ({ rootId, path, node: captureSupplement(node, restNodes?.get(node.id)) }));
             const environment = await variableEnvironment.fingerprint(supplements);
-            if (environment) fingerprint = hashValue({ captureVersion: 2, fileKey: figma.fileKey, pageId: page.id, pageName: page.name, profile, restRoot, metadata: exported?.metadata, supplements, environment });
+            if (environment) fingerprint = hashValue({ captureVersion: 3, fileKey: figma.fileKey, pageId: page.id, pageName: page.name, profile, restRoot, metadata: exported?.metadata, supplements, environment });
           } else if (variableEnvironment) {
             // Full capture needs the same dependency epoch as cached capture.
             await variableEnvironment.fingerprint(entries.map(({ node }) => ({ boundVariables: node.boundVariables,

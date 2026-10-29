@@ -1,3 +1,5 @@
+import { ConductorPanel } from "./components/ConductorPanel";
+import type { ConductorPresentation } from "../plugin/conductor-state";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PRODUCT_NAME } from "../core/constants";
 import { producerLabel } from "../core/build-info";
@@ -61,6 +63,7 @@ function download(filename: string, content: string, type: string): void {
 }
 
 export function App() {
+  const [conductorState, setConductorState] = useState<ConductorPresentation>({ state: "offline", message: "Open Conductor to connect.", environments: [], jobs: [] });
   const [bootstrap, setBootstrap] = useState<BootstrapEnvelope>();
   const [committedProfile, setCommittedProfile] = useState<ReadinessProfile>();
   const [profile, setProfile] = useState<ReadinessProfile>();
@@ -71,6 +74,11 @@ export function App() {
   const [collections, setCollections] = useState<VariableCollectionOption[]>([]);
   const [progress, setProgress] = useState<ScanProgress>();
   const [activeTab, setActiveTab] = useState<Tab>("audit");
+  useEffect(() => {
+    postMessage({ type: activeTab === "conductor" ? "conductor-open" : "conductor-offline" });
+    return () => postMessage({ type: "conductor-offline" });
+  }, [activeTab]);
+
   const [reportSection, setReportSection] = useState<NonNullable<AuditViewState["reportSection"]>>("summary");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [contextStatus, setContextStatus] = useState<ContextStatus>({ state: "missing" });
@@ -119,6 +127,7 @@ export function App() {
     const handler = (event: MessageEvent<{ pluginMessage?: PluginToUiMessage }>) => {
       let message = event.data?.pluginMessage;
       if (!message || typeof message !== "object" || typeof message.type !== "string") return;
+      if (message.type === "conductor-state") { setConductorState(message.state); return; }
       if (message.type === "waivers-result") { setWaivers(message.waivers); return; }
       if (message.type === "context-status") {
         const status = message.status;
@@ -513,7 +522,7 @@ export function App() {
         </div>
       </header>
       <nav className="tabs" aria-label="Plugin sections">
-        <div className="tab-links">{(["audit", "report", "cleanup"] as Tab[]).map((tab) => (
+        <div className="tab-links">{(["audit", "report", "cleanup", "conductor"] as Tab[]).map((tab) => (
           <button key={tab} aria-label={`${tab[0]?.toUpperCase()}${tab.slice(1)}`} className={activeTab === tab ? "active" : ""} aria-current={activeTab === tab ? "page" : undefined} onClick={() => setActiveTab(tab)}>
             {tab[0]?.toUpperCase()}{tab.slice(1)}
           </button>
@@ -524,7 +533,7 @@ export function App() {
 
       <div className={`notification-stack${hasNotifications ? " has-notifications" : ""}`}>
         {bootstrap.data.producer.channel === "development" ? <div className="banner warning" role="status"><strong>Development build</strong> · Results from this plugin are visibly marked and should not be treated as production evidence.</div> : null}
-        {draftState.blocked ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true"><span>{profileGateMessage}</span><button className="button subtle" onClick={() => setActiveTab("profile")}>Fix audit setup</button></div> : null}
+        {draftState.blocked && activeTab !== "conductor" ? <div className="banner warning" role="status" aria-live="polite" aria-atomic="true"><span>{profileGateMessage}</span><button className="button subtle" onClick={() => setActiveTab("profile")}>Fix audit setup</button></div> : null}
         {!bootstrap.data.canMutateDocument ? <div className="banner info">Dev Mode is audit-only. Switch to Design mode to save the profile or clean up findings.</div> : null}
         {historical && report ? <div className="banner info" role="status"><span><strong>Saved result · {formatDateTime(report.generatedAt)}</strong><br />Browse, navigate, and export now. Regenerate audit to verify the current design before applying fixes.</span></div> : null}
         {saveFailure ? <div className="banner warning" role="status"><span><strong>{saveStatus.state === "session-only" ? "Available this session only" : "Not saved"}</strong><br />{saveStatus.message ?? "Export this result before closing Passport to keep a copy."}</span></div> : null}
@@ -719,6 +728,7 @@ export function App() {
             onApplyAll={(planIds) => send({ type: "apply-all", planIds, undoOnlyAcknowledged: undoAcknowledged })}
           />
         )}
+        {activeTab === "conductor" ? <ConductorPanel state={conductorState} send={send} /> : null}
         {activeTab === "context" && (
           <ContextPanel
             knowledge={contextStatus.knowledge ?? knowledge}

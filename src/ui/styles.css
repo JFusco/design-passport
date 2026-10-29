@@ -697,3 +697,41 @@ pre { max-width: 100%; overflow: auto; }
 :where(button, input, select, textarea, summary):focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 @media (max-width: 390px) { .scope-actions { flex-direction: column; } .scope-actions .button { width: 100%; } .cleanup-callout { flex-wrap: wrap; } .cleanup-callout .button { margin-left: auto; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+.conductor-panel { padding: 24px; gap: 20px; }
+.conductor-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.conductor-heading h2 { margin: 6px 0 0; font-size: 22px; letter-spacing: -.5px; }
+.conductor-eyebrow { font-size: 10px; font-weight: 650; letter-spacing: 1.5px; color: var(--muted-ink); }
+.conductor-status { border: 1px solid var(--border); border-radius: 20px; padding: 4px 9px; font-size: 11px; white-space: nowrap; background: var(--muted); color: var(--muted-ink); }
+.conductor-status.connected { background: var(--success-surface); color: var(--success-ink); border-color: var(--success-border); }
+.conductor-panel > p { margin: 0; color: var(--muted-ink); line-height: 1.6; font-size: 13px; }
+.conductor-steps { counter-reset: conductor-step; list-style: none; margin: 0; padding: 0; display: grid; gap: 20px; }
+.conductor-steps li { position: relative; padding-left: 40px; display: grid; gap: 5px; }
+.conductor-steps li::before { counter-increment: conductor-step; content: counter(conductor-step); position: absolute; left: 0; top: 0; width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--border); color: var(--ink); background: var(--card); border-radius: 8px; font-size: 12px; }
+.conductor-steps strong { font-size: 13px; font-weight: 600; }
+.conductor-steps span { font-size: 12px; color: var(--muted-ink); line-height: 1.6; }
+.conductor-connection { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.conductor-connection p { margin: 0; line-height: 1.6; font-size: 12px; }
+.conductor-connection label { font-size: 12px; font-weight: 600; }
+.conductor-connection select { width: 100%; padding: 8px; border: 1px solid var(--control-border); border-radius: 6px; background: var(--paper); }
+.conductor-code { display: grid; gap: 8px; text-align: center; padding: 12px; }
+.conductor-code strong { font-size: 26px; letter-spacing: 5px; }
+.conductor-code small, .conductor-code span { font-size: 11px; color: var(--muted-ink); }
+.conductor-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.conductor-job { display: flex; gap: 12px; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+.conductor-job > div { display: grid; gap: 5px; }
+.conductor-job span { font-size: 11px; color: var(--muted-ink); }
+.conductor-panel .conductor-footnote { font-size: 11px; color: var(--muted-ink); line-height: 1.7; border-top: 1px solid var(--border); padding-top: 16px; }
+
+.conductor-connection textarea { background: var(--paper); border: 1px solid var(--control-border); padding: 10px; border-radius: 6px; resize: vertical; }
+.conductor-annotation { display: flex; align-items: start; gap: 8px; margin-block: 8px; line-height: 1.6; }
+
+/* Keep all four destinations and Settings reachable in narrow Figma panels. */
+.tabs .tab-links button[aria-label="Conductor"]:not(.active):not(:hover):not(:focus-visible) { opacity: .7; }
+.conductor-guide > summary { cursor: pointer; color: var(--muted-ink); font-size: 12px; }
+.conductor-guide[open] > summary { margin-bottom: 12px; }
+@media (max-width: 390px) {
+  .tabs { padding-inline: 16px; gap: 8px; }
+  .tab-links { gap: 12px; min-width: 0; }
+  .tabs .tab-links button { font-size: 14px; }
+}
