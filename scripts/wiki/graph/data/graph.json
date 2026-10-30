@@ -978,8 +978,15 @@
       "label": "Saved confirmation follow-up and live plugin-free checks",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 2123,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 100,
+          "url": "https://github.com/jfusco/design-passport/issues/100"
+        }
+      ],
+      "bytes": 2250,
       "degree": 2,
       "x": -0.981772,
       "y": 0.190064,
@@ -1004,7 +1011,7 @@
           "url": "https://github.com/jfusco/design-passport/issues/101"
         }
       ],
-      "bytes": 3823,
+      "bytes": 3950,
       "degree": 3,
       "x": -0.990686,
       "y": 0.136167,
@@ -1015,8 +1022,15 @@
       "label": "Design-change implementation review and recovery repairs",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 2623,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 100,
+          "url": "https://github.com/jfusco/design-passport/issues/100"
+        }
+      ],
+      "bytes": 2750,
       "degree": 2,
       "x": -0.996644,
       "y": 0.081863,
