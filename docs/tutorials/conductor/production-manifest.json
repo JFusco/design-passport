@@ -1,0 +1,304 @@
+{
+  "status": "prepared, not recorded or release-accepted",
+  "narrator": "Marin",
+  "delivery": "Relaxed and conversational; natural pauses, no announcer voice. Never record or clone the user.",
+  "captionTiming": "Draft estimates only. Retiming and playback acceptance required after final footage and narration.",
+  "recordingFollowUp": "https://github.com/JFusco/design-passport/issues/101",
+  "gates": [
+    "Approved server migration and cancellation guard deployed; older writers drained",
+    "Published plugin and hosted acceptance passed",
+    "Production narration access and any costs separately authorized",
+    "Real Slack sends and final recording separately authorized"
+  ],
+  "syntheticFixture": {
+    "project": "Harbor website",
+    "deliverable": "Homepage",
+    "feature": "Hero",
+    "designer": "Alex Designer",
+    "reviewer": "Riley Reviewer",
+    "summary": "Improved mobile navigation spacing and clarified the primary action."
+  },
+  "walkthrough": [
+    {
+      "scene": 1,
+      "title": "Welcome",
+      "shot": "Conductor feature Design tab, synthetic Harbor website / Homepage / Hero",
+      "narration": "Here\u2019s how to move a design from Conductor into Figma, then send a clear update back. We\u2019ll use a sample project throughout. Preparing a workspace, submitting a design, reviewing it, and approving it are separate steps. Sending a design never approves it."
+    },
+    {
+      "scene": 2,
+      "title": "Connect",
+      "shot": "Figma plugin Conductor tab \u2192 environment \u2192 Connect in browser \u2192 sanitized browser approval \u2192 Connected",
+      "narration": "In Design Passport, open Conductor, choose your environment, and select Connect in browser. Sign in and check that the approval matches this plugin. Approve access, then return to Figma. Keep live connection codes and credentials out of the recording. This connection lasts eight hours. You can disconnect here, or revoke access from your Conductor profile."
+    },
+    {
+      "scene": 3,
+      "title": "Prepare",
+      "shot": "Feature Design \u2192 Prepare in Figma \u2192 source screenshot, device and linked file \u2192 plugin Refresh workspaces \u2192 Prepare workspace",
+      "narration": "In the feature\u2019s Design tab, choose Prepare in Figma. Pick the source screenshot and a configured device. A project lead links the intended Figma Design file when needed. Back in the plugin, refresh workspaces and prepare the workspace. Keep the file and plugin open while it finishes."
+    },
+    {
+      "scene": 4,
+      "title": "Frame roles",
+      "shot": "Actual Reference, Wireframe and Design frames; show native text edit in Design",
+      "narration": "Reference preserves the starting design. Wireframe is an editable starting point. Design is where you make the replacement. Edit the Design frame. Preparing these frames does not send your edits back to Conductor automatically."
+    },
+    {
+      "scene": 5,
+      "title": "Existing frame",
+      "shot": "Select an unbound frame \u2192 Send existing frame \u2192 Project / Deliverable / Feature \u2192 details \u2192 confirmation",
+      "narration": "You can also send a frame you created independently. Select Send existing frame to Conductor, then choose the project, deliverable and feature. Give the design a clear name, choose its appearance and match a configured breakpoint. Review the full destination before sending. This creates a new design link and leaves existing designs in place."
+    },
+    {
+      "scene": 6,
+      "title": "Variants and widths",
+      "shot": "Configured mobile 390px; Default/named control; show mismatch and duplicate Default refusals",
+      "narration": "Default appearance and the design name are separate choices. A breakpoint can have one default. For another appearance, choose a named variant and give it a unique name. The Figma frame width must match the project breakpoint exactly. If it does not match, resize the frame and review it again. The plugin does not round widths for you."
+    },
+    {
+      "scene": 7,
+      "title": "Annotations",
+      "shot": "Select annotated Design layer; show checked and unchecked notes; saved Design discussion and source link",
+      "narration": "Select the annotated layers whose notes you want to consider. Check only the notes you mean to send. Notes on unselected descendants are not collected automatically. Your checked notes and their Figma source links become evidence in the feature\u2019s Design discussion. A business analyst still needs to confirm requirements. These notes do not override saved decisions or approve a Functional Spec."
+    },
+    {
+      "scene": 8,
+      "title": "Send changes",
+      "shot": "Send design changes \u2192 required summary \u2192 exact destination/variant/breakpoint \u2192 checked notes \u2192 review \u2192 confirm",
+      "narration": "When the design changes, choose Send design changes. Explain what changed in your own words, and check the annotations to include. If nothing changed, cancel and use Design Notes in Conductor. Review the project, deliverable, feature, frame, variant, appearance and breakpoint. A first submission is labelled New design link. Confirm only when these details are right."
+    },
+    {
+      "scene": 9,
+      "title": "Save and Slack",
+      "shot": "Saved Design discussion, separate Slack outcome; approved synthetic recipient fixture only",
+      "narration": "The design links, summary and checked notes are now saved in the confirmed feature\u2019s Design discussion. This action makes no workflow move or approval. The current workflow\u2019s applicable role holders keep their inbox notices. Only authorized role holders who opted into Slack get an external message. The saved design and Slack delivery have separate outcomes. Pending or failed Slack delivery does not mean the design was lost."
+    },
+    {
+      "scene": 10,
+      "title": "Recover pending send",
+      "shot": "Controlled lost-response fixture \u2192 reopen with no selection \u2192 Check saved receipt \u2192 Resolve pending send confirmation",
+      "narration": "If the response is lost, check the saved receipt before starting another send. You can do this after reopening the plugin, even if the frame has been deleted or nothing is selected. Resolve pending send asks Conductor to recover the committed receipt or safely cancel that request. Confirm the resolution. It cannot undo a design that was already saved. If access expired or was revoked, reconnect first. A timeout or missing receipt never proves cancellation."
+    },
+    {
+      "scene": 11,
+      "title": "Plugin-free work",
+      "shot": "Disconnect \u2192 Add Design screenshot \u2192 Figma import with approved server integration \u2192 Design Notes \u2192 normal review/approval",
+      "narration": "The plugin is optional. Without it, use Add Design in Conductor to upload a screenshot or link a Figma frame, then add Design Notes. Figma import still needs the server\u2019s Figma connection; screenshot upload does not. Normal review and approval remain available when the plugin is absent, disconnected or expired. Choose an approval only through the normal Conductor workflow."
+    },
+    {
+      "scene": 12,
+      "title": "Close",
+      "shot": "Feature Design tab with saved summary and review owner visible",
+      "narration": "Before you finish, check the destination, the saved discussion and the delivery status. Design Passport prepares and submits design evidence. Reviewers and business analysts confirm it, and the authorized workflow owner handles approval. That keeps the next step clear for everyone."
+    }
+  ],
+  "silentClips": [
+    {
+      "filename": "01-connect-design-passport-to-conductor.mp4",
+      "audio": "none",
+      "steps": [
+        {
+          "caption": "Choose the Conductor environment.",
+          "shot": "Plugin Conductor tab"
+        },
+        {
+          "caption": "Select Connect in browser.",
+          "shot": "Connection action"
+        },
+        {
+          "caption": "Review and approve the matching connection.",
+          "shot": "Sanitized approval cutaway; no live code"
+        },
+        {
+          "caption": "Return to Figma and check Connected.",
+          "shot": "Connected plugin"
+        },
+        {
+          "caption": "Disconnect here, or revoke access in your profile.",
+          "shot": "Connection lifecycle controls"
+        }
+      ],
+      "draftDurationSeconds": 24.6
+    },
+    {
+      "filename": "02-prepare-a-figma-design-workspace.mp4",
+      "audio": "none",
+      "steps": [
+        {
+          "caption": "Open the feature\u2019s Design tab.",
+          "shot": "Feature Design"
+        },
+        {
+          "caption": "Choose Prepare in Figma and select source and device.",
+          "shot": "Preparation dialog"
+        },
+        {
+          "caption": "Check the linked file; ask a project lead to link it if needed.",
+          "shot": "File destination"
+        },
+        {
+          "caption": "Refresh workspaces in the plugin, then Prepare workspace.",
+          "shot": "Plugin job"
+        },
+        {
+          "caption": "Reference preserves the source. Design holds your replacement.",
+          "shot": "Actual native frames"
+        }
+      ],
+      "draftDurationSeconds": 27.8
+    },
+    {
+      "filename": "03-send-existing-frame-to-conductor.mp4",
+      "audio": "none",
+      "steps": [
+        {
+          "caption": "Select one independently created Figma frame.",
+          "shot": "Unbound frame"
+        },
+        {
+          "caption": "Choose Send existing frame to Conductor.",
+          "shot": "Plugin action"
+        },
+        {
+          "caption": "Choose project, deliverable and feature.",
+          "shot": "Destination picker"
+        },
+        {
+          "caption": "Set a unique name, appearance and matching breakpoint.",
+          "shot": "Details"
+        },
+        {
+          "caption": "Check annotations, review the full destination, then send.",
+          "shot": "Confirmation"
+        },
+        {
+          "caption": "Open the saved feature\u2019s Design discussion.",
+          "shot": "Saved link and checked notes"
+        }
+      ],
+      "draftDurationSeconds": 29.7
+    },
+    {
+      "filename": "04-default-variants-and-project-breakpoints.mp4",
+      "audio": "none",
+      "steps": [
+        {
+          "caption": "Check the actual frame width: 390px.",
+          "shot": "Figma width control"
+        },
+        {
+          "caption": "Choose the project\u2019s matching 390px breakpoint.",
+          "shot": "Device picker"
+        },
+        {
+          "caption": "Use Default only if this breakpoint has no default.",
+          "shot": "Duplicate-default refusal"
+        },
+        {
+          "caption": "Choose Named variant and a unique name for an alternate design.",
+          "shot": "Corrected details"
+        },
+        {
+          "caption": "A mismatched width needs resizing and a new review.",
+          "shot": "Exact-width refusal"
+        },
+        {
+          "caption": "Confirm name, appearance and breakpoint together.",
+          "shot": "Confirmation"
+        }
+      ],
+      "draftDurationSeconds": 32.1
+    },
+    {
+      "filename": "05-annotations-to-functional-spec.mp4",
+      "audio": "none",
+      "steps": [
+        {
+          "caption": "Select the annotated layer inside the Design frame.",
+          "shot": "Native selection"
+        },
+        {
+          "caption": "Check only the note you want to submit.",
+          "shot": "One checked and one unchecked annotation"
+        },
+        {
+          "caption": "Review and send the design.",
+          "shot": "Explicit confirmation"
+        },
+        {
+          "caption": "Check the saved note and Figma source link in Design discussion.",
+          "shot": "Saved evidence"
+        },
+        {
+          "caption": "Unselected notes are excluded. BA confirmation is still required.",
+          "shot": "Functional Spec evidence and BA-owned decision"
+        }
+      ],
+      "draftDurationSeconds": 26.9
+    },
+    {
+      "filename": "06-send-design-changes-and-notify-slack-roles.mp4",
+      "audio": "none",
+      "steps": [
+        {
+          "caption": "Choose Send design changes.",
+          "shot": "Bound Design frame"
+        },
+        {
+          "caption": "Describe what changed; if unchanged, cancel and use Design Notes.",
+          "shot": "Required summary"
+        },
+        {
+          "caption": "Review destination, frames, appearance, breakpoint and checked notes.",
+          "shot": "Confirmation"
+        },
+        {
+          "caption": "Send, then check the saved design and separate Slack status.",
+          "shot": "Save receipt"
+        },
+        {
+          "caption": "Only authorized role holders who opted into Slack receive messages.",
+          "shot": "Approved synthetic Slack fixture; live send requires approval"
+        },
+        {
+          "caption": "If a response is lost, reopen and Check saved receipt.",
+          "shot": "No-selection recovery"
+        },
+        {
+          "caption": "Resolve pending send recovers a receipt or safely cancels the request.",
+          "shot": "Explicit confirmation; cannot undo a saved design"
+        }
+      ],
+      "draftDurationSeconds": 40.1
+    },
+    {
+      "filename": "07-use-conductor-without-design-passport.mp4",
+      "audio": "none",
+      "steps": [
+        {
+          "caption": "Disconnect Design Passport, or leave it closed.",
+          "shot": "Disconnected plugin"
+        },
+        {
+          "caption": "Upload a screenshot with Add Design in Conductor.",
+          "shot": "Plugin-free upload"
+        },
+        {
+          "caption": "Alternatively import a Figma frame with the server integration.",
+          "shot": "Plugin-free Figma import"
+        },
+        {
+          "caption": "Add Design Notes and reload the feature.",
+          "shot": "Saved notes"
+        },
+        {
+          "caption": "Review and approve through the normal Conductor workflow.",
+          "shot": "Authorized review/approval controls; use synthetic fixture"
+        }
+      ],
+      "draftDurationSeconds": 25.4
+    }
+  ],
+  "walkthroughDraftDurationSeconds": 342.4,
+  "walkthroughFilename": "00-design-passport-conductor-walkthrough.mp4"
+}

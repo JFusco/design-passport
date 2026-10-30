@@ -4,7 +4,7 @@ import type { WorkspaceBinding } from "../core/conductor-contracts";
 
 export function readConductorSelection() {
   const fileKey = figma.fileKey; if (!fileKey) throw new Error("Open a linked Figma file before selecting a design");
-  const frames = new Map<string, { id: string; name: string; binding: WorkspaceBinding }>();
+  const frames = new Map<string, { id: string; name: string; width?: number; binding: WorkspaceBinding }>();
   const annotations: { id: string; nodeId: string; text: string }[] = [];
   if (figma.currentPage.selection.length < 1 || figma.currentPage.selection.length > 8) throw new Error("Select one to eight bound Design frames or annotated layers inside them");
   for (const selected of figma.currentPage.selection) {
@@ -17,7 +17,7 @@ export function readConductorSelection() {
     }
     if (!design) throw new Error("This selection is not inside a Conductor Design frame");
     const binding = assertCurrentConductorBinding(design, fileKey);
-    frames.set(design.id, { id: design.id, name: design.name, binding });
+    frames.set(design.id, { id: design.id, name: design.name, ...("width" in design && typeof design.width === "number" ? { width: design.width } : {}), binding });
     if ("annotations" in selected) selected.annotations.forEach((annotation, index) => {
       const text = annotationText(annotation);
       if (text.length > 1000) throw new Error("An annotation exceeds 1,000 characters; shorten it before submitting");

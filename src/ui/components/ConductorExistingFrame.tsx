@@ -9,7 +9,8 @@ export function ConductorExistingFrame({ state, disabled, busy, failed = false, 
   const { query, destination, frame } = state;
   const level = !query.projectId ? "Project" : !query.deliverableId ? "Deliverable" : "Feature / component";
   return <section className="conductor-connection conductor-handoff" aria-labelledby="existing-frame-heading">
-    <h3 id="existing-frame-heading">Send existing frame</h3>
+    <h3 id="existing-frame-heading">{state.intent ? "Send design changes · New design link" : "Send existing frame"}</h3>
+    {state.intent && !destination ? <button className="button subtle" disabled={disabled} onClick={() => send({ type: "conductor-cancel-send" })}>Cancel</button> : null}
     {!state.review ? <p className="handoff-frame-context"><strong>{frame.name}</strong> · {frame.width}px wide</p> : null}
     {destination ? <ExistingFrameDetails key={`${destination.project.id}/${destination.deliverable.id}/${destination.component.id}/${Boolean(state.review)}`} {...{ state, disabled, busy, send }} /> : <>
       <p>Step 1 of 3: Choose a project, then a deliverable and feature/component. Nothing is saved until you confirm.</p>
@@ -53,9 +54,16 @@ function ExistingFrameDetails({ state, disabled, busy, send }: Props) {
     {!matching.length ? <p role="alert">This frame is {state.frame.width}px wide. {target.devices.length ? `This project requires ${target.devices.map((entry) => `${entry.slug}: ${entry.width}px`).join(", ")}. Resize the frame in Figma, then start Send existing frame again.` : "This project has no configured breakpoints. Ask your project lead to configure them in Conductor."}</p> : !widthMatches ? <p role="alert">Choose a breakpoint matching the frame’s {state.frame.width}px width.</p> : <p>Width matches {device!.slug}: {device!.width}px.</p>}
     <label htmlFor="existing-appearance">Appearance</label><select id="existing-appearance" disabled={disabled} value={isDefault ? "default" : "variant"} onChange={(event) => setDefault(event.target.value === "default")}><option value="default">Default appearance</option><option value="variant">Named variant</option></select>
     {isDefault && device?.hasDefault ? <p role="alert">A default already exists for this breakpoint. Choose Named variant and a unique name. The existing default will stay unchanged.</p> : <p>{isDefault ? "This will be the component’s default design for this breakpoint." : "Use a distinct name for this alternate appearance."}</p>}
-    <label htmlFor="existing-message">Message for the Design discussion (optional)</label><textarea id="existing-message" disabled={disabled} rows={3} maxLength={10000} value={message} onChange={(event) => setMessage(event.target.value)} />
+    <label htmlFor="existing-message">{state.intent ? "What changed? (required)" : "Message for the Design discussion (optional)"}</label><textarea id="existing-message" disabled={disabled} rows={3} maxLength={10000} value={message} onChange={(event) => setMessage(event.target.value)} />
+    {state.intent ? <>
+      <p>Describe what changed. If there is no design change, cancel and use Design Notes in Conductor.</p>
+      <p>You can deliberately send a new submission with a new summary. Conductor does not compare the visuals.</p>
+      <p>No workflow action. Approval and workflow stay unchanged.</p>
+      <p>Applicable workflow role holders receive a Conductor inbox notice. Eligible role holders who opted into Slack also receive a Slack direct message after the update is saved. Slack delivery may be unavailable or fail separately.</p>
+    </> : null}
     {state.frame.annotations.length ? <fieldset><legend>Frame annotations to include</legend>{state.frame.annotations.map((note) => <label key={note.id} className="conductor-annotation"><input type="checkbox" disabled={disabled} checked={annotations.includes(note.id)} onChange={(event) => setAnnotations((previous) => event.target.checked ? [...previous, note.id] : previous.filter((id) => id !== note.id))} /><span>{note.text}</span></label>)}</fieldset> : <p>No annotations on this selected frame. Notes on other layers are not collected.</p>}
     <p>Checked notes become Functional Spec source evidence requiring BA confirmation. They do not establish approved requirements.</p>
-    <button className="button primary" disabled={disabled || !name.trim() || !widthMatches || (isDefault && Boolean(device?.hasDefault))} onClick={() => send({ type: "conductor-review-existing", variantName: name.trim(), isDefaultAppearance: isDefault, deviceTargetSlug: deviceSlug, message, annotationIds: annotations })}>Review destination and details</button>
+    <button className="button subtle" disabled={disabled} onClick={() => send({ type: "conductor-cancel-send" })}>Cancel</button>
+    <button className="button primary" disabled={disabled || (Boolean(state.intent) && !message.trim()) || !name.trim() || !widthMatches || (isDefault && Boolean(device?.hasDefault))} onClick={() => send({ type: "conductor-review-existing", variantName: name.trim(), isDefaultAppearance: isDefault, deviceTargetSlug: deviceSlug, message, annotationIds: annotations })}>Review destination and details</button>
   </>;
 }

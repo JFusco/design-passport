@@ -1,0 +1,21 @@
+1
+00:00:00,000 --> 00:00:03,500
+Choose the Conductor environment.
+
+2
+00:00:04,900 --> 00:00:08,400
+Select Connect in browser.
+
+3
+00:00:09,800 --> 00:00:13,300
+Review and approve the matching
+connection.
+
+4
+00:00:14,700 --> 00:00:18,200
+Return to Figma and check Connected.
+
+5
+00:00:19,600 --> 00:00:23,236
+Disconnect here, or revoke access in your
+profile.

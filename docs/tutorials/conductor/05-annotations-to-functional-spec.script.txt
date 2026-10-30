@@ -1,0 +1,16 @@
+SILENT TASK CLIP. Draft; not recorded.
+
+1. Select the annotated layer inside the Design frame.
+SHOT: Native selection
+
+2. Check only the note you want to submit.
+SHOT: One checked and one unchecked annotation
+
+3. Review and send the design.
+SHOT: Explicit confirmation
+
+4. Check the saved note and Figma source link in Design discussion.
+SHOT: Saved evidence
+
+5. Unselected notes are excluded. BA confirmation is still required.
+SHOT: Functional Spec evidence and BA-owned decision

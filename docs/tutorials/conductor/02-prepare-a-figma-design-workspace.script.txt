@@ -1,0 +1,16 @@
+SILENT TASK CLIP. Draft; not recorded.
+
+1. Open the feature’s Design tab.
+SHOT: Feature Design
+
+2. Choose Prepare in Figma and select source and device.
+SHOT: Preparation dialog
+
+3. Check the linked file; ask a project lead to link it if needed.
+SHOT: File destination
+
+4. Refresh workspaces in the plugin, then Prepare workspace.
+SHOT: Plugin job
+
+5. Reference preserves the source. Design holds your replacement.
+SHOT: Actual native frames

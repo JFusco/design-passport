@@ -13,7 +13,7 @@ export function ConductorExistingConfirmation({ state, disabled, busy, send }: {
   return <div className="handoff-confirmation">
     <header className="handoff-confirmation-heading">
       <span className="handoff-step">Step 3 of 3</span>
-      <h4>Confirm your handoff</h4>
+      <h4>{state.intent ? "Confirm design changes · New design link" : "Confirm your handoff"}</h4>
       <p>Check the destination and design before sending.</p>
     </header>
 
@@ -31,7 +31,7 @@ export function ConductorExistingConfirmation({ state, disabled, busy, send }: {
         <span>{review.isDefaultAppearance ? "Default appearance" : "Named variant"}</span>
         <span>{review.deviceTargetSlug} · {state.frame.width}px</span>
       </div>
-      <p className="handoff-source"><span>Figma frame</span>{state.frame.name}</p>
+      <p className="handoff-source"><span>Figma frame</span><a href={`https://www.figma.com/design/${encodeURIComponent(state.frame.fileKey)}?node-id=${encodeURIComponent(state.frame.id)}`} target="_blank" rel="noreferrer">{state.frame.name}</a></p>
     </section>
 
     {review.message ? <section className="handoff-message" aria-label="Message for the Design discussion">
@@ -45,9 +45,15 @@ export function ConductorExistingConfirmation({ state, disabled, busy, send }: {
       <ul>{notes.map((note) => <li key={note.id}>{note.text}</li>)}</ul>
     </details> : <p className="handoff-reassurance">No annotations included.</p>}
 
+    {state.intent ? <>
+      <p>Describe what changed. If there is no design change, cancel and use Design Notes in Conductor.</p>
+      <p>You can deliberately send a new submission with a new summary. Conductor does not compare the visuals.</p>
+      <p>No workflow action. Approval and workflow stay unchanged.</p>
+      <p>Applicable workflow role holders receive a Conductor inbox notice. Eligible role holders who opted into Slack also receive a Slack direct message after the update is saved. Slack delivery may be unavailable or fail separately.</p>
+    </> : null}
     <p className="handoff-reassurance">Adds a frame link to Design. Your message and checked notes go to Design discussion. Approval and workflow stay unchanged.</p>
     <div className="handoff-confirmation-actions">
-      <button className="button primary" disabled={disabled} onClick={() => send({ type: "conductor-confirm-existing" })}>{busy ? "Sending design…" : "Send design"}</button>
+      <button className="button primary" disabled={disabled} onClick={() => send({ type: "conductor-confirm-existing" })}>{busy ? "Sending design…" : state.intent ? "Send design changes" : "Send design"}</button>
       <button className="button subtle" disabled={disabled} onClick={() => send({ type: "conductor-edit-existing" })}>Back to details</button>
     </div>
   </div>;

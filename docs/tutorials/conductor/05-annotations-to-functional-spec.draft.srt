@@ -1,0 +1,22 @@
+1
+00:00:00,000 --> 00:00:03,636
+Select the annotated layer inside the
+Design frame.
+
+2
+00:00:05,036 --> 00:00:08,673
+Check only the note you want to submit.
+
+3
+00:00:10,073 --> 00:00:13,573
+Review and send the design.
+
+4
+00:00:14,973 --> 00:00:19,973
+Check the saved note and Figma source link
+in Design discussion.
+
+5
+00:00:21,373 --> 00:00:25,464
+Unselected notes are excluded. BA
+confirmation is still required.

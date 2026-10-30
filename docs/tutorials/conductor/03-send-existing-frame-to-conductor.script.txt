@@ -1,0 +1,19 @@
+SILENT TASK CLIP. Draft; not recorded.
+
+1. Select one independently created Figma frame.
+SHOT: Unbound frame
+
+2. Choose Send existing frame to Conductor.
+SHOT: Plugin action
+
+3. Choose project, deliverable and feature.
+SHOT: Destination picker
+
+4. Set a unique name, appearance and matching breakpoint.
+SHOT: Details
+
+5. Check annotations, review the full destination, then send.
+SHOT: Confirmation
+
+6. Open the saved feature’s Design discussion.
+SHOT: Saved link and checked notes

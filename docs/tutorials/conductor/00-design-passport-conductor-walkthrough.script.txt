@@ -1,0 +1,49 @@
+VOICE: Marin. Relaxed, conversational. Draft; not recorded.
+
+1. Welcome
+SHOT: Conductor feature Design tab, synthetic Harbor website / Homepage / Hero
+NARRATION: Here’s how to move a design from Conductor into Figma, then send a clear update back. We’ll use a sample project throughout. Preparing a workspace, submitting a design, reviewing it, and approving it are separate steps. Sending a design never approves it.
+
+2. Connect
+SHOT: Figma plugin Conductor tab → environment → Connect in browser → sanitized browser approval → Connected
+NARRATION: In Design Passport, open Conductor, choose your environment, and select Connect in browser. Sign in and check that the approval matches this plugin. Approve access, then return to Figma. Keep live connection codes and credentials out of the recording. This connection lasts eight hours. You can disconnect here, or revoke access from your Conductor profile.
+
+3. Prepare
+SHOT: Feature Design → Prepare in Figma → source screenshot, device and linked file → plugin Refresh workspaces → Prepare workspace
+NARRATION: In the feature’s Design tab, choose Prepare in Figma. Pick the source screenshot and a configured device. A project lead links the intended Figma Design file when needed. Back in the plugin, refresh workspaces and prepare the workspace. Keep the file and plugin open while it finishes.
+
+4. Frame roles
+SHOT: Actual Reference, Wireframe and Design frames; show native text edit in Design
+NARRATION: Reference preserves the starting design. Wireframe is an editable starting point. Design is where you make the replacement. Edit the Design frame. Preparing these frames does not send your edits back to Conductor automatically.
+
+5. Existing frame
+SHOT: Select an unbound frame → Send existing frame → Project / Deliverable / Feature → details → confirmation
+NARRATION: You can also send a frame you created independently. Select Send existing frame to Conductor, then choose the project, deliverable and feature. Give the design a clear name, choose its appearance and match a configured breakpoint. Review the full destination before sending. This creates a new design link and leaves existing designs in place.
+
+6. Variants and widths
+SHOT: Configured mobile 390px; Default/named control; show mismatch and duplicate Default refusals
+NARRATION: Default appearance and the design name are separate choices. A breakpoint can have one default. For another appearance, choose a named variant and give it a unique name. The Figma frame width must match the project breakpoint exactly. If it does not match, resize the frame and review it again. The plugin does not round widths for you.
+
+7. Annotations
+SHOT: Select annotated Design layer; show checked and unchecked notes; saved Design discussion and source link
+NARRATION: Select the annotated layers whose notes you want to consider. Check only the notes you mean to send. Notes on unselected descendants are not collected automatically. Your checked notes and their Figma source links become evidence in the feature’s Design discussion. A business analyst still needs to confirm requirements. These notes do not override saved decisions or approve a Functional Spec.
+
+8. Send changes
+SHOT: Send design changes → required summary → exact destination/variant/breakpoint → checked notes → review → confirm
+NARRATION: When the design changes, choose Send design changes. Explain what changed in your own words, and check the annotations to include. If nothing changed, cancel and use Design Notes in Conductor. Review the project, deliverable, feature, frame, variant, appearance and breakpoint. A first submission is labelled New design link. Confirm only when these details are right.
+
+9. Save and Slack
+SHOT: Saved Design discussion, separate Slack outcome; approved synthetic recipient fixture only
+NARRATION: The design links, summary and checked notes are now saved in the confirmed feature’s Design discussion. This action makes no workflow move or approval. The current workflow’s applicable role holders keep their inbox notices. Only authorized role holders who opted into Slack get an external message. The saved design and Slack delivery have separate outcomes. Pending or failed Slack delivery does not mean the design was lost.
+
+10. Recover pending send
+SHOT: Controlled lost-response fixture → reopen with no selection → Check saved receipt → Resolve pending send confirmation
+NARRATION: If the response is lost, check the saved receipt before starting another send. You can do this after reopening the plugin, even if the frame has been deleted or nothing is selected. Resolve pending send asks Conductor to recover the committed receipt or safely cancel that request. Confirm the resolution. It cannot undo a design that was already saved. If access expired or was revoked, reconnect first. A timeout or missing receipt never proves cancellation.
+
+11. Plugin-free work
+SHOT: Disconnect → Add Design screenshot → Figma import with approved server integration → Design Notes → normal review/approval
+NARRATION: The plugin is optional. Without it, use Add Design in Conductor to upload a screenshot or link a Figma frame, then add Design Notes. Figma import still needs the server’s Figma connection; screenshot upload does not. Normal review and approval remain available when the plugin is absent, disconnected or expired. Choose an approval only through the normal Conductor workflow.
+
+12. Close
+SHOT: Feature Design tab with saved summary and review owner visible
+NARRATION: Before you finish, check the destination, the saved discussion and the delivery status. Design Passport prepares and submits design evidence. Reviewers and business analysts confirm it, and the authorized workflow owner handles approval. That keeps the next step clear for everyone.
