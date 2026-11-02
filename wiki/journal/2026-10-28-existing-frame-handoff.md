@@ -2,6 +2,8 @@
 date: 2026-10-28
 topics: [conductor-design-workspaces]
 plans: [2026-10-28-send-existing-frame-to-conductor-7074fd2427.md, 2026-10-28-existing-frame-review-completion-1cc3e3cff6.md]
+issue: 'https://github.com/jfusco/design-passport/issues/96'
+issues: ['https://github.com/jfusco/design-passport/issues/96']
 ---
 
 # Existing-frame destination and appearance handoff

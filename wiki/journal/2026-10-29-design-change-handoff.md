@@ -1,6 +1,8 @@
 ---
 topics: [conductor-design-workspaces]
 plans: [2026-10-29-design-change-handoff-and-recovery-0991024dc3.md]
+issue: 'https://github.com/jfusco/design-passport/issues/100'
+issues: ['https://github.com/jfusco/design-passport/issues/100']
 ---
 
 # Explicit design changes and safe pending-send recovery
