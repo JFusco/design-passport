@@ -65,7 +65,7 @@
     "@types/node": "24.13.3",
     "@types/react": "19.1.10",
     "@types/react-dom": "19.1.7",
-    "@verndale/ui-design-brain": "1.17.0",
+    "@verndale/ui-design-brain": "1.18.2",
     "@vitejs/plugin-react": "5.0.2",
     "esbuild": "0.25.9",
     "eslint": "9.39.5",

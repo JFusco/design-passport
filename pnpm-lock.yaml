@@ -58,8 +58,8 @@ importers:
         specifier: 19.1.7
         version: 19.1.7(@types/react@19.1.10)
       '@verndale/ui-design-brain':
-        specifier: 1.17.0
-        version: 1.17.0
+        specifier: 1.18.2
+        version: 1.18.2
       '@vitejs/plugin-react':
         specifier: 5.0.2
         version: 5.0.2(vite@7.1.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0))
@@ -1403,8 +1403,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@verndale/ui-design-brain@1.17.0':
-    resolution: {integrity: sha512-nRH8YZ7MuyOVenNyNsTuhq8iKNjTzwcsELXaScwb3H1+7d4C719Hw30xImGMUJjwvPA5i31O2DqXq93JTqV7eQ==}
+  '@verndale/ui-design-brain@1.18.2':
+    resolution: {integrity: sha512-Za13sATOR8rjfk09exa9e4Sm3fdbgK8ZRZtmFJNvaFrTvaJEkYs5NFOXtTQjtpVCPCGsTWqw+gBXppPZbPihQg==}
     engines: {node: '>=24.14.0'}
     hasBin: true
 
@@ -4150,7 +4150,7 @@ snapshots:
   '@unrs/resolver-binding-win32-x64-msvc@1.12.2':
     optional: true
 
-  '@verndale/ui-design-brain@1.17.0': {}
+  '@verndale/ui-design-brain@1.18.2': {}
 
   '@vitejs/plugin-react@5.0.2(vite@7.1.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0))':
     dependencies:
