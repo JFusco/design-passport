@@ -912,7 +912,7 @@
           "url": "https://github.com/jfusco/design-passport/issues/94"
         }
       ],
-      "bytes": 2017,
+      "bytes": 2142,
       "degree": 4,
       "x": -0.894086,
       "y": 0.447895,
@@ -923,8 +923,15 @@
       "label": "Preserve pending Conductor pairing after a timeout",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 2936,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 94,
+          "url": "https://github.com/jfusco/design-passport/issues/94"
+        }
+      ],
+      "bytes": 3061,
       "degree": 2,
       "x": -0.917211,
       "y": 0.398401,
@@ -935,8 +942,15 @@
       "label": "Keep design handoffs optional and explicit",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 6966,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 94,
+          "url": "https://github.com/jfusco/design-passport/issues/94"
+        }
+      ],
+      "bytes": 7091,
       "degree": 2,
       "x": -0.937599,
       "y": 0.347718,
@@ -955,7 +969,7 @@
           "url": "https://github.com/jfusco/design-passport/issues/96"
         }
       ],
-      "bytes": 9055,
+      "bytes": 9180,
       "degree": 3,
       "x": -0.955189,
       "y": 0.295998,
@@ -966,8 +980,15 @@
       "label": "Bound handoff recovery and connection regression",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 4620,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 96,
+          "url": "https://github.com/jfusco/design-passport/issues/96"
+        }
+      ],
+      "bytes": 4745,
       "degree": 3,
       "x": -0.969927,
       "y": 0.243394,
@@ -978,8 +999,15 @@
       "label": "Saved confirmation follow-up and live plugin-free checks",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 2123,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 100,
+          "url": "https://github.com/jfusco/design-passport/issues/100"
+        }
+      ],
+      "bytes": 2250,
       "degree": 2,
       "x": -0.981772,
       "y": 0.190064,
@@ -1004,7 +1032,7 @@
           "url": "https://github.com/jfusco/design-passport/issues/101"
         }
       ],
-      "bytes": 3823,
+      "bytes": 3950,
       "degree": 3,
       "x": -0.990686,
       "y": 0.136167,
@@ -1015,8 +1043,15 @@
       "label": "Design-change implementation review and recovery repairs",
       "type": "journal",
       "aliases": [],
-      "githubRefs": [],
-      "bytes": 2623,
+      "githubRefs": [
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 100,
+          "url": "https://github.com/jfusco/design-passport/issues/100"
+        }
+      ],
+      "bytes": 2750,
       "degree": 2,
       "x": -0.996644,
       "y": 0.081863,
