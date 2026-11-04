@@ -14,7 +14,7 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 - Eight deterministic readiness axes and weighted A–F rollup.
 - Independent source-frame grades; the weakest designated frame limits file readiness.
 - Hard blockers, unresolved-review handling, and non-inflating waivers.
-- A pinned projection of all 80 patterns and every alias from `@verndale/ui-design-brain@1.17.0`.
+- A pinned projection of all 82 patterns and every alias from `ui-design-brain@1.18.5`.
 - Contextual aliases (`CTA`, `Banner`, `Label`, and `Stepper`) that always require a designer choice.
 - Included-scope semantic index with page roles, component use, responsive families, variable sources, and repeated structural signatures.
 - Explicit Generate context → Run audit → View report → Address issues flow.
@@ -40,7 +40,7 @@ This lets a selected frame be graded at the altitude a pipeline consumes while c
 ## Standards hierarchy
 
 1. The measurable readiness and blocker model in the local Figma AI Readiness rubric.
-2. [`@verndale/ui-design-brain@1.17.0`](https://www.npmjs.com/package/@verndale/ui-design-brain) for canonical names, aliases, contextual disambiguation, and advisory pattern checklists.
+2. [`ui-design-brain@1.18.5`](https://www.npmjs.com/package/ui-design-brain) for canonical names, aliases, contextual disambiguation, and advisory pattern checklists.
 3. [Figma’s official MCP file-structure guidance](https://developers.figma.com/docs/figma-mcp-server/structure-figma-file/) for components, variables, semantic names, Auto Layout, annotations, and dev resources.
 4. [WCAG 2.2](https://www.w3.org/TR/WCAG22/) for normative accessibility measurements.
 5. [Figma Recommended Practices in the Age of AI](https://arie-m-prasetyo.medium.com/figma-recommended-practices-in-the-age-of-ai-e766b098ef9f) as non-normative organizational guidance.
@@ -145,7 +145,7 @@ The CLI runner reads an inherited `OPENAI_API_KEY`; an `.env` file is not requir
 
 ## Deterministic generated inputs
 
-`pnpm catalog:sync` reads only the exact locked package and generates `src/generated/ui-design-brain.catalog.json`, including the authority digest and pattern guidance. It fails unless the package is exactly version 1.17.0 with 80 patterns.
+`pnpm catalog:sync` reads only the exact locked package and generates `src/generated/ui-design-brain.catalog.json`, including the authority digest and pattern guidance. It fails unless the installed package is the exact `ui-design-brain` version pinned in `package.json` and its pattern count matches the catalog manifest. A version bump therefore needs only `pnpm catalog:sync` and a review of the regenerated catalog.
 
 `pnpm schemas:generate` compiles the committed JSON Schemas into standalone validators. Runtime validation does not call `eval` or `new Function`.
 

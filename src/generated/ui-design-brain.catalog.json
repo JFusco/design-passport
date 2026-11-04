@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "catalogVersion": "1.17.0",
-  "catalogDigest": "sha256:d4b412615775cc1fc500c6dcfd3e36d51dc3be7ec6a741edfc7f0969fb7e4ded",
-  "authoritySourceDigest": "sha256:425360edf7bbe381a6390d0a4e195e2ee81d8baab25488c1d293f29eeb776af2",
+  "catalogVersion": "1.18.5",
+  "catalogDigest": "sha256:f94db7c94f99d74983078bdf35e5854584fdd7875af1bf7c7d6fbcb17b459ab5",
+  "authoritySourceDigest": "sha256:68827907d7431d74191a18cb2fc256c5f791e272f269a2d439b15624848bb28a",
   "authority": {
     "accessibilityProse": "non-normative-pending-parity",
     "excludes": [
@@ -99,12 +99,16 @@
       "slug": "button",
       "aliases": [
         {
+          "name": "ActionButton",
+          "context": "triggers an in-page action and does not navigate"
+        },
+        {
           "name": "CTA",
           "context": "triggers an in-page action — submit, open a dialog, toggle; does not navigate"
         }
       ],
       "file": "patterns/button.md",
-      "guidance": "## Button\n\n**Also known as:** CTA (in-page action)\n\nAn interactive control that triggers an action — submitting a form, opening a dialog, toggling visibility.\n\nA control that **navigates** (to a URL, page, or anchor) is **not** a Button even when styled like one — it is a **Link** styled as a button (see `link.md`; `<button>` performs an action, `<a href>` navigates). Reserve Button for controls that trigger an in-page action.\n\nFor a persistent on/off **state** control, use a **Toggle** (see `toggle.md`), not a Button.\n\n**Best practices:**\n- Establish a clear visual hierarchy: primary (filled), secondary (outlined), tertiary (text-only)\n- Use verb-first labels: 'Save changes', 'Create project', not 'Okay' or 'Submit'\n- Minimum touch target of 44×44 px; desktop buttons at least 36 px tall\n- Show a loading spinner inside the button during async actions — disable to prevent double-clicks\n- Limit to one primary button per visible viewport section\n- Ensure focus ring is visible and high-contrast for keyboard users\n\n**Common layouts:**\n- Form footer with primary action right-aligned and secondary action left-aligned\n- Hero CTA button centered or left-aligned beneath headline\n- Dialog footer with Cancel (secondary) and Confirm (primary)\n- Floating action button (FAB) in bottom-right for mobile creation flows\n\n---\n"
+      "guidance": "## Button\n\n**Also known as:** ActionButton (in-page action)  ·  CTA (in-page action)\n\nAn interactive control that triggers an action — submitting a form, opening a dialog, toggling visibility.\n\nA control that **navigates** (to a URL, page, or anchor) is **not** a Button even when styled like one — it is a **Link** styled as a button (see `link.md`; `<button>` performs an action, `<a href>` navigates). Reserve Button for controls that trigger an in-page action.\n\nFor a persistent on/off **state** control, use a **Toggle** (see `toggle.md`), not a Button.\n\n**Best practices:**\n- Establish a clear visual hierarchy: primary (filled), secondary (outlined), tertiary (text-only)\n- Use verb-first labels: 'Save changes', 'Create project', not 'Okay' or 'Submit'\n- Minimum touch target of 44×44 px; desktop buttons at least 36 px tall\n- Show a loading spinner inside the button during async actions — disable to prevent double-clicks\n- Limit to one primary button per visible viewport section\n- Ensure focus ring is visible and high-contrast for keyboard users\n\n**Common layouts:**\n- Form footer with primary action right-aligned and secondary action left-aligned\n- Hero CTA button centered or left-aligned beneath headline\n- Dialog footer with Cancel (secondary) and Confirm (primary)\n- Floating action button (FAB) in bottom-right for mobile creation flows\n\n---\n"
     },
     {
       "name": "Button group",
@@ -138,9 +142,12 @@
     {
       "name": "Checkbox",
       "slug": "checkbox",
-      "aliases": [],
+      "aliases": [
+        "CheckboxControl",
+        "CheckboxField"
+      ],
       "file": "patterns/checkbox.md",
-      "guidance": "## Checkbox\n\nA selection control — use in groups for multi-select from a list, or standalone for a single on/off choice.\n\n**Best practices:**\n- Use checkboxes for multi-select, not single toggles (use a switch for on/off)\n- Align the checkbox to the first line of its label, not the center\n- Support indeterminate state for 'select all' when children are partially selected\n- Minimum 44 px touch target including label area\n- Group related checkboxes under a fieldset with a legend for accessibility\n\n**Common layouts:**\n- Filter panel with multi-select facets\n- Terms & conditions single checkbox with long label\n- To-do list with check/uncheck per item\n- Table row multi-select with header 'select all'\n\n---\n"
+      "guidance": "## Checkbox\n\n**Also known as:** CheckboxControl  ·  CheckboxField\n\nA selection control — use in groups for multi-select from a list, or standalone for a single on/off choice.\n\n**Best practices:**\n- Use checkboxes for multi-select, not single toggles (use a switch for on/off)\n- Align the checkbox to the first line of its label, not the center\n- Support indeterminate state for 'select all' when children are partially selected\n- Minimum 44 px touch target including label area\n- Group related checkboxes under a fieldset with a legend for accessibility\n\n**Common layouts:**\n- Filter panel with multi-select facets\n- Terms & conditions single checkbox with long label\n- To-do list with check/uncheck per item\n- Table row multi-select with header 'select all'\n\n---\n"
     },
     {
       "name": "Color picker",
@@ -192,10 +199,11 @@
       "aliases": [
         "Calendar",
         "Date Picker",
+        "DateRangePicker",
         "Datetime picker"
       ],
       "file": "patterns/datepicker.md",
-      "guidance": "## Datepicker\n\n**Also known as:** Calendar  ·  Date Picker  ·  Datetime picker\n\nA calendar-based control for selecting dates visually.\n\nFor keyboard-only entry through separate day/month/year fields, use a **Date input** (see `date-input.md`).\n\n**Best practices:**\n- Allow both manual text entry and calendar selection\n- Clearly indicate the expected date format (e.g., MM/DD/YYYY)\n- Highlight today's date and the currently selected date\n- Disable dates outside the valid range\n- Support keyboard navigation through the calendar grid\n- For date ranges, show both start and end in a connected picker\n- Render the calendar in a labelled dialog (`role=\"dialog\"`, `aria-modal`), make grid cells arrow-navigable with a visible focus ring, and announce the selected date\n\n**Common layouts:**\n- Booking flow with check-in / check-out range picker\n- Form field with calendar dropdown on focus\n- Dashboard date range filter in a toolbar\n- Event creation form with start date and optional end date\n\n---\n"
+      "guidance": "## Datepicker\n\n**Also known as:** Calendar  ·  Date Picker  ·  DateRangePicker  ·  Datetime picker\n\nA calendar-based control for selecting dates visually.\n\nFor keyboard-only entry through separate day/month/year fields, use a **Date input** (see `date-input.md`).\n\n**Best practices:**\n- Allow both manual text entry and calendar selection\n- Clearly indicate the expected date format (e.g., MM/DD/YYYY)\n- Highlight today's date and the currently selected date\n- Disable dates outside the valid range\n- Support keyboard navigation through the calendar grid\n- For date ranges, show both start and end in a connected picker\n- Render the calendar in a labelled dialog (`role=\"dialog\"`, `aria-modal`), make grid cells arrow-navigable with a visible focus ring, and announce the selected date\n\n**Common layouts:**\n- Booking flow with check-in / check-out range picker\n- Form field with calendar dropdown on focus\n- Dashboard date range filter in a toolbar\n- Event creation form with start date and optional end date\n\n---\n"
     },
     {
       "name": "Drawer",
@@ -306,6 +314,13 @@
       "guidance": "## Form\n\n**Also known as:** Form panel\n\nA collection of input controls that allows users to enter and submit structured data.\n\nGroup related inputs with a **Fieldset** (see `fieldset.md`) under a legend; label each control with a **Label** (`label.md`).\n\n**Best practices:**\n- Use a single-column layout for most forms — it's faster to scan\n- Place labels above inputs for mobile-friendly forms\n- Group related fields with visual proximity and optional fieldset headings\n- Show inline validation on blur, not on every keystroke\n- Disable the submit button until required fields are valid, or show clear errors on submit\n- Keep forms as short as possible — ask only what's necessary\n\n**Common layouts:**\n- Sign-up form with name, email, password, and CTA\n- Multi-step wizard form with progress indicator\n- Settings form with grouped preference sections\n- Contact form with name, email, subject, and message textarea\n\n---\n"
     },
     {
+      "name": "Gauge chart",
+      "slug": "gauge-chart",
+      "aliases": [],
+      "file": "patterns/gauge-chart.md",
+      "guidance": "## Gauge chart\n\nA semicircular quantitative visualization that places a current value against a bounded scale and optional qualitative ranges.\n\nFor part-to-whole proportions across categories, use a **Pie chart** (see `pie-chart.md`).\n\n**Best practices:**\n- State the scale minimum, maximum, current value, and unit in text as well as graphically.\n- Clamp out-of-range values visually while preserving the actual value in supporting copy.\n- Use semantic color ranges only when their meaning is explained in a legend or adjacent text.\n- Respect reduced-motion preferences and avoid making animation necessary to understand the value.\n- Give the rendered chart an accessible name with `aria-label` or a referenced visible heading, and keep its SVG title synchronized.\n- Provide a text or tabular equivalent when the exact value or thresholds are decision-critical.\n\n**Common layouts:**\n- KPI card with a compact semicircular gauge\n- Dashboard panel comparing current performance with a target\n- Status summary with qualitative threshold bands\n- Report section pairing a gauge with explanatory copy\n\n---\n"
+    },
+    {
       "name": "Header",
       "slug": "header",
       "aliases": [],
@@ -384,6 +399,10 @@
       "name": "Link",
       "slug": "link",
       "aliases": [
+        {
+          "name": "ActionButton",
+          "context": "navigates when href or download is present"
+        },
         "Anchor",
         "Hyperlink",
         "Text link",
@@ -393,7 +412,7 @@
         }
       ],
       "file": "patterns/link.md",
-      "guidance": "## Link\n\n**Also known as:** Anchor  ·  Hyperlink  ·  Text link  ·  CTA (navigates)\n\nA clickable reference to another resource — either an external page or a location within the current document.\n\nA **link styled as a button** — a navigating call-to-action — is still a Link. Name it Link; the button styling is a visual treatment, not a change of primitive.\n\nA control that triggers an **in-page action** (submit, open a dialog, toggle) is a **Button**, not a Link (see `button.md`) — a Link navigates, a Button acts.\n\n**Best practices:**\n- Make link text descriptive — avoid 'click here' or 'learn more' in isolation\n- Underline links in body text for discoverability; nav links may rely on context\n- Use a distinct color from surrounding text (but avoid pure blue if it clashes with your palette)\n- Show a visited state for content-heavy pages to aid navigation\n- External links should indicate they open in a new tab (icon or aria-label)\n\n**Common layouts:**\n- Inline text link within a paragraph\n- Standalone link beneath a card or section as a 'read more' action\n- A heading link stretched to cover a whole card, making the card one click target while keeping its accessible name equal to the visible title\n- Footer link columns for site navigation\n- Breadcrumb links in a hierarchy path\n\n---\n"
+      "guidance": "## Link\n\n**Also known as:** ActionButton (navigates)  ·  Anchor  ·  Hyperlink  ·  Text link  ·  CTA (navigates)\n\nA clickable reference to another resource — either an external page or a location within the current document.\n\nA **link styled as a button** — a navigating call-to-action — is still a Link. Name it Link; the button styling is a visual treatment, not a change of primitive.\n\nA control that triggers an **in-page action** (submit, open a dialog, toggle) is a **Button**, not a Link (see `button.md`) — a Link navigates, a Button acts.\n\n**Best practices:**\n- Make link text descriptive — avoid 'click here' or 'learn more' in isolation\n- Underline links in body text for discoverability; nav links may rely on context\n- Use a distinct color from surrounding text (but avoid pure blue if it clashes with your palette)\n- Show a visited state for content-heavy pages to aid navigation\n- External links should indicate they open in a new tab (icon or aria-label)\n\n**Common layouts:**\n- Inline text link within a paragraph\n- Standalone link beneath a card or section as a 'read more' action\n- A heading link stretched to cover a whole card, making the card one click target while keeping its accessible name equal to the visible title\n- Footer link columns for site navigation\n- Breadcrumb links in a hierarchy path\n\n---\n"
     },
     {
       "name": "List",
@@ -411,10 +430,11 @@
         "Logo cloud",
         "Logo wall",
         "Logos bar",
+        "LogosGrid",
         "Partner logos"
       ],
       "file": "patterns/logo-bar.md",
-      "guidance": "## Logo bar\n\n**Also known as:** Logo cloud  ·  Logo wall  ·  Logos bar  ·  Partner logos\n\nA full-width band that presents a row of partner, customer, or certification logos as social proof — often auto-scrolling — with the logos themselves non-interactive.\n\nFor a scrolling row of *textual* announcements, use a **Marquee** (see `marquee.md`). For a promotional top-of-page area, use a **Hero** (see `hero.md`).\n\n**Best practices:**\n- Use for a trust/social-proof strip of brand logos, not for navigation — the logos are presentational, not links.\n- Present the logos as a list of images, each with meaningful `alt` text; mark purely decorative framing `aria-hidden`.\n- When the row auto-scrolls, provide an always-visible pause/play control and pause on hover and focus — auto-moving content must be pausable (WCAG 2.2.2 Pause, Stop, Hide).\n- Keep the logo track non-focusable and non-interactive; do not attach per-logo click or keyboard behavior.\n- Any static aggregate panel (a rating, a customer count) stays separate from the moving track so its content is stable while logos scroll.\n- Theme via semantic tokens (light/dark surfaces), never hardcoded brand colors.\n\n**Common layouts:**\n- A full-width band directly below the hero as first-screen social proof.\n- Static highlight panel beside the logo track on desktop, stacked above it on mobile.\n- A partner/customer strip between content sections.\n- A trust bar just above the footer.\n\n---\n"
+      "guidance": "## Logo bar\n\n**Also known as:** Logo cloud  ·  Logo wall  ·  Logos bar  ·  LogosGrid  ·  Partner logos\n\nA full-width band that presents a row of partner, customer, or certification logos as social proof — often auto-scrolling — with the logos themselves non-interactive.\n\nFor a scrolling row of *textual* announcements, use a **Marquee** (see `marquee.md`). For a promotional top-of-page area, use a **Hero** (see `hero.md`).\n\n**Best practices:**\n- Use for a trust/social-proof strip of brand logos, not for navigation — the logos are presentational, not links.\n- Present the logos as a list of images, each with meaningful `alt` text; mark purely decorative framing `aria-hidden`.\n- When the row auto-scrolls, provide an always-visible pause/play control and pause on hover and focus — auto-moving content must be pausable (WCAG 2.2.2 Pause, Stop, Hide).\n- Keep the logo track non-focusable and non-interactive; do not attach per-logo click or keyboard behavior.\n- Any static aggregate panel (a rating, a customer count) stays separate from the moving track so its content is stable while logos scroll.\n- Theme via semantic tokens (light/dark surfaces), never hardcoded brand colors.\n\n**Common layouts:**\n- A full-width band directly below the hero as first-screen social proof.\n- Static highlight panel beside the logo track on desktop, stacked above it on mobile.\n- A partner/customer strip between content sections.\n- A trust bar just above the footer.\n\n---\n"
     },
     {
       "name": "Marquee",
@@ -501,6 +521,13 @@
       "guidance": "## Pagination\n\n**Also known as:** Page controls  ·  Page nav  ·  Pager\n\nA control for navigating between pages of content when data is split across multiple views.\n\n**Best practices:**\n- Show first, last, and a window of pages around the current one\n- Use ellipsis to indicate skipped pages, not dozens of page numbers\n- Provide Previous/Next buttons in addition to numbered pages\n- Clearly style the current page as selected\n- Consider infinite scroll or 'Load more' for content feeds\n\n**Common layouts:**\n- Table footer with page numbers, rows-per-page selector, and total count\n- Search results pagination centered below the results list\n- Blog archive with Previous/Next navigation\n- API documentation with page controls at top and bottom\n\n---\n"
     },
     {
+      "name": "Pie chart",
+      "slug": "pie-chart",
+      "aliases": [],
+      "file": "patterns/pie-chart.md",
+      "guidance": "## Pie chart\n\nA circular part-to-whole visualization that divides a total into labeled proportional segments, optionally with a central void.\n\nFor values against a bounded scale, use a **Gauge chart** (see `gauge-chart.md`).\n\n**Best practices:**\n- Use only when every segment belongs to the same meaningful whole and totals can be interpreted consistently.\n- Keep the number of segments small enough for labels and proportions to remain distinguishable.\n- Show category labels and values or percentages outside color alone.\n- Order segments deliberately and keep legend order aligned with visual order.\n- Respect reduced-motion preferences and do not depend on animation to reveal the data.\n- Give the rendered chart an accessible name with `aria-label` or a referenced visible heading, and provide a text or table equivalent for exact comparison.\n\n**Common layouts:**\n- Dashboard card showing a compact category breakdown\n- Report section pairing the chart with a legend\n- Donut chart with a summarized total in the center\n- Responsive figure followed by an equivalent data table\n\n---\n"
+    },
+    {
       "name": "Popover",
       "slug": "popover",
       "aliases": [],
@@ -548,10 +575,12 @@
       "slug": "radio-button",
       "aliases": [
         "Radio",
-        "Radio group"
+        "Radio group",
+        "RadioControl",
+        "RadioGroupField"
       ],
       "file": "patterns/radio-button.md",
-      "guidance": "## Radio button\n\n**Also known as:** Radio  ·  Radio group\n\nA selection control where the user picks exactly one option from a predefined set.\n\n**Best practices:**\n- Use radio buttons for mutually exclusive choices (select one from many)\n- Always pre-select a sensible default when possible\n- Group under a fieldset with a legend describing the choice\n- Stack vertically for more than 2 options — horizontal only for 2–3 short-label options\n- Provide sufficient spacing between options (at least 8 px) for easy tapping\n\n**Common layouts:**\n- Shipping method selection (Standard, Express, Overnight)\n- Payment method chooser with radio + icon + description\n- Survey question with single-choice answers\n- Plan/tier selection in a pricing form\n\n---\n"
+      "guidance": "## Radio button\n\n**Also known as:** Radio  ·  Radio group  ·  RadioControl  ·  RadioGroupField\n\nA selection control where the user picks exactly one option from a predefined set.\n\n**Best practices:**\n- Use radio buttons for mutually exclusive choices (select one from many)\n- Always pre-select a sensible default when possible\n- Group under a fieldset with a legend describing the choice\n- Stack vertically for more than 2 options — horizontal only for 2–3 short-label options\n- Provide sufficient spacing between options (at least 8 px) for easy tapping\n\n**Common layouts:**\n- Shipping method selection (Standard, Express, Overnight)\n- Payment method chooser with radio + icon + description\n- Survey question with single-choice answers\n- Plan/tier selection in a pricing form\n\n---\n"
     },
     {
       "name": "Rating",
@@ -626,10 +655,11 @@
       "slug": "select",
       "aliases": [
         "Dropdown",
-        "Select input"
+        "Select input",
+        "SelectField"
       ],
       "file": "patterns/select.md",
-      "guidance": "## Select\n\n**Also known as:** Dropdown  ·  Select input\n\nA form input that shows the current selection when collapsed and reveals a scrollable option list when expanded.\n\nA button-triggered menu of **actions** is not a Select — that is a **Dropdown menu** (see `dropdown-menu.md`). For a value picker with free-text filtering over many options, use a **Combobox** (see `combobox.md`).\n\n**Best practices:**\n- Use native select for simple use cases (better accessibility and mobile UX)\n- For custom selects, ensure full keyboard support and ARIA attributes\n- Show a placeholder label ('Select an option…') when no value is chosen\n- Group long option lists with optgroups or headings\n- For searchable selects with many options, use a **Combobox** (see `combobox.md`)\n- For a custom select, use `role=\"combobox\"` with `aria-expanded` on the trigger and `role=\"listbox\"`/`role=\"option\"` with `aria-selected` for the popup; support type-ahead and arrow keys\n\n**Common layouts:**\n- Country/region picker in an address form\n- Sort-by dropdown in a product listing toolbar\n- Role selector in a user invitation flow\n- Language/locale switcher\n\n---\n"
+      "guidance": "## Select\n\n**Also known as:** Dropdown  ·  Select input  ·  SelectField\n\nA form input that shows the current selection when collapsed and reveals a scrollable option list when expanded.\n\nA button-triggered menu of **actions** is not a Select — that is a **Dropdown menu** (see `dropdown-menu.md`). For a value picker with free-text filtering over many options, use a **Combobox** (see `combobox.md`).\n\n**Best practices:**\n- Use native select for simple use cases (better accessibility and mobile UX)\n- For custom selects, ensure full keyboard support and ARIA attributes\n- Show a placeholder label ('Select an option…') when no value is chosen\n- Group long option lists with optgroups or headings\n- For searchable selects with many options, use a **Combobox** (see `combobox.md`)\n- For a custom select, use `role=\"combobox\"` with `aria-expanded` on the trigger and `role=\"listbox\"`/`role=\"option\"` with `aria-selected` for the popup; support type-ahead and arrow keys\n\n**Common layouts:**\n- Country/region picker in an address form\n- Sort-by dropdown in a product listing toolbar\n- Role selector in a user invitation flow\n- Language/locale switcher\n\n---\n"
     },
     {
       "name": "Separator",
@@ -748,9 +778,11 @@
     {
       "name": "Textarea",
       "slug": "textarea",
-      "aliases": [],
+      "aliases": [
+        "TextAreaField"
+      ],
       "file": "patterns/textarea.md",
-      "guidance": "## Textarea\n\nA multi-line text field for longer content entry.\n\nPair with a **Label** (`label.md`), **Helper text** (`helper-text.md`) for guidance such as character limits, and an **Error message** (`error-message.md`) for validation.\n\n**Best practices:**\n- Allow vertical resizing but consider setting a min and max height\n- Show character count if there's a limit\n- Use a taller default height (3–5 rows) to signal multi-line input is expected\n- Auto-grow the textarea as the user types for a smoother experience\n\n**Common layouts:**\n- Comment or reply input below a post\n- Feedback form with a large message area\n- Note-taking field in a CRM or project tool\n- Code or JSON input with monospace font\n\n---\n"
+      "guidance": "## Textarea\n\n**Also known as:** TextAreaField\n\nA multi-line text field for longer content entry.\n\nPair with a **Label** (`label.md`), **Helper text** (`helper-text.md`) for guidance such as character limits, and an **Error message** (`error-message.md`) for validation.\n\n**Best practices:**\n- Allow vertical resizing but consider setting a min and max height\n- Show character count if there's a limit\n- Use a taller default height (3–5 rows) to signal multi-line input is expected\n- Auto-grow the textarea as the user types for a smoother experience\n\n**Common layouts:**\n- Comment or reply input below a post\n- Feedback form with a large message area\n- Note-taking field in a CRM or project tool\n- Code or JSON input with monospace font\n\n---\n"
     },
     {
       "name": "Toast",

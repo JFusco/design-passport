@@ -189,7 +189,7 @@ describe("rule engine and report", () => {
       id: "button:1",
       name: "Label",
       component: { kind: "component", descriptionLength: 20, documentationLinkCount: 1, propertyDefinitions: [] },
-      confirmedPattern: { canonicalName: "Label", sourceName: "Label", catalogVersion: "1.17.0" },
+      confirmedPattern: { canonicalName: "Label", sourceName: "Label", catalogVersion: CATALOG_VERSION },
     });
     expect(evaluateRules(graph, p, ["root:desktop"]).find((item) => item.ruleId === "naming.pattern-contextual")).toMatchObject({ status: "pass", patternResolution: { canonicalName: "Label", requiresConfirmation: false } });
   });

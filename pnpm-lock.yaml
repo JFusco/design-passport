@@ -57,9 +57,6 @@ importers:
       '@types/react-dom':
         specifier: 19.1.7
         version: 19.1.7(@types/react@19.1.10)
-      '@verndale/ui-design-brain':
-        specifier: 1.17.0
-        version: 1.17.0
       '@vitejs/plugin-react':
         specifier: 5.0.2
         version: 5.0.2(vite@7.1.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0))
@@ -87,6 +84,9 @@ importers:
       typescript-eslint:
         specifier: 8.70.0
         version: 8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.2)
+      ui-design-brain:
+        specifier: 1.18.5
+        version: 1.18.5
       vite:
         specifier: 7.1.4
         version: 7.1.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)
@@ -1402,11 +1402,6 @@ packages:
     resolution: {integrity: sha512-nAB74NfSNKknqQ1RrYj6uz8FcXEomu/MATJZxh/x+BArzN2U3JbOYC0APYzUIGhVY3m5hRxA8VPNdPBoG8txlA==}
     cpu: [x64]
     os: [win32]
-
-  '@verndale/ui-design-brain@1.17.0':
-    resolution: {integrity: sha512-nRH8YZ7MuyOVenNyNsTuhq8iKNjTzwcsELXaScwb3H1+7d4C719Hw30xImGMUJjwvPA5i31O2DqXq93JTqV7eQ==}
-    engines: {node: '>=24.14.0'}
-    hasBin: true
 
   '@vitejs/plugin-react@5.0.2':
     resolution: {integrity: sha512-tmyFgixPZCx2+e6VO9TNITWcCQl8+Nl/E8YbAyPVv85QCc7/A3JrdfG2A8gIzvVhWuzMOVrFW1aReaNxrI6tbw==}
@@ -2940,6 +2935,11 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  ui-design-brain@1.18.5:
+    resolution: {integrity: sha512-emwhn0X1gHE8o8/2sJeSSRItiNP+6Ra0zHBzinejQxPZqUgkn6tnH7UGHmwLccVJ0RAcmZKqhsF8YVZ4ACyL0A==}
+    engines: {node: '>=24.14.0'}
+    hasBin: true
+
   unbox-primitive@1.1.0:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
     engines: {node: '>= 0.4'}
@@ -4149,8 +4149,6 @@ snapshots:
 
   '@unrs/resolver-binding-win32-x64-msvc@1.12.2':
     optional: true
-
-  '@verndale/ui-design-brain@1.17.0': {}
 
   '@vitejs/plugin-react@5.0.2(vite@7.1.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0))':
     dependencies:
@@ -5949,6 +5947,8 @@ snapshots:
       - supports-color
 
   typescript@5.9.2: {}
+
+  ui-design-brain@1.18.5: {}
 
   unbox-primitive@1.1.0:
     dependencies:
