@@ -62,8 +62,8 @@ export const SOURCES = {
   },
   uiBrain: {
     kind: "ui-design-brain",
-    label: "@verndale/ui-design-brain naming catalog",
-    url: "https://www.npmjs.com/package/@verndale/ui-design-brain",
+    label: "ui-design-brain naming catalog",
+    url: "https://www.npmjs.com/package/ui-design-brain",
   },
   article: {
     kind: "medium",

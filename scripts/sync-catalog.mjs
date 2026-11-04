@@ -4,17 +4,20 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const packageRoot = path.join(root, "node_modules", "@verndale", "ui-design-brain");
+const packageRoot = path.join(root, "node_modules", "ui-design-brain");
 const packageJson = JSON.parse(await readFile(path.join(packageRoot, "package.json"), "utf8"));
-if (packageJson.version !== "1.17.0") {
-  throw new Error(`Expected @verndale/ui-design-brain 1.17.0, received ${packageJson.version}`);
+const pinned = JSON.parse(await readFile(path.join(root, "package.json"), "utf8")).devDependencies["ui-design-brain"];
+if (packageJson.name !== "ui-design-brain" || packageJson.version !== pinned) {
+  throw new Error(`Expected ui-design-brain ${pinned}, received ${packageJson.name}@${packageJson.version}; run pnpm install --frozen-lockfile`);
 }
 
 const catalogRoot = path.join(packageRoot, "skills", "ui-design-brain");
 const manifestRaw = await readFile(path.join(catalogRoot, "patterns-manifest.json"), "utf8");
 const manifest = JSON.parse(manifestRaw);
 const authority = JSON.parse(await readFile(path.join(catalogRoot, "catalog-manifest.json"), "utf8"));
-if (manifest.length !== 80) throw new Error(`Expected 80 canonical patterns, received ${manifest.length}`);
+if (manifest.length !== authority.patternCount) {
+  throw new Error(`Expected ${authority.patternCount} canonical patterns, received ${manifest.length}`);
+}
 
 const patterns = [];
 for (const entry of manifest) {

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import packageJson from "../package.json";
 import { catalogStats, canonicalPatternName, resolvePattern, UI_DESIGN_BRAIN } from "../src/core/catalog";
 
 describe("UI Design Brain resolver", () => {
   it("pins the expected complete catalog", () => {
-    expect(catalogStats()).toEqual({ patternCount: 80, plainAliasCount: 158, contextualAliasCount: 6 });
-    expect(UI_DESIGN_BRAIN.catalogVersion).toBe("1.17.0");
+    expect(catalogStats()).toEqual({ patternCount: 82, plainAliasCount: 166, contextualAliasCount: 8 });
+    expect(UI_DESIGN_BRAIN.catalogVersion).toBe(packageJson.devDependencies["ui-design-brain"]);
     expect(UI_DESIGN_BRAIN.catalogDigest).toMatch(/^sha256:/);
   });
 
@@ -33,9 +34,9 @@ describe("UI Design Brain resolver", () => {
     }
   });
 
-  it("never guesses any of the six contextual alias entries", () => {
+  it("never guesses any of the eight contextual alias entries", () => {
     const contextual = UI_DESIGN_BRAIN.patterns.flatMap((pattern) => pattern.aliases.filter((alias) => typeof alias !== "string"));
-    expect(contextual).toHaveLength(6);
+    expect(contextual).toHaveLength(8);
     for (const alias of contextual) {
       if (typeof alias === "string") continue;
       expect(resolvePattern(alias.name)).toMatchObject({ kind: "contextual", requiresConfirmation: true });

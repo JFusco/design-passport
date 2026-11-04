@@ -22,7 +22,7 @@ That surface holds committed and editable values separately. Unsaved, invalid, o
 
 ## Naming authority
 
-`@verndale/ui-design-brain@1.17.0` is lockfile pinned and projected into a generated 80-pattern manifest. It controls canonical pattern names, plain aliases, contextual-alias review, and advisory pattern checklists. It does not replace WCAG or become a runtime network dependency.
+`ui-design-brain@1.18.5` is lockfile pinned and projected into a generated 82-pattern manifest. The sync script expects the version pinned in `package.json`, so a bump needs only a re-sync. It controls canonical pattern names, plain aliases, contextual-alias review, and advisory pattern checklists. It does not replace WCAG or become a runtime network dependency.
 
 ## Runtime boundary
 
