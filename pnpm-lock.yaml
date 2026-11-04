@@ -85,8 +85,8 @@ importers:
         specifier: 8.70.0
         version: 8.70.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.2)
       ui-design-brain:
-        specifier: 1.18.5
-        version: 1.18.5
+        specifier: 1.18.6
+        version: 1.18.6
       vite:
         specifier: 7.1.4
         version: 7.1.4(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)
@@ -2935,8 +2935,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  ui-design-brain@1.18.5:
-    resolution: {integrity: sha512-emwhn0X1gHE8o8/2sJeSSRItiNP+6Ra0zHBzinejQxPZqUgkn6tnH7UGHmwLccVJ0RAcmZKqhsF8YVZ4ACyL0A==}
+  ui-design-brain@1.18.6:
+    resolution: {integrity: sha512-gyMxYok7LfUTU8G1oFmKStzZo9YX9uWRZ7ntl19qB2pvtY/DAtzwmnAH/Uh2pzKtqCtta7Hbc/qdfKjcGeEelg==}
     engines: {node: '>=24.14.0'}
     hasBin: true
 
@@ -5948,7 +5948,7 @@ snapshots:
 
   typescript@5.9.2: {}
 
-  ui-design-brain@1.18.5: {}
+  ui-design-brain@1.18.6: {}
 
   unbox-primitive@1.1.0:
     dependencies:
