@@ -1144,9 +1144,15 @@
           "kind": "issue",
           "number": 114,
           "url": "https://github.com/jfusco/design-passport/issues/114"
+        },
+        {
+          "repository": "jfusco/design-passport",
+          "kind": "issue",
+          "number": 117,
+          "url": "https://github.com/jfusco/design-passport/issues/117"
         }
       ],
-      "bytes": 1482,
+      "bytes": 1915,
       "degree": 1,
       "x": -0.99863,
       "y": -0.052336,
