@@ -2,8 +2,9 @@
 date: 2026-11-08
 topics: [design-passport-architecture]
 plans: [2026-11-08-govern-dependency-maintenance-in-design-passport-5a6a37a10d.md]
-pr: pending
-issue: https://github.com/JFusco/design-passport/issues/127
+pr: 'https://github.com/jfusco/design-passport/pull/128'
+issue: 'https://github.com/jfusco/design-passport/issues/127'
+issues: ['https://github.com/jfusco/design-passport/issues/127']
 ---
 # Govern dependency maintenance
 
