@@ -3,7 +3,7 @@ name: Commit message lint
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
 
 permissions:
   contents: read
@@ -50,8 +50,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Identify trusted Pin Courier PR
+        id: pin_courier
+        run: node scripts/is-pin-courier-pr.cjs
+
       - name: Validate PR body
-        if: ${{ !startsWith(github.event.pull_request.head.ref, 'bot/wiki-') && !startsWith(github.event.pull_request.head.ref, 'renovate/') }}
+        if: ${{ !startsWith(github.event.pull_request.head.ref, 'bot/wiki-') && steps.pin_courier.outputs.trusted != 'true' }}
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: pnpm run lint:pr
@@ -59,10 +63,13 @@ jobs:
       - name: Lint PR title (squash merge becomes the commit on main)
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
+          PIN_COURIER_TRUSTED: ${{ steps.pin_courier.outputs.trusted }}
         run: |
           printf '%s\n' "$PR_TITLE" | pnpm exec commitlint --config commitlint.config.cjs --verbose
 
       - name: Lint commit messages (PR range)
+        env:
+          PIN_COURIER_TRUSTED: ${{ steps.pin_courier.outputs.trusted }}
         run: |
           pnpm exec commitlint --config commitlint.config.cjs \
             --from "${{ github.event.pull_request.base.sha }}" \

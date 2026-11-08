@@ -79,3 +79,7 @@ The browser receives only bounded view models and sanitized downloads. Figma cre
 - Project style guides remain file-bound and advisory; learning cannot publish without an exact-digest human decision.
 
 See [the readiness standard](./design-readiness-standard.md), [whole-file knowledge](./whole-file-design-knowledge.md), [mutation and certification safety](./mutation-certification-safety.md), [the project-scoped knowledge loop](./project-scoped-knowledge-loop.md), and [runtime QA](./figma-runtime-qa.md).
+
+## Dependency maintenance decision, 2026-11-08
+
+Adopt the reviewed standard preset with explicit owned surfaces and exclusions. Keep maintainer merging and specialized dependency producers. Preserve exact compatibility units and generated-output ownership; authenticate Pin Courier metadata where applicable. See the [implementation journal](../journal/2026-11-08-dependency-maintenance-policy.md) for the verification boundary.
