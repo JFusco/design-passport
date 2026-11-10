@@ -118,6 +118,11 @@ test("retains Dev Mode cleanup gates while allowing audit and export", async ({ 
   await page.getByText("Audit details & exports", { exact: true }).click();
   await expect(page.getByText(/Dev Mode is audit-only/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Export JSON", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Audit", exact: true }).click();
+  const skipped = page.getByRole("region", { name: "Skipped pages" });
+  await expect(skipped.getByText("Switch to Design mode to change skipped pages. Confirm page exclusions, then generate context.")).toBeVisible();
+  await skipped.getByText("Skip additional pages +", { exact: true }).click();
+  await expect(skipped.getByRole("checkbox", { name: "Skip Screens", exact: true })).toBeDisabled();
   await page.getByRole("button", { name: "Cleanup", exact: true }).click();
   await expect(page.getByRole("button", { name: "Apply this fix", exact: true }).first()).toBeDisabled();
   await expect(page.getByRole("button", { name: "Apply safe & guarded", exact: true })).toBeDisabled();
@@ -130,6 +135,12 @@ test("gates first audit on context and keeps generation separate from the report
   });
   await expect(page.getByRole("button", { name: "Generate context", exact: true })).toBeEnabled();
   await expect(page.getByRole("button", { name: "Run audit · Current page" })).toBeDisabled();
+  const skipped = page.getByRole("region", { name: "Skipped pages" });
+  await skipped.getByText("Skip additional pages +", { exact: true }).click();
+  const skipScreens = skipped.getByRole("checkbox", { name: "Skip Screens", exact: true });
+  await skipScreens.check();
+  await expect(skipped.getByRole("button", { name: "Confirm page exclusions" })).toBeEnabled();
+  await skipScreens.uncheck();
   await deliver(page, { type: "context-status", status: { state: "generating" } });
   await expect(page.getByRole("progressbar", { name: "Context generation" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Cancel generation" })).toBeEnabled();
@@ -137,6 +148,12 @@ test("gates first audit on context and keeps generation separate from the report
   await expect(page.getByRole("button", { name: "Run audit · Current page" })).toBeEnabled();
   await expect(page.locator(".result-hero")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Regenerate context" })).toBeVisible();
+  await page.evaluate(() => {
+    const result = (window as unknown as FixtureWindow).PassportTest.result;
+    if (result.type !== "scan-result") throw new Error("Missing fixture");
+    window.postMessage({ pluginMessage: { type: "context-status", status: { state: "current", knowledge: { ...result.knowledge, unavailableComponentMetadataCount: 1 } } } }, "*");
+  });
+  await expect(page.getByRole("region", { name: "File context" })).toContainText("Figma couldn’t read component properties on 1 layer.");
 });
 
 test("shows checking, preserves the score on fallback and retains a resolved row until Clear", async ({ page }) => {

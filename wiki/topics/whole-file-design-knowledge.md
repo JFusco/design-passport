@@ -24,6 +24,21 @@ Library source targeting is intentionally conservative. Component sets and stand
 
 Pages load sequentially under Figma's `dynamic-page` model with quiet supporting-context progress and cancellation. Invisible instance children are skipped by default. Traversal yields periodically so large files remain interactive.
 
+Component metadata reads are isolated from scene capture. When Figma rejects
+instance properties, component definitions, or variant assignments, the graph
+keeps the layer and its usable evidence, records the unavailable fields, and
+shows the affected-layer count beside context status. An unreadable property
+bundle cannot establish a disabled-state accessibility exemption through a
+layer-name fallback. Refresh replaces component metadata, including removal of
+stale values and recovery warnings; scene freshness signatures include the same
+guarded metadata. Complete context means every included page was traversed,
+not that every optional component getter succeeded.
+
+Page exclusions remain profile writes. Dev Mode explains the Design mode
+requirement beside disabled controls. In Design mode, designers can confirm
+skipped pages before context exists, then generate context for included pages.
+See the [component metadata repair](../journal/2026-11-10-component-metadata-capture.md).
+
 ## Freshness and drift
 
 A graph is usable only when complete for the included pages, audit-setup-matched, topology-matched, snapshot-matched and clean, with a successful whole-context validation in this session within 15 minutes. Capture time remains separate. An explicit audit can revalidate an aged unchanged graph without recapture; micro-checks and batch page guards do not renew validation authority. Historical reports and restored timestamps cannot authorize actions.

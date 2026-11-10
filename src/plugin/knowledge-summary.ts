@@ -34,6 +34,7 @@ export function buildKnowledgeSummary(value: DesignKnowledgeGraph): KnowledgeSum
     excludedPageIds: [...(value.excludedPageIds ?? [])],
     nodeCount: Object.keys(value.nodes).length,
     componentCount: value.componentIds.length,
+    unavailableComponentMetadataCount: Object.values(value.nodes).filter((node) => node.unavailableComponentMetadata?.length).length,
     instanceCount: value.instanceIds.length,
     responsiveFamilyCount: value.responsiveFamilies.length,
     repeatedStructureGroupCount: value.repeatedStructureGroups.length,

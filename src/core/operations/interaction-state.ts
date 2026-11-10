@@ -75,6 +75,7 @@ export function interactionState(
     if (visited.has(current.id)) return { state: "conflicting", evidence };
     visited.add(current.id);
     if (["COMPONENT", "COMPONENT_SET", "INSTANCE"].includes(current.type)) {
+      if (current.unavailableComponentMetadata?.length) return { state: "unknown", evidence };
       evidence.push(...stateEvidence(current.interactionProperties ?? current.variantProperties ?? current.name, current.id));
     }
     current = current.parentId ? graph.nodes[current.parentId] : undefined;

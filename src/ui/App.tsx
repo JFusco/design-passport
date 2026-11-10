@@ -586,7 +586,7 @@ export function App() {
             auditOnly={activeTab === "audit"}
             reportOnly={activeTab === "report"}
             cleanupCount={plans.filter((plan) => plan.risk !== "structural").reduce((count, plan) => count + plan.operations.length, 0)}
-            pageExclusions={<PageExclusions pages={bootstrap.data.pages} excluded={profile.excludedPageIds} disabled={scanInFlight || !bootstrap.data.canMutateDocument} dirty={draftState.dirty} onChange={(ids) => setProfile({ ...cloneProfile(profile), excludedPageIds: ids })} onConfirm={() => send({ type: "save-profile", profile })} />}
+            pageExclusions={<PageExclusions pages={bootstrap.data.pages} excluded={profile.excludedPageIds} disabled={scanInFlight} canMutateDocument={bootstrap.data.canMutateDocument} dirty={draftState.dirty} onChange={(ids) => setProfile({ ...cloneProfile(profile), excludedPageIds: ids })} onConfirm={() => send({ type: "save-profile", profile })} />}
             excludedPageIds={profile.excludedPageIds}
             onCleanup={() => setActiveTab("cleanup")}
             report={report}

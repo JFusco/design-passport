@@ -104,6 +104,8 @@ function knowledge(value: unknown): value is KnowledgeSummary {
     || !date(summary.builtAt) || !nonempty(summary.snapshotHash)) return false;
   if (!["pageCount", "loadedPageCount", "nodeCount", "componentCount", "instanceCount", "responsiveFamilyCount", "repeatedStructureGroupCount", "sourceFrameCount"]
     .every((key) => typeof summary[key] === "number" && Number.isFinite(summary[key]) && (summary[key] as number) >= 0)) return false;
+  if (summary.unavailableComponentMetadataCount !== undefined
+    && (typeof summary.unavailableComponentMetadataCount !== "number" || !Number.isSafeInteger(summary.unavailableComponentMetadataCount) || summary.unavailableComponentMetadataCount < 0)) return false;
   const rows = (key: string, valid: (row: Record<string, unknown>) => boolean) => Array.isArray(summary[key])
     && (summary[key] as unknown[]).every((item) => { const row = object(item); return row !== undefined && valid(row); });
   return rows("pages", (row) => nonempty(row.id) && typeof row.name === "string" && typeof row.role === "string" && typeof row.nodeCount === "number")
