@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import manifest from "../manifest.json";
 import developmentManifest from "../development/manifest.json";
+import { CONDUCTOR_ENVIRONMENTS } from "../src/plugin/conductor-environments";
 
 describe("Figma manifest", () => {
   it("supports Design and Dev Mode with the required private-plugin capabilities", () => {
@@ -12,10 +13,11 @@ describe("Figma manifest", () => {
     expect(manifest.enablePrivatePluginApi).toBe(true);
     expect(manifest.networkAccess.allowedDomains).toEqual([
       "https://conductor.verndale.com",
-      "https://ca-cumulative-os-shell.redhill-26044d68.eastus2.azurecontainerapps.io",
+      "https://ca-cos-conductor-shell-stg.bluewave-5fc9d211.eastus2.azurecontainerapps.io",
     ]);
     expect(manifest.networkAccess.devAllowedDomains).toEqual(["http://localhost:3109"]);
     expect(manifest.networkAccess.allowedDomains.every((origin) => new URL(origin).protocol === "https:" && !origin.includes("*"))).toBe(true);
+    expect(CONDUCTOR_ENVIRONMENTS.filter((environment) => environment.id !== "local").map((environment) => environment.origin)).toEqual(manifest.networkAccess.allowedDomains);
   });
 
   it("declares no retired relaunch controls", () => {

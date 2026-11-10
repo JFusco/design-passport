@@ -37,6 +37,11 @@ invalid instance remains unidentified; fixture evidence establishes the
 plugin failure and recovery paths. No client canvas content was changed, and
 this delivery does not publish a plugin release.
 
+Before merging PR 137, integration retained the newer staging-address change
+from main (`013223e`). Conflicts were limited to the plan ledger and generated
+wiki graph outputs. Both plan records remain present; the wiki and shared code
+maps were regenerated from the combined source.
+
 The executed plan is archived in the [plan ledger](../plans/INDEX.md). See
 [whole-file design knowledge](../topics/whole-file-design-knowledge.md) for the
 durable capture and exclusion behavior.
