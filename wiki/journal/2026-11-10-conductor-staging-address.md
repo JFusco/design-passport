@@ -1,6 +1,8 @@
 ---
 topics: [conductor-design-workspaces]
 plans: [2026-11-10-update-the-fixed-conductor-staging-address-657e83fab9.md]
+issue: 'https://github.com/jfusco/design-passport/issues/134'
+issues: ['https://github.com/jfusco/design-passport/issues/134']
 ---
 
 # Correct the fixed Conductor staging address
