@@ -10,6 +10,12 @@ Each component/device workspace keeps the original Reference, generated Wirefram
 
 Browser approval issues an owner-bound, eight-hour token for the plugin API only. Its bearer value stays in plugin clientStorage. Fixed environment origins, cookie-free transport and server-side policy checks protect each connected operation. Disconnect and existing profile revocation terminate access.
 
+## Current staging origin
+
+The configured staging origin is `https://ca-cos-conductor-shell-stg.bluewave-5fc9d211.eastus2.azurecontainerapps.io`. On November 10, the prior redhill host failed DNS resolution while this host loaded and authenticated the existing synthetic acceptance project. [Issue 134](https://github.com/JFusco/design-passport/issues/134) updates the environment selector's origin and both Figma manifest allowlists together. Existing manifest tests also compare hosted transport origins with the fixed allowlist. Production and the development loopback origin are unchanged; arbitrary origins and redirects remain refused.
+
+This source update requires a separately approved merge and private-plugin publication before the installed plugin can use the new address. Browser reachability and local verification do not establish a published-plugin round trip. See the [staging-address journal](../journal/2026-11-10-conductor-staging-address.md).
+
 Explicit submission saves chosen Design links, a message and selected annotation snapshots into the same component's Design discussion. Workflow actions remain optional and version guarded. Native comment synchronization and automatic file creation are deferred. Generation and submission confer no approval or readiness.
 
 ## Delivery and verification
