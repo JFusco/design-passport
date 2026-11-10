@@ -45,6 +45,7 @@ export interface KnowledgeSummary {
   excludedPageIds?: string[];
   nodeCount: number;
   componentCount: number;
+  unavailableComponentMetadataCount?: number;
   instanceCount: number;
   responsiveFamilyCount: number;
   repeatedStructureGroupCount: number;

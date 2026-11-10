@@ -366,6 +366,8 @@ export interface NodeSnapshot {
   absoluteBounds?: { x: number; y: number; width: number; height: number };
   hasPointerInteraction?: boolean;
   interactionProperties?: Record<string, string>;
+  /** Figma rejected these metadata reads; absence must not imply verified emptiness. */
+  unavailableComponentMetadata?: Array<"componentProperties" | "componentPropertyDefinitions" | "variantProperties">;
   clipsContent?: boolean;
   isMask?: boolean;
   layout?: {

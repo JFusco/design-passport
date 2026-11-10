@@ -29,12 +29,11 @@ import {
   parseProjectStyleGuideBinding,
   parseReferencePack,
 } from "../core/knowledge-loop";
-import { canReadComponentPropertyDefinitions } from "./operations/component";
+import { componentMetadataSnapshot } from "./operations/component";
 import { annotationText } from "./operations/annotations";
 import { listVariableCollectionOptions, type VariableCollectionOption } from "./operations/collections";
 import { parseCertificationSummary, parseDetachmentIntent, parsePatternConfirmation, parseStoredProfile } from "./operations/shared-data";
 import { resolveTextBackground } from "./operations/background";
-import { interactionPropertiesSnapshot } from "./operations/interaction-state";
 import { mixedTypographyFields, TextStyleEvidenceReader } from "./operations/text-style";
 export { resolveTextBackground } from "./operations/background";
 import { baseSnapshot, contextFragment, mapConcurrent, newBuildDiagnostics, readContextFragment, restPageFingerprint, restSubtreeCovers, restSubtreeNodes, type ContextCachePort, type KnowledgeBuildDiagnostics } from "./context-cache";
@@ -331,35 +330,6 @@ export function textSnapshot(node: SceneNode): NodeSnapshot["text"] {
   };
 }
 
-function componentSnapshot(node: SceneNode): NodeSnapshot["component"] {
-  if (node.type !== "COMPONENT" && node.type !== "COMPONENT_SET") return undefined;
-  const propertyDefinitions = canReadComponentPropertyDefinitions(node.type, node.parent?.type)
-    ? Object.entries(node.componentPropertyDefinitions).map(([name, definition]) => ({
-      name,
-      type: definition.type,
-      values: (definition.variantOptions ?? [definition.defaultValue]).map(String),
-    }))
-    : [];
-  return {
-    kind: node.type === "COMPONENT" ? "component" : "component-set",
-    ...(node.key ? { key: node.key } : {}),
-    descriptionLength: node.description.length,
-    documentationLinkCount: node.documentationLinks.length,
-    propertyDefinitions,
-  };
-}
-
-function variantPropertiesSnapshot(node: SceneNode): NodeSnapshot["variantProperties"] {
-  if (node.type === "INSTANCE") {
-    const properties = Object.entries(node.componentProperties)
-      .filter(([, property]) => property.type === "VARIANT")
-      .map(([name, property]) => [name, String(property.value)] as const);
-    return properties.length > 0 ? Object.fromEntries(properties) : undefined;
-  }
-  if (node.type === "COMPONENT" && node.variantProperties) return { ...node.variantProperties };
-  return undefined;
-}
-
 function structuralSignature(node: SceneNode): string | undefined {
   if (!hasChildren(node)) return undefined;
   return hashValue({
@@ -514,8 +484,6 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
   const detached = "detachedInfo" in node && node.detachedInfo !== null;
   const layout = layoutSnapshot(node);
   const text = textSnapshot(node);
-  const variantProperties = variantPropertiesSnapshot(node);
-  const component = componentSnapshot(node);
   const signature = structuralSignature(node);
   const certification = certificationSummary(node);
   const patternConfirmation = confirmedPattern(node);
@@ -528,7 +496,7 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
     ...geometryEvidence(node),
     renderVisible: renderVisible(node),
     ...((value) => value === undefined ? {} : { hasPointerInteraction: value })(pointerInteraction(node)),
-    ...((value) => value ? { interactionProperties: value } : {})(interactionPropertiesSnapshot(node)),
+    ...componentMetadataSnapshot(node),
     id: node.id,
     rootId,
     pageId,
@@ -556,8 +524,6 @@ function snapshotBase(node: SceneNode, rootId: string, pageId: string, path: str
     boundVariableIds: boundVariableIds(node, fillData, strokeData),
     inferredBindings: {},
     ...(text ? { text } : {}),
-    ...(variantProperties ? { variantProperties } : {}),
-    ...(component ? { component } : {}),
     ...(detached ? { instance: { detached: true } } : {}),
     hasAnnotations: annotationTexts.some((annotation) => ![
       CERTIFICATION_ANNOTATION_PREFIX,
@@ -681,7 +647,7 @@ function captureSupplement(node: SceneNode, raw: Record<string, unknown> | undef
     geometry: geometryEvidence(node),
     renderVisible: renderVisible(node),
     pointerInteraction: pointerInteraction(node),
-    interactionProperties: interactionPropertiesSnapshot(node),
+    ...componentMetadataSnapshot(node),
     instanceProvenance: node.type === "INSTANCE" ? instanceProvenance(node) : undefined,
     visible: node.visible,
     width: node.width,
@@ -721,8 +687,6 @@ function captureSupplement(node: SceneNode, raw: Record<string, unknown> | undef
       paragraphIndent: numberOrUndefined(node.paragraphIndent),
       background: resolveTextBackground(node),
     } : undefined,
-    component: componentSnapshot(node),
-    variantProperties: variantPropertiesSnapshot(node),
     detached: "detachedInfo" in node && node.detachedInfo !== null,
     structuralSignature: structuralSignature(node),
     annotations: "annotations" in node ? node.annotations.map(annotationText) : [],
@@ -755,9 +719,8 @@ function enrichLiveEvidence(node: SceneNode, snapshot: NodeSnapshot): void {
     const liveText = textSnapshot(node);
     if (liveText) snapshot.text = liveText;
   }
-  const interaction = interactionPropertiesSnapshot(node);
-  if (interaction) snapshot.interactionProperties = interaction;
-  else delete snapshot.interactionProperties;
+  for (const field of ["component", "variantProperties", "interactionProperties", "unavailableComponentMetadata"] as const) delete snapshot[field];
+  Object.assign(snapshot, componentMetadataSnapshot(node));
 }
 
 /** Only query Figma's expensive inference bridge when a rule can use its result.
@@ -787,6 +750,7 @@ function bindingSignature(node: SceneNode): string {
       strokes: "strokes" in node ? paints(node.strokes).map((paint) => paint.type === "SOLID" ? paint.boundVariables : undefined) : [] },
     textStyleId: node.type === "TEXT" ? node.textStyleId === figma.mixed ? "mixed" : node.textStyleId : undefined,
     effectStyleId: "effectStyleId" in node ? node.effectStyleId : undefined,
+    componentMetadata: componentMetadataSnapshot(node),
     instanceOverrides: instanceCapture?.provenance.overridesKnown
       ? [...instanceCapture.fieldsByNodeId.entries()].map(([id, fields]) => ({ id, fields: [...fields] })).sort((left, right) => left.id.localeCompare(right.id))
       : instanceCapture ? "unavailable" : undefined,

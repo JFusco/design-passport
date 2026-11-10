@@ -144,7 +144,7 @@ describe("captured Boolean control evidence", () => {
   });
 
   it("does not read forbidden variant property definitions", () => {
-    const variant = { type: "COMPONENT", parent: { type: "COMPONENT_SET" }, variantProperties: { State: "Disabled" }, get componentPropertyDefinitions() { throw new Error("Cannot access variant property definitions"); } } as unknown as SceneNode;
+    const variant = { type: "COMPONENT", description: "", documentationLinks: [], parent: { type: "COMPONENT_SET" }, variantProperties: { State: "Disabled" }, get componentPropertyDefinitions() { throw new Error("Cannot access variant property definitions"); } } as unknown as SceneNode;
     expect(interactionPropertiesSnapshot(variant)).toEqual({ State: "Disabled" });
   });
 
