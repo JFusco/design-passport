@@ -19,7 +19,7 @@
   "networkAccess": {
     "allowedDomains": [
       "https://conductor.verndale.com",
-      "https://ca-cumulative-os-shell.redhill-26044d68.eastus2.azurecontainerapps.io"
+      "https://ca-cos-conductor-shell-stg.bluewave-5fc9d211.eastus2.azurecontainerapps.io"
     ],
     "devAllowedDomains": [
       "http://localhost:3109"
