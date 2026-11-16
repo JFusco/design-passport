@@ -2,6 +2,8 @@
 title: Recover context capture from unreadable component metadata
 date: 2026-11-10
 topics: [whole-file-design-knowledge]
+issue: 'https://github.com/jfusco/design-passport/issues/135'
+issues: ['https://github.com/jfusco/design-passport/issues/135']
 ---
 
 # Recover context capture from unreadable component metadata
