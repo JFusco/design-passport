@@ -21,6 +21,7 @@ import {
   buildKnowledgeInsights,
   buildLearningEnvelope,
   assertTeamKnowledgePack,
+  combineProjectStyleGuidePacks,
   parseReferencePack,
   projectGuidanceRevision,
   targetFileFingerprint,
@@ -98,6 +99,7 @@ let historicalAudit: SavedAuditV1 | undefined;
 let exportSnapshot: HistoricalAuditSource | undefined;
 let issueReviewState: IssueReviewState | undefined;
 let activeSavedAuditId: string | undefined;
+let activeAuditSaveStatus: AuditSaveStatus | undefined;
 let activeViewState: AuditViewState | undefined;
 let displayRevision = 0;
 let mutationRecheckPending = false;
@@ -140,6 +142,7 @@ function restoreAudit(audit: SavedAuditV1): void {
   activeScope = audit.target.scope;
   activeTarget = audit.target;
   activeSavedAuditId = audit.id;
+  activeAuditSaveStatus = { state: "saved" };
   activeViewState = audit.viewState;
   issueReviewState = audit.issueReviewState;
   appliedChanges = [];
@@ -225,6 +228,36 @@ function currentProjectStyleGuideStatus(): ProjectStyleGuideStatus {
     sourceId: sessionStyleGuidePack.source.sourceId,
     guidanceRevision: projectGuidanceRevision(sessionStyleGuidePack),
   };
+}
+
+function auditKnowledgeInsights(currentGraph: DesignKnowledgeGraph, currentReport: ReadinessReport, currentPlans: ChangePlan[]) {
+  const projectPack = activeProjectStyleGuidePack();
+  return buildKnowledgeInsights({
+    graph: currentGraph,
+    targetRootIds: currentReport.target.rootIds,
+    findings: currentReport.findings,
+    operations: currentPlans.flatMap((plan) => plan.operations),
+    ...(projectPack ? { projectPack } : {}),
+    referencePacks: sessionReferencePacks,
+    teamPack: TEAM_KNOWLEDGE_PACK,
+  });
+}
+
+async function refreshCurrentAuditGuidance(): Promise<void> {
+  if (!graph || !report || historicalAudit || report.target.knowledgeSnapshotHash !== graph.snapshotHash || !currentKnowledgeAvailable()) return;
+  const waivers = await loadWaivers();
+  if (!graph || !currentKnowledgeAvailable()) return;
+  post({
+    type: "scan-result",
+    report, plans, knowledge: buildKnowledgeSummary(graph), collections,
+    insights: auditKnowledgeInsights(graph, report, plans),
+    projectStyleGuide: bootstrap.projectStyleGuide,
+    sessionReferenceCount: sessionReferencePacks.length,
+    ...(activeSavedAuditId ? { savedAuditId: activeSavedAuditId } : {}),
+    ...(activeAuditSaveStatus ? { saveStatus: activeAuditSaveStatus } : {}),
+    ...(issueReviewState ? { issueReviewState } : {}),
+    waivers,
+  });
 }
 
 async function waiverKey(): Promise<string> {
@@ -517,16 +550,7 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
   const sameReview = report?.profileHash === nextReport.profileHash && activeTarget && canonicalAuditTargetKey(activeTarget) === canonicalAuditTargetKey(capturedTarget);
   const nextReview = mergeIssueReview(sameReview ? issueReviewState : undefined, sameReview ? report : undefined, nextReport, micro?.checkedKeys ?? (sameReview && report ? [...new Set(report.findings.filter(actionableFinding).map(stableIssueKey))] : []));
   const nextPlans = buildChangePlans(findings);
-  const projectPack = activeProjectStyleGuidePack();
-  const insights = buildKnowledgeInsights({
-    graph: currentGraph,
-    targetRootIds: rootIds,
-    findings,
-    operations: nextPlans.flatMap((plan) => plan.operations),
-    ...(projectPack ? { projectPack } : {}),
-    referencePacks: sessionReferencePacks,
-    teamPack: TEAM_KNOWLEDGE_PACK,
-  });
+  const insights = auditKnowledgeInsights(currentGraph, nextReport, nextPlans);
   bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
   const knowledge = buildKnowledgeSummary(currentGraph);
   console.info("[Design Passport] report evaluation", { elapsedMs: Date.now() - analysisStarted, targets: rootIds.length, findings: findings.length });
@@ -546,6 +570,7 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
     activeTarget = capturedTarget;
     exportSnapshot = { report: nextReport, target: capturedTarget, provenance: { pluginVersion: PLUGIN_VERSION, knowledgeVersion: KNOWLEDGE_VERSION }, ...(savedAt ? { savedAt } : {}) };
     activeSavedAuditId = savedAuditId;
+    activeAuditSaveStatus = status;
     pendingContribution = undefined;
     published = true;
     const data: AuditResultData = {
@@ -584,6 +609,7 @@ async function analyzeCurrentGraph(scope: ScanScope, targetIds: readonly string[
     saveStatus = saved.status;
     if (published && saveStatus.state !== "saved") {
       activeSavedAuditId = undefined;
+      activeAuditSaveStatus = saveStatus;
       post({ type: "audit-save-status", status: saveStatus });
     }
   }
@@ -712,6 +738,7 @@ async function initialize(): Promise<void> {
   historicalAudit = undefined;
   exportSnapshot = undefined;
   activeSavedAuditId = undefined;
+  activeAuditSaveStatus = undefined;
   activeViewState = undefined;
   issueReviewState = undefined;
   sessionReferencePacks = [];
@@ -779,6 +806,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
     await auditStorage.forgetAudit(figma.fileKey, message.id);
     if (activeSavedAuditId === message.id) {
       activeSavedAuditId = undefined;
+      activeAuditSaveStatus = { state: "not-saved", message: "The saved copy was removed from this device." };
       activeViewState = undefined;
       if (historicalAudit) {
         historicalAudit = undefined;
@@ -787,7 +815,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
         plans = [];
         activeTarget = undefined;
       }
-      post({ type: "audit-save-status", status: { state: "not-saved", message: "The saved copy was removed from this device." } });
+      post({ type: "audit-save-status", status: activeAuditSaveStatus });
     }
     await postSavedAudits();
     return;
@@ -913,8 +941,9 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
     } else if (message.type === "import-project-style-guide") {
       const binding = adapter.importProjectStyleGuide(message.raw);
       sessionStyleGuidePack = undefined;
+      pendingContribution = undefined;
       bootstrap = { ...bootstrap, projectStyleGuide: currentProjectStyleGuideStatus() };
-      if (graph && report && !historicalAudit && currentKnowledgeAvailable()) await analyzeCurrentGraph(activeScope, report.target.rootIds);
+      await refreshCurrentAuditGuidance();
       post({ type: "project-style-guide-result", action: "imported", binding, status: bootstrap.projectStyleGuide });
     } else if (message.type === "remove-project-style-guide") {
       adapter.removeProjectStyleGuide();
@@ -925,7 +954,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       const pack = parseReferencePack(message.raw);
       const role = validateSessionPackUse(pack, Boolean(figma.fileKey));
       if (role === "style-guide") {
-        sessionStyleGuidePack = pack;
+        sessionStyleGuidePack = combineProjectStyleGuidePacks(sessionStyleGuidePack, pack);
       } else {
         const existing = sessionReferencePacks.findIndex((candidate) => candidate.source.sourceId === pack.source.sourceId);
         if (existing >= 0) sessionReferencePacks.splice(existing, 1, pack);

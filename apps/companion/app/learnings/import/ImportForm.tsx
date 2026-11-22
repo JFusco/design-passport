@@ -23,6 +23,7 @@ export function ImportForm() {
   }
 
   function select(event: ChangeEvent<HTMLInputElement>) {
+    if (working) return;
     setFiles(Array.from(event.target.files ?? []));
     void preview(Array.from(event.target.files ?? []));
     setResult(undefined);
@@ -30,6 +31,7 @@ export function ImportForm() {
 
   function drop(event: DragEvent<HTMLLabelElement>) {
     event.preventDefault();
+    if (working) return;
     setFiles(Array.from(event.dataTransfer.files));
     void preview(Array.from(event.dataTransfer.files));
     setResult(undefined);
@@ -66,7 +68,7 @@ export function ImportForm() {
     <section className="form-card">
       <form onSubmit={submit}>
         <label className="drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={drop}>
-          <input ref={fileInputRef} aria-label="Learning files" name="learning-files" type="file" accept="application/json,.json" multiple onChange={select} />
+          <input ref={fileInputRef} aria-label="Learning files" name="learning-files" type="file" accept="application/json,.json" multiple disabled={working} onChange={select} />
           <span className="drop-icon" aria-hidden="true">↓</span>
           <strong>Choose files or drop them here</strong>
           <small>Up to 10 files · 1 MB each · 5 MB combined</small>
