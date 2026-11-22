@@ -22,6 +22,7 @@ import {
   buildLearningEnvelope,
   assertTeamKnowledgePack,
   parseReferencePack,
+  projectGuidanceRevision,
   targetFileFingerprint,
   validateSessionPackUse,
 } from "../core/knowledge-loop";
@@ -222,6 +223,7 @@ function currentProjectStyleGuideStatus(): ProjectStyleGuideStatus {
     digest: sessionStyleGuidePack.digest,
     projectScope: sessionStyleGuidePack.source.projectScope,
     sourceId: sessionStyleGuidePack.source.sourceId,
+    guidanceRevision: projectGuidanceRevision(sessionStyleGuidePack),
   };
 }
 

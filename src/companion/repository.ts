@@ -26,8 +26,12 @@ export async function stateIn(sql: TransactionSql): Promise<KnowledgeState> {
 }
 export async function readKnowledgeState(paths: WorkspacePaths): Promise<KnowledgeState> { return transaction(paths.root, stateIn); }
 async function packsIn(sql: TransactionSql): Promise<DesignReferencePackV1[]> {
-  return (await sql`select payload from design_passport.guidance_packs where project_scope is not null order by project_scope`)
-    .map((row) => row.payload as DesignReferencePackV1).filter((pack) => pack.facts.length > 0);
+  return (await sql`select pack.payload from design_passport.guidance_packs pack
+    where exists (
+      select 1 from design_passport.decisions decision
+      where decision.project_scope = pack.project_scope and decision.action = 'approve' and decision.scope = 'project'
+    )
+    order by pack.project_scope`).map((row) => row.payload as DesignReferencePackV1);
 }
 export async function listProjectGuidancePacks(paths: WorkspacePaths): Promise<DesignReferencePackV1[]> { return transaction(paths.root, packsIn); }
 export async function readDashboard(paths: WorkspacePaths) { return transaction(paths.root, async (sql) => ({ state: await stateIn(sql), projectPacks: await packsIn(sql) })); }
@@ -80,15 +84,15 @@ function batch(files: ImportFileResult[]): ImportBatchResult {
   return { files, imported: files.filter((item) => item.status === "imported").length, duplicates: files.filter((item) => item.status === "duplicate").length,
     invalid: files.filter((item) => item.status === "invalid").length, retryable: files.filter((item) => item.status === "retryable").length };
 }
-async function importBatch<T>(inputs: ImportInput[], validate: (value: unknown) => T, save: (value: T) => Promise<boolean>): Promise<ImportBatchResult> {
+async function importBatch<T>(inputs: ImportInput[], validate: (value: unknown) => T, save: (value: T) => Promise<{ imported: boolean; contributionId?: string }>): Promise<ImportBatchResult> {
   const files: ImportFileResult[] = [];
   for (const input of inputs) {
     let value: T;
     try { value = validate(JSON.parse(input.content)); }
     catch { files.push({ name: input.name, status: "invalid", message: "File is not a valid Design Passport export." }); continue; }
     try {
-      const imported = await save(value);
-      files.push({ name: input.name, status: imported ? "imported" : "duplicate", message: imported ? "Imported." : "Already imported." });
+      const { imported, ...receipt } = await save(value);
+      files.push({ name: input.name, ...receipt, status: imported ? "imported" : "duplicate", message: imported ? "Imported." : "Already imported." });
     } catch (error) {
       if (!(error instanceof CompanionError) || !["invalid-input", "unavailable", "busy"].includes(error.code)) throw error;
       files.push({ name: input.name, status: error.code === "invalid-input" ? "invalid" : "retryable", message: error.message });
@@ -102,11 +106,15 @@ export async function importLearning(paths: WorkspacePaths, inputs: ImportInput[
     await ensureProject(sql, envelope.projectScope);
     const rows = await sql`insert into design_passport.contributions(id, project_scope, report_identity_digest, source_at, search_text, payload)
       values (${envelope.digest}, ${envelope.projectScope}, ${envelope.reportDigest}, ${envelope.generatedAt}, ${envelope.observations.map((item) => `${item.context} ${item.ruleId ?? ""} ${item.canonicalLabel ?? ""}`).join(" ")}, ${json(sql, envelope)}) on conflict do nothing returning id`;
-    if (!rows.length) { await sql`select id from design_passport.contributions where id = ${envelope.digest}`; return false; }
+    if (!rows.length) {
+      const [stored] = await sql`select id from design_passport.contributions where id = ${envelope.digest} and project_scope = ${envelope.projectScope}`;
+      if (!stored) throw new CompanionError("invalid-input", "The contribution identity conflicts with an existing record.", 422);
+      return { imported: false, contributionId: String(stored.id) };
+    }
     for (const [index, observation] of envelope.observations.entries()) await sql`insert into design_passport.observations(project_scope, contribution_id, occurrence, observation_key, rule_id, direction, payload)
       values (${envelope.projectScope}, ${envelope.digest}, ${index}, ${observation.observationKey}, ${observation.ruleId ?? null}, ${observation.direction}, ${json(sql, observation)})`;
     await derive(sql, true);
-    return true;
+    return { imported: true, contributionId: envelope.digest };
   }, true));
 }
 export async function importAudits(paths: WorkspacePaths, inputs: ImportInput[], projectScope: string): Promise<ImportBatchResult> {
@@ -128,7 +136,7 @@ export async function importAudits(paths: WorkspacePaths, inputs: ImportInput[],
     const exports = await sql`insert into design_passport.audit_exports(id, project_scope, audit_id, payload_sha256, payload)
       values (${randomUUID()}, ${projectScope}, ${retained.id}, ${sha256(source)}, ${json(sql, source)}) on conflict do nothing returning id`;
     if (!exports.length) await sql`select id from design_passport.audit_exports where project_scope = ${projectScope} and payload_sha256 = ${sha256(source)}`;
-    return exports.length > 0;
+    return { imported: exports.length > 0 };
   }, true));
 }
 export interface RevisionInput { candidateId: string; candidateDigest: string; wording: string; proposedScope: "project" | "shared"; exceptions: string[] }

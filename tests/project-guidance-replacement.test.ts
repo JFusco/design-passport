@@ -61,6 +61,27 @@ describe("project guidance replacement isolation", () => {
     expect(api.root.setPluginData).toHaveBeenCalledTimes(1);
   });
 
+  it("identifies reviewed revisions independently of the base guide, including partial and final withdrawals", () => {
+    const { adapter } = file();
+    const base = guidance();
+    adapter.importProjectStyleGuide(JSON.stringify(base));
+    const first = { ...base.facts[0]!, factId: "fact:approved-a", provenance: "approved-project" as const, candidateDigest: hashValue("a") };
+    const second = { ...first, factId: "fact:approved-b", candidateDigest: hashValue("b") };
+    const apply = (facts: typeof base.facts) => {
+      const pack = buildReferencePack({ packVersion: base.packVersion, source: { ...base.source, sourceId: "project-guidance:project:qa" }, facts });
+      return adapter.importProjectStyleGuide(JSON.stringify(pack));
+    };
+    for (const facts of [[second, first], [first], [first], []]) {
+      const binding = apply(facts);
+      expect(binding.pack.facts).toContainEqual(base.facts[0]);
+      expect(binding.pack.facts).toHaveLength(1 + facts.length);
+      expect(adapter.getProjectStyleGuideStatus()).toMatchObject({ guidanceRevision: hashValue(facts.map((fact) => fact.candidateDigest).sort()) });
+    }
+    const { candidateDigest: _missing, ...legacy } = first;
+    apply([legacy]);
+    expect(adapter.getProjectStyleGuideStatus()).toMatchObject({ state: "active", guidanceRevision: undefined });
+  });
+
   it("permits Dev Mode reads while blocking replacement and removal", () => {
     const { api, stored, adapter } = file();
     const binding = adapter.importProjectStyleGuide(JSON.stringify(guidance()));
