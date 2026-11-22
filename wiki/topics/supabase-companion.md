@@ -45,8 +45,11 @@ Unsaved edits cannot be decided; saving a new revision restores Approve.
 
 Project guidance derives from scopes represented by current candidates. Audit-only
 projects retain their exact scope without creating learning or derived guidance.
-Candidate scopes with no current approvals still get empty replacement packs, so
-withdrawing the final approval removes published project guidance.
+Withdrawing the last approval produces an empty project replacement in the
+database. The dashboard and download API filter empty packs, so a designer with
+the previous pack installed cannot apply that withdrawal through the normal
+download flow. See the [local companion knowledge loop assessment](../qa/local-companion-knowledge-loop.md)
+for the reproduced sequence, delivery options, and recommended first repair.
 
 ## Configure and migrate
 
