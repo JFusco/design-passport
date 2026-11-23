@@ -45,8 +45,11 @@ Unsaved edits cannot be decided; saving a new revision restores Approve.
 
 Project guidance derives from scopes represented by current candidates. Audit-only
 projects retain their exact scope without creating learning or derived guidance.
-Candidate scopes with no current approvals still get empty replacement packs, so
-withdrawing the final approval removes published project guidance.
+When a previously approved project has no current approvals, download its
+removal file from the companion and import it under **Settings → Context & style
+guide** in Figma. The removal clears reviewed advice and preserves the base style
+guide. Compare the project guidance revision shown in both places. An open audit
+reflects the current advice and a saved audit retains its original snapshot.
 
 ## Configure and migrate
 
@@ -125,7 +128,9 @@ A representative synthetic v3 file-scope report measures 3,435,447 bytes for 100
 roots and 3,200 findings. This verifies initial sizing, not a universal maximum.
 The protected interface supports project, source date, rule, status and text
 filters, audit grade/readiness filters, stable cursor pagination, original audit
-downloads, linked contributions, revisions and decisions.
+downloads, linked contributions, revisions and decisions. Select **View
+contribution** next to a successful or duplicate learning import to open its
+saved record and see the review history.
 
 ```sh
 pnpm companion learning import SELECTED_LEARNING_FILE
