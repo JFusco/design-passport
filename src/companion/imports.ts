@@ -20,7 +20,7 @@ export const IMPORT_LIMITS = {
 } as const;
 export type ImportKind = keyof typeof IMPORT_LIMITS;
 export interface ImportInput { name: string; content: string }
-export interface ImportFileResult { name: string; status: "imported" | "duplicate" | "invalid" | "retryable"; message: string }
+export interface ImportFileResult { name: string; status: "imported" | "duplicate" | "invalid" | "retryable"; message: string; contributionId?: string }
 export interface ImportBatchResult { files: ImportFileResult[]; imported: number; duplicates: number; invalid: number; retryable: number }
 
 export function sha256(value: unknown): string { return createHash("sha256").update(stableStringify(value)).digest("hex"); }

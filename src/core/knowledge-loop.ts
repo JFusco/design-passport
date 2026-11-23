@@ -163,6 +163,17 @@ export function buildProjectStyleGuideBinding(
   return binding;
 }
 
+/** Identify the reviewed layer even after combining it with a separate style guide. */
+export function projectGuidanceRevision(pack: DesignReferencePackV1): string | undefined {
+  const revisions: string[] = [];
+  for (const fact of pack.facts) {
+    if (fact.provenance !== "approved-project") continue;
+    if (!fact.candidateDigest) return undefined;
+    revisions.push(fact.candidateDigest);
+  }
+  return hashValue(revisions.sort());
+}
+
 /** Keep a connected design-system guide and replace only its approved-project layer. */
 export function combineProjectStyleGuidePacks(
   current: DesignReferencePackV1 | undefined,

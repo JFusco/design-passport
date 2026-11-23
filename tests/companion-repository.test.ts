@@ -145,6 +145,17 @@ describe("companion SQL repository", () => {
     expect((await readKnowledgeState(paths)).candidates).toEqual(before.candidates);
     expect(await stat(paths.teamPack).catch(() => null)).toBeNull();
   });
+  it("links both new and duplicate imports to the saved evidence when filenames match", async () => {
+    const first = learning();
+    const second = learning("other", "project:other");
+    const batch = await importLearning(paths, [first, second, first]);
+    expect(batch.files.map((file) => file.status)).toEqual(["imported", "imported", "duplicate"]);
+    expect(batch.files.map((file) => file.contributionId)).toEqual([first, second, first].map((file) => JSON.parse(file.content).digest));
+    for (const file of batch.files) {
+      expect((await learningDetail(paths, file.contributionId!)).envelope.digest).toEqual(file.contributionId);
+    }
+  });
+
   it("preserves a long audit-only scope while learning mutations and approval withdrawal succeed elsewhere", async () => {
     const scope = `project:${"a".repeat(192)}`;
     expect(scope).toHaveLength(200);

@@ -28,6 +28,7 @@ import {
   combineProjectStyleGuidePacks,
   parseProjectStyleGuideBinding,
   parseReferencePack,
+  projectGuidanceRevision,
 } from "../core/knowledge-loop";
 import { componentMetadataSnapshot } from "./operations/component";
 import { annotationText } from "./operations/annotations";
@@ -92,6 +93,7 @@ export type ProjectStyleGuideStatus =
     digest: string;
     projectScope: string;
     sourceId: string;
+    guidanceRevision?: string | undefined;
   }
   | { state: "invalid"; persistent: boolean; error: string };
 
@@ -1325,6 +1327,7 @@ export class FigmaAdapter {
         digest: binding.pack.digest,
         projectScope: binding.projectScope,
         sourceId: binding.pack.source.sourceId,
+        guidanceRevision: projectGuidanceRevision(binding.pack),
       };
     } catch (error) {
       return {

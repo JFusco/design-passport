@@ -72,14 +72,14 @@ export default async function DashboardPage() {
         </div>
         <div className="delivery-actions">
           {projectPacks.length > 0 ? projectPacks.map((pack) => (
-            <a
-              className="button primary"
-              href={`/api/guidance?scope=${encodeURIComponent(pack.source.projectScope)}`}
-              download
-              key={pack.source.projectScope}
-            >
-              Download {pack.source.projectScope} guidance
-            </a>
+            <div key={pack.source.projectScope}>
+              <strong>{pack.source.projectScope}</strong>
+              <p>Project guidance revision {pack.source.contentDigest}</p>
+              {pack.facts.length === 0 && <p>Import this file in Figma to clear withdrawn project advice and keep your style guide.</p>}
+              <a className="button primary" href={`/api/guidance?scope=${encodeURIComponent(pack.source.projectScope)}`} download>
+                {pack.facts.length ? `Download ${pack.source.projectScope} guidance` : "Download guidance removal"}
+              </a>
+            </div>
           )) : <p>No project guidance is ready yet. Approve a draft for project use to create a pack.</p>}
         </div>
       </section>

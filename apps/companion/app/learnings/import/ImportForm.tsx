@@ -1,21 +1,14 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
+import Link from "next/link";
 import type { CompanionActionResult } from "@/lib/types";
-
-type FileResult = { name: string; status: "imported" | "duplicate" | "invalid" | "retryable"; message: string };
-type ImportResult = {
-  files: FileResult[];
-  imported: number;
-  duplicates: number;
-  invalid: number;
-  retryable: number;
-};
+import type { ImportBatchResult } from "../../../../../src/companion/imports";
 
 export function ImportForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [working, setWorking] = useState(false);
-  const [result, setResult] = useState<ImportResult>();
+  const [result, setResult] = useState<ImportBatchResult>();
   const [previewScopes, setPreviewScopes] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const alertRef = useRef<HTMLDivElement>(null);
@@ -30,6 +23,7 @@ export function ImportForm() {
   }
 
   function select(event: ChangeEvent<HTMLInputElement>) {
+    if (working) return;
     setFiles(Array.from(event.target.files ?? []));
     void preview(Array.from(event.target.files ?? []));
     setResult(undefined);
@@ -37,6 +31,7 @@ export function ImportForm() {
 
   function drop(event: DragEvent<HTMLLabelElement>) {
     event.preventDefault();
+    if (working) return;
     setFiles(Array.from(event.dataTransfer.files));
     void preview(Array.from(event.dataTransfer.files));
     setResult(undefined);
@@ -57,7 +52,7 @@ export function ImportForm() {
     selected.forEach((file) => body.append("files", file));
     try {
       const response = await fetch("/api/learnings/import", { method: "POST", body });
-      const action = await response.json() as CompanionActionResult<ImportResult>;
+      const action = await response.json() as CompanionActionResult<ImportBatchResult>;
       if (!action.ok) throw new Error(action.error.message);
       setResult(action.data);
       setMessage(action.data.retryable ? "Some files need a retry. Keep your selection and retry the same import." : "Import complete.");
@@ -73,7 +68,7 @@ export function ImportForm() {
     <section className="form-card">
       <form onSubmit={submit}>
         <label className="drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={drop}>
-          <input ref={fileInputRef} aria-label="Learning files" name="learning-files" type="file" accept="application/json,.json" multiple onChange={select} />
+          <input ref={fileInputRef} aria-label="Learning files" name="learning-files" type="file" accept="application/json,.json" multiple disabled={working} onChange={select} />
           <span className="drop-icon" aria-hidden="true">↓</span>
           <strong>Choose files or drop them here</strong>
           <small>Up to 10 files · 1 MB each · 5 MB combined</small>
@@ -81,7 +76,7 @@ export function ImportForm() {
         {files.length ? (
           <div className="selected-files" aria-label="Selected files">
             <strong>{files.length} selected</strong>
-            <ul>{files.map((file, index) => <li key={`${file.name}-${file.lastModified}`}><span>{file.name}</span><small>{Math.ceil(file.size / 1024)} KB · Project: {previewScopes[index] ?? "Preview unavailable"} (validated on import)</small></li>)}</ul>
+            <ul>{files.map((file, index) => <li key={`${file.name}-${index}`}><span>{file.name}</span><small>{Math.ceil(file.size / 1024)} KB · Project: {previewScopes[index] ?? "Preview unavailable"} (validated on import)</small></li>)}</ul>
           </div>
         ) : null}
         <div className="form-actions">
@@ -93,7 +88,9 @@ export function ImportForm() {
       {result ? (
         <div className="import-results">
           <div className="result-summary"><strong>{result.imported} imported</strong><span>{result.duplicates} duplicate</span><span>{result.invalid} invalid</span><span>{result.retryable} need retry</span></div>
-          <ul>{result.files.map((file, index) => <li key={`${file.name}-${index}`}><span className={`result-badge ${file.status}`}>{file.status}</span><strong>{file.name}</strong><small>{file.message}</small></li>)}</ul>
+          <ul>{result.files.map((file, index) => <li key={`${file.name}-${index}`}><span className={`result-badge ${file.status}`}>{file.status}</span><strong>{file.name}</strong><small>{file.message}</small>
+            {file.contributionId && <Link href={`/history/learning/${encodeURIComponent(file.contributionId)}`}>View contribution</Link>}
+          </li>)}</ul>
         </div>
       ) : null}
     </section>

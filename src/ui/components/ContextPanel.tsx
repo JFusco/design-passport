@@ -64,6 +64,9 @@ export function ContextPanel(props: ContextPanelProps) {
         <div className="binding-card">
           <strong>{props.projectStyleGuide.persistent ? "Project style guide connected" : "Project style guide active for this session"}</strong>
           <span>Version {props.projectStyleGuide.packVersion}</span>
+          <small>{props.projectStyleGuide.guidanceRevision
+            ? `Project guidance revision ${props.projectStyleGuide.guidanceRevision}`
+            : "Revision unknown. Reimport the current guidance file from the companion."}</small>
           <b>Pack reference {friendlyReference(props.projectStyleGuide.digest)}</b>
           <small>{humanizeIdentifier(props.projectStyleGuide.projectScope)} · {humanizeIdentifier(props.projectStyleGuide.sourceId)}</small>
         </div>

@@ -79,7 +79,13 @@ test("completes the local reference, import, conflict recovery, and decision wor
   await expect(page.getByText("1 invalid", { exact: true })).toBeVisible();
   await expectNoSeriousAccessibilityIssues(page);
 
-  await page.getByRole("link", { name: "Review" }).click();
+  const receipt = page.getByRole("link", { name: "View contribution" });
+  await expect(receipt).toHaveCount(1);
+  await receipt.click();
+  await expect(page.getByText("No human decision has been recorded.")).toBeVisible();
+  const neverApproved = await page.request.get("/api/guidance?scope=project%3Acompanion-e2e");
+  expect(neverApproved.status()).toBe(404);
+  await page.getByRole("link", { name: "Review", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Make every guidance decision explicit" })).toBeVisible();
   await expect(page).toHaveURL(/candidate=/u);
   const guidance = page.getByRole("textbox", { name: /^Guidance /u });
@@ -159,8 +165,14 @@ test("completes the local reference, import, conflict recovery, and decision wor
   await expect(page.getByRole("button", { name: "Approve", exact: true })).toBeEnabled();
   await expect(page.getByText(/Previous decision requires review/u)).toBeVisible();
   const withdrawnPack = await page.request.get("/api/guidance?scope=project%3Acompanion-e2e");
-  expect(withdrawnPack.status()).toBe(404);
-  expect(await withdrawnPack.json()).toMatchObject({ ok: false, error: { code: "not-found" } });
+  expect(withdrawnPack.status()).toBe(200);
+  const removal = await withdrawnPack.json();
+  expect(removal).toMatchObject({ facts: [], source: { projectScope: "project:companion-e2e" } });
+  const dashboard = await context.newPage();
+  await dashboard.goto("/");
+  await expect(dashboard.getByRole("link", { name: "Download guidance removal" })).toHaveAttribute("href", "/api/guidance?scope=project%3Acompanion-e2e");
+  await expect(dashboard.getByText(`Project guidance revision ${removal.source.contentDigest}`)).toBeVisible();
+  await dashboard.close();
   await page.getByLabel("Decision note").fill("Reviewed the saved revision.");
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(page.getByRole("button", { name: "Approved", exact: true })).toBeDisabled();
