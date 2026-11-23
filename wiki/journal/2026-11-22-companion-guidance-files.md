@@ -1,6 +1,8 @@
 ---
 topics: [supabase-companion]
 plans: [2026-11-23-complete-the-design-companion-file-workflow-bd83d812a7.md]
+issue: 'https://github.com/jfusco/design-passport/issues/145'
+issues: ['https://github.com/jfusco/design-passport/issues/145']
 ---
 
 # Complete the project guidance file workflow
