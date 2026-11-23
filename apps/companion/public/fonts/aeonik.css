@@ -1,0 +1,13 @@
+@font-face {
+  font-family: Aeonik;
+  src: url("/fonts/AeonikVF-Regular.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Aeonik Fono";
+  src: url("/fonts/AeonikFonoVF-Regular.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}

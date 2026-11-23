@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSignal } from "../../components/LoadingSignal";
 import { useRef, useState, type FormEvent } from "react";
 import type { CompanionActionResult } from "@/lib/types";
 
@@ -72,7 +73,7 @@ export function PackForm({ tokenReady }: { tokenReady: boolean }) {
         </fieldset>
         <div className="form-actions">
           <button className="button primary" type="submit" disabled={!tokenReady || status === "working"}>
-            {status === "working" ? "Creating pack…" : "Create and download pack"}
+            {status === "working" ? <><LoadingSignal />Creating pack…</> : "Create and download pack"}
           </button>
           <span className="privacy-note">Your Figma token stays on this machine.</span>
         </div>

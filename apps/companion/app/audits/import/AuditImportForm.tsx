@@ -1,4 +1,5 @@
 "use client";
+import { LoadingSignal } from "../../components/LoadingSignal";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { CompanionActionResult } from "@/lib/types";
 import type { ImportBatchResult } from "../../../../../src/companion/imports";
@@ -53,7 +54,7 @@ export function AuditImportForm({ projects }: { projects: Array<{ scope: string;
       <datalist id="project-scopes">{projects.map((project) => <option key={project.scope} value={project.scope}>{project.displayName ?? project.scope}</option>)}</datalist>
       <button className="button primary" disabled={working} type="submit">Import audit files</button></> : null}
   </form>
-    {message ? <div className="notice" role="status" ref={alertRef} tabIndex={-1}>{message}</div> : null}
+    {message ? <div className="notice" role="status" ref={alertRef} tabIndex={-1}>{working && <LoadingSignal />}{message}</div> : null}
     {result ? <div className="import-results"><div className="result-summary"><strong>{result.imported} imported</strong><span>{result.duplicates} duplicate</span><span>{result.invalid} invalid</span><span>{result.retryable} need retry</span></div>
       <ul>{result.files.map((file, index) => <li key={index}><strong>{file.name}</strong><span>{file.message}</span></li>)}</ul></div> : null}
   </section>;

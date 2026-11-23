@@ -14,7 +14,7 @@ import {
 } from "../../../../src/companion/model-review/repository";
 import { ModelReviewController } from "./ModelReviewController";
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Project model review" };
+export const metadata = { title: "Project review" };
 export default async function ModelReviewsPage({
   searchParams,
 }: {
@@ -28,7 +28,7 @@ export default async function ModelReviewsPage({
     if (!project || !projects.some((p) => p.scope === project))
       return (
         <main id="main-content" className="page">
-          <h1>Choose a project for model review</h1>
+          <h1>Choose a project</h1>
           <p>
             Review up to eight candidates and explicitly apply selected
             recommendations.
@@ -54,7 +54,7 @@ export default async function ModelReviewsPage({
     return (
       <main id="main-content" className="page model-review-page">
         <header className="page-heading">
-          <h1>Project model review</h1>
+          <h1>Project review</h1>
           <p>{project}</p>
           <Link href="/model-reviews">Change project</Link>
         </header>

@@ -98,7 +98,7 @@ test("authorizes disclosure, displays elapsed and costs, preserves drafts and ap
     .getByRole("link", { name: fixture.projectScope, exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Project model review", exact: true }),
+    page.getByRole("heading", { name: "Project review", exact: true }),
   ).toBeVisible();
   await page.getByLabel("Lifetime allowance (USD)").fill("3");
   await page.getByRole("button", { name: "Save allowance" }).click();
@@ -111,14 +111,14 @@ test("authorizes disclosure, displays elapsed and costs, preserves drafts and ap
     .locator(".model-candidates li")
     .filter({ hasText: text });
   await affected.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Preview disclosure" }).click();
+  await page.getByRole("button", { name: "Preview what gets sent" }).click();
   await expect(
     page.getByText("Local preview ready. Nothing has been sent to OpenAI."),
   ).toBeVisible();
   await expect(
-    page.getByText("Maximum reservation:", { exact: false }),
+    page.getByText("from your budget.", { exact: false }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Start authorized review" }).click();
+  await page.getByRole("button", { name: "Start review" }).click();
   await expect(page.getByText(/Run status: (queued|running)/u)).toBeVisible();
   await expect(page.getByText(/\d+ seconds/u).first()).toBeVisible();
   await expect
@@ -201,8 +201,8 @@ test("authorizes disclosure, displays elapsed and costs, preserves drafts and ap
     .filter({ hasText: "A new server revision from another tab." })
     .getByRole("checkbox")
     .check();
-  await page.getByRole("button", { name: "Preview disclosure" }).click();
-  await page.getByRole("button", { name: "Start authorized review" }).click();
+  await page.getByRole("button", { name: "Preview what gets sent" }).click();
+  await page.getByRole("button", { name: "Start review" }).click();
   await expect(
     page.getByText("Run status: completed", { exact: false }),
   ).toBeVisible({ timeout: 20_000 });
@@ -271,14 +271,14 @@ test("cancels a dispatched fixture and protects preview and mutation boundaries"
   await page.getByLabel("Lifetime allowance (USD)").fill("3");
   await page.getByRole("button", { name: "Save allowance" }).click();
   await expect(page.getByText("Lifetime allowance saved.")).toBeVisible();
-  await page.getByRole("button", { name: "Preview disclosure" }).click();
+  await page.getByRole("button", { name: "Preview what gets sent" }).click();
   const started = page.waitForResponse(
     (r) =>
       r.url().endsWith("/api/model-reviews") &&
       r.request().method() === "POST" &&
       r.request().postDataJSON()?.operation === "start",
   );
-  await page.getByRole("button", { name: "Start authorized review" }).click();
+  await page.getByRole("button", { name: "Start review" }).click();
   const start = await started;
   const run = (await start.json()).data as RunDetail;
   expect(start.ok()).toBe(true);

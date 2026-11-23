@@ -37,7 +37,7 @@ test("completes the local reference, import, conflict recovery, and decision wor
   });
   page.on("pageerror", (error) => browserErrors.push(error.message));
 
-  await expect(page.getByRole("heading", { name: "Turn reviewed design evidence into useful guidance." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Design Passport" })).toBeVisible();
   await expectNoSeriousAccessibilityIssues(page);
   const dashboardResponse = await page.request.get("/");
   const csp = dashboardResponse.headers()["content-security-policy"] ?? "";
@@ -86,7 +86,7 @@ test("completes the local reference, import, conflict recovery, and decision wor
   const neverApproved = await page.request.get("/api/guidance?scope=project%3Acompanion-e2e");
   expect(neverApproved.status()).toBe(404);
   await page.getByRole("link", { name: "Review", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Make every guidance decision explicit" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Review guidance" })).toBeVisible();
   await expect(page).toHaveURL(/candidate=/u);
   const guidance = page.getByRole("textbox", { name: /^Guidance /u });
   const initialGuidance = await guidance.inputValue();
@@ -170,8 +170,9 @@ test("completes the local reference, import, conflict recovery, and decision wor
   expect(removal).toMatchObject({ facts: [], source: { projectScope: "project:companion-e2e" } });
   const dashboard = await context.newPage();
   await dashboard.goto("/");
-  await expect(dashboard.getByRole("link", { name: "Download guidance removal" })).toHaveAttribute("href", "/api/guidance?scope=project%3Acompanion-e2e");
-  await expect(dashboard.getByText(`Project guidance revision ${removal.source.contentDigest}`)).toBeVisible();
+  await expect(dashboard.getByRole("link", { name: "Download removal file for Companion e2e" })).toHaveAttribute("href", "/api/guidance?scope=project%3Acompanion-e2e");
+  await expect(dashboard.getByRole("heading", { name: "Companion e2e" })).toBeVisible();
+  await expect(dashboard.getByText(removal.source.contentDigest, { exact: false })).toHaveCount(0);
   await dashboard.close();
   await page.getByLabel("Decision note").fill("Reviewed the saved revision.");
   await page.getByRole("button", { name: "Approve", exact: true }).click();
@@ -187,8 +188,12 @@ test("completes the local reference, import, conflict recovery, and decision wor
   }
 
   await page.goto("/");
+  const guidanceLink = page.getByRole("link", { name: "Download guidance file for Companion e2e" });
+  await guidanceLink.hover();
+  await expect(guidanceLink).toHaveCSS("color", "rgb(14, 4, 83)");
+  await expect(guidanceLink).toHaveCSS("background-color", "rgb(213, 194, 255)");
   const guidanceDownloadPromise = page.waitForEvent("download");
-  await page.getByRole("link", { name: "Download project:companion-e2e guidance" }).click();
+  await guidanceLink.click();
   const guidanceDownload = await guidanceDownloadPromise;
   expect(guidanceDownload.suggestedFilename()).toBe("design-passport-guidance-project-companion-e2e.json");
   const guidanceDownloadPath = await guidanceDownload.path();
@@ -199,7 +204,7 @@ test("completes the local reference, import, conflict recovery, and decision wor
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Turn reviewed design evidence into useful guidance." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Design Passport" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(expectedConflictError).toBe(false);
   expect(browserErrors).toEqual([]);

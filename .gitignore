@@ -31,3 +31,7 @@ supabase/.branches/
 *.graphify-bak
 
 apps/companion/.next-model-review-dev/
+
+# Optional locally licensed companion fonts.
+/apps/companion/public/fonts/AeonikVF-Regular.ttf
+/apps/companion/public/fonts/AeonikFonoVF-Regular.ttf

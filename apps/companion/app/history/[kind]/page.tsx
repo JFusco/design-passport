@@ -17,7 +17,7 @@ export default async function HistoryPage({ params, searchParams }: { params: Pr
   const statuses = kind === "audit" ? ["pass", "fail", "needs-review", "waived", "not-applicable"] : ["awaiting", "approved", "rejected", "deferred", "changed"];
   const date = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
   return <main id="main-content" className="page">
-    <header className="page-heading"><span className="eyebrow">Searchable evidence</span><h1>{kind === "audit" ? "Audit history" : "Learning history"}</h1>
+    <header className="page-heading"><h1>{kind === "audit" ? "Audit history" : "Learning history"}</h1>
       <p>Source dates describe the exported evidence. Receipt dates record when you imported it.</p>
       <Link className="button" href={kind === "audit" ? "/audits/import" : "/learnings/import"}>Import {kind === "audit" ? "audits" : "learnings"}</Link></header>
     <form method="get" className="history-filters form-card">
