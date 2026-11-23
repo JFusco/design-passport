@@ -1,6 +1,19 @@
 import type { KnowledgeCandidateV1, KnowledgeDecisionV1 } from "../core/contracts";
 import type { KnowledgeState } from "./repository";
 
+export function projectLabel(scope: string, displayName?: string | null): string {
+  if (displayName?.trim()) return displayName.trim();
+
+  const label = scope
+    .replace(/^project[:._-]/iu, "")
+    .replace(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/giu, "")
+    .replace(/(?:^|[:._-])[0-9a-f]{8,}(?=$|[:._-])/giu, "")
+    .replace(/[:._-]+/gu, " ")
+    .trim();
+
+  return label ? label.charAt(0).toUpperCase() + label.slice(1) : "Unnamed project";
+}
+
 export type ReviewStatus = "awaiting" | "approved" | "rejected" | "deferred" | "changed";
 
 export interface ReviewCandidateView {

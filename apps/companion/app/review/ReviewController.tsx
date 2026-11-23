@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSignal } from "../components/LoadingSignal";
 import Link from "next/link";
 import { REVIEW_DRAFTS_KEY, storedDrafts, type LocalReviewDraft } from "@/lib/review-drafts";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -331,7 +332,7 @@ export function ReviewController({ initialCandidates }: { initialCandidates: Rev
               {editorialDirty ? <p className="dirty-note">Save changes before recording a decision.</p> : null}
               {selected.currentDecision ? <p className="previous-decision">Current decision: {statusLabels[selected.status]} · {selected.currentDecision.scope === "shared" ? "Shared, client-neutral" : "Project only"} · <time dateTime={selected.currentDecision.decidedAt}>{decisionDateFormatter.format(new Date(selected.currentDecision.decidedAt))} UTC</time><br />Reason: {selected.currentDecision.rationale}</p> : null}
               {selected.previousDecision ? <p className="previous-decision warning">Previous decision requires review because the evidence changed: {statusLabels[selected.previousDecision.action === "approve" ? "approved" : selected.previousDecision.action === "reject" ? "rejected" : "deferred"]} · {selected.previousDecision.scope === "shared" ? "Shared, client-neutral" : "Project only"} · <time dateTime={selected.previousDecision.decidedAt}>{decisionDateFormatter.format(new Date(selected.previousDecision.decidedAt))} UTC</time><br />Reason: {selected.previousDecision.rationale}</p> : null}
-              {message ? <div ref={messageRef} tabIndex={-1} className="notice" role="status">{message}</div> : null}
+              {message ? <div ref={messageRef} tabIndex={-1} className="notice" role="status">{working && <LoadingSignal />}{message}</div> : null}
               {hasConflict ? <button type="button" className="button conflict-action" onClick={() => { allowReloadRef.current = true; window.location.reload(); }}>Reload current draft</button> : null}
             </footer>
           </>

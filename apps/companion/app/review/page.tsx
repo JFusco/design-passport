@@ -16,9 +16,8 @@ export default async function ReviewPage() {
   return (
     <main id="main-content" className="page review-page">
       <header className="page-heading compact">
-        <span className="eyebrow">Knowledge review · step 3</span>
-        <h1>Make every guidance decision explicit</h1>
-        <p>Evidence counts show recurrence only. They never approve, rank, publish, or change a grade.</p>
+        <h1>Review guidance</h1>
+        <p>Review the evidence and decide which drafts to approve.</p>
       </header>
       <Suspense fallback={<div className="skeleton">Preparing the review queue…</div>}>
         <ReviewController initialCandidates={candidates} />

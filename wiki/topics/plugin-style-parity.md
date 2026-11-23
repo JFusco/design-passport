@@ -19,3 +19,17 @@ The card uses a 24px inset, 20px gaps between report sections, and a 20px gap be
 Chromium checks rendered geometry and text styles at 320, 456, and 500px, including the saved-result badge and the large report grade. They retain exact known Axe contrast failures for 40% inactive navigation labels and white score-pill text. Do not describe literal style parity as accessibility compliance.
 
 The [initial styling journal](../journal/2026-10-07-figma-navigation-styles.md) records the earlier native bundle. The [grade correction journal](../journal/2026-10-07-figma-grade-card-parity.md) records the subsequent browser checks and native access limit. Dynamic report content, additional categories, required notices, and retained advanced controls vary with actual audit data; the design's example data does not override audit behavior.
+
+## Companion styles
+
+The companion follows the Cumulative style guide for palette, type, spacing,
+and motion. It uses Aeonik and Aeonik Fono when the licensed variable fonts are
+available locally. Place `AeonikVF-Regular.ttf` and
+`AeonikFonoVF-Regular.ttf` in `apps/companion/public/fonts/`. Keep the font
+files out of Git. The existing system fallbacks load when those files are absent.
+
+Use the shared four-pixel spacing scale for companion layout. Single-select
+controls reserve space for their inset chevrons and use native arrows in
+forced-colors mode. Keep page headings task-based. The Cumulative signal mark
+indicates route and request loading. Content enters as it reaches the viewport.
+A reduced-motion preference keeps the mark and content still.

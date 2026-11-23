@@ -10,9 +10,8 @@ export default async function ImportLearningsPage() {
   return (
     <main id="main-content" className="page narrow-page">
       <header className="page-heading">
-        <span className="eyebrow">Learning import · step 2</span>
-        <h1>Bring reviewed learnings into the workspace</h1>
-        <p>Select sanitized Design Passport learning exports. Each file is validated independently, and duplicates are ignored safely.</p>
+        <h1>Import learning files</h1>
+        <p>Choose learning files exported from Design Passport. Already imported files are skipped.</p>
       </header>
       <ImportForm />
     </main>

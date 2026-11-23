@@ -34,7 +34,7 @@ async function packsIn(sql: TransactionSql): Promise<DesignReferencePackV1[]> {
     order by pack.project_scope`).map((row) => row.payload as DesignReferencePackV1);
 }
 export async function listProjectGuidancePacks(paths: WorkspacePaths): Promise<DesignReferencePackV1[]> { return transaction(paths.root, packsIn); }
-export async function readDashboard(paths: WorkspacePaths) { return transaction(paths.root, async (sql) => ({ state: await stateIn(sql), projectPacks: await packsIn(sql) })); }
+export async function readDashboard(paths: WorkspacePaths) { return transaction(paths.root, async (sql) => ({ state: await stateIn(sql), projectPacks: await packsIn(sql), projects: await projectsIn(sql) })); }
 
 export async function retainCandidate(sql: TransactionSql, candidate: KnowledgeCandidateV1, parent?: KnowledgeCandidateV1): Promise<void> {
   if (parent) {
@@ -184,8 +184,12 @@ export async function recordDecision(paths: WorkspacePaths, input: DecisionInput
   }, true);
 }
 
-export async function listProjects(paths: WorkspacePaths): Promise<Array<{ scope: string; displayName: string | null }>> {
-  return transaction(paths.root, async (sql) => (await sql`select scope, display_name from design_passport.projects order by scope`).map((row) => ({ scope: row.scope as string, displayName: row.display_name as string | null })));
+async function projectsIn(sql: TransactionSql): Promise<Array<{ scope: string; displayName: string | null }>> {
+  return (await sql`select scope, display_name from design_passport.projects order by scope`).map((row) => ({ scope: row.scope as string, displayName: row.display_name as string | null }));
+}
+
+export async function listProjects(paths: WorkspacePaths) {
+  return transaction(paths.root, projectsIn);
 }
 export async function previewAuditProjects(paths: WorkspacePaths, inputs: ImportInput[]) {
   validateInputSizes(inputs, "audit");

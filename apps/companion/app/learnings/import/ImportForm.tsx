@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSignal } from "../../components/LoadingSignal";
 import { useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import Link from "next/link";
 import type { CompanionActionResult } from "@/lib/types";
@@ -80,7 +81,7 @@ export function ImportForm() {
           </div>
         ) : null}
         <div className="form-actions">
-          <button className="button primary" type="submit" disabled={working}>{working ? "Working…" : "Validate and import"}</button>
+          <button className="button primary" type="submit" disabled={working}>{working ? <><LoadingSignal />Working…</> : "Validate and import"}</button>
           <span className="privacy-note">Uploaded filenames are never used as storage paths.</span>
         </div>
       </form>

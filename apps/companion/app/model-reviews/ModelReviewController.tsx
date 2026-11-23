@@ -1,4 +1,5 @@
 "use client";
+import { LoadingSignal } from "../components/LoadingSignal";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -106,7 +107,7 @@ export function ModelReviewController({
           .catch(() => {
             if (mounted)
               setMessage(
-                "The saved run could not be loaded. Select it from history.",
+                "Could not load the saved review. Select it from history.",
               );
           });
     });
@@ -457,26 +458,23 @@ export function ModelReviewController({
             })
           }
         >
-          Preview disclosure
+          Preview what gets sent
         </button>
         {disclosure ? (
           <div className="model-disclosure">
-            <h3>Local disclosure preview</h3>
+            <h3>What gets sent</h3>
             <p>
-              GPT-6.1 Sol · high reasoning · standard service · up to 16,384
-              output tokens. Maximum reservation: USD {disclosure.reservation}.
-            </p>
-            <p>
-              Start authorizes input counting and inference with this sanitized
-              content. This preview sends nothing.
+              Start review sends the information below to OpenAI for suggestions.
+              The review holds up to USD {disclosure.reservation} from your budget.
             </p>
             <p>Omitted: {disclosure.omissions.join(", ")}.</p>
             <details open>
-              <summary>Sanitized content</summary>
+              <summary>Information sent for review</summary>
               <pre>{JSON.stringify(disclosure.snapshot, null, 2)}</pre>
             </details>
             <details>
-              <summary>Frozen request and provenance</summary>
+              <summary>Technical details</summary>
+              <p>GPT-6.1 Sol · high reasoning · standard service · up to 16,384 output tokens.</p>
               <pre>
                 {JSON.stringify(
                   {
@@ -526,12 +524,11 @@ export function ModelReviewController({
                 })
               }
             >
-              Start authorized review
+              Start review
             </button>
             {!configured ? (
               <p>
-                Start the companion with a configured runner credential to
-                enable model review.
+                Set an API key to enable automated suggestions.
               </p>
             ) : null}
           </div>
@@ -541,7 +538,8 @@ export function ModelReviewController({
         <section className="model-run">
           <h2>Review run</h2>
           <p role="status">
-            Run status: {run.outcome} · provider:{" "}
+            {active(run) && <LoadingSignal />}
+            Run status: {run.outcome} · service:{" "}
             {run.providerStatus ?? "not dispatched"}
           </p>
           <p>
@@ -570,10 +568,10 @@ export function ModelReviewController({
               . Terminal observation: {run.endedAt ?? "pending"}.
             </p>
           ) : null}
-          <p>
-            Prompt {run.frozen.promptVersion} · schema{" "}
-            {run.frozen.schemaVersion} · {run.frozen.pricePolicy.version}
-          </p>
+          <details>
+            <summary>Technical details</summary>
+            <p>Prompt {run.frozen.promptVersion} · schema {run.frozen.schemaVersion} · {run.frozen.pricePolicy.version}</p>
+          </details>
           {run.error ? <p className="notice warning">{run.error}</p> : null}
           {active(run) ? (
             <button
@@ -883,7 +881,7 @@ export function ModelReviewController({
         </section>
       ) : null}
       <section>
-        <h2>Run history</h2>
+        <h2>Review history</h2>
         <ul>
           {history.map((r) => (
             <li key={r.id}>
@@ -904,6 +902,7 @@ export function ModelReviewController({
         </ul>
       </section>
       <div ref={messageRef} className="notice" role="status" tabIndex={-1}>
+        {busy && <LoadingSignal />}
         {message}
       </div>
     </div>
