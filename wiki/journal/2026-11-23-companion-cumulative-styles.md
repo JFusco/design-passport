@@ -1,5 +1,7 @@
 ---
 topics: [plugin-style-parity]
+issue: 'https://github.com/jfusco/design-passport/issues/148'
+issues: ['https://github.com/jfusco/design-passport/issues/148']
 ---
 
 # Apply Cumulative styles to the companion
