@@ -866,3 +866,34 @@ describe("stepped context and micro-check publication", () => {
     clock.mockRestore();
   });
 });
+
+it("sends the exact audit and sanitized learning file exports through the plugin message bridge", async () => {
+  const uploads: Array<{ kind: string | null; content: string }> = [];
+  const fetcher = vi.fn<typeof fetch>(async (input, init) => {
+    const url = new URL(String(input));
+    expect(url.origin).toBe("http://localhost:3109");
+    expect(url.pathname).toBe("/api/figma-plugin/v1/companion");
+    if (init?.method !== "POST") return Response.json({ projects: [{ id: "harbor", name: "Harbor" }] });
+    const headers = new Headers(init.headers);
+    uploads.push({ kind: headers.get("X-Passport-Kind"), content: String(init.body) });
+    return Response.json({ requestId: headers.get("X-Passport-Request"), projectId: "harbor", evidenceId: "c35aaae1-ce99-4c26-8aba-e795cf9d5553" });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  const plugin = await launch();
+  await plugin.storage.setAsync("conductor-credentials-v1", { origin: "http://localhost:3109", ownerUserId: "designer", token: "synthetic", expiresAt: new Date(Date.now() + 600_000).toISOString() });
+  await plugin.send({ type: "scan", request: { scope: "selection", refreshKnowledge: false } });
+  await plugin.send({ type: "export", format: "json" });
+  const audit = plugin.events.filter(e => e.type === "export-result").at(-1)!.content;
+  await plugin.send({ type: "preview-contribution" });
+  const learning = plugin.events.filter(e => e.type === "contribution-preview").at(-1)!;
+  await plugin.send({ type: "export-contribution", digest: learning.envelope.digest });
+  expect(fetcher).not.toHaveBeenCalled();
+  for (const source of [{ kind: "audit" }, { kind: "learning", digest: learning.envelope.digest }] as const) {
+    await plugin.send({ type: "companion-open", source });
+    const review = plugin.events.filter(e => e.type === "companion-state").at(-1)?.view;
+    expect(review?.preview?.kind).toBe(source.kind);
+    await plugin.send({ type: "companion-send", reviewId: review!.preview!.reviewId, projectId: "harbor", consent: true });
+    expect(plugin.events.filter(e => e.type === "companion-state").at(-1)?.view?.receipt?.projectId).toBe("harbor");
+  }
+  expect(uploads).toEqual([{ kind: "audit", content: audit }, { kind: "learning", content: learning.content }]);
+});

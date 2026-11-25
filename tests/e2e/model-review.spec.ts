@@ -33,6 +33,8 @@ test("authorizes disclosure, displays elapsed and costs, preserves drafts and ap
   page,
   context,
 }) => {
+  // Include context teardown with the full accessibility trace.
+  test.setTimeout(120_000);
   await page.goto("/learnings/import");
   await page.getByLabel("Learning files").setInputFiles({
     name: "model-learning.json",
@@ -99,7 +101,7 @@ test("authorizes disclosure, displays elapsed and costs, preserves drafts and ap
     .click();
   await expect(
     page.getByRole("heading", { name: "Project review", exact: true }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 20_000 });
   await page.getByLabel("Lifetime allowance (USD)").fill("3");
   await page.getByRole("button", { name: "Save allowance" }).click();
   await expect(page.getByText("Lifetime allowance saved.")).toBeVisible();

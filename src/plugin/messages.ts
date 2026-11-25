@@ -98,7 +98,7 @@ export interface AuditResultData {
   waivers?: import("../core/waivers").WaiverStore;
 }
 
-export type UiToPluginMessage = ConductorCommand
+export type UiToPluginMessage = ConductorCommand | import("./companion-send").CompanionCommand
   | { type: "initialize" }
   | { type: "generate-context"; regenerate: boolean }
   | { type: "clear-issue"; auditId?: string; reportHash: string; keys: string[] }
@@ -137,7 +137,7 @@ export type UiToPluginMessage = ConductorCommand
     rawValue: JsonValue;
   };
 
-export type PluginToUiMessage = { type: "conductor-state"; state: ConductorPresentation }
+export type PluginToUiMessage = { type: "companion-state"; view?: import("./companion-send").CompanionView } | { type: "conductor-state"; state: ConductorPresentation }
   | { type: "bootstrap"; data: BootstrapData; rulesetVersion: string; catalogVersion: string; catalogDigest: string }
   | { type: "waivers-result"; waivers: import("../core/waivers").WaiverStore }
   | { type: "collections-result"; collections: VariableCollectionOption[] }

@@ -1,3 +1,6 @@
+import { createCompanionSend, type CompanionCommand, type CompanionSource } from "./companion-send";
+import { ConductorTransport, credentialStorageKey, readConnection } from "./conductor-transport";
+import { CONDUCTOR_ENVIRONMENTS } from "./conductor-environments";
 import { createConductorController } from "./conductor-controller";
 import { applyConductorWorkspace } from "../figma/conductor-workspace";
 import type { ConductorCommand } from "./conductor-state";
@@ -88,6 +91,22 @@ const conductor = createConductorController({
     post({ type: "bootstrap", data: bootstrap, rulesetVersion: RULESET_VERSION, catalogVersion: CATALOG_VERSION, catalogDigest: CATALOG_DIGEST });
     return receipt;
   },
+});
+
+const companionTransport = new ConductorTransport(CONDUCTOR_ENVIRONMENTS);
+const companion = createCompanionSend({
+  connection: async () => readConnection(await figma.clientStorage.getAsync(credentialStorageKey), CONDUCTOR_ENVIRONMENTS),
+  environment: origin => CONDUCTOR_ENVIRONMENTS.find(env => env.origin === origin)!.label,
+  storage: figma.clientStorage,
+  open: () => companionTransport.open(),
+  stop: () => companionTransport.stop(),
+  request: (token, path, upload) => companionTransport.request(token.origin, path, { token: token.token, ...(upload ? { companion: upload } : {}) }),
+  newId: () => "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, char => {
+    const random = Math.floor(Math.random() * 16);
+    return (char === "x" ? random : (random & 3) | 8).toString(16);
+  }),
+  export: source => source.kind === "audit" ? auditExport("json") : learningExport(source),
+  present: view => post({ type: "companion-state", ...(view ? { view } : {}) }),
 });
 
 const mutationChangeGuard = new MutationChangeGuard();
@@ -749,6 +768,7 @@ async function initialize(): Promise<void> {
   collections = bootstrap.collections;
   initialized = true;
   post({ type: "bootstrap", data: bootstrap, rulesetVersion: RULESET_VERSION, catalogVersion: CATALOG_VERSION, catalogDigest: CATALOG_DIGEST });
+  void companion.prune().catch(() => undefined);
   void postContextStatus();
   void loadWaivers().then((waivers) => { if (generation === initializeGeneration) post({ type: "waivers-result", waivers }); }).catch(() => undefined);
   void restoreLastAudit(generation, revision).catch(() => {
@@ -761,6 +781,30 @@ async function initialize(): Promise<void> {
     bootstrap = { ...bootstrap, collections };
     post({ type: "collections-result", collections });
   });
+}
+
+function exportBasename(): string {
+  return figma.root.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "figma-file";
+}
+
+async function auditExport(format: "json" | "markdown") {
+  if (!report || !exportSnapshot) throw new Error("Run or open an audit before exporting a report");
+  const extension = format === "json" ? "json" : "md";
+  const safeName = exportBasename();
+  if (historicalAudit || !await verifiedKnowledgeAvailable() || report.profileHash !== hashValue(profile)
+    || report.target.knowledgeSnapshotHash !== graph?.snapshotHash) {
+    return { filename: `${safeName}.historical-audit.${extension}`, content: historicalAuditContent(exportSnapshot, format) };
+  }
+  const content = format === "json" ? `${JSON.stringify(report, null, 2)}\n` : reportToMarkdown(report);
+  return { filename: `${safeName}.ai-readiness.${extension}`, content };
+}
+
+async function learningExport(source: Extract<CompanionSource, { kind: "learning" }>) {
+  const current = await assertCurrentReport("exporting a learning contribution");
+  if (!pendingContribution || pendingContribution.digest !== source.digest || current.report.rulesetVersion !== pendingContribution.producer.rulesetVersion) {
+    throw new Error("The contribution preview is stale; preview it again before export");
+  }
+  return { filename: `${exportBasename()}.design-passport-learning.json`, content: `${JSON.stringify(pendingContribution, null, 2)}\n` };
 }
 
 async function handleMessage(message: UiToPluginMessage): Promise<void> {
@@ -984,16 +1028,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       post({ type: "contribution-preview", envelope: pendingContribution, content: `${JSON.stringify(pendingContribution, null, 2)}\n` });
     } else if (message.type === "export-contribution") {
       if (invalidateProfileIfNeeded()) return;
-      const current = await assertCurrentReport("exporting a learning contribution");
-      if (!pendingContribution || pendingContribution.digest !== message.digest) throw new Error("The contribution preview is stale; preview it again before export");
-      if (current.report.rulesetVersion !== pendingContribution.producer.rulesetVersion) throw new Error("The contribution preview is stale; preview it again before export");
-      const safeName = figma.root.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "figma-file";
-      post({
-        type: "export-result",
-        format: "json",
-        filename: `${safeName}.design-passport-learning.json`,
-        content: `${JSON.stringify(pendingContribution, null, 2)}\n`,
-      });
+      post({ type: "export-result", format: "json", ...await learningExport({kind: "learning", digest: message.digest}) });
     } else if (message.type === "waive" || message.type === "clear-waiver") {
       if (invalidateProfileIfNeeded()) return;
       const current = await assertCurrentReport("managing waivers");
@@ -1087,18 +1122,7 @@ async function handleMessage(message: UiToPluginMessage): Promise<void> {
       post({ type: "knowledge-stale" });
       post({ type: "mutation-result", message: "Token created. Regenerate audit to verify the changed variable inventory." });
     } else if (message.type === "export") {
-      if (!report || !exportSnapshot) throw new Error("Run or open an audit before exporting a report");
-      if (historicalAudit || !await verifiedKnowledgeAvailable() || report.profileHash !== hashValue(profile)
-        || report.target.knowledgeSnapshotHash !== graph?.snapshotHash) {
-        const extension = message.format === "json" ? "json" : "md";
-        const safeName = figma.root.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "figma-file";
-        post({ type: "export-result", format: message.format, filename: `${safeName}.historical-audit.${extension}`, content: historicalAuditContent(exportSnapshot, message.format) });
-        return;
-      }
-      const content = message.format === "json" ? `${JSON.stringify(report, null, 2)}\n` : reportToMarkdown(report);
-      const extension = message.format === "json" ? "json" : "md";
-      const safeName = figma.root.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-|-$/g, "") || "figma-file";
-      post({ type: "export-result", format: message.format, filename: `${safeName}.ai-readiness.${extension}`, content });
+      post({ type: "export-result", format: message.format, ...await auditExport(message.format) });
   }
 }
 
@@ -1109,6 +1133,8 @@ figma.ui.onmessage = async (rawMessage: unknown) => {
   let nonTerminal = false;
   try {
     const message = parseUiMessage(rawMessage);
+    if (message.type.startsWith("companion-")) { await companion.handle(message as CompanionCommand); return; }
+    if (message.type !== "save-audit-view") companion.close();
     if (message.type.startsWith("conductor-")) { await conductor.handle(message as ConductorCommand); return; }
     // Entering any audit operation stops connected polling before acquiring the gate.
     if (message.type !== "save-audit-view") conductor.stop();

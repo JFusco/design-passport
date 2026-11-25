@@ -25,6 +25,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("completes the local reference, import, conflict recovery, and decision workflow", async ({ context, page }) => {
+  // Playwright finalizes the retained trace for every axe scan during context teardown.
+  test.setTimeout(120_000);
   const browserErrors: string[] = [];
   let expectedConflictError = false;
   page.on("console", (message) => {
@@ -226,6 +228,8 @@ test("rejects requests without the process capability or same origin", async ({ 
 });
 
 test("imports audit history, filters records, inspects provenance and downloads preserved payloads", async ({ page, browser }) => {
+  // Playwright finalizes the retained trace for every axe scan during context teardown.
+  test.setTimeout(120_000);
   for (const path of ["/api/audits/------------------------------------", "/api/audits/download/------------------------------------"]) {
     const response = await page.request.get(path);
     expect(response.status()).toBe(404);

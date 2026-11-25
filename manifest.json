@@ -24,6 +24,6 @@
     "devAllowedDomains": [
       "http://localhost:3109"
     ],
-    "reasoning": "Connect to Conductor to fetch selected component screenshots and workspace jobs, and submit design links and notes."
+    "reasoning": "Connect to Conductor to fetch component screenshots and workspace jobs, submit design links and notes, and send approved audit or learning exports to a selected Companion project."
   }
 }

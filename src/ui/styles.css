@@ -771,3 +771,11 @@ pre { max-width: 100%; overflow: auto; }
 .handoff-confirmation-actions .button { width: auto; flex: 0 0 auto; }
 
 .handoff-confirmation-actions .button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.companion-dialog { width: min(430px, calc(100% - 32px)); max-height: calc(100% - 32px); box-sizing: border-box; padding: 0; border: 0; border-radius: 12px; color: var(--ink); background: var(--card); }
+.companion-dialog::backdrop { background: rgb(0 0 0 / 42%); }
+.companion-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.companion-dialog-heading h2, .companion-pending h3, .companion-file dd { margin: 0; }
+.companion-file, .companion-pending { display: grid; gap: 6px; padding: 12px; background: var(--paper); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; overflow-wrap: anywhere; }
+.companion-file dt { font-weight: bold; }
+.companion-consent { display: flex; align-items: start; gap: 8px; line-height: 1.5; }

@@ -8,13 +8,12 @@ import { parseDesignSubmission, parseSubmissionResult, type DesignSubmission } f
 import { assertContractVersion, WORKSPACE_LIMITS, type CanvasJob, type WorkspaceLease, type WorkspaceReceipt } from "../core/conductor-contracts";
 import { CONDUCTOR_ENVIRONMENTS } from "./conductor-environments";
 import type { ConductorCommand, ConductorPresentation } from "./conductor-state";
-import { ConductorAuthorizationError, ConductorRequestTimeoutError, ConductorTransport, type ConductorCredentials } from "./conductor-transport";
+import { credentialStorageKey, readConnection, ConductorAuthorizationError, ConductorRequestTimeoutError, ConductorTransport, type ConductorCredentials } from "./conductor-transport";
 
 interface ContextResponse {
   contractVersion: string; enabled: boolean; supports?: string[]; destination: { project: string; deliverable: string };
   jobs: ConductorPresentation["jobs"];
 }
-const STORAGE_KEY = "conductor-credentials-v1";
 export function createConductorController(deps: {
   enterCanvas: () => () => void;
   post: (state: ConductorPresentation) => void;
@@ -68,6 +67,10 @@ export function createConductorController(deps: {
   const refresh = async () => {
     const token = requireCredentials(); const generation = epoch;
     supportScope = undefined;
+    if (token.companionOnly) {
+      present("connected", "Connected to Companion. Open an audit or learning export and choose Send to Companion.", { companionOnly: true, jobs: [] });
+      return;
+    }
     if (!figma.fileKey) { present("unavailable", "This file has no stable Figma key. Open a linked file to prepare workspaces."); return; }
     const fileKey = figma.fileKey;
     const current = () => active && generation === epoch && credentials === token && figma.fileKey === fileKey;
@@ -104,13 +107,13 @@ export function createConductorController(deps: {
     if (!active || generation !== epoch) return;
     if (Date.now() >= deadline) { present("error", "The connection code expired. Start a new connection."); return; }
     try {
-      const result = await transport.request(origin, `/api/figma-plugin/v1/pairings/${encodeURIComponent(id)}`, { body: { pollingSecret: proof } }) as { state: string; token?: string; ownerUserId?: string; expiresAt?: string };
+      const result = await transport.request(origin, `/api/figma-plugin/v1/pairings/${encodeURIComponent(id)}`, { body: { pollingSecret: proof } }) as { state: string; token?: string; ownerUserId?: string; expiresAt?: string; companionOnly?: true };
       if (!active || generation !== epoch) return;
       if (result.state === "connected" && typeof result.token === "string" && typeof result.ownerUserId === "string" && typeof result.expiresAt === "string") {
         const expiry = Date.parse(result.expiresAt);
         if (!Number.isFinite(expiry) || expiry <= Date.now() || expiry > Date.now() + WORKSPACE_LIMITS.tokenMs + 5_000) throw new Error("Invalid Conductor credential expiry");
-        credentials = { origin, token: result.token, ownerUserId: result.ownerUserId, expiresAt: result.expiresAt };
-        await figma.clientStorage.setAsync(STORAGE_KEY, credentials);
+        credentials = { origin, token: result.token, ownerUserId: result.ownerUserId, expiresAt: result.expiresAt, ...(result.companionOnly === true ? { companionOnly: true } : {}) };
+        await figma.clientStorage.setAsync(credentialStorageKey, credentials);
         await refresh(); return;
       }
       if (result.state !== "pending") throw new Error("Connection expired or was already redeemed. Start a new connection.");
@@ -168,19 +171,16 @@ export function createConductorController(deps: {
         if (command.type === "conductor-offline") { stop(); return; }
         if (command.type === "conductor-open") {
           stop(); operationEpoch = epoch; credentials = undefined; active = true; transport.open(); const generation = epoch;
-          const saved: unknown = await figma.clientStorage.getAsync(STORAGE_KEY);
+          const saved: unknown = await figma.clientStorage.getAsync(credentialStorageKey);
           if (!active || generation !== epoch) return;
-          if (saved && typeof saved === "object") {
-            const value = saved as ConductorCredentials;
-            if (CONDUCTOR_ENVIRONMENTS.some((env) => env.origin === value.origin) && typeof value.token === "string" && typeof value.ownerUserId === "string" && Date.parse(value.expiresAt) > Date.now()) credentials = value;
-          }
+          credentials = readConnection(saved, CONDUCTOR_ENVIRONMENTS);
           if (credentials) await refresh();
           else present("offline", "Connect in your browser to approve access to your Conductor workspaces.");
           return;
         }
         if (command.type === "conductor-disconnect") {
           const current = credentials; credentials = undefined;
-          await figma.clientStorage.deleteAsync(STORAGE_KEY);
+          await figma.clientStorage.deleteAsync(credentialStorageKey);
           if (current && active) await transport.request(current.origin, "/api/figma-plugin/v1/disconnect", { token: current.token, body: {} }).catch(() => {});
           stop(); present("offline", "Disconnected locally. You can also revoke Design Passport access from your Conductor profile."); return;
         }

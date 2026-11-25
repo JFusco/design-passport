@@ -1,6 +1,6 @@
 import { WORKSPACE_LIMITS, utf8Bytes } from "../core/conductor-contracts";
 
-export interface ConductorCredentials { origin: string; token: string; ownerUserId: string; expiresAt: string; }
+export interface ConductorCredentials { origin: string; token: string; ownerUserId: string; expiresAt: string; companionOnly?: true; }
 export interface ConductorEnvironment { id: string; label: string; origin: string; }
 
 /** A bounded request may time out while the same pairing is still pending. */
@@ -10,6 +10,18 @@ export class ConductorRequestTimeoutError extends Error {
 
 export class ConductorAuthorizationError extends Error {}
 export class ConductorSubmissionRefusedError extends Error {}
+export class CompanionRequestError extends Error {
+  constructor(readonly status: number, message: string) { super(message); }
+}
+export interface CompanionUpload { kind: "audit" | "learning"; requestId: string; content: string }
+export const credentialStorageKey = "conductor-credentials-v1";
+
+export function readConnection(value: unknown, environments: readonly ConductorEnvironment[]): ConductorCredentials | undefined {
+  if (!value || typeof value !== "object") return;
+  const saved = value as Partial<ConductorCredentials>;
+  if (typeof saved.token === "string" && typeof saved.ownerUserId === "string" && typeof saved.expiresAt === "string"
+    && Date.parse(saved.expiresAt) > Date.now() && environments.some(env => env.origin === saved.origin)) return saved as ConductorCredentials;
+}
 
 /** Fixed origins only. Credentials never enter presentation state or shared data. */
 export class ConductorTransport {
@@ -23,7 +35,7 @@ export class ConductorTransport {
     if (!env) throw new Error("This Conductor environment is not configured");
     return env;
   }
-  async request(origin: string, path: string, options: { token?: string; body?: unknown; binary?: boolean } = {}): Promise<unknown> {
+  async request(origin: string, path: string, options: { token?: string; body?: unknown; binary?: boolean; companion?: CompanionUpload } = {}): Promise<unknown> {
     if (!this.enabled) throw new Error("Open the Conductor area before connecting");
     if (!this.environments.some((entry) => entry.origin === origin) || !path.startsWith("/api/figma-plugin/v1/") || path.includes("..") || path.includes("\\") || path.includes("#")) throw new Error("Invalid Conductor destination");
     if (/[\u0000-\u0020]/.test(path) || !/^https?:\/\/[^/]+$/.test(origin)) throw new Error("Invalid Conductor destination");
@@ -34,13 +46,34 @@ export class ConductorTransport {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const work = (async () => {
-      const response = await this.fetcher(destination, { method: options.body === undefined ? "GET" : "POST", credentials: "omit", redirect: "error",
-          headers: { ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}), ...(options.body === undefined ? {} : { "Content-Type": "application/json" }) },
-          ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }) });
+      const upload = options.companion;
+      if (upload && (!options.token || !path.startsWith("/api/figma-plugin/v1/companion?project=") || options.body !== undefined || options.binary)) throw new Error("Invalid Companion request");
+      const body = upload ? upload.content : JSON.stringify(options.body);
+      const response = await this.fetcher(destination, {
+        method: body === undefined ? "GET" : "POST", credentials: "omit", redirect: "error",
+        headers: {
+          ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+          ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+          ...(upload ? { "X-Passport-Kind": upload.kind, "X-Passport-Request": upload.requestId } : {}),
+        },
+        ...(body === undefined ? {} : { body }),
+      });
       if (!this.enabled || generation !== this.generation) throw new Error("Conductor connection stopped");
       if (response.redirected || (response.url && !response.url.startsWith(`${origin}/`))) throw new Error("Conductor redirect refused");
       if (!response.ok) {
         if (response.status === 401) throw new ConductorAuthorizationError("Your Conductor connection expired or was revoked. Connect again.");
+        if (path.split("?")[0] === "/api/figma-plugin/v1/companion") {
+          const messages: Record<number, string> = {
+            400: "Companion could not read this export. Generate a new export and try again.",
+            403: "Check your project assignment and reconnect with Companion contributions approved.",
+            404: "Companion or this receipt is unavailable for your connection.",
+            409: "This submission ID already belongs to different evidence.",
+            413: "This export exceeds the Companion file size limit.",
+            422: "Companion could not validate this export. Generate it again with Design Passport.",
+            429: "Companion is busy. Wait before checking the receipt.",
+          };
+          throw new CompanionRequestError(response.status, messages[response.status] ?? "Companion could not confirm the request. Check the receipt before sending again.");
+        }
         if (path === "/api/figma-plugin/v1/submissions" && [400,403,404,409].includes(response.status)) throw new ConductorSubmissionRefusedError("Conductor refused this submission. Check the saved receipt or resolve the pending request before starting another send.");
         if (path.endsWith("/resolve")) {
           if (response.status === 403) throw new Error("Pending-send recovery is disabled or not permitted. Ask your Conductor administrator to restore access before resolving this request.");

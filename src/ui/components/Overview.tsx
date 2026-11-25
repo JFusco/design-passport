@@ -28,6 +28,7 @@ export interface OverviewProps {
   onRecheck?: (request: AuditRecheckRequest) => void;
   recheckDisabled?: boolean;
   onScan: (scope: ScanScope, refresh?: boolean) => void;
+  onSendToCompanion?: () => void;
   onExport: (format: "json" | "markdown") => void;
   children?: ReactNode;
   pageExclusions?: ReactNode;
@@ -102,6 +103,7 @@ export function Overview(props: OverviewProps) {
             {props.report.axes.map((axis) => <div className="axis-row" key={axis.axis}><div><span>{AXIS_LABELS[axis.axis]}</span><strong>{axis.score.toFixed(1)}</strong></div><div className="score-track"><span style={{ width: `${axis.score}%` }} /></div></div>)}
           </div></details>
           <div className="footer-actions">
+            {props.onSendToCompanion && <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={props.onSendToCompanion}>Send to Companion</button>}
             <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("json")}>{historicalExport ? "Export historical JSON" : "Export JSON"}</button>
             <button className="button" disabled={!historicalExport && (props.scanning || props.actionsBlocked)} onClick={() => props.onExport("markdown")}>{historicalExport ? "Export historical Markdown" : "Export Markdown"}</button>
           </div>

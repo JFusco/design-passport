@@ -460,3 +460,16 @@ it("clears destination loading after a failed read and permits an explicit retry
   expect(post.mock.calls.at(-1)?.[0]).toMatchObject({ existing: { options: [{ id: "p", name: "Project" }] } });
   expect(post.mock.calls.at(-1)?.[0].busy).toBeUndefined(); client.stop();
 });
+
+it("opens a Companion-only connection without requesting workspace context", async () => {
+  const f = lifecycleFixture("bound");
+  f.storage.set("conductor-credentials-v1", { ...f.credentials, companionOnly: true });
+  await f.open();
+  expect(f.fetcher).not.toHaveBeenCalled();
+  expect(f.last()).toMatchObject({ state: "connected", companionOnly: true, jobs: [] });
+  const markup = renderToStaticMarkup(createElement(ConductorPanel, {
+    state: f.last(), send: vi.fn(), onCompanionReceipts: vi.fn(),
+  }));
+  expect(markup).toContain("Companion receipts");
+  expect(markup).not.toContain("Use selected design frames");
+});

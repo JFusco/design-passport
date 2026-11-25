@@ -1,3 +1,5 @@
+import { CompanionSend } from "./components/CompanionSend";
+import type { CompanionView } from "../plugin/companion-send";
 import { ConductorPanel } from "./components/ConductorPanel";
 import type { ConductorPresentation } from "../plugin/conductor-state";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -63,6 +65,7 @@ function download(filename: string, content: string, type: string): void {
 }
 
 export function App() {
+  const [companionView, setCompanionView] = useState<CompanionView>();
   const [conductorState, setConductorState] = useState<ConductorPresentation>({ state: "offline", message: "Open Conductor to connect.", environments: [], jobs: [] });
   const [bootstrap, setBootstrap] = useState<BootstrapEnvelope>();
   const [committedProfile, setCommittedProfile] = useState<ReadinessProfile>();
@@ -127,6 +130,7 @@ export function App() {
     const handler = (event: MessageEvent<{ pluginMessage?: PluginToUiMessage }>) => {
       let message = event.data?.pluginMessage;
       if (!message || typeof message !== "object" || typeof message.type !== "string") return;
+      if (message.type === "companion-state") { setCompanionView(message.view); return; }
       if (message.type === "conductor-state") { setConductorState(message.state); return; }
       if (message.type === "waivers-result") { setWaivers(message.waivers); return; }
       if (message.type === "context-status") {
@@ -601,6 +605,7 @@ export function App() {
             onRecheck={recheck}
             recheckDisabled={draftState.blocked || scanInFlight}
             onScan={scan}
+            onSendToCompanion={() => send({ type: "companion-open", source: { kind: "audit" } })}
             onExport={(format) => send({ type: "export", format })}
           >
 
@@ -713,6 +718,7 @@ export function App() {
             projectStyleGuide={bootstrap.data.projectStyleGuide}
             onNavigate={(nodeId) => send({ type: "navigate", nodeId })}
             onPreviewContribution={() => send({ type: "preview-contribution" })}
+            onSendToCompanion={digest => send({ type: "companion-open", source: { kind: "learning", digest } })}
             onExportContribution={(digest) => send({ type: "export-contribution", digest })}
             onCancelContribution={() => setContribution(undefined)}
           />
@@ -728,7 +734,7 @@ export function App() {
             onApplyAll={(planIds) => send({ type: "apply-all", planIds, undoOnlyAcknowledged: undoAcknowledged })}
           />
         )}
-        {activeTab === "conductor" ? <ConductorPanel state={conductorState} send={send} /> : null}
+        {activeTab === "conductor" ? <ConductorPanel state={conductorState} send={send} onCompanionReceipts={() => send({ type: "companion-open" })} /> : null}
         {activeTab === "context" && (
           <ContextPanel
             knowledge={contextStatus.knowledge ?? knowledge}
@@ -776,6 +782,7 @@ export function App() {
         )}
       </div>
 
+      {companionView && <CompanionSend view={companionView} send={send} connect={() => setActiveTab("conductor")} />}
       <footer className="app-footer">
         <span title={producerLabel(bootstrap.data.producer)}>{producerLabel(bootstrap.data.producer)}</span>
         <span title={bootstrap.catalogDigest}>Catalog {bootstrap.catalogVersion}</span>

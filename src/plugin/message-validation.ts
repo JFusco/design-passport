@@ -42,6 +42,21 @@ const TOKEN_COVERAGE_REASONS = new Set<TokenCoverageReason>([
 export function parseUiMessage(value: unknown): UiToPluginMessage {
   const message = record(value);
   if (!message || typeof message.type !== "string") throw new Error("Plugin message must be an object with a type");
+  if (message.type === "companion-close") return { type: message.type };
+  if (message.type === "companion-open") {
+    if (message.source === undefined) return { type: message.type };
+    const source = record(message.source);
+    if (source?.kind === "audit") return { type: message.type, source: { kind: "audit" } };
+    if (source?.kind === "learning") return { type: message.type, source: { kind: "learning", digest: text(source.digest, "digest", 200) } };
+    throw new Error("Choose an audit or a previewed contribution.");
+  }
+  if (message.type === "companion-check" || message.type === "companion-review-retry") return { type: message.type, requestId: text(message.requestId, "requestId", 36) };
+  if (message.type === "companion-send") {
+    if (message.consent !== true) throw new Error("Confirm the data and destination before sending.");
+    return { type: message.type, consent: true, reviewId: text(message.reviewId, "reviewId", 36),
+      projectId: text(message.projectId, "projectId", 512),
+      ...(message.retryId === undefined ? {} : { retryId: text(message.retryId, "retryId", 36) }) };
+  }
   if (message.type === "initialize" || message.type === "refresh-audit" || message.type === "cancel-scan"
     || message.type === "remove-project-style-guide" || message.type === "clear-session-references" || message.type === "preview-contribution"
     || message.type === "clear-file-cache") return { type: message.type };

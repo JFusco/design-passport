@@ -13,7 +13,8 @@ import { atomicWriteExternalJson, readJsonFile, resolveWorkspaceRoot, workspaceP
 import { importAudits, importLearning } from "./repository";
 import { exportKnowledge, exportRelease } from "./exports";
 import { readImportFiles } from "./imports";
-import { closeDatabases, loadRuntimeEnvironment, runtimeChildEnvironment } from "./database";
+import { captureMigration } from "./migration";
+import { closeDatabases, legacyProviderDispatch, legacyWorkerEnabled, loadRuntimeEnvironment, runtimeChildEnvironment } from "./database";
 import { safeErrorMessage } from "./errors";
 import { ModelReviewRunner } from "./model-review/runner";
 import { loadModelKey, openAITransport } from "./model-review/transport";
@@ -157,10 +158,14 @@ async function review(options: Options, root: string): Promise<void> {
   const capability = randomBytes(32).toString("hex");
   const origin = `http://127.0.0.1:${port}`;
   const modelKey = await loadModelKey(root);
-  const runner = modelKey ? new ModelReviewRunner(workspacePaths(root), openAITransport(modelKey)) : undefined;
+  const transport = modelKey && await legacyWorkerEnabled(root) ? openAITransport(modelKey) : undefined;
+  const runner = transport ? new ModelReviewRunner(workspacePaths(root), {
+    ...transport,
+    generate: (input) => legacyProviderDispatch(root, () => transport.generate(input)),
+  }) : undefined;
   const child = spawn(process.execPath, [nextBin, "start", "--hostname", "127.0.0.1", "--port", String(port)], {
     cwd: appRoot,
-    env: { ...runtimeChildEnvironment(), DESIGN_PASSPORT_MODEL_REVIEW_CONFIGURED: String(Boolean(modelKey)), DESIGN_PASSPORT_WORKSPACE_ROOT: root, DESIGN_PASSPORT_CAPABILITY: capability, DESIGN_PASSPORT_EXPECTED_ORIGIN: origin },
+    env: { ...runtimeChildEnvironment(), DESIGN_PASSPORT_MODEL_REVIEW_CONFIGURED: String(Boolean(transport)), DESIGN_PASSPORT_WORKSPACE_ROOT: root, DESIGN_PASSPORT_CAPABILITY: capability, DESIGN_PASSPORT_EXPECTED_ORIGIN: origin },
     stdio: ["inherit", "pipe", "pipe"],
   });
   runner?.start();
@@ -189,13 +194,18 @@ async function review(options: Options, root: string): Promise<void> {
 }
 
 function usage(): string {
-  return `Design Passport local companion\n\nCommands:\n  pack create --url URL --source-id ID --project-scope ID --role style-guide|reference --out FILE\n  batch ingest --config FILE --out DIR\n  learning import FILE [FILE...]\n  audit import FILE [FILE...] --project-scope ID\n  knowledge build\n  knowledge export --out DIR\n  knowledge review [--port 0]\n`;
+  return `Design Passport local companion\n\nCommands:\n  pack create --url URL --source-id ID --project-scope ID --role style-guide|reference --out FILE\n  batch ingest --config FILE --out DIR\n  learning import FILE [FILE...]\n  audit import FILE [FILE...] --project-scope ID\n  knowledge build\n  knowledge export --out DIR\n  migration capture --out NEW_PRIVATE_DIR\n  knowledge review [--port 0]\n`;
 }
 
 export async function main(argv = process.argv.slice(2)): Promise<void> {
   const command = args(argv);
   const root = await resolveWorkspaceRoot(process.env.DESIGN_PASSPORT_WORKSPACE_ROOT ?? process.cwd());
   await loadRuntimeEnvironment(root);
+  if (command.area === "migration" && command.action === "capture") {
+    const result = await captureMigration(root, requiredOption(command.values, "out"));
+    process.stdout.write(JSON.stringify(result) + "\n");
+    return;
+  }
   if (command.area === "pack" && command.action === "create") return makePack(command.values);
   if (command.area === "batch" && command.action === "ingest") return ingest(command.values);
   if (command.area === "learning" && command.action === "import") return importLearningFiles(command.positional, root);

@@ -2,6 +2,7 @@ import type { ExistingFrameState, ExistingFrameCommand } from "./conductor-exist
 /** Presentation only. Bearer credentials and pairing proofs never cross to the UI. */
 export interface ConductorPresentation {
   supportsDesignChanges?: boolean;
+  companionOnly?: boolean;
   recovery?: import("./conductor-pending-send").PendingSendPresentation;
   change?: import("./conductor-change-controller").DesignChangeState;
   redacted?: boolean;

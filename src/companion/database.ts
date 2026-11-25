@@ -79,7 +79,11 @@ export async function transaction<T>(root: string, operation: (sql: TransactionS
       // before application queries or lock acquisition, regardless of role defaults.
       await tx`set local statement_timeout = '15s'`;
       await tx`set local lock_timeout = '2s'`;
-      if (write) await tx`select pg_advisory_xact_lock(1146110800)`;
+      if (write) {
+        await tx`select pg_advisory_xact_lock(1146110800)`;
+        const [role] = await tx`select has_table_privilege(current_user,'design_passport.projects','INSERT') as writable`;
+        if (!role?.writable) throw new CompanionError("conflict", "Companion history is read-only after the Conductor cutover.", 409);
+      }
       return operation(tx);
     });
     return result as T;
@@ -90,4 +94,23 @@ export function runtimeChildEnvironment(): NodeJS.ProcessEnv {
   const env = { ...process.env };
   for (const key of Object.keys(env)) if (/^(SUPABASE_|PGPASSWORD$|DATABASE_URL$|OPENAI_API_KEY$|DESIGN_PASSPORT_TEST_MODEL_REVIEW$|DESIGN_PASSPORT_DEV_OUTPUT$|DESIGN_PASSPORT_MIGRATION_)/u.test(key)) delete env[key];
   return env;
+}
+
+export async function legacyWorkerEnabled(root: string): Promise<boolean> {
+  return transaction(root, async tx => {
+    const [role] = await tx`select has_table_privilege(current_user,'design_passport.model_attempts','INSERT') as writable`;
+    return role?.writable === true;
+  });
+}
+
+// The cutover operator takes the exclusive counterpart before revoking all
+// legacy writes. The shared transaction spans just the bounded generation POST.
+export async function legacyProviderDispatch<T>(root: string, generate: () => Promise<T>): Promise<T> {
+  const sql = await database(root);
+  return await sql.begin(async tx => {
+    await tx`select pg_advisory_xact_lock_shared(1146110801)`;
+    const [role] = await tx`select has_table_privilege(current_user,'design_passport.model_attempts','INSERT') as writable`;
+    if (!role?.writable) throw new CompanionError("conflict", "Legacy model dispatch is closed for Conductor cutover.", 409);
+    return generate();
+  }) as T;
 }

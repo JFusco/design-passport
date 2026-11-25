@@ -269,8 +269,8 @@ test("opts a whole cleanup plan out and disables an empty batch", async ({ page 
 });
 
 test("matches the Figma dark layout at 320, 456 and 500px with keyboard focus", async ({ page }) => {
-  // Three viewport audits include accessibility scans and screenshot capture.
-  test.setTimeout(60_000);
+  // Six axe scans and screenshots across three viewports are flushed with the trace during teardown.
+  test.setTimeout(180_000);
   await mount(page);
   const { default: AxeBuilder } = await import("@axe-core/playwright");
   for (const width of [320, 456, 500]) {
@@ -327,4 +327,74 @@ test("matches the Figma dark layout at 320, 456 and 500px with keyboard focus", 
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "Context & style guide" }).click();
   await expect(page.getByText("Style guide and references", { exact: true })).toBeVisible();
+});
+
+test("requires a destination and disclosure before the plugin can send an audit", async ({ page }) => {
+  await mount(page);
+  await page.getByText("Audit details & exports", { exact: true }).click();
+  await page.evaluate(() => window.addEventListener("message", event => {
+    const message = event.data?.pluginMessage;
+    const requests = document.getElementById("requests")!;
+    if (message?.type === "companion-open") requests.dataset.companionKind = message.source.kind;
+    if (message?.type === "companion-send") requests.dataset.companionSend = JSON.stringify(message);
+  }));
+  await page.getByRole("button", { name: "Send to Companion" }).click();
+  await expect(page.locator("#requests")).toHaveAttribute("data-companion-kind", "audit");
+  const reviewId = "bdceb80f-4a81-4e58-8830-03ba0da07012";
+  await deliver(page, { type: "companion-state", view: {
+    projects: [{id: "harbor", name: "Harbor"}, {id: "atlas", name: "Atlas"}], pending: [],
+    environment: "Conductor local", preview: {kind: "audit", bytes: 1050, filename: "audit.json", reviewId},
+  } });
+  const dialog = page.getByRole("dialog", { name: "Send to Companion" });
+  const send = dialog.getByRole("button", { name: "Send to Companion" });
+  await expect(dialog.getByText(/frame names, Figma node IDs/)).toBeVisible();
+  await expect(send).toBeDisabled();
+  await dialog.getByLabel("Destination project").selectOption("harbor");
+  await expect(send).toBeDisabled();
+  await dialog.getByRole("checkbox", { name: /with Harbor/ }).check();
+  await dialog.getByLabel("Destination project").selectOption("atlas");
+  await expect(send).toBeDisabled();
+  await dialog.getByRole("checkbox", { name: /with Atlas/ }).check();
+  await send.click();
+  await expect(page.locator("#requests")).toHaveAttribute("data-companion-send", JSON.stringify({type: "companion-send", projectId: "atlas", consent: true, reviewId}));
+});
+
+test("reviews a saved Companion export and requires explicit consent for its original project", async ({ page }) => {
+  await mount(page);
+  await page.evaluate(() => window.addEventListener("message", event => {
+    const message = event.data?.pluginMessage;
+    const requests = document.getElementById("requests")!;
+    if (message?.type === "companion-open" && !message.source) requests.dataset.companionLookup = "true";
+    if (message?.type === "companion-review-retry") requests.dataset.companionReview = message.requestId;
+    if (message?.type === "companion-send") requests.dataset.companionSend = JSON.stringify(message);
+  }));
+  await page.getByRole("button", { name: "Conductor", exact: true }).click();
+  await page.getByRole("button", { name: "Companion receipts" }).click();
+  await expect(page.locator("#requests")).toHaveAttribute("data-companion-lookup", "true");
+  const requestId = "e82a798e-a722-4f6b-a5c6-5efdf50cd639";
+  const reviewId = "bdceb80f-4a81-4e58-8830-03ba0da07012";
+  const view = {
+    projects: [{ id: "atlas", name: "Atlas" }, { id: "harbor", name: "Harbor" }],
+    pending: [{ requestId, projectId: "atlas", kind: "learning" as const, matches: false, canReview: true }],
+  };
+  await deliver(page, { type: "companion-state", view });
+  const dialog = page.getByRole("dialog", { name: "Send to Companion" });
+  await expect(dialog.getByRole("button", { name: "Check receipt" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Review saved export" }).click();
+  await expect(page.locator("#requests")).toHaveAttribute("data-companion-review", requestId);
+  await deliver(page, { type: "companion-state", view: {
+    ...view, preview: { reviewId, kind: "learning", filename: "saved.learning.json", bytes: 1050, retry: { requestId, projectId: "atlas" } },
+  } });
+  await expect(dialog.getByRole("heading", { name: "Review saved export" })).toBeFocused();
+  await expect(dialog.getByText("saved.learning.json")).toBeVisible();
+  await expect(dialog.getByText(/sanitized observations/)).toBeVisible();
+  await expect(dialog.getByText("Atlas", { exact: true }).first()).toBeVisible();
+  await expect(dialog.getByRole("combobox")).toHaveCount(0);
+  const button = dialog.getByRole("button", { name: "Retry original submission" });
+  await expect(button).toBeDisabled();
+  await dialog.getByRole("checkbox", { name: /with Atlas/ }).check();
+  await button.click();
+  await expect(page.locator("#requests")).toHaveAttribute("data-companion-send", JSON.stringify({
+    type: "companion-send", projectId: "atlas", consent: true, reviewId, retryId: requestId,
+  }));
 });

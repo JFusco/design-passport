@@ -29,6 +29,8 @@
     "build:artifacts": "pnpm catalog:sync && pnpm schemas:generate && pnpm build:ui && pnpm build:plugin && pnpm build:companion && pnpm build:metadata",
     "build:development-artifacts": "DESIGN_PASSPORT_CHANNEL=development pnpm build:artifacts",
     "build": "pnpm build:development-artifacts && pnpm build:development-bundle",
+    "release:prepare": "node scripts/conductor-release.mjs prepare",
+    "release:publish-check": "node scripts/conductor-release.mjs publish-check",
     "build:release": "DESIGN_PASSPORT_CHANNEL=production pnpm build:artifacts",
     "typecheck": "tsc --noEmit",
     "typecheck:companion": "tsc --project tsconfig.companion.json --noEmit && pnpm --filter @design-passport/companion typecheck",

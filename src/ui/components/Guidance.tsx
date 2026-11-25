@@ -12,6 +12,7 @@ export interface GuidanceProps {
   projectStyleGuide: ProjectStyleGuideStatus;
   onNavigate: (nodeId: string) => void;
   onPreviewContribution: () => void;
+  onSendToCompanion?: (digest: string) => void;
   onExportContribution: (digest: string) => void;
   onCancelContribution: () => void;
 }
@@ -65,8 +66,9 @@ export function Guidance(props: GuidanceProps) {
             {contributionSummary.map((item) => <span key={item.label}>{item.label}: {item.count}</span>)}
           </div>
           <div className="privacy-summary"><strong>Not included</strong><span>File links, file and layer IDs, screenshots, design copy, email addresses, local paths, source code, and waiver notes.</span></div>
-          <p className="fine-print">Exporting creates a machine-readable file for the local companion. Nothing is sent automatically.</p>
+          <p className="fine-print">Download this JSON or choose a Conductor project to receive it.</p>
           <div className="scope-actions">
+            {props.onSendToCompanion && <button className="button" onClick={() => props.onSendToCompanion!(props.contribution!.envelope.digest)}>Send to Companion</button>}
             <button className="button primary" onClick={() => props.onExportContribution(props.contribution!.envelope.digest)}>Export contribution</button>
             <button className="button subtle" onClick={props.onCancelContribution}>Cancel</button>
           </div>

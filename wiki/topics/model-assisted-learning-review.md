@@ -185,3 +185,7 @@ remain outside this feature.
 - [Forward migration](../../supabase/migrations/20261005131949_model_learning_review.sql)
 - [Deterministic and repository tests](../../tests/companion-model-review.test.ts)
 - [Browser journeys](../../tests/e2e/model-review.spec.ts)
+
+## Hosted workspace
+
+Conductor's Design Passport workspace uses assigned projects. The assigned Creative Director manages the lifetime review allowance and charge reconciliation. A contributor may apply selected recommendations as project decisions. The Creative Director separately approves the precise fields for shared publication. See the [local implementation record](../journal/2026-11-25-conductor-companion.md).
